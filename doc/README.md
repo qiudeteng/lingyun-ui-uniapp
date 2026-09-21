@@ -1,13 +1,12 @@
 # 凌云UI 使用手册
 
-📖 [线上地址](https://lingyun.xinyicanyin.com/)
+当前组件库版本 **1.0.0**。
 
 📦 [仓库](https://github.com/qiudeteng/lingyun-ui-uniapp)
 🐛 欢迎反馈：使用中遇到问题或有建议，请在 [仓库 Issues](https://github.com/qiudeteng/lingyun-ui-uniapp/issues) 提交，也欢迎 PR 共同完善。
 
 这是组件的**用法**说明：怎么写、有哪些属性和示例。尺寸、玻璃材质和设计稿对照在仓库 `design/` 里，不在这本手册里重复。
 
-当前组件库版本 **1.0.0**。本地预览：`pnpm manual:dev`（http://localhost:5175）。组件页在宽窗口右侧有手机框，画面来自 `pnpm dev`（http://localhost:5173）；线上手册自动指向演示站 `https://demo.xinyicanyin.com`（hash 模式）。静态站：`pnpm manual:build`，产物在 `doc/.vuepress/dist`。
 
 ## 从这里开始
 
