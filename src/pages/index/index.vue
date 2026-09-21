@@ -3,7 +3,8 @@
     <view class="page">
       <view class="hero">
         <text class="hero__title">欢迎来到 凌云UI</text>
-        <text class="hero__desc">一个专门为蛋糕连锁企业提供信息化服务的平台</text>
+        <text class="hero__desc">一套对齐 Apple Liquid Glass 的 uni-app 多端组件库</text>
+        <text class="hero__desc">内置 AGENTS.md 协作规约与 design/ 设计规范，对 AI 编码友好：约定清晰、路径对应、自检可循</text>
         <view class="theme-switch">
           <lingyun-segmented-control v-model="themePreference" :items="themeOptions" />
         </view>

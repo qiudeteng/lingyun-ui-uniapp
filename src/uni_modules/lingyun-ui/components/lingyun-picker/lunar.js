@@ -1,8 +1,8 @@
 /**
- * 农历文案（复用 uni-calendar 的 calendar.js）
+ * 农历文案（内置 calendar.js，与 uni-calendar 同源）
  * 初一显示月份名；有节气时优先节气
  */
-import calendar from '../../../uni-calendar/components/uni-calendar/calendar.js'
+import calendar from './calendar.js'
 
 export function lunarDayText(y, m, d) {
   try {
