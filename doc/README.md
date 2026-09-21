@@ -1,6 +1,9 @@
 # 凌云UI 使用手册
 
-线上地址：https://lingyun.xinyicanyin.com/
+📖 [线上地址](https://lingyun.xinyicanyin.com/)
+
+📦 [仓库](https://github.com/qiudeteng/lingyun-ui-uniapp)
+🐛 欢迎反馈：使用中遇到问题或有建议，请在 [仓库 Issues](https://github.com/qiudeteng/lingyun-ui-uniapp/issues) 提交，也欢迎 PR 共同完善。
 
 这是组件的**用法**说明：怎么写、有哪些属性和示例。尺寸、玻璃材质和设计稿对照在仓库 `design/` 里，不在这本手册里重复。
 
