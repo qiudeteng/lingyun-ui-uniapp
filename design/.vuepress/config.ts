@@ -21,6 +21,8 @@ export default defineUserConfig({
   bundler: viteBundler(),
 
   theme: defaultTheme({
+    repo: 'qiudeteng/lingyun-ui-uniapp',
+    repoLabel: 'GitHub',
     navbar: [
       { text: 'UI 规范', link: '/UI_SPEC.md' },
       { text: '组件清单', link: '/COMPONENTS.md' },

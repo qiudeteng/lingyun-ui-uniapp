@@ -9,6 +9,8 @@ export default defineUserConfig({
   description: '组件用法与示例',
   bundler: viteBundler(),
   theme: defaultTheme({
+    repo: 'qiudeteng/lingyun-ui-uniapp',
+    repoLabel: 'GitHub',
     navbar: [
       { text: '接入', link: '/guide/start.html' },
       { text: '组件', link: '/components/button.html' },
