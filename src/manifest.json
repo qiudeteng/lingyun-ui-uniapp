@@ -80,7 +80,7 @@
             }
         },
         "devServer" : {
-            "https" : true
+            "https" : false
         }
     },
     "locale" : "zh-Hans",

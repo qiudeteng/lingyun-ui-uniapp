@@ -13,7 +13,7 @@
     />
     <view
       v-for="(item, index) in normalizedItems"
-      :id="segmentId(item)"
+      :id="segmentId(index)"
       :key="item.key"
       class="lingyun-segmented-control__item"
       :class="{
@@ -181,9 +181,8 @@ export default {
     this.unbindThumbResize()
   },
   methods: {
-    segmentId(item) {
-      const safe = String(item.key).replace(/[^a-zA-Z0-9_-]/g, '_')
-      return `${this.instanceId}-${safe}`
+    segmentId(index) {
+      return `${this.instanceId}-seg-${index}`
     },
     prefersReducedMotion() {
       /* #ifdef H5 */
@@ -319,7 +318,8 @@ export default {
     },
     syncThumb(options) {
       const liquid = !!(options && options.liquid)
-      const active = this.normalizedItems.find((it) => this.isActive(it))
+      const activeIndex = this.normalizedItems.findIndex((it) => this.isActive(it))
+      const active = activeIndex >= 0 ? this.normalizedItems[activeIndex] : null
       if (!active) {
         this.stopLens()
         this.thumb.visible = false
@@ -331,7 +331,7 @@ export default {
           .in(this)
           .select(`#${this.trackId}`)
           .boundingClientRect()
-          .select(`#${this.segmentId(active)}`)
+          .select(`#${this.segmentId(activeIndex)}`)
           .boundingClientRect()
           .exec((res) => {
             const track = res && res[0]
