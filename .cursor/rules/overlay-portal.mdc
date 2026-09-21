@@ -1,0 +1,49 @@
+---
+description: 浮层组件必须 Teleport / root-portal，避免被 card·section overflow 裁切
+alwaysApply: true
+---
+
+# 浮层挂载（防裁切 · 强制）
+
+封装 **遮罩 + 面板** 类组件时（Alert / Sheet / Action Sheet / Toast / HUD / Popover / Menu / Picker 弹层 / 其它全屏或底部浮层）：
+
+## 硬规则
+
+1. **浮层 DOM 不得留在易裁切祖先内**。`lingyun-section` / list card / 多数容器有 `overflow: hidden`；`position: fixed` 在 H5 仍可能被祖先裁切。
+2. **挂载约定**（对齐 `lingyun-popover` / `lingyun-picker`）：
+   - **H5 / App**：`<teleport to="body">` 包住整块浮层（遮罩 + 面板）
+   - **mp-weixin**：`<root-portal>` 包住同一块浮层
+3. **主题**：浮层根节点自挂 `theme-light` / `theme-dark`（`useThemeStore().rootClass`），勿依赖页面祖先（styleIsolation）。
+4. **原生组件慎用**：如微信原生 `picker` 跟**系统** DarkMode，跟不上手动浅色 → 自绘 `picker-view` + 上列挂载。
+5. 玻璃面板仍按 `design/UI_SPEC.md` **§6.2-A.1**；不对玻璃节点写 `opacity` 显隐。
+
+## 参考实现
+
+- `lingyun-popover`、`lingyun-picker`（Teleport / root-portal）
+- `lingyun-alert` / `lingyun-sheets` / `lingyun-action-sheet`（自挂 `theme-*`）
+
+## ❌ 禁止
+
+```vue
+<!-- 浮层写在组件树内部，无 portal —— H5 会被 card 裁切 -->
+<view class="trigger">…</view>
+<view class="sheet fixed">…</view>
+```
+
+## ✅ 正确
+
+```vue
+<view class="trigger">…</view>
+<!-- #ifdef MP-WEIXIN -->
+<root-portal>
+  <view v-if="open" class="sheet">…</view>
+</root-portal>
+<!-- #endif -->
+<!-- #ifndef MP-WEIXIN -->
+<teleport to="body">
+  <view v-if="open" class="sheet">…</view>
+</teleport>
+<!-- #endif -->
+```
+
+自检：H5 在 section/card 内打开浮层须盖满视口；mp 与浅色/暗黑主题一致。

@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build / output
+dist/
+unpackage/
+*.local
+.output.js
+
+# Uni-app / HBuilderX
+.hbuilderx/
+.turbo/
+
+# Uni-app 本地模块（不提交）
+src/uni_modules/qiun-data-charts/
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# Logs & cache
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.cache/
+.temp/
+.tmp/
+
+# TypeScript / Vite
+*.tsbuildinfo
+vite.config.ts.timestamp-*
+
+# IDE / editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# Misc
+*.bak
+*.tmp

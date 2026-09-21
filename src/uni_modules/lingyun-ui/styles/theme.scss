@@ -1,0 +1,60 @@
+// 主题覆盖入口：在引入 styles/index.scss 之前 @import 本文件
+// 权威色板：Apple iOS 27 UI Kit · System Colors（Sketch）
+// @see https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02/color-variables?g=System%2520Colors
+// @see design/COLORS.md
+
+$lingyun-space-root: 2;
+$lingyun-radius-root: 5px;
+
+// —— System Accents（Light；与 Sketch 一一对应）——
+$lingyun-system-red: #ff383c;
+$lingyun-system-orange: #ff8d28;
+$lingyun-system-yellow: #ffcc00;
+$lingyun-system-green: #34c759;
+$lingyun-system-mint: #00c8b3;
+$lingyun-system-teal: #00c3d0;
+$lingyun-system-cyan: #00c0e8;
+$lingyun-system-blue: #0088ff;
+$lingyun-system-indigo: #6155f5;
+$lingyun-system-purple: #cb30e0;
+$lingyun-system-pink: #ff2d55;
+$lingyun-system-brown: #ac7f5e;
+
+// Dark accents（CSS 变量 / prefers-color-scheme 用）
+$lingyun-system-red-dark: #ff4245;
+$lingyun-system-orange-dark: #ff9230;
+$lingyun-system-yellow-dark: #ffd600;
+$lingyun-system-green-dark: #30d158;
+$lingyun-system-mint-dark: #00dac3;
+$lingyun-system-teal-dark: #00d2e0;
+$lingyun-system-cyan-dark: #3cd3fe;
+$lingyun-system-blue-dark: #0091ff;
+$lingyun-system-indigo-dark: #6d7cff;
+$lingyun-system-purple-dark: #db34f2;
+$lingyun-system-pink-dark: #ff375f;
+$lingyun-system-brown-dark: #b78a66;
+
+// —— 语义映射 ——
+$lingyun-primary: $lingyun-system-blue;
+$lingyun-success: $lingyun-system-green;
+$lingyun-warning: $lingyun-system-orange;
+$lingyun-error: $lingyun-system-red;
+$lingyun-info: #8e8e93;
+
+$lingyun-main-color: #000000;
+$lingyun-base-color: rgba(60, 60, 67, 0.6);
+$lingyun-secondary-color: rgba(60, 60, 67, 0.3);
+$lingyun-extra-color: rgba(60, 60, 67, 0.18);
+
+$lingyun-bg-color: #f2f2f7;
+
+$lingyun-border-1: #f2f2f7;
+$lingyun-border-2: #e5e5ea;
+$lingyun-border-3: #c6c6c8;
+$lingyun-border-4: #d1d1d6;
+
+$lingyun-black: #000000;
+$lingyun-white: #ffffff;
+$lingyun-transparent: rgba(#000000, 0);
+
+$lingyun-mask: rgba(0, 0, 0, 0.2);

@@ -1,0 +1,24 @@
+---
+description: 设计稿路径必须与 src/pages、src/components 一一对应；UI 强制 Liquid Glass
+globs: design/**/*,src/pages/**/*,src/components/**/*
+alwaysApply: false
+---
+
+# 设计路径映射 + Liquid Glass
+
+- 路径规则：[`design/README.md`](design/README.md)
+- **UI 强制规范**：[`design/UI_SPEC.md`](design/UI_SPEC.md)（始终另有 `liquid-glass-ui.mdc`）
+
+## 路径硬规则
+
+- `src/pages/<相对路径>/<name>.vue` ↔ `design/pages/<相对路径>/<name>.<设计扩展名>`
+- `src/components/<相对路径>/<name>.vue` ↔ `design/components/<相对路径>/<name>.<设计扩展名>`
+- 主文件名必须与对应 `.vue` 一致；变体用前缀：`index.empty.pen`
+- 禁止设计稿放在 `design/` 根目录或与源码无关的目录
+- 不为 `uni_modules` / `api` / `stores` / `utils` / `router` 建设计镜像
+- 重命名或移动页面/组件时，必须同步移动设计文件
+
+## UI 硬规则（摘要）
+
+- 设计稿控件/导航必须呈现 Liquid Glass（透光、模糊、高光、柔影、连续圆角）
+- 禁止交付纯实心扁平 / 厚黑阴影安卓风作为目标态

@@ -1,0 +1,51 @@
+---
+description: 强制所有自研与业务代码兼容微信小程序（mp-weixin）
+alwaysApply: true
+---
+
+# 微信小程序兼容（始终遵守）
+
+**微信小程序（`mp-weixin`）是本仓库的硬门禁目标端。**  
+凡写入 `src/`（含 `lingyun-ui`、页面、业务组件、utils、stores）的代码，必须以微信小程序可编译、可运行为前提；不得只在 H5 验证通过就交付。
+
+完整约定见 [`AGENTS.md`](../../AGENTS.md) §5 / §8。验证命令：`pnpm dev:mp-weixin`（或对应 build），用微信开发者工具打开 `dist/dev/mp-weixin`。
+
+## 硬规则
+
+1. **交付标准**：改动涉及 UI / 样式 / 模板 / 运行时 API 时，须按微信小程序约束编写；已知会破坏 WXSS/WXML/小程序运行时的写法禁止合入。
+2. **样式走 WXSS 子集**：自研与业务样式编译后须通过微信 WXSS 编译。常见禁区（非穷尽）：
+   - ❌ 通用选择器 `*`（如 `> *:first-child`）
+   - ❌ 标签选择器滥用到非小程序节点（优先 class；需要「首子」时写明确节点，如 `view:first-child`）
+   - ❌ 依赖仅 H5 的选择器 / 伪类 / 特性而不做小程序降级
+3. **模板与 API**：用 uni-app 多端能力（`view` / `scroll-view` / `uni.*` 等）；禁止裸用仅浏览器存在的 DOM/BOM API，除非用条件编译且小程序有等价路径。
+4. **条件编译**：`#ifdef MP-WEIXIN` / `#ifndef H5` 等仅用于真实平台差异；默认实现必须已能在微信跑，条件编译是补充不是逃避。
+5. **弱能力降级**：玻璃模糊等可按 `design/UI_SPEC.md` 在小程序降级视觉，但不得导致编译失败或白屏。
+6. **自定义导航状态栏 / 顶栏高度**（对齐 `uni-nav-bar`）：
+   - 状态栏用 **`uni.getWindowInfo().statusBarHeight`**（真机值）写 inline height；微信上 CSS `var(--status-bar-height)` **固定 25px**，真机不够用，不能单独依赖。
+   - 微信内容行高度：`胶囊 height + (胶囊 top - statusBarHeight) * 2`（`getMenuButtonBoundingClientRect`）。
+   - 不要用 `env(safe-area-inset-top)` 代替状态栏。
+7. **残留产物**：重命名/删除组件后清理或重建 `dist/dev/mp-weixin`，避免微信工具仍编译旧路径（如已删除的 `app-page`）。
+
+## 注意事项（踩坑复盘）
+
+完整条目见 [`design/UI_SPEC.md`](../../design/UI_SPEC.md) §6.2。小程序侧高频：
+
+1. **玻璃死白 / 完全不透**：浮层与透底控件用 `@include lingyun-glass-surface` + 全端 blur（写法见 `UI_SPEC` §6.2-A.1）；不要用 `lingyun-glass-regular` 实霜；**玻璃节点禁止 `opacity` 显隐**。真机优先于开发者工具验收半透明。
+2. **插槽 class 无样式**：组件 wxss 因 styleIsolation **打不到**页面插槽节点。`lingyun-section-row` 等须进全局 `_section-layout.scss`。
+3. **列表无分割线**：勿用自定义组件上的 `:last-child::after`；用父级登记 + 真实分割线节点（对齐 `uni-list`）。
+4. **伪元素图标变形**：复杂图标用真实子节点拼装，勿只靠 `::before/::after`。
+5. **手动暗黑无效**：须 `darkmode` + `theme.json` + 页面根 `.theme-*`（`lingyun-app-page`）+ `setBackgroundColor`；**浮层（Alert）还须自身挂 `theme-*`**，不能指望外部祖先选择器（styleIsolation）。
+6. **状态栏高度**：见上条硬规则 6；勿单独依赖 `--status-bar-height`。
+7. **列表 Leading**：有 Subtitle → 42、无 → 30；分割线 inset 62/74；同组勿混大小图标（详见 `design/LISTS.md` §4）。
+8. **顶栏占位 / 惯性回顶**：占位选择器进全局样式；回顶用 settle 对齐 `scrollTop`，勿中途改玻璃逻辑（详见 `design/TOOLBARS.md`、`UI_SPEC` §6.2-F）。
+9. **浮层被 card 裁切**：H5 须 `Teleport`→`body`，mp 须 `root-portal`（`overlay-portal.mdc`）；勿把固定浮层留在 `overflow:hidden` 祖先内。
+10. **原生 picker 跟系统黑**：手动浅色无效 → 自绘 `picker-view` + 上列挂载（见 `lingyun-picker`）。
+
+## 自检（改样式 / 组件 / 页面时）
+
+- [ ] 未使用 WXSS 不支持的选择器（尤其 `*`）
+- [ ] 未依赖仅 H5 的 DOM / CSS / API
+- [ ] 透底玻璃未误用 `lingyun-glass-regular` fallback
+- [ ] 插槽布局类不依赖组件隔离样式
+- [ ] 浮层已 Teleport / root-portal，且自挂 `theme-*`
+- [ ] `pnpm dev:mp-weixin` 可编译；微信开发者工具无 WXSS/WXML 报错；**半透明/主题以真机为准**

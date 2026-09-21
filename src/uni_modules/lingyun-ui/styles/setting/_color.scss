@@ -1,0 +1,287 @@
+
+// TODO 暂时不需要 class ，需要用户使用变量实现 ，如果使用类名其实并不推荐
+// @mixin get-styles($k,$c) {
+// 	@if $k == size or $k == weight{
+// 		font-#{$k}:#{$c}
+// 	}@else{
+// 		#{$k}:#{$c}
+// 	}
+// }
+$lingyun-ui-color:(
+	// 语义色
+	primary: $lingyun-primary,
+	primary-disable: $lingyun-primary-disable,
+	primary-light: $lingyun-primary-light,
+	success: $lingyun-success,
+	success-disable: $lingyun-success-disable,
+	success-light: $lingyun-success-light,
+	warning: $lingyun-warning,
+	warning-disable: $lingyun-warning-disable,
+	warning-light: $lingyun-warning-light,
+	error: $lingyun-error,
+	error-disable: $lingyun-error-disable,
+	error-light: $lingyun-error-light,
+	info: $lingyun-info,
+	info-disable: $lingyun-info-disable,
+	info-light: $lingyun-info-light,
+	// Labels
+	main-color: $lingyun-main-color,
+	base-color: $lingyun-base-color,
+	secondary-color: $lingyun-secondary-color,
+	extra-color: $lingyun-extra-color,
+	label: $lingyun-label,
+	label-secondary: $lingyun-label-secondary,
+	label-tertiary: $lingyun-label-tertiary,
+	label-quaternary: $lingyun-label-quaternary,
+	link: $lingyun-link,
+	// Backgrounds
+	bg-color: $lingyun-bg-color,
+	bg-primary: $lingyun-bg-primary,
+	bg-secondary: $lingyun-bg-secondary,
+	bg-tertiary: $lingyun-bg-tertiary,
+	bg-grouped: $lingyun-bg-grouped-primary,
+	// Borders / separators
+	border-1: $lingyun-border-1,
+	border-2: $lingyun-border-2,
+	border-3: $lingyun-border-3,
+	border-4: $lingyun-border-4,
+	separator: $lingyun-separator,
+	separator-opaque: $lingyun-separator-opaque,
+	// System Accents（Sketch）
+	system-red: $lingyun-system-red,
+	system-orange: $lingyun-system-orange,
+	system-yellow: $lingyun-system-yellow,
+	system-green: $lingyun-system-green,
+	system-mint: $lingyun-system-mint,
+	system-teal: $lingyun-system-teal,
+	system-cyan: $lingyun-system-cyan,
+	system-blue: $lingyun-system-blue,
+	system-indigo: $lingyun-system-indigo,
+	system-purple: $lingyun-system-purple,
+	system-pink: $lingyun-system-pink,
+	system-brown: $lingyun-system-brown,
+	system-gray: $lingyun-system-gray,
+	system-gray2: $lingyun-system-gray2,
+	system-gray3: $lingyun-system-gray3,
+	system-gray4: $lingyun-system-gray4,
+	system-gray5: $lingyun-system-gray5,
+	system-gray6: $lingyun-system-gray6,
+	// 常规
+	black:$lingyun-black,
+	white:$lingyun-white,
+	transparent:$lingyun-transparent
+) !default;
+@each $key, $child in $lingyun-ui-color {
+	.lingyun-#{"" + $key} {
+		color: $child;
+	}
+	.lingyun-#{"" + $key}-bg {
+		background-color: $child;
+	}
+}
+.lingyun-shadow-sm {
+	box-shadow: $lingyun-shadow-sm;
+}
+.lingyun-shadow-base {
+	box-shadow: $lingyun-shadow-base;
+}
+.lingyun-shadow-lg {
+	box-shadow: $lingyun-shadow-lg;
+}
+.lingyun-mask {
+	background-color:$lingyun-mask;
+}
+
+/* CSS 变量：系统 prefers-color-scheme + 手动 .theme-light / .theme-dark / data-theme */
+@mixin lingyun-theme-light-vars {
+	color-scheme: light;
+	--lingyun-system-red: #{$lingyun-system-red};
+	--lingyun-system-orange: #{$lingyun-system-orange};
+	--lingyun-system-yellow: #{$lingyun-system-yellow};
+	--lingyun-system-green: #{$lingyun-system-green};
+	--lingyun-system-mint: #{$lingyun-system-mint};
+	--lingyun-system-teal: #{$lingyun-system-teal};
+	--lingyun-system-cyan: #{$lingyun-system-cyan};
+	--lingyun-system-blue: #{$lingyun-system-blue};
+	--lingyun-system-indigo: #{$lingyun-system-indigo};
+	--lingyun-system-purple: #{$lingyun-system-purple};
+	--lingyun-system-pink: #{$lingyun-system-pink};
+	--lingyun-system-brown: #{$lingyun-system-brown};
+	--lingyun-system-gray: #{$lingyun-system-gray};
+	--lingyun-system-gray2: #{$lingyun-system-gray2};
+	--lingyun-system-gray3: #{$lingyun-system-gray3};
+	--lingyun-system-gray4: #{$lingyun-system-gray4};
+	--lingyun-system-gray5: #{$lingyun-system-gray5};
+	--lingyun-system-gray6: #{$lingyun-system-gray6};
+	--lingyun-primary: #{$lingyun-primary};
+	--lingyun-success: #{$lingyun-success};
+	--lingyun-warning: #{$lingyun-warning};
+	--lingyun-error: #{$lingyun-error};
+	--lingyun-info: #{$lingyun-info};
+	--lingyun-label: #{$lingyun-label};
+	--lingyun-label-secondary: #{$lingyun-label-secondary};
+	--lingyun-label-tertiary: #{$lingyun-label-tertiary};
+	--lingyun-label-quaternary: #{$lingyun-label-quaternary};
+	--lingyun-label-quinary: #{$lingyun-label-quinary};
+	--lingyun-label-glass: #{$lingyun-label-glass};
+	--lingyun-label-glass-secondary: #{$lingyun-label-glass-secondary};
+	--lingyun-label-glass-tertiary: #{$lingyun-label-glass-tertiary};
+	--lingyun-label-glass-quaternary: #{$lingyun-label-glass-quaternary};
+	--lingyun-main-color: #{$lingyun-label};
+	--lingyun-base-color: #{$lingyun-label-secondary};
+	--lingyun-link: #{$lingyun-link};
+	--lingyun-bg-primary: #{$lingyun-bg-primary};
+	--lingyun-bg-secondary: #{$lingyun-bg-secondary};
+	--lingyun-bg-tertiary: #{$lingyun-bg-tertiary};
+	--lingyun-bg-color: #{$lingyun-bg-secondary};
+	--lingyun-bg-grouped-primary: #{$lingyun-bg-grouped-primary};
+	--lingyun-bg-grouped-secondary: #{$lingyun-bg-grouped-secondary};
+	/* Swipe Row 灰胶囊：浅 #E5E5EA；按钮区白卡 */
+	--lingyun-swipe-row-bg: #{$lingyun-system-gray5};
+	--lingyun-swipe-reveal-bg: #{$lingyun-bg-grouped-secondary};
+	--lingyun-separator: #{$lingyun-separator};
+	--lingyun-separator-opaque: #{$lingyun-separator-opaque};
+	--lingyun-separator-vibrant: #{$lingyun-separator-vibrant};
+	--lingyun-fill: #{$lingyun-fill};
+	--lingyun-fill-secondary: #{$lingyun-fill-secondary};
+	--lingyun-fill-tertiary: #{$lingyun-fill-tertiary};
+	--lingyun-fill-quaternary: #{$lingyun-fill-quaternary};
+	--lingyun-fill-quinary: #{$lingyun-fill-quinary};
+	--lingyun-placeholder-text: #{$lingyun-placeholder-text};
+	--lingyun-primary-soft: #{rgba($lingyun-system-blue, 0.14)};
+	--lingyun-primary-soft-border: #{rgba($lingyun-system-blue, 0.22)};
+	--lingyun-error-soft: #{rgba($lingyun-system-red, 0.12)};
+	--lingyun-error-soft-border: #{rgba($lingyun-system-red, 0.2)};
+	--lingyun-success-soft: #{rgba($lingyun-system-green, 0.12)};
+	--lingyun-success-soft-border: #{rgba($lingyun-system-green, 0.2)};
+	--lingyun-warning-soft: #{rgba($lingyun-system-orange, 0.12)};
+	--lingyun-warning-soft-border: #{rgba($lingyun-system-orange, 0.2)};
+	--lingyun-cancel-fill: #{rgba($lingyun-label-secondary, 0.85)};
+	--lingyun-mask: #{$lingyun-mask};
+	--lingyun-glass-regular-bg: #{$lingyun-glass-regular-bg};
+	--lingyun-glass-clear-bg: #{$lingyun-glass-clear-bg};
+	--lingyun-glass-fallback-bg: #{$lingyun-glass-fallback-bg};
+	--lingyun-glass-hairline: #{$lingyun-glass-hairline};
+	--lingyun-glass-highlight: #{$lingyun-glass-highlight};
+	--lingyun-glass-shadow: #{$lingyun-glass-shadow};
+	--lingyun-glass-shadow-raised: #{$lingyun-glass-shadow-raised};
+	--lingyun-glass-control-bg: #{$lingyun-glass-control-bg};
+	--lingyun-glass-control-bg-pressed: #{$lingyun-glass-control-bg-pressed};
+	--lingyun-glass-control-ring: #{$lingyun-glass-control-ring};
+	--lingyun-glass-control-shadow: #{$lingyun-glass-control-shadow};
+	--lingyun-glass-control-lens: #{$lingyun-glass-control-lens};
+}
+
+@mixin lingyun-theme-dark-vars {
+	color-scheme: dark;
+	--lingyun-system-red: #{$lingyun-system-red-dark};
+	--lingyun-system-orange: #{$lingyun-system-orange-dark};
+	--lingyun-system-yellow: #{$lingyun-system-yellow-dark};
+	--lingyun-system-green: #{$lingyun-system-green-dark};
+	--lingyun-system-mint: #{$lingyun-system-mint-dark};
+	--lingyun-system-teal: #{$lingyun-system-teal-dark};
+	--lingyun-system-cyan: #{$lingyun-system-cyan-dark};
+	--lingyun-system-blue: #{$lingyun-system-blue-dark};
+	--lingyun-system-indigo: #{$lingyun-system-indigo-dark};
+	--lingyun-system-purple: #{$lingyun-system-purple-dark};
+	--lingyun-system-pink: #{$lingyun-system-pink-dark};
+	--lingyun-system-brown: #{$lingyun-system-brown-dark};
+	--lingyun-system-gray: #{$lingyun-system-gray-dark};
+	--lingyun-system-gray2: #{$lingyun-system-gray2-dark};
+	--lingyun-system-gray3: #{$lingyun-system-gray3-dark};
+	--lingyun-system-gray4: #{$lingyun-system-gray4-dark};
+	--lingyun-system-gray5: #{$lingyun-system-gray5-dark};
+	--lingyun-system-gray6: #{$lingyun-system-gray6-dark};
+	--lingyun-primary: #{$lingyun-system-blue-dark};
+	--lingyun-success: #{$lingyun-system-green-dark};
+	--lingyun-warning: #{$lingyun-system-orange-dark};
+	--lingyun-error: #{$lingyun-system-red-dark};
+	--lingyun-info: #{$lingyun-system-gray-dark};
+	--lingyun-label: #{$lingyun-label-dark};
+	--lingyun-label-secondary: #{$lingyun-label-secondary-dark};
+	--lingyun-label-tertiary: #{$lingyun-label-tertiary-dark};
+	--lingyun-label-quaternary: #{$lingyun-label-quaternary-dark};
+	--lingyun-label-quinary: #{$lingyun-label-quinary-dark};
+	--lingyun-label-glass: #{$lingyun-label-glass-dark};
+	--lingyun-label-glass-secondary: #{$lingyun-label-glass-secondary-dark};
+	--lingyun-label-glass-tertiary: #{$lingyun-label-glass-tertiary-dark};
+	--lingyun-label-glass-quaternary: #{$lingyun-label-glass-quaternary-dark};
+	--lingyun-main-color: #{$lingyun-label-dark};
+	--lingyun-base-color: #{$lingyun-label-secondary-dark};
+	--lingyun-link: #{$lingyun-link-dark};
+	--lingyun-bg-primary: #{$lingyun-bg-primary-dark};
+	--lingyun-bg-secondary: #{$lingyun-bg-secondary-dark};
+	--lingyun-bg-tertiary: #{$lingyun-bg-tertiary-dark};
+	--lingyun-bg-color: #{$lingyun-bg-secondary-dark};
+	--lingyun-bg-grouped-primary: #{$lingyun-bg-grouped-primary-dark};
+	--lingyun-bg-grouped-secondary: #{$lingyun-bg-grouped-secondary-dark};
+	/* Swipe：与浅色同语义——Row=Gray5 #2C2C2E，按钮区=卡片 Secondary #1C1C1E（勿用 Primary 黑，否则像颜色反了） */
+	--lingyun-swipe-row-bg: #{$lingyun-system-gray5-dark};
+	--lingyun-swipe-reveal-bg: #{$lingyun-bg-grouped-secondary-dark};
+	--lingyun-separator: #{$lingyun-separator-dark};
+	--lingyun-separator-opaque: #{$lingyun-separator-opaque-dark};
+	--lingyun-separator-vibrant: #{$lingyun-separator-vibrant-dark};
+	--lingyun-fill: #{$lingyun-fill-dark};
+	--lingyun-fill-secondary: #{$lingyun-fill-secondary-dark};
+	--lingyun-fill-tertiary: #{$lingyun-fill-tertiary-dark};
+	--lingyun-fill-quaternary: #{$lingyun-fill-quaternary-dark};
+	--lingyun-fill-quinary: #{$lingyun-fill-quinary-dark};
+	--lingyun-placeholder-text: #{$lingyun-placeholder-text-dark};
+	--lingyun-primary-soft: #{rgba($lingyun-system-blue-dark, 0.22)};
+	--lingyun-primary-soft-border: #{rgba($lingyun-system-blue-dark, 0.32)};
+	--lingyun-error-soft: #{rgba($lingyun-system-red-dark, 0.2)};
+	--lingyun-error-soft-border: #{rgba($lingyun-system-red-dark, 0.32)};
+	--lingyun-success-soft: #{rgba($lingyun-system-green-dark, 0.2)};
+	--lingyun-success-soft-border: #{rgba($lingyun-system-green-dark, 0.32)};
+	--lingyun-warning-soft: #{rgba($lingyun-system-orange-dark, 0.2)};
+	--lingyun-warning-soft-border: #{rgba($lingyun-system-orange-dark, 0.32)};
+	--lingyun-cancel-fill: #{rgba($lingyun-label-secondary-dark, 0.85)};
+	--lingyun-mask: #{$lingyun-overlay-dark};
+	--lingyun-glass-regular-bg: #{$lingyun-glass-regular-bg-dark};
+	--lingyun-glass-clear-bg: #{$lingyun-glass-clear-bg-dark};
+	--lingyun-glass-fallback-bg: #{$lingyun-glass-fallback-bg-dark};
+	--lingyun-glass-hairline: #{$lingyun-glass-hairline-dark};
+	--lingyun-glass-highlight: #{$lingyun-glass-highlight-dark};
+	--lingyun-glass-shadow: #{$lingyun-glass-shadow-dark};
+	--lingyun-glass-shadow-raised: #{$lingyun-glass-shadow-raised-dark};
+	--lingyun-glass-control-bg: #{$lingyun-glass-control-bg-dark};
+	--lingyun-glass-control-bg-pressed: #{$lingyun-glass-control-bg-pressed-dark};
+	--lingyun-glass-control-ring: #{$lingyun-glass-control-ring-dark};
+	--lingyun-glass-control-shadow: #{$lingyun-glass-control-shadow-dark};
+	--lingyun-glass-control-lens: #{$lingyun-glass-control-lens-dark};
+}
+
+page,
+:root {
+	@include lingyun-theme-light-vars;
+}
+
+@media (prefers-color-scheme: dark) {
+	page,
+	:root {
+		@include lingyun-theme-dark-vars;
+	}
+}
+
+/* 手动浅色：覆盖系统 Dark */
+html.theme-light,
+html.theme-light page,
+html[data-theme='light'],
+html[data-theme='light'] page,
+page.theme-light,
+:root.theme-light,
+.theme-light {
+	@include lingyun-theme-light-vars;
+}
+
+/* 手动暗黑：覆盖系统 Light */
+html.theme-dark,
+html.theme-dark page,
+html[data-theme='dark'],
+html[data-theme='dark'] page,
+page.theme-dark,
+:root.theme-dark,
+.theme-dark {
+	@include lingyun-theme-dark-vars;
+}
+

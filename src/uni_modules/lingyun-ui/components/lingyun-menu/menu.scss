@@ -1,0 +1,136 @@
+/* Sketch Menus/Light/iPhone。玻璃在外层面板，这里只排行。 */
+
+.lingyun-menu {
+  display: flex;
+  flex-direction: column;
+}
+
+.lingyun-menu__item {
+  box-sizing: border-box;
+  min-height: 42px;
+  padding: 0 2px 0 10px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border-radius: 22px;
+}
+
+.lingyun-menu__item--sub {
+  min-height: 60px;
+}
+
+.lingyun-menu__item--hover,
+.lingyun-menu__control--hover {
+  background-color: var(--lingyun-fill-secondary, rgba(120, 120, 128, 0.16));
+}
+
+.lingyun-menu__symbol {
+  width: 24px;
+  height: 20px;
+  margin-right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lingyun-menu__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.lingyun-menu__label {
+  display: block;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 20px;
+  color: var(--lingyun-label, #000000);
+  white-space: pre-line;
+}
+
+.lingyun-menu__subtitle {
+  margin-top: 0;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 16px;
+  color: var(--lingyun-label-secondary, rgba(60, 60, 67, 0.6));
+}
+
+.lingyun-menu__item--destructive .lingyun-menu__label {
+  color: var(--lingyun-system-red, #ff383c);
+}
+
+.lingyun-menu__item--disabled .lingyun-menu__label,
+.lingyun-menu__item--disabled .lingyun-menu__subtitle,
+.lingyun-menu__control--disabled .lingyun-menu__control-label {
+  color: var(--lingyun-label-tertiary, rgba(60, 60, 67, 0.3));
+}
+
+.lingyun-menu__trail {
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+
+.lingyun-menu__sep {
+  box-sizing: border-box;
+  height: 21px;
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.lingyun-menu__sep-line {
+  height: 1px;
+  background-color: var(--lingyun-separator, rgba(0, 0, 0, 0.12));
+}
+
+.lingyun-menu__heading {
+  box-sizing: border-box;
+  min-height: 27px;
+  padding: 10px 2px 2px 10px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.lingyun-menu__heading-text {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 15px;
+  color: var(--lingyun-label-secondary, rgba(60, 60, 67, 0.6));
+}
+
+.lingyun-menu__controls {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.lingyun-menu__control {
+  flex: 1;
+  min-height: 57px;
+  padding: 0 8px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 22px;
+}
+
+.lingyun-menu__control-label {
+  margin-top: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 13px;
+  text-align: center;
+  color: var(--lingyun-label, #000000);
+}
+
+.lingyun-menu__control--destructive .lingyun-menu__control-label {
+  color: var(--lingyun-system-red, #ff383c);
+}

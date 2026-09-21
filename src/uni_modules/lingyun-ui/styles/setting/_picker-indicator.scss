@@ -1,0 +1,22 @@
+/**
+ * picker-view 选中行默认上下边线（微信 ::before / ::after）
+ * indicator-class 打在原生节点上，须全局样式（styleIsolation 打不到）
+ */
+.lingyun-picker-sheet__indicator,
+.lingyun-data-picker-sheet__indicator {
+  border: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  background: transparent !important;
+}
+
+.lingyun-picker-sheet__indicator::before,
+.lingyun-picker-sheet__indicator::after,
+.lingyun-data-picker-sheet__indicator::before,
+.lingyun-data-picker-sheet__indicator::after {
+  display: none !important;
+  border: none !important;
+  border-width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}

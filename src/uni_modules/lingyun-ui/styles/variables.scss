@@ -1,0 +1,55 @@
+@import './setting/_variables.scss';
+@import './setting/_glass.scss';
+
+// 可在本文件覆盖默认 token（组件与工具类都会吃到）
+// 默认已对齐 Apple System Colors，见 theme.scss / setting/_system-colors.scss / design/COLORS.md
+
+$lingyun-space-root: 2;
+$lingyun-radius-root: 5px;
+
+// 语义色（引用 System Colors；勿再写 Tailwind 式第三方色）
+$lingyun-primary: $lingyun-system-blue;
+$lingyun-primary-disable: mix(#fff, $lingyun-primary, 50%);
+$lingyun-primary-light: mix(#fff, $lingyun-primary, 80%);
+
+$lingyun-success: $lingyun-system-green;
+$lingyun-success-disable: mix(#fff, $lingyun-success, 50%);
+$lingyun-success-light: mix(#fff, $lingyun-success, 80%);
+
+$lingyun-warning: $lingyun-system-orange;
+$lingyun-warning-disable: mix(#fff, $lingyun-warning, 50%);
+$lingyun-warning-light: mix(#fff, $lingyun-warning, 80%);
+
+$lingyun-error: $lingyun-system-red;
+$lingyun-error-disable: mix(#fff, $lingyun-error, 50%);
+$lingyun-error-light: mix(#fff, $lingyun-error, 80%);
+
+$lingyun-info: $lingyun-system-gray;
+$lingyun-info-disable: mix(#fff, $lingyun-info, 50%);
+$lingyun-info-light: mix(#fff, $lingyun-info, 80%);
+
+$lingyun-main-color: $lingyun-label;
+$lingyun-base-color: $lingyun-label-secondary;
+$lingyun-secondary-color: $lingyun-label-tertiary;
+$lingyun-extra-color: $lingyun-label-quaternary;
+
+$lingyun-border-1: $lingyun-system-gray6;
+$lingyun-border-2: $lingyun-system-gray5;
+$lingyun-border-3: $lingyun-separator-opaque;
+$lingyun-border-4: $lingyun-system-gray4;
+
+$lingyun-black: #000000;
+$lingyun-white: #ffffff;
+$lingyun-transparent: rgba(#000000, 0);
+
+$lingyun-bg-color: $lingyun-bg-secondary;
+
+$lingyun-spacing-sm: 8px;
+$lingyun-spacing-base: 15px;
+$lingyun-spacing-lg: 30px;
+
+$lingyun-shadow-sm: 0 0 5px rgba(#d8d8d8, 0.5);
+$lingyun-shadow-base: 0 1px 8px 1px rgba(#a5a5a5, 0.2);
+$lingyun-shadow-lg: 0px 1px 10px 2px rgba(#a5a4a4, 0.5);
+
+$lingyun-mask: $lingyun-overlay;

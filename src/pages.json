@@ -1,0 +1,275 @@
+{
+	"pages": [
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "凌云UI",
+				"navigationStyle": "custom"
+			}
+		},
+
+		{
+			"path": "pages/demo/buttons",
+			"style": {
+				"navigationBarTitleText": "Buttons",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/icons",
+			"style": {
+				"navigationBarTitleText": "Icons",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/tabbars",
+			"style": {
+				"navigationBarTitleText": "Tab Bars",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/search-bar",
+			"style": {
+				"navigationBarTitleText": "Search Bar",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/lists",
+			"style": {
+				"navigationBarTitleText": "Lists",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/swipe-actions",
+			"style": {
+				"navigationBarTitleText": "Swipe Actions",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/alerts",
+			"style": {
+				"navigationBarTitleText": "Alerts",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/badges",
+			"style": {
+				"navigationBarTitleText": "Badges",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/segmented-controls",
+			"style": {
+				"navigationBarTitleText": "Segmented Controls",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/toolbars",
+			"style": {
+				"navigationBarTitleText": "Toolbars",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/sheets",
+			"style": {
+				"navigationBarTitleText": "Sheets",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/action-sheets",
+			"style": {
+				"navigationBarTitleText": "Action Sheets",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/activity-views",
+			"style": {
+				"navigationBarTitleText": "Activity Views",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/text-fields",
+			"style": {
+				"navigationBarTitleText": "Text Fields",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/forms",
+			"style": {
+				"navigationBarTitleText": "Forms",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/activity-indicator",
+			"style": {
+				"navigationBarTitleText": "Activity Indicator",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/toasts",
+			"style": {
+				"navigationBarTitleText": "Toast & HUD",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/progress",
+			"style": {
+				"navigationBarTitleText": "Progress",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/empty",
+			"style": {
+				"navigationBarTitleText": "Empty",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/sections",
+			"style": {
+				"navigationBarTitleText": "Sections",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/pickers",
+			"style": {
+				"navigationBarTitleText": "Pickers",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/date-time-pickers",
+			"style": {
+				"navigationBarTitleText": "Date & Time",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/switches",
+			"style": {
+				"navigationBarTitleText": "Switch & Stepper",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/checks",
+			"style": {
+				"navigationBarTitleText": "Checkbox & Radio",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/sliders",
+			"style": {
+				"navigationBarTitleText": "Slider",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/tags",
+			"style": {
+				"navigationBarTitleText": "Tags & Chips",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/texts",
+			"style": {
+				"navigationBarTitleText": "Text",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/images",
+			"style": {
+				"navigationBarTitleText": "Image",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/avatars",
+			"style": {
+				"navigationBarTitleText": "Avatars",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/page-controls",
+			"style": {
+				"navigationBarTitleText": "Page Control",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/skeletons",
+			"style": {
+				"navigationBarTitleText": "Skeleton",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/refresh",
+			"style": {
+				"navigationBarTitleText": "Refresh",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/popovers",
+			"style": {
+				"navigationBarTitleText": "Popover",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/menus",
+			"style": {
+				"navigationBarTitleText": "Menus",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/sidebars",
+			"style": {
+				"navigationBarTitleText": "Sidebar",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/fab",
+			"style": {
+				"navigationBarTitleText": "Fab",
+				"navigationStyle": "custom"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationStyle": "custom",
+		"navigationBarTitleText": "凌云UI",
+		"navigationBarBackgroundColor": "@navBgColor",
+		"navigationBarTextStyle": "@navTxtStyle",
+		"backgroundColor": "@bgColor",
+		"backgroundTextStyle": "@bgTxtStyle",
+		"backgroundColorTop": "@bgColorTop",
+		"backgroundColorBottom": "@bgColorBottom"
+	},
+	"uniIdRouter": {}
+}

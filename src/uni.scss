@@ -1,0 +1,53 @@
+/* ============================================================
+ * 内置主题 —— 全局混入的 uni.scss
+ * 该文件被 uni-app 全局注入，任何页面/组件的 scss 中均可直接使用下列变量与 mixin。
+ * 顶部色板由 create-uni-app 依据所选主题注入。
+ * ============================================================ */
+
+/* 品牌色 —— 对齐 Apple System Colors（Sketch iOS 27） */
+$uni-color-primary: #0088ff;
+$uni-color-success: #34c759;
+$uni-color-warning: #ff8d28;
+$uni-color-error: #ff383c;
+$uni-bg-color: #f2f2f7;
+
+/* 文字 —— Labels */
+$uni-text-color: #000000;
+$uni-text-color-grey: rgba(60, 60, 67, 0.6);
+$uni-text-color-placeholder: rgba(60, 60, 67, 0.3);
+$uni-text-color-disable: rgba(60, 60, 67, 0.18);
+$uni-text-color-inverse: #fff;
+
+/* 背景 */
+$uni-bg-color-grey: #f2f2f7;
+$uni-bg-color-hover: #e5e5ea;
+
+/* 边框 */
+$uni-border-color: #c6c6c8;
+
+/* 尺寸：1pt = 1px，禁止 rpx */
+$uni-font-size-sm: 12px;
+$uni-font-size-base: 14px;
+$uni-font-size-lg: 16px;
+
+/* 圆角与间距 */
+$uni-radius-sm: 4px;
+$uni-radius-base: 6px;
+$uni-spacing-row-sm: 5px;
+$uni-spacing-row-base: 10px;
+$uni-spacing-col-base: 10px;
+
+/* 常用 mixin：单行省略 */
+@mixin uni-ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 常用 mixin：多行省略 */
+@mixin uni-ellipsis-lines($lines: 2) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: $lines;
+  overflow: hidden;
+}

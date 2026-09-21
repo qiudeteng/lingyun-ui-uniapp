@@ -1,0 +1,5 @@
+@media (min-width: 1180px) {
+  body.has-phone-preview main.vp-page {
+    padding-right: var(--ly-phone-pad, 360px);
+  }
+}

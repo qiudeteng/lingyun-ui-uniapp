@@ -1,0 +1,434 @@
+var MIN_DISTANCE = 10;
+/** 灰胶囊 opacity：横向位移约该距离内 0→1；只改独立空节点，不碰按钮 */
+var CAPSULE_FADE_PX = 32;
+/** 横向跟手后，纵向位移超过该值视为滑出当前行 → 立即按阈值结算（避免 H5/真机丢 end 卡半开） */
+var LEAVE_ROW_Y = 40;
+var CAPSULE_SETTLE_TRANSITION = 'opacity 0.3s cubic-bezier(0.165, 0.84, 0.44, 1)'
+
+/**
+ * 判断当前是否为H5、app-vue
+ */
+var IS_HTML5 = false
+if (typeof window === 'object') IS_HTML5 = true
+
+/**
+ * 分割线：滑动一开始（胶囊 progress>0）就藏本行顶线 + 下一行顶线（视觉上的底边）。
+ * 下一行走 hideDividerFromPrev，不覆盖邻居自己的 hideDivider。
+ * 走 callMethod → list-item inject 的 swipeSurface，避免在 `__content` 上 Vue/WXS 抢 class。
+ */
+function setDividersHidden(ownerInstance, state, hide) {
+	var flag = hide ? 1 : 0
+	if (state.dividersHidden === flag) return
+	state.dividersHidden = flag
+	ownerInstance.callMethod('setSwipeDividersHidden', {
+		hide: flag === 1
+	})
+}
+
+/**
+ * 手势结算：松手 / cancel / 纵向滑出本行 共用。
+ * ❌ 手势中途不要 setData 改 scroll-y（H5 与小程序都会打断触摸导致卡半开）。
+ */
+function settleGesture(ownerInstance, instance) {
+	var state = instance.getState()
+	if (!state.touching) return
+	state.touching = false
+	moveDirection(state.left, instance, ownerInstance)
+}
+
+function capsuleProgressByLeft(left) {
+	var abs = left < 0 ? -left : left
+	if (abs >= CAPSULE_FADE_PX) return 1
+	return abs / CAPSULE_FADE_PX
+}
+
+/**
+ * 灰胶囊 opacity（跟手 / 定型）。
+ * 只碰 `__row-bg` 的 opacity；同步分割线显隐；❌ 不碰按钮组。
+ */
+function setCapsuleOpacity(ownerInstance, state, opacity, animated) {
+	var next = opacity
+	if (next < 0) next = 0
+	if (next > 1) next = 1
+	if (!animated && state.capsuleProgress === next) return
+	state.capsuleProgress = next
+	/* progress>0 即藏上下分割线（与胶囊同步出现） */
+	setDividersHidden(ownerInstance, state, next > 0)
+	var bg = ownerInstance.selectComponent('.lingyun-swipe-action-item__row-bg')
+	if (!bg) return
+	if (state.bgClassOpen) {
+		bg.removeClass('lingyun-swipe-action-item__row-bg--open')
+		state.bgClassOpen = 0
+	}
+	bg.setStyle({
+		opacity: '' + next,
+		transition: animated ? CAPSULE_SETTLE_TRANSITION : 'none'
+	})
+}
+
+/**
+ * 监听页面内值的变化,主要用于动态开关swipe-action
+ * @param {Object} newValue
+ * @param {Object} oldValue
+ * @param {Object} ownerInstance
+ * @param {Object} instance
+ */
+function showWatch(newVal, oldVal, ownerInstance, instance) {
+	var state = instance.getState()
+	getDom(instance, ownerInstance)
+	if (newVal && newVal !== 'none') {
+		openState(newVal, instance, ownerInstance)
+		return
+	}
+
+	if (state.left) {
+		openState('none', instance, ownerInstance)
+	}
+	resetTouchStatus(instance)
+}
+
+/**
+ * 开始触摸操作
+ * @param {Object} e
+ * @param {Object} ins
+ */
+function touchstart(e, ownerInstance) {
+	var instance = e.instance;
+	var disabled = instance.getDataset().disabled
+	var state = instance.getState();
+	getDom(instance, ownerInstance)
+	// fix by mehaotian, TODO 兼容 app-vue 获取dataset为字符串 , h5 获取 为 undefined 的问题,待框架修复
+	disabled = (typeof(disabled) === 'string' ? JSON.parse(disabled) : disabled) || false;
+	if (disabled) return
+	/* 兜底：上一手势若未正常结算，先收口（避免残留半开） */
+	if (state.touching) {
+		settleGesture(ownerInstance, instance)
+	}
+	/* 标记本次手势已正常起始：没有 touchstart 就不认 move / end，见下方 touchmove */
+	state.touching = true
+	// 开始触摸时移除动画类
+	instance.requestAnimationFrame(function() {
+		instance.removeClass('ani');
+		ownerInstance.callMethod('closeSwipe');
+	})
+
+	// 记录上次的位置
+	state.x = state.left || 0
+	// 计算滑动开始位置
+	stopTouchStart(e, ownerInstance)
+}
+
+/**
+ * 开始滑动操作
+ * @param {Object} e
+ * @param {Object} ownerInstance
+ */
+function touchmove(e, ownerInstance) {
+	var instance = e.instance;
+	var disabled = instance.getDataset().disabled
+	var state = instance.getState()
+	// fix by mehaotian, TODO 兼容 app-vue 获取dataset为字符串 , h5 获取 为 undefined 的问题,待框架修复
+	disabled = (typeof(disabled) === 'string' ? JSON.parse(disabled) : disabled) || false;
+	if (disabled) return
+	/*
+	 * 没收到过 touchstart 就直接丢弃：此时 startX / state.x 还是上一次手势的残留值，
+	 * 拿它算 deltaX 会把行推到乱位（按钮 catch 掉 touchstart 时曾出现过）。
+	 */
+	if (!state.touching) return
+	// 是否可以滑动页面
+	stopTouchMove(e);
+	if (state.direction !== 'horizontal') {
+		return;
+	}
+
+	/*
+	 * 纵向已明显离开本行：立刻按阈值开/关。
+	 * H5 斜滑出界时常丢 touchend/touchcancel；等松手会卡在半开。
+	 */
+	if (state.offsetY >= LEAVE_ROW_Y) {
+		settleGesture(ownerInstance, instance)
+		if (e.preventDefault) {
+			e.preventDefault()
+		}
+		return false
+	}
+
+	if (e.preventDefault) {
+		// H5：阻止页面滚动
+		e.preventDefault()
+	}
+	/* 小程序 WXS：return false ≈ catch + preventDefault，拦住 scroll-view 跟手滚动 */
+	move(state.x + state.deltaX, instance, ownerInstance, true)
+	return false
+}
+
+/**
+ * 结束触摸操作
+ * @param {Object} e
+ * @param {Object} ownerInstance
+ */
+function touchend(e, ownerInstance) {
+	var instance = e.instance;
+	var disabled = instance.getDataset().disabled
+	var state = instance.getState()
+	// fix by mehaotian, TODO 兼容 app-vue 获取dataset为字符串 , h5 获取 为 undefined 的问题,待框架修复
+	disabled = (typeof(disabled) === 'string' ? JSON.parse(disabled) : disabled) || false;
+
+	if (disabled) return
+	settleGesture(ownerInstance, instance)
+}
+
+/**
+ * 触摸被系统取消（斜滑出界、scroll-view 抢手势等）
+ * 必须与 touchend 同样结算，否则会卡在半开。
+ */
+function touchcancel(e, ownerInstance) {
+	touchend(e, ownerInstance)
+}
+
+/**
+ * 设置移动距离
+ * @param {Boolean} followCapsule 跟手时 true；定型 ani 时 false（opacity 由 setCapsuleOpacity 单独落到 0/1）
+ */
+function move(value, instance, ownerInstance, followCapsule) {
+	value = value || 0
+	var state = instance.getState()
+	var leftWidth = state.leftWidth
+	var rightWidth = state.rightWidth
+	state.left = range(value, -rightWidth, leftWidth);
+	var progress = followCapsule ? capsuleProgressByLeft(state.left) : -1
+	instance.requestAnimationFrame(function() {
+		instance.setStyle({
+			transform: 'translateX(' + state.left + 'px)',
+			'-webkit-transform': 'translateX(' + state.left + 'px)'
+		})
+		if (followCapsule) {
+			setCapsuleOpacity(ownerInstance, state, progress, false)
+		}
+	})
+}
+
+/**
+ * 获取元素信息
+ * @param {Object} instance
+ * @param {Object} ownerInstance
+ */
+function getDom(instance, ownerInstance) {
+	var state = instance.getState()
+	var leftDom = ownerInstance.selectComponent('.button-group--left')
+	var rightDom = ownerInstance.selectComponent('.button-group--right')
+	var leftStyles = {
+		width: 0
+	}
+	var rightStyles = {
+		width: 0
+	}
+
+	if (leftDom) {
+		leftStyles = leftDom.getBoundingClientRect()
+	}
+
+	if (rightDom) {
+		rightStyles = rightDom.getBoundingClientRect()
+	}
+	state.leftWidth = leftStyles.width || 0
+	state.rightWidth = rightStyles.width || 0
+	state.threshold = instance.getDataset().threshold
+}
+
+/**
+ * 获取范围
+ * @param {Object} num
+ * @param {Object} min
+ * @param {Object} max
+ */
+function range(num, min, max) {
+	return Math.min(Math.max(num, min), max);
+}
+
+
+/**
+ * 移动方向判断
+ * @param {Object} left
+ * @param {Object} value
+ * @param {Object} ownerInstance
+ * @param {Object} ins
+ */
+function moveDirection(left, ins, ownerInstance) {
+	var state = ins.getState()
+	var threshold = state.threshold
+	var isopen = state.isopen || 'none'
+	var leftWidth = state.leftWidth
+	var rightWidth = state.rightWidth
+	if (state.deltaX === 0) {
+		openState('none', ins, ownerInstance)
+		return
+	}
+	if ((isopen === 'none' && rightWidth > 0 && -left > threshold) || (isopen !== 'none' && rightWidth > 0 &&
+			rightWidth +
+			left < threshold)) {
+		// right
+		openState('right', ins, ownerInstance)
+	} else if ((isopen === 'none' && leftWidth > 0 && left > threshold) || (isopen !== 'none' && leftWidth > 0 &&
+			leftWidth - left < threshold)) {
+		// left
+		openState('left', ins, ownerInstance)
+	} else {
+		// default
+		openState('none', ins, ownerInstance)
+	}
+}
+
+
+/**
+ * 开启状态
+ * @param {Boolean} type
+ * @param {Object} ins
+ * @param {Object} ownerInstance
+ */
+function openState(type, ins, ownerInstance) {
+	var state = ins.getState()
+	var leftWidth = state.leftWidth
+	var rightWidth = state.rightWidth
+	var left = ''
+	state.isopen = state.isopen ? state.isopen : 'none'
+	switch (type) {
+		case "left":
+			left = leftWidth
+			break
+		case "right":
+			left = -rightWidth
+			break
+		default:
+			left = 0
+	}
+
+	if (state.isopen !== type) {
+		state.throttle = true
+		ownerInstance.callMethod('change', {
+			open: type
+		})
+	}
+
+	state.isopen = type
+	ins.requestAnimationFrame(function() {
+		/* 胶囊 opacity + 分割线；位移层不再改 opacity */
+		setCapsuleOpacity(ownerInstance, state, type !== 'none' ? 1 : 0, true)
+		ins.addClass('ani');
+		move(left, ins, ownerInstance, false)
+	})
+}
+
+
+function getDirection(x, y) {
+	if (x > y && x > MIN_DISTANCE) {
+		return 'horizontal';
+	}
+	if (y > x && y > MIN_DISTANCE) {
+		return 'vertical';
+	}
+	return '';
+}
+
+/**
+ * 重置滑动状态
+ * @param {Object} event
+ */
+function resetTouchStatus(instance) {
+	var state = instance.getState();
+	state.direction = '';
+	state.deltaX = 0;
+	state.deltaY = 0;
+	state.offsetX = 0;
+	state.offsetY = 0;
+}
+
+/**
+ * 设置滑动开始位置
+ * @param {Object} event
+ */
+function stopTouchStart(event) {
+	var instance = event.instance;
+	var state = instance.getState();
+	resetTouchStatus(instance);
+	var touch = event.touches[0];
+	if (IS_HTML5 && isPC()) {
+		touch = event;
+	}
+	state.startX = touch.clientX;
+	state.startY = touch.clientY;
+}
+
+/**
+ * 滑动中，是否禁止打开
+ * @param {Object} event
+ */
+function stopTouchMove(event) {
+	var instance = event.instance;
+	var state = instance.getState();
+	var touch = event.touches[0];
+	if (IS_HTML5 && isPC()) {
+		touch = event;
+	}
+	state.deltaX = touch.clientX - state.startX;
+	state.deltaY = touch.clientY - state.startY;
+	state.offsetY = Math.abs(state.deltaY);
+	state.offsetX = Math.abs(state.deltaX);
+	state.direction = state.direction || getDirection(state.offsetX, state.offsetY);
+}
+
+function isPC() {
+	var userAgentInfo = navigator.userAgent;
+	var Agents = ["Android", "iPhone", "SymbianOS", "Windows Phone", "iPad", "iPod", "Mobile", "Harmony", "HarmonyOS"];
+	var flag = true;
+	for (var v = 0; v < Agents.length; v++) {
+		if (userAgentInfo.indexOf(Agents[v]) > 0) {
+			flag = false;
+			break;
+		}
+	}
+	return flag;
+}
+
+var movable = false
+
+function mousedown(e, ins) {
+	if (!IS_HTML5) return
+	if (!isPC()) return
+	touchstart(e, ins)
+	movable = true
+}
+
+function mousemove(e, ins) {
+	if (!IS_HTML5) return
+	if (!isPC()) return
+	if (!movable) return
+	touchmove(e, ins)
+}
+
+function mouseup(e, ins) {
+	if (!IS_HTML5) return
+	if (!isPC()) return
+	touchend(e, ins)
+	movable = false
+}
+
+function mouseleave(e, ins) {
+	if (!IS_HTML5) return
+	if (!isPC()) return
+	if (!movable) return
+	touchend(e, ins)
+	movable = false
+}
+
+module.exports = {
+	showWatch: showWatch,
+	touchstart: touchstart,
+	touchmove: touchmove,
+	touchend: touchend,
+	touchcancel: touchcancel,
+	mousedown: mousedown,
+	mousemove: mousemove,
+	mouseup: mouseup,
+	mouseleave: mouseleave
+}

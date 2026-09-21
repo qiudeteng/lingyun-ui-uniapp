@@ -1,0 +1,19 @@
+// lingyun-app-page 顶栏占位（插槽首子）
+// 必须进全局样式：uni/Vite 会对组件样式加 data-v，插槽内页面节点带另一套 data-v，
+// 写在组件内的 `> uni-view:first-child` 会匹配失败 → H5/小程序 padding-top 变 0。
+// 微信：view；H5：uni-view / div。禁止 `*`。
+
+.lingyun-app-page__pad > view:first-child,
+.lingyun-app-page__pad > uni-view:first-child,
+.lingyun-app-page__pad > div:first-child {
+  box-sizing: border-box;
+  padding-top: var(--lingyun-app-page-inset-top, 60px) !important;
+}
+
+// 页面级滚动下根节点高度随内容，页面自带的 min-height: 100% 会退化为 auto，
+// 短页底部会露出根底色形成断层 → 这里把首子撑到满屏。
+.lingyun-app-page--page-scroll .lingyun-app-page__pad > view:first-child,
+.lingyun-app-page--page-scroll .lingyun-app-page__pad > uni-view:first-child,
+.lingyun-app-page--page-scroll .lingyun-app-page__pad > div:first-child {
+  min-height: 100vh;
+}

@@ -1,0 +1,32 @@
+// lingyun-section 插槽布局工具类
+// 写在页面/插槽节点上；必须进全局样式（App.vue → styles/index），
+// 否则微信小程序组件 styleIsolation 会导致 margin/gap 不生效。
+
+.lingyun-section-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.lingyun-section-row + .lingyun-section-row {
+  margin-top: 8px;
+}
+
+.lingyun-section-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lingyun-section-matrix + .lingyun-section-matrix {
+  margin-top: 12px;
+}
+
+.lingyun-section-matrix__label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--lingyun-label-secondary, rgba(60, 60, 67, 0.6));
+}

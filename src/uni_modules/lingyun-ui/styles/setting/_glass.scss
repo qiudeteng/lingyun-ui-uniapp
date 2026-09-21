@@ -1,0 +1,140 @@
+// Liquid Glass 材质 token（强制：lingyun-ui 控件层统一引用）
+// 规范见 design/UI_SPEC.md
+
+// —— Regular（默认）——
+$lingyun-glass-blur: 20px !default;
+$lingyun-glass-saturate: 180% !default;
+$lingyun-glass-radius: 16px !default;
+$lingyun-glass-radius-pill: 9999px !default;
+
+$lingyun-glass-regular-bg: rgba(255, 255, 255, 0.42) !default;
+/* 透底控件暗色玻璃：浅银霜半透明（Toolbar / section）；勿用高 alpha 实霜 */
+$lingyun-glass-regular-bg-dark: rgba(255, 255, 255, 0.18) !default;
+/* Alert 等挡字浮层暗色：Regular Large ≈ #1a1a1a @ 0.7 */
+$lingyun-glass-overlay-bg-dark: rgba(26, 26, 26, 0.7) !default;
+$lingyun-glass-regular-tint: rgba(255, 255, 255, 0.28) !default;
+
+// —— 控件级玻璃（Sketch 图层样式 `Liquid Glass/Light|Dark · Regular - Small`）——
+// 按钮 / 圆钮这类小控件与浮层面板不是同一档：模糊只有 6，描边 0.5 且偏中性，
+// 投影几乎不可见，靠「上下内高光 + 两侧内缘暗」做透镜边缘。
+// 数值来源：Sketch Buttons/Light|Dark/*/Glass/Default 的 Inspect。
+$lingyun-glass-control-blur: 6px !default;
+/* 四层填充（#F8F8F8 20% Luminosity / #000 25% / #fff 25% / #444 60% Plus lighter）合成等效 */
+$lingyun-glass-control-bg: rgba(255, 255, 255, 0.42) !default;
+/* Dark：#000 100% Screen（等同不变）+ #999999 17% */
+$lingyun-glass-control-bg-dark: rgba(153, 153, 153, 0.17) !default;
+/* 0.5px 光学描边：Light #DBDBDB（≈白底 14% 黑）；Dark 取等亮度浅边 */
+$lingyun-glass-control-ring: rgba(0, 0, 0, 0.14) !default;
+$lingyun-glass-control-ring-dark: rgba(255, 255, 255, 0.24) !default;
+/* 按下态：仅压一档底色，描边与内缘光不动 */
+$lingyun-glass-control-bg-pressed: rgba(255, 255, 255, 0.56) !default;
+$lingyun-glass-control-bg-pressed-dark: rgba(153, 153, 153, 0.28) !default;
+/* Sketch：0 8px 15px #000 2%（Dark 4%），几乎不可见，勿用面板级投影 */
+$lingyun-glass-control-shadow: 0 8px 15px rgba(0, 0, 0, 0.02) !default;
+$lingyun-glass-control-shadow-dark: 0 8px 15px rgba(0, 0, 0, 0.04) !default;
+/* 透镜边缘：上下内高光（Plus lighter）+ 两侧内缘暗（Plus darker，spread -30） */
+$lingyun-glass-control-lens:
+  inset 0 1px 0 rgba(255, 255, 255, 0.6),
+  inset 0 -1px 0 rgba(255, 255, 255, 0.45),
+  inset 0 4px 4px -4px rgba(255, 255, 255, 0.5),
+  inset 0 -4px 4px -4px rgba(255, 255, 255, 0.5),
+  inset 20px 0 20px -30px rgba(0, 0, 0, 0.06),
+  inset -20px 0 20px -30px rgba(0, 0, 0, 0.06) !default;
+$lingyun-glass-control-lens-dark:
+  inset 0 1px 0 rgba(255, 255, 255, 0.22),
+  inset 0 -1px 0 rgba(255, 255, 255, 0.14),
+  inset 0 4px 4px -4px rgba(255, 255, 255, 0.16),
+  inset 0 -4px 4px -4px rgba(255, 255, 255, 0.16),
+  inset 20px 0 20px -30px rgba(0, 0, 0, 0.18),
+  inset -20px 0 20px -30px rgba(0, 0, 0, 0.18) !default;
+
+// —— Clear（仅富媒体背景 + dimming）——
+$lingyun-glass-clear-bg: rgba(255, 255, 255, 0.18) !default;
+$lingyun-glass-clear-bg-dark: rgba(0, 0, 0, 0.22) !default;
+$lingyun-glass-dimming: rgba(0, 0, 0, 0.28) !default;
+
+// —— 光学描边 / 高光 / 阴影 ——
+$lingyun-glass-hairline: 1px solid rgba(255, 255, 255, 0.45) !default;
+$lingyun-glass-hairline-dark: 1px solid rgba(166, 166, 166, 0.45) !default;
+$lingyun-glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.55) !default;
+$lingyun-glass-highlight-dark: inset 0 1px 0 rgba(255, 255, 255, 0.2) !default;
+$lingyun-glass-shadow: 0 8px 28px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.06) !default;
+$lingyun-glass-shadow-dark: 0 8px 28px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.28) !default;
+$lingyun-glass-shadow-raised: 0 12px 40px rgba(15, 23, 42, 0.18), 0 4px 12px rgba(15, 23, 42, 0.08) !default;
+$lingyun-glass-shadow-raised-dark: 0 12px 40px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.32) !default;
+
+// —— 可读性降级（无 backdrop-filter / 减少透明度）——
+$lingyun-glass-fallback-bg: rgba(255, 255, 255, 0.94) !default;
+/* 弱端暗色霜面略提亮，避免死黑实心块（对齐 iOS 27 Dark glass lighter） */
+$lingyun-glass-fallback-bg-dark: rgba(42, 42, 44, 0.97) !default;
+$lingyun-glass-frost-bg: rgba(255, 255, 255, 0.96) !default;
+
+@mixin lingyun-glass-regular {
+  border: var(--lingyun-glass-hairline, #{$lingyun-glass-hairline});
+  border-radius: $lingyun-glass-radius;
+  box-shadow: var(--lingyun-glass-highlight, #{$lingyun-glass-highlight}),
+    var(--lingyun-glass-shadow, #{$lingyun-glass-shadow});
+  /* #ifdef H5 || APP-PLUS */
+  background-color: var(--lingyun-glass-regular-bg, #{$lingyun-glass-regular-bg});
+  backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
+  -webkit-backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
+  /* #endif */
+  /* #ifndef H5 || APP-PLUS */
+  /* 历史实霜挡字 fallback。Alert/Sheet 已改走 surface + 全端 blur（对齐 Toolbar） */
+  background-color: var(--lingyun-glass-fallback-bg, #{$lingyun-glass-fallback-bg});
+  /* #endif */
+}
+
+/**
+ * 内容区 / 透底控件玻璃（section、Toolbar 圆钮等）
+ * 小程序无 blur 时仍用 regular-bg 半透明，对齐历史 Buttons Demo 真机观感；
+ * 勿用 fallback 实霜，否则相对 WEB 会偏死白。
+ * 选型说明：design/UI_SPEC.md §6.2
+ */
+@mixin lingyun-glass-surface {
+  border: var(--lingyun-glass-hairline, #{$lingyun-glass-hairline});
+  border-radius: $lingyun-glass-radius;
+  box-shadow: var(--lingyun-glass-highlight, #{$lingyun-glass-highlight}),
+    var(--lingyun-glass-shadow, #{$lingyun-glass-shadow});
+  background-color: var(--lingyun-glass-regular-bg, #{$lingyun-glass-regular-bg});
+  /* #ifdef H5 || APP-PLUS */
+  backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
+  -webkit-backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
+  /* #endif */
+}
+
+/**
+ * 控件级玻璃（按钮 / 圆钮等）。对齐 Sketch `Regular - Small`：
+ * 0.5px 描边走 box-shadow（border 最细只有 1px），模糊全端 6px。
+ * ❌ 不要拿它做浮层面板（面板用 lingyun-glass-surface）。
+ */
+@mixin lingyun-glass-control {
+  border: 0;
+  border-radius: $lingyun-glass-radius-pill;
+  background-color: var(--lingyun-glass-control-bg, #{$lingyun-glass-control-bg});
+  box-shadow:
+    var(--lingyun-glass-control-lens, #{$lingyun-glass-control-lens}),
+    0 0 0 0.5px var(--lingyun-glass-control-ring, #{$lingyun-glass-control-ring}),
+    var(--lingyun-glass-control-shadow, #{$lingyun-glass-control-shadow});
+  backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-control-blur);
+  -webkit-backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-control-blur);
+}
+
+@mixin lingyun-glass-clear {
+  border: var(--lingyun-glass-hairline, #{$lingyun-glass-hairline});
+  border-radius: $lingyun-glass-radius;
+  box-shadow: var(--lingyun-glass-highlight, #{$lingyun-glass-highlight}),
+    var(--lingyun-glass-shadow, #{$lingyun-glass-shadow});
+  /* #ifdef H5 || APP-PLUS */
+  background-color: var(--lingyun-glass-clear-bg, #{$lingyun-glass-clear-bg});
+  backdrop-filter: saturate($lingyun-glass-saturate) blur(12px);
+  -webkit-backdrop-filter: saturate($lingyun-glass-saturate) blur(12px);
+  /* #endif */
+  /* #ifndef H5 || APP-PLUS */
+  background-color: var(--lingyun-glass-fallback-bg, #{$lingyun-glass-fallback-bg});
+  /* #endif */
+}
+
+@mixin lingyun-glass-dimming {
+  background-color: $lingyun-glass-dimming;
+}

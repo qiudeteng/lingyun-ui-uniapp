@@ -1,0 +1,30 @@
+---
+description: lingyun-* 组件必须放在 凌云UI 下，且符合 Liquid Glass
+globs: src/uni_modules/lingyun-ui/**/*,src/uni_modules/lingyun-*/**/*
+alwaysApply: false
+---
+
+# 凌云UI 组件规范
+
+- 包结构：[`src/uni_modules/lingyun-ui/readme.md`](src/uni_modules/lingyun-ui/readme.md)
+- **UI 风格（强制）**：[`design/UI_SPEC.md`](design/UI_SPEC.md) · 规则始终加载 `liquid-glass-ui.mdc`
+
+## 硬规则
+
+- 所有 `lingyun-*` **只**放在 `src/uni_modules/lingyun-ui/components/<name>/<name>.vue`
+- 结构对齐官方 `uni-list`：一个 `uni_modules` 包内多个组件文件夹
+- 样式底座在 `lingyun-ui/styles/`；控件层必须用 `$lingyun-glass-*` / `@include lingyun-glass-regular` 等，符合 Liquid Glass
+- 尺寸一律 `px`（Sketch **1pt = 1px**）；❌ 禁止 `rpx`
+- **浮层（遮罩+面板）**：H5 `Teleport`→`body`，mp `root-portal`；根自挂 `theme-*`。详见始终加载的 `overlay-portal.mdc`
+- ❌ 禁止新建独立 `lingyun-*` 包或放进 `src/components/`
+- ❌ 禁止纯实心扁平、粗边框卡片、glass-on-glass 冒充规范
+- ❌ 禁止把全屏/底部浮层直接挂在 section·card 子树内（会被 `overflow` 裁切）
+- 目录名 = 文件名 = easycom 标签名（kebab-case）
+
+## 新增组件
+
+1. 创建 `components/lingyun-xxx/lingyun-xxx.vue`
+2. `@import '../../styles/variables.scss'` 与 glass token；对照 `UI_SPEC.md` 自检
+3. 若含浮层：按 `overlay-portal.mdc` 做 Teleport / root-portal + 自挂主题
+4. 更新 `lingyun-ui/readme.md` 与 `changelog.md`
+5. 页面直接 `<lingyun-xxx />`，无需手动 import

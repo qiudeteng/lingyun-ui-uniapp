@@ -1,0 +1,119 @@
+// Apple iOS 27 UI Kit · System Colors（Sketch Color Variables）
+// @see https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02/color-variables?g=System%2520Colors
+// @see design/COLORS.md
+// 色值与官方 Sketch / Figma kit 27.0.2 核对；默认 Light，Dark 见同名 *-dark。
+
+// —— Accents（Sketch · System Colors）——
+$lingyun-system-red: #ff383c !default;
+$lingyun-system-red-dark: #ff4245 !default;
+
+$lingyun-system-orange: #ff8d28 !default;
+$lingyun-system-orange-dark: #ff9230 !default;
+
+$lingyun-system-yellow: #ffcc00 !default; // Sketch Light 缩写 #fc0
+$lingyun-system-yellow-dark: #ffd600 !default;
+
+$lingyun-system-green: #34c759 !default;
+$lingyun-system-green-dark: #30d158 !default;
+
+$lingyun-system-mint: #00c8b3 !default;
+$lingyun-system-mint-dark: #00dac3 !default;
+
+$lingyun-system-teal: #00c3d0 !default;
+$lingyun-system-teal-dark: #00d2e0 !default;
+
+$lingyun-system-cyan: #00c0e8 !default;
+$lingyun-system-cyan-dark: #3cd3fe !default;
+
+$lingyun-system-blue: #0088ff !default; // Sketch Light 缩写 #08f
+$lingyun-system-blue-dark: #0091ff !default;
+
+$lingyun-system-indigo: #6155f5 !default;
+$lingyun-system-indigo-dark: #6d7cff !default;
+
+$lingyun-system-purple: #cb30e0 !default;
+$lingyun-system-purple-dark: #db34f2 !default;
+
+$lingyun-system-pink: #ff2d55 !default;
+$lingyun-system-pink-dark: #ff375f !default;
+
+$lingyun-system-brown: #ac7f5e !default;
+$lingyun-system-brown-dark: #b78a66 !default;
+
+// —— Grays（补齐 · kit Colors / Grays）——
+$lingyun-system-gray: #8e8e93 !default;
+$lingyun-system-gray-dark: #8e8e93 !default;
+$lingyun-system-gray2: #aeaeb2 !default;
+$lingyun-system-gray2-dark: #636366 !default;
+$lingyun-system-gray3: #c7c7cc !default;
+$lingyun-system-gray3-dark: #48484a !default;
+$lingyun-system-gray4: #d1d1d6 !default;
+$lingyun-system-gray4-dark: #3a3a3c !default;
+$lingyun-system-gray5: #e5e5ea !default;
+$lingyun-system-gray5-dark: #2c2c2e !default;
+$lingyun-system-gray6: #f2f2f7 !default;
+$lingyun-system-gray6-dark: #1c1c1e !default;
+
+// —— Labels（补齐 · semantic）——
+$lingyun-label: #000000 !default;
+$lingyun-label-dark: #ffffff !default;
+$lingyun-label-secondary: rgba(60, 60, 67, 0.6) !default;
+$lingyun-label-secondary-dark: rgba(235, 235, 245, 0.6) !default;
+$lingyun-label-tertiary: rgba(60, 60, 67, 0.3) !default;
+$lingyun-label-tertiary-dark: rgba(235, 235, 245, 0.3) !default;
+$lingyun-label-quaternary: rgba(60, 60, 67, 0.18) !default;
+$lingyun-label-quaternary-dark: rgba(235, 235, 245, 0.16) !default;
+$lingyun-label-quinary: rgba(60, 60, 67, 0.09) !default;
+$lingyun-label-quinary-dark: rgba(235, 235, 245, 0.09) !default;
+
+// —— Labels · Liquid Glass（Sketch「Labels - Liquid Glass」）——
+// 玻璃面上的文字用这套不透明灰阶，不用上面基于 alpha 的 Labels
+$lingyun-label-glass: #1a1a1a !default;
+$lingyun-label-glass-dark: #ededed !default;
+$lingyun-label-glass-secondary: #727272 !default;
+$lingyun-label-glass-secondary-dark: #8a8a8a !default;
+$lingyun-label-glass-tertiary: #bfbfbf !default;
+$lingyun-label-glass-tertiary-dark: #404040 !default;
+$lingyun-label-glass-quaternary: #d9d9d9 !default;
+$lingyun-label-glass-quaternary-dark: #262626 !default;
+$lingyun-placeholder-text: rgba(60, 60, 67, 0.3) !default;
+$lingyun-placeholder-text-dark: rgba(235, 235, 245, 0.3) !default;
+$lingyun-link: $lingyun-system-blue !default;
+$lingyun-link-dark: $lingyun-system-blue-dark !default;
+
+// —— Backgrounds（补齐）——
+$lingyun-bg-primary: #ffffff !default;
+$lingyun-bg-primary-dark: #000000 !default;
+$lingyun-bg-secondary: #f2f2f7 !default;
+$lingyun-bg-secondary-dark: #1c1c1e !default;
+$lingyun-bg-tertiary: #ffffff !default;
+$lingyun-bg-tertiary-dark: #2c2c2e !default;
+
+$lingyun-bg-grouped-primary: #f2f2f7 !default;
+$lingyun-bg-grouped-primary-dark: #000000 !default;
+$lingyun-bg-grouped-secondary: #ffffff !default;
+$lingyun-bg-grouped-secondary-dark: #1c1c1e !default;
+$lingyun-bg-grouped-tertiary: #f2f2f7 !default;
+$lingyun-bg-grouped-tertiary-dark: #2c2c2e !default;
+
+// —— Fills（补齐）——
+$lingyun-fill: rgba(120, 120, 120, 0.2) !default; // Sketch Light 1 Primary #787878
+$lingyun-fill-dark: rgba(120, 120, 128, 0.36) !default;
+$lingyun-fill-secondary: rgba(120, 120, 128, 0.16) !default;
+$lingyun-fill-secondary-dark: rgba(120, 120, 128, 0.32) !default;
+$lingyun-fill-tertiary: rgba(118, 118, 128, 0.12) !default;
+$lingyun-fill-tertiary-dark: rgba(118, 118, 128, 0.24) !default;
+$lingyun-fill-quaternary: rgba(116, 116, 128, 0.08) !default;
+$lingyun-fill-quaternary-dark: rgba(118, 118, 128, 0.18) !default;
+$lingyun-fill-quinary: rgba(0, 0, 0, 0.02) !default;
+$lingyun-fill-quinary-dark: rgba(118, 118, 128, 0.02) !default;
+
+// —— Separators / Overlay（补齐）——
+$lingyun-separator: rgba(0, 0, 0, 0.12) !default;
+$lingyun-separator-dark: rgba(255, 255, 255, 0.12) !default;
+$lingyun-separator-opaque: #c6c6c8 !default;
+$lingyun-separator-opaque-dark: #38383a !default;
+$lingyun-separator-vibrant: #e6e6e6 !default;
+$lingyun-separator-vibrant-dark: #1a1a1a !default;
+$lingyun-overlay: rgba(0, 0, 0, 0.2) !default;
+$lingyun-overlay-dark: rgba(0, 0, 0, 0.48) !default;
