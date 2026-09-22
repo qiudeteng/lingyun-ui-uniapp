@@ -1,6 +1,6 @@
 # 凌云UI
 
-凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.0**，变更见 [`changelog.md`](./changelog.md)。
+凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.2**，变更见 [`changelog.md`](./changelog.md)。
 
 📖 [使用手册](https://lingyun.xinyicanyin.com/)（组件用法、属性、示例；右侧手机框实时预览）
 
@@ -80,7 +80,7 @@ uni.hideLingyunHud()
 
 ```
 lingyun-ui/
-├── package.json          # 1.0.0
+├── package.json          # 1.0.2
 ├── readme.md
 ├── changelog.md
 ├── index.ts              # app.use(lingyunUi)

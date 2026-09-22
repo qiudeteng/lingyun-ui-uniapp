@@ -1,9 +1,13 @@
+## 2.5.0-20230101（2026-09-22）
+新版发布
 # 凌云UI Charts
 
 由 `qiun-data-charts`（秋云 uCharts）迁入并改名。页面标签改为 `<lingyun-ui-charts />`。
 以下为上游变更记录，便于对照引擎版本。
 
 ## 凌云改动
+
+## 2.5.1-20260922（2026-09-22）
 - 词云默认不再铺白底，透出卡片背景，与其它图种一致
 - 使用手册拆成总览 [`doc/charts/README.md`](../../../doc/charts/README.md) + 各图种 [`doc/charts/`](../../../doc/charts/)，右侧预览对应 `pages/demo/charts/<type>`
 - 系列色迁入本包 `js_sdk/u-charts/config-colors.js`，不再依赖业务 `src/config/charts.ts`
