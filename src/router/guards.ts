@@ -1,24 +1,32 @@
 /**
- * 全局路由守卫（uni-router，TypeScript）
+ * 全局路由守卫（uni-router）
  *
- * 守卫采用返回值模式：
- *   return undefined / true  → 放行
- *   return false             → 中止导航
- *   return { name: 'login' } → 重定向
+ * 业务页在 pages.json 对应路由 meta.requireAuth = true（或守卫里按 path 判断）后才会强制登录。
+ * Demo / 组件预览页默认不拦。
  */
 import type { Router } from '@meng-xi/uni-router'
+import { appConfig } from '@/config'
+import { isLoggedIn } from '@/utils/auth'
 
-/** 创建 router 实例后调用，注册全部全局守卫 */
+const PUBLIC_PATHS = [
+  '/pages/login/login',
+  '/pages/login/user-agreement',
+  '/pages/login/privacy-policy',
+]
+
+function normalizePath(path: string): string {
+  if (!path) return ''
+  return path.startsWith('/') ? path : `/${path}`
+}
+
 export function setupRouterGuards(router: Router): void {
-  // 全局前置守卫：登录鉴权 —— 目标页标记了 requireAuth 且未登录时跳转登录页
   router.beforeEach((to) => {
-    if ((to.meta as any).requireAuth && !uni.getStorageSync('token')) {
-      return { name: 'login' }
+    const path = normalizePath(String(to.path || ''))
+    if (PUBLIC_PATHS.includes(path)) return
+    const requireAuth = !!(to.meta as { requireAuth?: boolean } | undefined)?.requireAuth
+    if (requireAuth && !isLoggedIn()) {
+      uni.setStorageSync('backurl', path.replace(/^\//, ''))
+      return { path: appConfig.loginPath }
     }
-  })
-
-  // 全局后置钩子：导航完成埋点 / 设置页面标题
-  router.afterEach((to, from) => {
-    console.log(`导航完成：${from.path} → ${to.path}`)
   })
 }

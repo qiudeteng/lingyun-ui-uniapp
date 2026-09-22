@@ -13,6 +13,29 @@
 - [接入](./guide/start.md)
 - [反馈：Toast 与 HUD](./guide/feedback.md)
 
+## 图表
+
+- [图表](./charts/README.md)
+- [柱状图](./charts/column.md)
+- [条状图](./charts/bar.md)
+- [折线图](./charts/line.md)
+- [区域图](./charts/area.md)
+- [饼图](./charts/pie.md)
+- [圆环图](./charts/ring.md)
+- [玫瑰图](./charts/rose.md)
+- [漏斗图](./charts/funnel.md)
+- [雷达图](./charts/radar.md)
+- [仪表盘](./charts/gauge.md)
+- [圆弧进度](./charts/arcbar.md)
+- [山峰图](./charts/mount.md)
+- [混合图](./charts/mix.md)
+- [散点图](./charts/scatter.md)
+- [气泡图](./charts/bubble.md)
+- [K 线图](./charts/candle.md)
+- [词云图](./charts/word.md)
+- [时间轴折线](./charts/tline.md)
+- [时间轴区域](./charts/tarea.md)
+
 ## 组件
 
 ### 页面与导航
@@ -64,6 +87,8 @@
 - [空状态](./components/empty.md)
 - [骨架屏](./components/skeleton.md)
 - [下拉刷新](./components/refresh.md)
+- [宫格](./components/grid.md)
+- [索引列表](./components/indexed-list.md)
 
 ### 反馈
 
@@ -83,3 +108,4 @@
 - [菜单](./components/menu.md)
 - [上下文菜单](./components/context-menu.md)
 - [悬浮按钮](./components/fab.md)
+- [商品导航](./components/goods-nav.md)

@@ -12,9 +12,6 @@ unpackage/
 .hbuilderx/
 .turbo/
 
-# Uni-app 本地模块（不提交）
-src/uni_modules/qiun-data-charts/
-
 # Env & secrets
 .env
 .env.*

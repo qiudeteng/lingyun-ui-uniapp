@@ -126,14 +126,11 @@ export default {
   name: 'LingyunListItem',
   emits: ['click', 'switchChange', 'update:switchChecked', 'stepperChange', 'update:stepperValue', 'sliderChange', 'update:sliderValue'],
   inject: {
-    lingyunList: {
-      default: null,
-    },
     /** 是否嵌在 lingyun-swipe-action-item 内（常量，非手势状态） */
     lingyunSwipeHost: {
       default: false,
     },
-    /** 滑动表面状态：hideDivider / hideDividerFromPrev 为 true 时藏顶部分割线 */
+    /** 滑动表面状态：hideDivider / hideDividerFromPrev 为 true 时藏顶部分割线。一对一，不挂整表 */
     lingyunSwipeSurface: {
       default: null,
     },
@@ -180,14 +177,13 @@ export default {
     },
   },
   created() {
-    const list = this.lingyunList
-    if (!list) {
-      /* 独立使用：默认画顶部分割线，避免单行误伤可用 showDivider=false 语义——无父级时不画 */
-      this.isFirstChild = true
-      return
-    }
-    if (!list.firstChildAppend) {
-      list.firstChildAppend = true
+    this.markFirstChild()
+  },
+  mounted() {
+    if (this.listBound) return
+    this.markFirstChild()
+    if (!this.listBound) {
+      /* 独立使用：无父级列表时不画顶部分割线 */
       this.isFirstChild = true
     }
   },
@@ -280,6 +276,27 @@ export default {
     },
   },
   methods: {
+    /**
+     * 沿 $parent 找到最近的 LingyunList，只登记一次首行。
+     * 对齐 uni-list getForm：不 inject 列表实例，父级数据变化不会带动每一行更新。
+     */
+    getList() {
+      let parent = this.$parent
+      while (parent) {
+        if (parent.$options && parent.$options.name === 'LingyunList') return parent
+        parent = parent.$parent
+      }
+      return null
+    },
+    markFirstChild() {
+      const list = this.getList()
+      if (!list) return
+      this.listBound = true
+      if (!list.firstChildAppend) {
+        list.firstChildAppend = true
+        this.isFirstChild = true
+      }
+    },
     onClick() {
       if (!this.isInteractive) return
       this.$emit('click')

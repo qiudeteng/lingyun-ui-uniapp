@@ -1,11 +1,21 @@
 <script setup lang="ts">
   import { onLaunch, onShow, onThemeChange } from '@dcloudio/uni-app'
   import { useThemeStore } from '@/stores/theme'
+  import { useAppStore } from '@/stores/app'
+  import { useAuthStore } from '@/stores/auth'
+  import { useUserStore } from '@/stores/user'
 
   const themeStore = useThemeStore()
 
   onLaunch(() => {
     themeStore.init()
+    const appStore = useAppStore()
+    const authStore = useAuthStore()
+    const userStore = useUserStore()
+    appStore.getEnterprise()
+    if (authStore.isLogin) {
+      userStore.refreshData()
+    }
   })
 
   /* 每次进前台再刷一次窗体色（小程序页栈切换后可能丢） */

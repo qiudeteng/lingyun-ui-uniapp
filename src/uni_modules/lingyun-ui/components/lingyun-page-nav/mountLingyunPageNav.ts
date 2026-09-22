@@ -4,6 +4,14 @@ import { LINGYUN_PAGE_NAV_WIDTH } from '@/router/pageNav'
 import { LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH } from '../lingyun-toolbars/getLingyunNavSafeInset'
 
 let booted = false
+/** 当前页 `showNav` 是否允许停靠侧栏。登录等页会关掉。 */
+let pageAllowsNav = true
+let applyHostVisibility: () => void = () => {}
+
+export function setLingyunH5PageNavAllowed(allowed: boolean): void {
+  pageAllowsNav = !!allowed
+  applyHostVisibility()
+}
 
 /**
  * H5：把侧栏渲染到 body，只创建一次。
@@ -46,9 +54,10 @@ function mountHost(appContext: AppContext): void {
   vnode.appContext = appContext
   render(vnode, host)
 
-  const apply = () => {
-    host.style.display = window.innerWidth >= LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH ? 'flex' : 'none'
+  applyHostVisibility = () => {
+    const wide = window.innerWidth >= LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH
+    host.style.display = wide && pageAllowsNav ? 'flex' : 'none'
   }
-  apply()
-  window.addEventListener('resize', apply)
+  applyHostVisibility()
+  window.addEventListener('resize', applyHostVisibility)
 }

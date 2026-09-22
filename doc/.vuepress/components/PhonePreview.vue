@@ -55,6 +55,10 @@ const DEMO: Record<string, string> = {
   menu: '/pages/demo/menus',
   'context-menu': '/pages/demo/menus',
   fab: '/pages/demo/fab',
+  'goods-nav': '/pages/demo/goods-nav',
+  grid: '/pages/demo/grid',
+  'indexed-list': '/pages/demo/indexed-list',
+  charts: '/pages/demo/charts/column',
 }
 
 /** 这些文档默认用宽屏视口，才能看到左侧导航 */
@@ -80,7 +84,16 @@ const slug = computed(() => {
   return name
 })
 
-const demoPath = computed(() => DEMO[slug.value] || '')
+const demoPath = computed(() => {
+  const path = route.path.replace(/\.html$/, '').replace(/\/$/, '')
+  if (path === '/charts' || path === '/charts/index') {
+    return '/pages/demo/charts/column'
+  }
+  if (path.startsWith('/charts/') && slug.value && slug.value !== 'index') {
+    return `/pages/demo/charts/${slug.value}`
+  }
+  return DEMO[slug.value] || ''
+})
 
 function defaultSize(name: string): PreviewSize {
   return WIDE_DEFAULT.has(name) ? 'wide' : 'phone'

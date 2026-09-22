@@ -7,7 +7,27 @@
 				"navigationStyle": "custom"
 			}
 		},
-
+		{
+			"path": "pages/login/login",
+			"style": {
+				"navigationBarTitleText": "登录",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/login/user-agreement",
+			"style": {
+				"navigationBarTitleText": "用户服务协议",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/login/privacy-policy",
+			"style": {
+				"navigationBarTitleText": "隐私政策",
+				"navigationStyle": "custom"
+			}
+		},
 		{
 			"path": "pages/demo/buttons",
 			"style": {
@@ -257,6 +277,160 @@
 			"path": "pages/demo/fab",
 			"style": {
 				"navigationBarTitleText": "Fab",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/goods-nav",
+			"style": {
+				"navigationBarTitleText": "Goods Nav",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/grid",
+			"style": {
+				"navigationBarTitleText": "Grid",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/indexed-list",
+			"style": {
+				"navigationBarTitleText": "Indexed List",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/column",
+			"style": {
+				"navigationBarTitleText": "Column",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/bar",
+			"style": {
+				"navigationBarTitleText": "Bar",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/line",
+			"style": {
+				"navigationBarTitleText": "Line",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/area",
+			"style": {
+				"navigationBarTitleText": "Area",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/pie",
+			"style": {
+				"navigationBarTitleText": "Pie",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/ring",
+			"style": {
+				"navigationBarTitleText": "Ring",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/rose",
+			"style": {
+				"navigationBarTitleText": "Rose",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/funnel",
+			"style": {
+				"navigationBarTitleText": "Funnel",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/radar",
+			"style": {
+				"navigationBarTitleText": "Radar",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/gauge",
+			"style": {
+				"navigationBarTitleText": "Gauge",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/arcbar",
+			"style": {
+				"navigationBarTitleText": "Arcbar",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/mount",
+			"style": {
+				"navigationBarTitleText": "Mount",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/mix",
+			"style": {
+				"navigationBarTitleText": "Mix",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/scatter",
+			"style": {
+				"navigationBarTitleText": "Scatter",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/bubble",
+			"style": {
+				"navigationBarTitleText": "Bubble",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/candle",
+			"style": {
+				"navigationBarTitleText": "Candle",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/word",
+			"style": {
+				"navigationBarTitleText": "Word",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/tline",
+			"style": {
+				"navigationBarTitleText": "Time Line",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/tarea",
+			"style": {
+				"navigationBarTitleText": "Time Area",
 				"navigationStyle": "custom"
 			}
 		}

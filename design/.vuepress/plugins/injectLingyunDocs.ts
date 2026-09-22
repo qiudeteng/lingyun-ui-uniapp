@@ -1,5 +1,5 @@
 /**
- * 把 凌云UI 包内的 readme / changelog 注入为文档站页面。
+ * 把 凌云UI / 凌云UI Charts 包内的 readme / changelog 注入为文档站页面。
  *
  * 走 Plugin API 而不是把文件复制进 design/，原因有两条：
  * 1. design/ 禁止为 src/uni_modules/** 建镜像目录（见 design/README.md §5）；
@@ -11,19 +11,20 @@ import { fs, getDirname, path } from 'vuepress/utils'
 
 const __dirname = getDirname(import.meta.url)
 const REPO_ROOT = path.resolve(__dirname, '../../..')
-const LINGYUN_DIR = path.resolve(REPO_ROOT, 'src/uni_modules/lingyun-ui')
 
 interface InjectedDoc {
   /** 站点路径 */
   routePath: string
-  /** 相对 lingyun-ui 包根的源文件 */
+  /** 相对仓库根的源文件 */
   source: string
   title: string
 }
 
 const DOCS: InjectedDoc[] = [
-  { routePath: '/lingyun-ui/readme.html', source: 'readme.md', title: '凌云UI 使用说明' },
-  { routePath: '/lingyun-ui/changelog.html', source: 'changelog.md', title: '凌云UI 更新日志' },
+  { routePath: '/lingyun-ui/readme.html', source: 'src/uni_modules/lingyun-ui/readme.md', title: '凌云UI 使用说明' },
+  { routePath: '/lingyun-ui/changelog.html', source: 'src/uni_modules/lingyun-ui/changelog.md', title: '凌云UI 更新日志' },
+  { routePath: '/lingyun-ui-charts/readme.html', source: 'src/uni_modules/lingyun-ui-charts/readme.md', title: '凌云UI Charts 使用说明' },
+  { routePath: '/lingyun-ui-charts/changelog.html', source: 'src/uni_modules/lingyun-ui-charts/changelog.md', title: '凌云UI Charts 更新日志' },
 ]
 
 /**
@@ -38,7 +39,7 @@ export const injectLingyunDocs = (): Plugin => ({
 
   async onInitialized(app: App) {
     for (const doc of DOCS) {
-      const filePath = path.resolve(LINGYUN_DIR, doc.source)
+      const filePath = path.resolve(REPO_ROOT, doc.source)
 
       if (!fs.existsSync(filePath)) {
         app.env.isDebug && console.warn(`[lingyun-inject-docs] 源文件不存在：${filePath}`)
