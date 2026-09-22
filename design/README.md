@@ -29,6 +29,10 @@
 - **Text Fields 专章** → **[`TEXTFIELDS.md`](./TEXTFIELDS.md)**（Sketch Text Field Light/Dark）
 - **Text 专章** → **[`TEXTS.md`](./TEXTS.md)**（HIG Text Styles · Labels）
 - **Image 专章** → **[`IMAGES.md`](./IMAGES.md)**（懒加载 · 占位 · 圆角 · mode）
+- **Charts 专章** → **[`CHARTS.md`](./CHARTS.md)**（`lingyun-ui-charts` · System Accents 系列色）
+- **Goods Nav 专章** → **[`GOODS_NAV.md`](./GOODS_NAV.md)**（商品底栏 · 对齐 uni-goods-nav）
+- **Grid 专章** → **[`GRID.md`](./GRID.md)**（宫格 · 对齐 uni-grid）
+- **Indexed List 专章** → **[`INDEXED_LIST.md`](./INDEXED_LIST.md)**（索引列表 · 对齐 uni-indexed-list）
 - **Forms 专章** → **[`FORMS.md`](./FORMS.md)**（Grouped 表单容器）
 - **组件清单与规划** → **[`COMPONENTS.md`](./COMPONENTS.md)**（已完成 / P0–P2）
 - Cursor 规则：`.cursor/rules/liquid-glass-ui.mdc`（`alwaysApply: true`）
@@ -101,6 +105,10 @@ design/
 ├── TEXTFIELDS.md       # 输入框（Sketch Text Fields）专章
 ├── TEXTS.md            # 语义文本（HIG Text Styles）专章
 ├── IMAGES.md           # 图片包装（懒加载 / 圆角 / mode）专章
+├── CHARTS.md           # 图表（lingyun-ui-charts）专章
+├── GOODS_NAV.md        # 商品底栏（lingyun-goods-nav）专章
+├── GRID.md             # 宫格（lingyun-grid）专章
+├── INDEXED_LIST.md     # 索引列表（lingyun-indexed-list）专章
 ├── FORMS.md            # 表单容器（Grouped form / item）
 ├── COMPONENTS.md       # 凌云UI 组件清单与规划
 ├── pages/              # ↔ src/pages/

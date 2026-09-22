@@ -153,6 +153,10 @@ export default {
       type: Boolean,
       default: true,
     },
+    /** auto：Mac 宽屏显示交通灯。停靠左侧导航时由 app-page 关掉。 */
+    showWindowControls: {
+      default: 'auto',
+    },
     fixed: {
       type: Boolean,
       default: false,
@@ -205,6 +209,9 @@ export default {
   },
   watch: {
     safeArea() {
+      this.syncNavLayout()
+    },
+    showWindowControls() {
       this.syncNavLayout()
     },
   },
@@ -376,7 +383,7 @@ export default {
       let bar = layout.barHeight
       let bottomExtra = 0
       this.regular = layout.regular
-      this.windowControls = layout.windowControls
+      this.windowControls = coerceTriFlag(this.showWindowControls, layout.windowControls)
       this.padXPx = layout.padX
       this.padTopPx = layout.padTop
       this.padBottomPx = layout.padBottom
@@ -464,6 +471,8 @@ $ly-toolbar-gap: 8px;
     /* 宽屏停靠导航时由 lingyun-app-page 写入，避免顶栏盖住左侧栏 */
     left: var(--lingyun-page-nav-width, 0px);
     right: 0;
+    /* 勿 width:100%：fixed 的百分比相对视口，会把栏身撑出内容区，标题偏右 */
+    width: auto;
     z-index: 100;
   }
 }

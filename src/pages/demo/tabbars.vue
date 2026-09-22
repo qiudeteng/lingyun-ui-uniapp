@@ -3,138 +3,127 @@
     <view class="page">
       <view class="hero">
         <text class="hero__title">Tab Bars</text>
-        <text class="hero__desc">lingyun-tabbars · Apple iOS 27 UI Kit</text>
+        <text class="hero__desc">选组合，底部只渲染当前这一条</text>
       </view>
 
-      <lingyun-section title="无分组 · 5" :hint="`当前：${currentDefault}`" />
-
-      <lingyun-section title="无分组 · 4" :hint="`当前：${currentPlainFour}`" />
-
-      <lingyun-section title="4 + 1" :hint="`当前：${currentFour}`" />
-
-      <lingyun-section title="3 + 1" :hint="`当前：${currentThree}`" />
-
-      <lingyun-section title="2 + 1" :hint="`当前：${currentTwo}`" />
-
-      <lingyun-section title="1 + 1" :hint="`当前：${currentOne}`" is-last />
-
-      <view class="spacer" />
-
-      <!-- 演示用：页面内嵌三组，实际业务一般只用一组 fixed -->
-      <view class="stage stage--a">
-        <lingyun-tabbars
-          v-model="currentDefault"
-          :fixed="false"
-          :safe-area="false"
-          :items="itemsDefault"
-        />
-      </view>
-
-      <view class="stage stage--plain4">
-        <lingyun-tabbars
-          v-model="currentPlainFour"
-          :fixed="false"
-          :safe-area="false"
-          :items="itemsPlainFour"
-        />
-      </view>
-
-      <view class="stage stage--b">
-        <lingyun-tabbars
-          v-model="currentFour"
-          :fixed="false"
-          :safe-area="false"
-          :items="itemsFourPlusOne"
-        />
-      </view>
-
-      <view class="stage stage--c">
-        <lingyun-tabbars
-          v-model="currentThree"
-          :fixed="false"
-          :safe-area="false"
-          :items="itemsThreePlusOne"
-        />
-      </view>
-
-      <view class="stage stage--d">
-        <lingyun-tabbars
-          v-model="currentTwo"
-          :fixed="false"
-          :safe-area="false"
-          :items="itemsTwoPlusOne"
-        />
-      </view>
-
-      <view class="stage stage--e">
-        <lingyun-tabbars
-          v-model="currentOne"
-          :fixed="false"
-          :safe-area="true"
-          :items="itemsOnePlusOne"
-        />
-      </view>
+      <lingyun-form>
+        <lingyun-form-group title="组合" :footer="`当前选中：${currentLabel}`">
+          <lingyun-form-item label="布局">
+            <lingyun-picker v-model="layoutIdx" :range="layoutLabels" />
+          </lingyun-form-item>
+          <lingyun-form-item label="外观">
+            <lingyun-picker v-model="variantIdx" :range="variantLabels" />
+          </lingyun-form-item>
+          <lingyun-form-item label="角标">
+            <lingyun-switch v-model="showBadge" />
+          </lingyun-form-item>
+        </lingyun-form-group>
+      </lingyun-form>
     </view>
+
+    <lingyun-tabbars
+      :key="barKey"
+      v-model="current"
+      :items="items"
+      :variant="variant"
+    />
   </lingyun-app-page>
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { computed, ref, watch } from 'vue'
 
-  const itemsDefault = [
-    { key: 'home', text: 'Home', icon: '⌂' },
-    { key: 'listen', text: 'Listen', icon: '♪' },
-    { key: 'browse', text: 'Browse', icon: '◇', badge: 3 },
-    { key: 'radio', text: 'Radio', icon: '◉', badge: { text: 12, color: 'orange' } },
-    { key: 'library', text: 'Library', icon: '▤', badge: { color: 'green', dot: true } },
-  ]
+  type TabDemoItem = {
+    key: string
+    text?: string
+    icon?: string
+    role?: 'search'
+    badge?: number | { text?: number; color?: string; dot?: boolean }
+  }
 
-  const itemsFourPlusOne = [
-    { key: 'home', text: 'Home', icon: '⌂' },
-    { key: 'listen', text: 'Listen', icon: '♪' },
-    { key: 'browse', text: 'Browse', icon: '◇' },
-    { key: 'radio', text: 'Radio', icon: '◉' },
-    { key: 'search', role: 'search' as const },
-  ]
+  const layouts = [
+    { key: 'five', text: '无搜索 · 5 项' },
+    { key: 'four', text: '无搜索 · 4 项' },
+    { key: 'fourSearch', text: '4 + 搜索' },
+    { key: 'threeSearch', text: '3 + 搜索' },
+    { key: 'twoSearch', text: '2 + 搜索' },
+    { key: 'oneSearch', text: '1 + 搜索' },
+  ] as const
 
-  const itemsThreePlusOne = [
-    { key: 'home', text: 'Home', icon: '⌂' },
-    { key: 'listen', text: 'Listen', icon: '♪' },
-    { key: 'browse', text: 'Browse', icon: '◇' },
-    { key: 'search', role: 'search' as const },
-  ]
+  const variants = [
+    { key: 'default', text: 'Default' },
+    { key: 'prominent', text: 'Prominent' },
+  ] as const
 
-  const itemsTwoPlusOne = [
-    { key: 'home', text: 'Home', icon: '⌂' },
-    { key: 'browse', text: 'Browse', icon: '◇' },
-    { key: 'search', role: 'search' as const },
-  ]
+  const layoutLabels = layouts.map((item) => item.text)
+  const variantLabels = variants.map((item) => item.text)
 
-  const itemsOnePlusOne = [
-    { key: 'home', text: 'Home', icon: '⌂' },
-    { key: 'search', role: 'search' as const },
-  ]
+  const layoutIdx = ref(0)
+  const variantIdx = ref(0)
+  const showBadge = ref(true)
+  const current = ref('home')
 
-  const itemsPlainFour = [
-    { key: 'home', text: 'Home', icon: '⌂' },
-    { key: 'listen', text: 'Listen', icon: '♪' },
-    { key: 'browse', text: 'Browse', icon: '◇' },
-    { key: 'radio', text: 'Radio', icon: '◉' },
-  ]
+  const layoutKey = computed(() => layouts[layoutIdx.value]?.key ?? 'five')
+  const variant = computed(() => variants[variantIdx.value]?.key ?? 'default')
+  const barKey = computed(() => `${layoutKey.value}-${variant.value}-${showBadge.value ? 'b' : 'n'}`)
 
-  const currentDefault = ref('home')
-  const currentPlainFour = ref('home')
-  const currentFour = ref('home')
-  const currentThree = ref('home')
-  const currentTwo = ref('home')
-  const currentOne = ref('home')
+  const items = computed((): TabDemoItem[] => {
+    const withSearch = layoutKey.value.endsWith('Search')
+    const mainCount =
+      layoutKey.value === 'five'
+        ? 5
+        : layoutKey.value === 'four' || layoutKey.value === 'fourSearch'
+          ? 4
+          : layoutKey.value === 'threeSearch'
+            ? 3
+            : layoutKey.value === 'twoSearch'
+              ? 2
+              : 1
+
+    const catalog: TabDemoItem[] = [
+      { key: 'home', text: 'Home', icon: '⌂' },
+      { key: 'listen', text: 'Listen', icon: '♪' },
+      { key: 'browse', text: 'Browse', icon: '◇', badge: 3 },
+      { key: 'radio', text: 'Radio', icon: '◉', badge: { text: 12, color: 'orange' } },
+      { key: 'library', text: 'Library', icon: '▤', badge: { color: 'green', dot: true } },
+    ]
+
+    const mains = catalog.slice(0, mainCount).map((item) => {
+      if (showBadge.value) return { ...item }
+      const next = { ...item }
+      delete next.badge
+      return next
+    })
+
+    if (withSearch) {
+      mains.push({ key: 'search', role: 'search' })
+    }
+    return mains
+  })
+
+  const currentLabel = computed(() => {
+    const item = items.value.find((row) => row.key === current.value)
+    if (!item) return '—'
+    if (item.role === 'search') return 'Search'
+    return item.text || item.key
+  })
+
+  watch(
+    items,
+    (list) => {
+      if (!list.some((row) => row.key === current.value)) {
+        current.value = list[0]?.key || 'home'
+      }
+    },
+    { immediate: true },
+  )
 </script>
 
 <style lang="scss">
   .page {
     box-sizing: border-box;
     min-height: 100%;
-    position: relative;
+    padding-bottom: 130px;
     background:
       radial-gradient(120% 80% at 10% 0%, rgba(37, 99, 235, 0.22), transparent 55%),
       radial-gradient(100% 70% at 90% 20%, rgba(16, 185, 129, 0.16), transparent 50%),
@@ -158,43 +147,5 @@
     margin-top: 6px;
     font-size: 13px;
     color: var(--lingyun-label-secondary, #6a6a6a);
-  }
-
-  .spacer {
-    height: 670px;
-  }
-
-  .stage {
-    position: fixed;
-    left: 0;
-    right: 0;
-    z-index: 20;
-    pointer-events: none;
-  }
-
-  /* 只让胶囊和搜索可点，空白处继续滚页面 */
-
-  .stage--a {
-    bottom: 550px;
-  }
-
-  .stage--plain4 {
-    bottom: 440px;
-  }
-
-  .stage--b {
-    bottom: 330px;
-  }
-
-  .stage--c {
-    bottom: 220px;
-  }
-
-  .stage--d {
-    bottom: 110px;
-  }
-
-  .stage--e {
-    bottom: 0;
   }
 </style>

@@ -1,0 +1,40 @@
+---
+description: 业务侧必须 TypeScript；不要把 uni_modules 扩展里的 JS 改成 TS
+alwaysApply: true
+---
+
+# 业务 TypeScript / 扩展勿改语言
+
+## 业务侧（强制 TS）
+
+下列目录的**新增与改动**必须是 TypeScript（`.ts`，或 `.vue` 的 `<script setup lang="ts">`），禁止新增 `.js` / `.cjs` / `.mjs`：
+
+- `src/pages/`
+- `src/components/`
+- `src/api/`
+- `src/stores/`
+- `src/utils/`
+- `src/router/`
+- `src/config/`
+- 以及 `src/App.vue` / `src/main.ts`
+
+从旧项目搬代码时，业务逻辑一并改写成 TS，不要原样拷贝 `.js`。
+
+```ts
+// ✅ src/utils/zip.ts
+import { atob2 } from './base64'
+```
+
+```js
+// ❌ src/utils/zip.js 或 src/pages 下新建 .js
+```
+
+## 扩展（不要改语言）
+
+`src/uni_modules/`（含第三方 `uni-*` 与自研 `lingyun-ui`）是扩展层：
+
+- ❌ 不要把扩展里已有的 `.js`（含 mixin、renderjs、calendar 等）改成 `.ts`
+- ❌ 不要为「全量 TS」去动 `uni-*` 第三方源码
+- ✅ 改扩展只做功能/样式/协议需要的改动；新文件跟随该组件现有约定（Vue 组件用 `.vue`，renderjs 必须 `.js`）
+
+业务任务与扩展任务分开做。

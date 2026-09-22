@@ -49,14 +49,9 @@ export default {
   name: 'LingyunList',
   emits: ['action'],
   /**
-   * 供 list-item 登记「是否首行」，避免小程序上 :last-child / ::after 分割线失效
-   *（对齐 uni-list firstChildAppend）
+   * firstChildAppend 不放进 data：非响应式。
+   * 行组件用 $parent 查找本实例并只写一次，对齐 uni-list（不用 provide/inject，避免长列表整表重绘）。
    */
-  provide() {
-    return {
-      lingyunList: this,
-    }
-  },
   props: {
     header: {
       type: String,

@@ -17,6 +17,7 @@
       :show-close="showCloseEffective"
       :show-grabber="showGrabberEffective"
       :show-trailing="showTrailing"
+      :show-window-controls="navDocked ? false : 'auto'"
       :fixed="true"
       :safe-area="safeArea"
       :glass-progress="glassProgress"
@@ -84,6 +85,9 @@ import {
 } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
 import { useThemeStore } from '@/stores/theme'
 import { LINGYUN_PAGE_NAV_WIDTH } from '@/router/pageNav'
+// #ifdef H5
+import { setLingyunH5PageNavAllowed } from '@/uni_modules/lingyun-ui/components/lingyun-page-nav/mountLingyunPageNav'
+// #endif
 
 /**
  * lingyun-app-page
@@ -167,6 +171,7 @@ export default {
   },
   mounted() {
     this.syncNavLayout()
+    this.syncH5PageNavHost()
     this.bindResize()
     if (this.usePageScroll) {
       this.$nextTick(() => this.setupGlassObserver())
@@ -181,10 +186,16 @@ export default {
     this.clearScrollSettle()
     this.teardownGlassObserver()
     this.unbindResize()
+    // #ifdef H5
+    setLingyunH5PageNavAllowed(true)
+    // #endif
   },
   watch: {
     safeArea() {
       this.syncNavLayout()
+    },
+    navDocked() {
+      this.syncH5PageNavHost()
     },
   },
   computed: {
@@ -241,7 +252,8 @@ export default {
       return { height: `${Math.max(1, Number(this.glassDistance) || 56)}px` }
     },
     showBackEffective() {
-      return coerceTriFlag(this.showBack, true)
+      /* 宽屏停靠左侧导航时用侧栏切页，auto 不再显示返回；显式 true 仍可开 */
+      return coerceTriFlag(this.showBack, !this.navDocked)
     },
     showCloseEffective() {
       return coerceTriFlag(this.showClose, false)
@@ -328,6 +340,12 @@ export default {
       this.largeExtraPx = layout.largeExtra
       this.title2LineLargeExtraPx = layout.title2LineLargeExtra
       this.regular = !!layout.regular
+      this.syncH5PageNavHost()
+    },
+    syncH5PageNavHost() {
+      // #ifdef H5
+      setLingyunH5PageNavAllowed(this.navDocked)
+      // #endif
     },
     bindResize() {
       this._onWindowResize = (res) => {

@@ -82,7 +82,7 @@
 | 按钮 | 44 | **44**（48pt 只用于 iPhone Duo，不用于 iPad 顶栏） |
 | Large 额外 | 51（总高 111） | **48**（总高 102） |
 | 2 Line Large 额外 | 71 | **71**（总高 125） |
-| 窗口按钮 | 无 | **仅 Mac 桌面**：Leading 前 **41×22**（Close / Minimize / Expand）。iPad 全屏示例不带；微信永不显示 |
+| 窗口按钮 | 无 | **仅 Mac 桌面**：**41×22**（Close / Minimize / Expand）。有左侧导航时画在侧栏顶栏，与内容顶栏对齐；无侧栏时仍在 Toolbar Leading。iPad 全屏示例不带；微信永不显示 |
 
 标题仍是 Semibold **17 / 22**，色为 Labels · Liquid Glass **1 Primary** `#1a1a1a`，相对栏身几何中心，不跟按钮组走。状态栏高度继续用 `getWindowInfo().statusBarHeight`（iPad 示例为 32，不写死）。窄屏「状态栏挪 5px 到下边距」在宽屏关闭。
 
@@ -154,5 +154,5 @@
 - [ ] H5 / 无胶囊：Title 仍对称居中
 - [ ] 尺寸 `px`，对照 Sketch Inspect 与 Liquid Glass HIG
 - [ ] 宽屏（窗口 ≥700）：栏身 **54**、左右 **20**、钮间距 **12**、按钮仍 **44**；Large 额外 **48**
-- [ ] Mac 桌面宽屏：Leading 前有 **41×22** 窗口按钮（红 / 黄 / 绿）；iPad 与微信不显示
+- [ ] Mac 桌面宽屏：有左侧导航时交通灯在侧栏顶栏；无侧栏时在 Toolbar Leading。**41×22**（红 / 黄 / 绿）；iPad 与微信不显示
 - [ ] 窄屏仍是 iPhone **60**（上下各 8）；微信胶囊避让与标题居中校正不变

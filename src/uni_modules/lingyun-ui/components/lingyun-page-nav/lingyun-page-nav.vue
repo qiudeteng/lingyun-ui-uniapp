@@ -1,7 +1,14 @@
 <template>
   <view class="lingyun-page-nav" :class="themeRootClass">
     <view class="lingyun-page-nav__head" :style="navHeadStyle">
-      <text class="lingyun-page-nav__title" :style="navTitleStyle">凌云UI</text>
+      <view class="lingyun-page-nav__bar" :style="navBarStyle">
+        <view v-if="windowControls" class="lingyun-page-nav__windows" aria-hidden="true">
+          <view class="lingyun-page-nav__window lingyun-page-nav__window--close" />
+          <view class="lingyun-page-nav__window lingyun-page-nav__window--min" />
+          <view class="lingyun-page-nav__window lingyun-page-nav__window--zoom" />
+        </view>
+        <text class="lingyun-page-nav__title">凌云UI</text>
+      </view>
     </view>
     <scroll-view
       class="lingyun-page-nav__scroll"
@@ -86,6 +93,8 @@ export default {
     return {
       statusBarPx: 0,
       barHeightPx: LINGYUN_TOOLBAR_BAR_DESIGN_PX,
+      padTopPx: 0,
+      padBottomPx: 0,
       currentPath: getLingyunPageNavIntent(),
       navHome: LINGYUN_PAGE_NAV_HOME,
       navScrollTop: getLingyunPageNavScrollTop(),
@@ -110,12 +119,19 @@ export default {
     pageNavSections() {
       return Array.isArray(this.sections) ? this.sections : LINGYUN_PAGE_NAV
     },
+    windowControls() {
+      return !!getLingyunNavLayout(LINGYUN_TOOLBAR_BAR_DESIGN_PX).windowControls
+    },
     navHeadStyle() {
       return { paddingTop: `${this.statusBarPx}px` }
     },
-    navTitleStyle() {
+    navBarStyle() {
       const h = this.barHeightPx || LINGYUN_TOOLBAR_BAR_DESIGN_PX
-      return { height: `${h}px`, lineHeight: `${h}px` }
+      return {
+        height: `${h}px`,
+        paddingTop: `${this.padTopPx}px`,
+        paddingBottom: `${this.padBottomPx}px`,
+      }
     },
   },
   created() {
@@ -156,6 +172,8 @@ export default {
       const layout = getLingyunNavLayout(LINGYUN_TOOLBAR_BAR_DESIGN_PX)
       this.statusBarPx = layout.statusBarHeight || 0
       this.barHeightPx = layout.barHeight
+      this.padTopPx = layout.padTop
+      this.padBottomPx = layout.padBottom
     },
     readRoute() {
       try {
@@ -264,11 +282,54 @@ export default {
   box-sizing: border-box;
 }
 
+.lingyun-page-nav__bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  box-sizing: border-box;
+  gap: 12px;
+}
+
+.lingyun-page-nav__windows {
+  width: 41px;
+  height: 22px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.lingyun-page-nav__window {
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.15);
+
+  &--close {
+    background-color: #ff5f57;
+  }
+
+  &--min {
+    background-color: #febc2e;
+  }
+
+  &--zoom {
+    background-color: #28c840;
+  }
+}
+
 .lingyun-page-nav__title {
-  display: block;
+  flex: 1;
+  min-width: 0;
   font-size: 22px;
   font-weight: 600;
+  line-height: 28px;
   color: var(--lingyun-label, #{$lingyun-label});
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .lingyun-page-nav__scroll {

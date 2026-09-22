@@ -124,10 +124,19 @@ function isMacDesktop(): boolean {
     const device = String(rec.deviceType || '').toLowerCase()
     if (device === 'phone' || device === 'pad') return false
     const os = String(rec.osName || rec.platform || '').toLowerCase()
-    return os === 'macos' || os === 'mac' || os.includes('mac')
+    if (os === 'macos' || os === 'mac' || os.includes('mac')) return true
   } catch {
-    return false
+    /* fall through */
   }
+  // #ifdef H5
+  if (typeof navigator !== 'undefined') {
+    const plat = String(navigator.platform || '')
+    const ua = String(navigator.userAgent || '')
+    if (/iPhone|iPad|iPod/i.test(ua)) return false
+    if (/Mac/i.test(plat) || /Mac OS X/i.test(ua)) return true
+  }
+  // #endif
+  return false
   // #endif
 }
 

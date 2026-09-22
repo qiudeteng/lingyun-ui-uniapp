@@ -1,14 +1,17 @@
 /**
- * 用户相关接口示例（TypeScript）
+ * 用户信息 / 菜单 / 门店（对齐 ../mobile/store/user.js）
  */
-import { request } from '../utils/request'
+import { post } from '@/utils/request'
+import type { UserInfo } from '@/stores/user'
 
-/** 登录 */
-export function login(data: Record<string, unknown>) {
-  return request({ url: '/user/login', method: 'POST', data })
+export function fetchUserInfo() {
+  return post<UserInfo>('/core/User/info', {}, false)
 }
 
-/** 获取用户信息 */
-export function getUserInfo() {
-  return request<Record<string, unknown>>({ url: '/user/info' })
+export function fetchUserMenu() {
+  return post('/core/User/menu', {}, false)
+}
+
+export function fetchUserAuthStores() {
+  return post('/enterprise/Store/getUserAuthStores', {}, false)
 }

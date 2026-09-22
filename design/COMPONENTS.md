@@ -46,9 +46,13 @@
 | ✅ | `lingyun-menu` / `lingyun-context-menu` | 弹出菜单 · 长按菜单 | [`MENUS.md`](./MENUS.md) |
 | ✅ | `lingyun-sidebar` | 悬浮玻璃侧栏 | [`SIDEBARS.md`](./SIDEBARS.md) |
 | ✅ | `lingyun-fab` | 悬浮按钮 · 展开菜单（对齐 uni-fab） | demo [`fab`](../src/pages/demo/fab.vue) |
+| ✅ | `lingyun-goods-nav` | 商品底栏（对齐 uni-goods-nav） | [`GOODS_NAV.md`](./GOODS_NAV.md) |
+| ✅ | `lingyun-grid` / `lingyun-grid-item` | 宫格（对齐 uni-grid） | [`GRID.md`](./GRID.md) |
+| ✅ | `lingyun-indexed-list` | 索引列表（对齐 uni-indexed-list） | [`INDEXED_LIST.md`](./INDEXED_LIST.md) |
 | ✅ | `lingyun-app-page` | 页面壳（顶栏 + 滚动 + 主题 class；宽屏左侧导航） | [`TOOLBARS.md`](./TOOLBARS.md) |
 | ✅ | `lingyun-section` | Demo / 区块布局容器 | demo [`sections`](../src/pages/demo/sections.vue) |
 | ✅ | `lingyun-feedback-host` | 命令式 Toast/HUD 宿主 | [`TOASTS.md`](./TOASTS.md) |
+| ✅ | `lingyun-ui-charts` | 图表（独立包 · uCharts / ECharts） | [`CHARTS.md`](./CHARTS.md) |
 
 ### 底座 ✅
 
@@ -79,8 +83,7 @@
 | 状态 | 组件 | 说明 |
 |------|------|------|
 | ⬜ | `lingyun-rating` | 评分 |
-| ⬜ | `lingyun-gauge` | 仪表盘类 |
-| ➖ | `lingyun-chart` | 图表（可继续用 ECharts，不必自研） |
+| ⬜ | `lingyun-gauge` | 仪表盘类（内容层控件；图表仪表盘走 `lingyun-ui-charts` type=`gauge`） |
 | ⬜ | `lingyun-keyboard-toolbar` | 输入附属栏 |
 | ➖ | Widgets / Notifications | 偏系统壳，小程序优先级低 |
 
@@ -111,6 +114,10 @@
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-22 | 新增 `lingyun-indexed-list`（索引列表 · 对齐 uni-indexed-list）；专章 `INDEXED_LIST.md` |
+| 2026-09-22 | 新增 `lingyun-grid`（宫格 · 对齐 uni-grid）；专章 `GRID.md` |
+| 2026-09-22 | 新增 `lingyun-goods-nav`（商品底栏 · 对齐 uni-goods-nav）；专章 `GOODS_NAV.md` |
+| 2026-09-21 | `lingyun-ui-charts` 移入已完成；专章 `CHARTS.md`；系列色在包内 `config-colors.js` |
 | 2026-09-18 | 新增 `lingyun-sidebar`（悬浮玻璃侧栏）；专章 `SIDEBARS.md` |
 | 2026-09-18 | 新增 `lingyun-activity-view`（分享面板 · 半高 / 全高）；专章 `ACTIVITY_VIEWS.md` |
 | 2026-09-17 | 新增 `lingyun-image`（懒加载 / 失败占位 / 圆角圆形 / mode）；专章 `IMAGES.md` |

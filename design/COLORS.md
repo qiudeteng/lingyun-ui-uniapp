@@ -34,6 +34,8 @@
 SCSS：`$lingyun-system-*` / `$lingyun-system-*-dark`  
 CSS：`--lingyun-system-*`（`prefers-color-scheme: dark` 自动切换；手动切换用 `.theme-light` / `.theme-dark` 或 `data-theme`，见 `useThemeStore`）
 
+图表系列色用同一套 Accents，落在独立包 `lingyun-ui-charts/js_sdk/u-charts/config-colors.js`（顺序 Blue → … → Pink），见 [`CHARTS.md`](./CHARTS.md)。不要在业务 `src/config` 再备一份。
+
 ---
 
 ## 2. 其余分组（Sketch Color Variables 已逐组核对）

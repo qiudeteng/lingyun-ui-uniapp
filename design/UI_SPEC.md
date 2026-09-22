@@ -75,6 +75,10 @@ Liquid Glass 是 **控件与导航功能层** 的材质，不是整页皮肤。
 - **Text Field**：一律按 [`TEXTFIELDS.md`](./TEXTFIELDS.md) / [Sketch Text Field Light](https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02/f/39D95D27-DDDF-4750-8ECE-18FF32FEC086#Inspect) 实现独立表单字段（Fill Tertiary、圆角 26）；禁止整块 Liquid Glass 冒充输入框。
 - **Text**：一律按 [`TEXTS.md`](./TEXTS.md) / [HIG Typography](https://developer.apple.com/design/human-interface-guidelines/typography) 使用 Text Styles + Labels；禁止随意字号冒充系统字阶。
 - **Image**：一律按 [`IMAGES.md`](./IMAGES.md) 使用懒加载 / 失败占位 / 圆角圆形 / `mode` 拉伸；头像场景优先 `lingyun-avatar`。
+- **Charts**：一律按 [`CHARTS.md`](./CHARTS.md)；内容层 canvas，非玻璃；系列色走 System Accents（`config-colors.js`）。
+- **Goods Nav**：一律按 [`GOODS_NAV.md`](./GOODS_NAV.md)；左侧图标胶囊走控件玻璃，右侧按钮用系统蓝，禁止红橙渐变实心条。
+- **Grid**：一律按 [`GRID.md`](./GRID.md)；分组卡片宫格，禁止灰表格线和每格独立玻璃。
+- **Indexed List**：一律按 [`INDEXED_LIST.md`](./INDEXED_LIST.md)；字母分组卡片加右侧索引，拖动气泡用控件玻璃。
 - 内容区保持清晰可读：可用浅底、卡片分区或 **标准材质**（轻 blur / 实色），但避免大面积「假玻璃」堆叠。
 
 ### 禁止
@@ -339,6 +343,10 @@ Liquid Glass 是 **控件与导航功能层** 的材质，不是整页皮肤。
 - [ ] Sheet 改动已对照 `SHEETS.md` / Sketch Sheets（底部 Modal、medium/large、Grabber、玻璃）
 - [ ] Action Sheet 改动已对照 `ACTIONSHEETS.md`（两组玻璃卡、Cancel、§6.2-A.1）
 - [ ] Text Field 改动已对照 `TEXTFIELDS.md` / Sketch Text Fields（Fill Tertiary、52 高、圆角 26）
+- [ ] Charts 改动已对照 `CHARTS.md`（数据形状、系列色、canvas 高度、mp canvas2d）
+- [ ] Goods Nav 改动已对照 `GOODS_NAV.md`（玻璃图标胶囊 + 系统蓝按钮，非渐变实心条）
+- [ ] Grid 改动已对照 `GRID.md`（分组卡片、方形格、分割线不画成灰表格）
+- [ ] Indexed List 改动已对照 `INDEXED_LIST.md`（分组卡片、字母条、玻璃气泡）
 - [ ] 尺寸一律 `px`（1pt = 1px），未使用 `rpx`
 
 ---
@@ -348,7 +356,7 @@ Liquid Glass 是 **控件与导航功能层** 的材质，不是整页皮肤。
 修改本规范必须同步：
 
 1. `design/UI_SPEC.md`（本文）
-2. `design/README.md` 中的引用（及 `COLORS.md` / `BUTTONS.md` / `TABBARS.md` / `SEARCHBARS.md` / `LISTS.md` / `SWIPE_ACTIONS.md` / `ALERTS.md` / `BADGES.md` / `SEGMENTED_CONTROLS.md` / `TOOLBARS.md` / `SHEETS.md` / `ACTIONSHEETS.md` / `TEXTFIELDS.md` 等专章）
+2. `design/README.md` 中的引用（及 `COLORS.md` / `BUTTONS.md` / `TABBARS.md` / `SEARCHBARS.md` / `LISTS.md` / `SWIPE_ACTIONS.md` / `ALERTS.md` / `BADGES.md` / `SEGMENTED_CONTROLS.md` / `TOOLBARS.md` / `SHEETS.md` / `ACTIONSHEETS.md` / `TEXTFIELDS.md` / `CHARTS.md` / `GOODS_NAV.md` / `GRID.md` / `INDEXED_LIST.md` 等专章）
 3. 根目录 `AGENTS.md`
 4. `.cursor/rules/liquid-glass-ui.mdc`（`alwaysApply: true`）
 5. 如涉及 token：`lingyun-ui/styles/**` 与 `lingyun-ui/readme.md` / `changelog.md`

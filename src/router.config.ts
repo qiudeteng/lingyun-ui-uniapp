@@ -11,6 +11,21 @@ export const routes: RouteConfig[] = [
 		meta: { title: '凌云UI' }
 	},
 	{
+		path: '/pages/login/login',
+		name: 'pagesLoginLogin',
+		meta: { title: '登录' }
+	},
+	{
+		path: '/pages/login/user-agreement',
+		name: 'pagesLoginUserAgreement',
+		meta: { title: '用户服务协议' }
+	},
+	{
+		path: '/pages/login/privacy-policy',
+		name: 'pagesLoginPrivacyPolicy',
+		meta: { title: '隐私政策' }
+	},
+	{
 		path: '/pages/demo/buttons',
 		name: 'pagesDemoButtons',
 		meta: { title: 'Buttons' }
@@ -189,6 +204,116 @@ export const routes: RouteConfig[] = [
 		path: '/pages/demo/fab',
 		name: 'pagesDemoFab',
 		meta: { title: 'Fab' }
+	},
+	{
+		path: '/pages/demo/goods-nav',
+		name: 'pagesDemoGoodsNav',
+		meta: { title: 'Goods Nav' }
+	},
+	{
+		path: '/pages/demo/grid',
+		name: 'pagesDemoGrid',
+		meta: { title: 'Grid' }
+	},
+	{
+		path: '/pages/demo/indexed-list',
+		name: 'pagesDemoIndexedList',
+		meta: { title: 'Indexed List' }
+	},
+	{
+		path: '/pages/demo/charts/column',
+		name: 'pagesDemoChartsColumn',
+		meta: { title: 'Column' }
+	},
+	{
+		path: '/pages/demo/charts/bar',
+		name: 'pagesDemoChartsBar',
+		meta: { title: 'Bar' }
+	},
+	{
+		path: '/pages/demo/charts/line',
+		name: 'pagesDemoChartsLine',
+		meta: { title: 'Line' }
+	},
+	{
+		path: '/pages/demo/charts/area',
+		name: 'pagesDemoChartsArea',
+		meta: { title: 'Area' }
+	},
+	{
+		path: '/pages/demo/charts/pie',
+		name: 'pagesDemoChartsPie',
+		meta: { title: 'Pie' }
+	},
+	{
+		path: '/pages/demo/charts/ring',
+		name: 'pagesDemoChartsRing',
+		meta: { title: 'Ring' }
+	},
+	{
+		path: '/pages/demo/charts/rose',
+		name: 'pagesDemoChartsRose',
+		meta: { title: 'Rose' }
+	},
+	{
+		path: '/pages/demo/charts/funnel',
+		name: 'pagesDemoChartsFunnel',
+		meta: { title: 'Funnel' }
+	},
+	{
+		path: '/pages/demo/charts/radar',
+		name: 'pagesDemoChartsRadar',
+		meta: { title: 'Radar' }
+	},
+	{
+		path: '/pages/demo/charts/gauge',
+		name: 'pagesDemoChartsGauge',
+		meta: { title: 'Gauge' }
+	},
+	{
+		path: '/pages/demo/charts/arcbar',
+		name: 'pagesDemoChartsArcbar',
+		meta: { title: 'Arcbar' }
+	},
+	{
+		path: '/pages/demo/charts/mount',
+		name: 'pagesDemoChartsMount',
+		meta: { title: 'Mount' }
+	},
+	{
+		path: '/pages/demo/charts/mix',
+		name: 'pagesDemoChartsMix',
+		meta: { title: 'Mix' }
+	},
+	{
+		path: '/pages/demo/charts/scatter',
+		name: 'pagesDemoChartsScatter',
+		meta: { title: 'Scatter' }
+	},
+	{
+		path: '/pages/demo/charts/bubble',
+		name: 'pagesDemoChartsBubble',
+		meta: { title: 'Bubble' }
+	},
+	{
+		path: '/pages/demo/charts/candle',
+		name: 'pagesDemoChartsCandle',
+		meta: { title: 'Candle' }
+	},
+	{
+		path: '/pages/demo/charts/word',
+		name: 'pagesDemoChartsWord',
+		meta: { title: 'Word' }
+	},
+	{
+		path: '/pages/demo/charts/tline',
+		name: 'pagesDemoChartsTline',
+		meta: { title: 'Time Line' }
+	},
+	{
+		path: '/pages/demo/charts/tarea',
+		name: 'pagesDemoChartsTarea',
+		meta: { title: 'Time Area' }
 	}
 ]
 

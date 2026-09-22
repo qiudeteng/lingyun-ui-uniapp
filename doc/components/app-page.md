@@ -26,7 +26,7 @@
 | `subtitle` | 副标题 | '' |
 | `titleStyle` | `title` / `large` / `title2LineLarge` | title |
 | `placement` | `standard` 页面，或 `sheet` | standard |
-| `showBack` | 返回按钮。`auto` 时非首页显示 | auto |
+| `showBack` | 返回按钮。`auto` 时显示；宽屏已停靠左侧导航则隐藏 | auto |
 | `showClose` | 关闭按钮 | false |
 | `showGrabber` | 顶部抓手。打开后不显示宽屏导航 | false |
 | `showTrailing` | 右侧按钮 | false |

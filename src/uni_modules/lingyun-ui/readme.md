@@ -66,7 +66,7 @@ uni.hideLingyunHud()
 ## 硬规则
 
 1. **所有 `lingyun-*` 组件只放在本包下**，路径固定为 `components/<组件名>/<组件名>.vue`。
-2. **禁止**再建 `src/uni_modules/lingyun-xxx` 独立插件包。
+2. **禁止**再建 `src/uni_modules/lingyun-xxx` 独立插件包（图表引擎 `lingyun-ui-charts` 除外）。
 3. **禁止**把 `lingyun-*` 放到 `src/components/`。
 4. 目录与文件名必须一致，便于 easycom 自动扫描。
 5. **样式扩展统一走 `styles/`**；控件层必须使用 `$lingyun-glass-*`，禁止组件内私造第二套模糊参数。选型见 `styles/README.md` 与 `design/UI_SPEC.md` §6.2：
@@ -91,6 +91,10 @@ lingyun-ui/
     ├── lingyun-page-nav/ # 宽屏目录。H5 挂载见 mountLingyunPageNav.ts
     ├── lingyun-toolbars/
     ├── lingyun-fab/
+    ├── lingyun-goods-nav/
+    ├── lingyun-grid/
+    ├── lingyun-grid-item/
+    ├── lingyun-indexed-list/
     └── lingyun-*/        # 其余组件：目录名 = 文件名
 ```
 
@@ -109,6 +113,25 @@ lingyun-ui/
     { icon: 'camera', text: '拍照' },
   ]"
   @trigger="onFab"
+/>
+
+<lingyun-goods-nav
+  :options="[
+    { icon: 'shop', text: '店铺' },
+    { icon: 'cart', text: '购物车', info: 2 },
+  ]"
+  :button-group="[{ text: '加入购物车' }, { text: '立即购买' }]"
+  @button-click="onBuy"
+/>
+
+<lingyun-grid :column="4" @change="onGrid">
+  <lingyun-grid-item :index="0" icon="shop" text="店铺" />
+  <lingyun-grid-item :index="1" icon="cart" text="购物车" :info="2" />
+</lingyun-grid>
+
+<lingyun-indexed-list
+  :options="[{ letter: 'A', data: ['阿坝', '安庆'] }, { letter: 'B', data: ['北京'] }]"
+  @click="onIndex"
 />
 
 <lingyun-toolbars title="Title" @back="onBack" />
@@ -222,3 +245,11 @@ Badges：[`design/BADGES.md`](../../../design/BADGES.md) · [Sketch App Icons / 
 Segmented Controls：[`design/SEGMENTED_CONTROLS.md`](../../../design/SEGMENTED_CONTROLS.md) · [Sketch Segmented Controls](https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02/symbols?g=Segmented%2520Controls) · [Dark/Large](https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02/symbols?g=Segmented%2520Controls%252FDark%252FLarge)
 
 Sidebar：[`design/SIDEBARS.md`](../../../design/SIDEBARS.md)
+
+Charts（独立包）：[`lingyun-ui-charts/readme.md`](../lingyun-ui-charts/readme.md) · [`design/CHARTS.md`](../../../design/CHARTS.md)
+
+Goods Nav：[`design/GOODS_NAV.md`](../../../design/GOODS_NAV.md)
+
+Grid：[`design/GRID.md`](../../../design/GRID.md)
+
+Indexed List：[`design/INDEXED_LIST.md`](../../../design/INDEXED_LIST.md)
