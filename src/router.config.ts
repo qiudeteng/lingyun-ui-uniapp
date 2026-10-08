@@ -76,6 +76,11 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Toolbars' }
 	},
 	{
+		path: '/pages/demo/screen',
+		name: 'pagesDemoScreen',
+		meta: { title: 'Screen' }
+	},
+	{
 		path: '/pages/demo/sheets',
 		name: 'pagesDemoSheets',
 		meta: { title: 'Sheets' }
