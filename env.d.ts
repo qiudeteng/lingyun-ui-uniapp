@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+import type { LingyunEnv } from './src/uni_modules/lingyun-ui/utils/screenResolve'
+
 export {}
 
 interface ImportMetaEnv {
@@ -40,6 +42,8 @@ declare global {
     hideLingyunToast(): void
     showLingyunHud(options?: LingyunHudCallOptions): void
     hideLingyunHud(): void
+    /** 当前屏幕档、系统、折叠状态、硬件类型 */
+    lingyun: LingyunEnv
   }
 }
 
@@ -49,6 +53,8 @@ declare module 'vue' {
     $hideLingyunToast(): void
     $showLingyunHud(options?: LingyunHudCallOptions): void
     $hideLingyunHud(): void
+    /** 模板里直接 `lingyun.os == 'ios'` */
+    lingyun: LingyunEnv
   }
 }
 

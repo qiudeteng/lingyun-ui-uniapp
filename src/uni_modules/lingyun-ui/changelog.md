@@ -1,4 +1,5 @@
 ## 1.0.3（2026-10-08）
+- 全局 `lingyun`：当前窗口档、操作系统、是否折叠屏、折叠状态、硬件类型。模板里可写 `lingyun.os == 'ios'`。
 - `lingyun-picker-cal-day`：挪到独立目录，微信 easycom 能解析日期格。
 - `lingyun-icon`：字形改为直接输出字库字符，并开启 `virtualHost`，圆钮内图标可居中；脚本改为 TypeScript。
 - `lingyun-toolbars`：返回、关闭、分享改用 `lingyun-icon`。圆钮仍为 44px，返回图标 28，关闭与分享 26。

@@ -96,6 +96,8 @@ Demo：
 
 `week` 交互：点任意一天即选中其所在整周（7 天高亮）；再点另一周则切换。
 
+日格组件是 `lingyun-picker-cal-day`，路径为 `components/lingyun-picker-cal-day/lingyun-picker-cal-day.vue`。微信 easycom 只扫描「目录名 = 文件名」，不能再嵌进 `lingyun-picker/`。页面不要单独引用它。
+
 **天视图补位（强制）**：日历固定 **6 行 × 7 列 = 42 格**，1 号之前与月末之后的空位用**相邻月真实日期**补齐，灰显（Label Tertiary）且**不可点**（要跨月先翻月）。补位格仍参与周 / 区间高亮，否则整周条带会在月首月尾断开、圆角缺口很难看；但补位格即使命中选中日 / 今天也**不画实心圈或蓝底**，避免看着像可点。格子起始日与表头星期均随 `weekStartsOn` 旋转——两者必须一致，否则整周高亮会跨两行。
 
 事件：`update:modelValue`、`update:value`、`change`、`cancel`
@@ -138,7 +140,7 @@ Demo：
 
 - [ ] 弹层为悬浮卡片：四周内缩 8、四角 34；收起后无残留露头
 - [ ] 宽屏（iPad / 桌面 H5）面板不铺满：宽 ≤420 且水平居中
-- [ ] date / datetime 为日历（非默认三列滚轮）；选中为 Label 圆、今日为 soft 圆
+- [ ] date / datetime 为日历（非默认三列滚轮）；选中为 Label 圆、今日为 soft 圆。日格在独立目录 `lingyun-picker-cal-day`，微信 easycom 能解析
 - [ ] `daterange` 可点选起止，区间高亮；值为 `[start, end]`
 - [ ] `week` 点选整周（默认周日～周六）；值为 `[weekStart, weekEnd]`
 - [ ] 天视图首尾用灰色相邻月日期补齐（不可点）；选月首 / 月末那周时条带完整不断开

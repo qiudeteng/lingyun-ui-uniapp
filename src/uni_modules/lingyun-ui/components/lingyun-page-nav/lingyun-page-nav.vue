@@ -7,7 +7,44 @@
           <view class="lingyun-page-nav__window lingyun-page-nav__window--min" />
           <view class="lingyun-page-nav__window lingyun-page-nav__window--zoom" />
         </view>
-        <text class="lingyun-page-nav__title">凌云UI</text>
+        <view v-if="showProfile" class="lingyun-page-nav__profile">
+          <view v-if="showAvatar" class="lingyun-page-nav__avatar">
+            <slot name="avatar">
+              <image
+                v-if="profileAvatar && !profile.slotAvatar"
+                class="lingyun-page-nav__avatar-img"
+                :src="profileAvatar"
+                mode="aspectFill"
+              />
+            </slot>
+            <!-- #ifdef H5 -->
+            <view v-if="profile.slotAvatar" id="ly-nav-slot-avatar" class="lingyun-page-nav__slot" />
+            <!-- #endif -->
+          </view>
+          <view class="lingyun-page-nav__meta">
+            <view v-if="showName" class="lingyun-page-nav__name">
+              <slot name="name">
+                <text v-if="profileName && !profile.slotName" class="lingyun-page-nav__name-text">{{ profileName }}</text>
+              </slot>
+              <!-- #ifdef H5 -->
+              <view v-if="profile.slotName" id="ly-nav-slot-name" class="lingyun-page-nav__slot" />
+              <!-- #endif -->
+            </view>
+            <view
+              v-if="showSubtitle"
+              class="lingyun-page-nav__subtitle"
+              :class="{ 'lingyun-page-nav__subtitle--hang': showName }"
+            >
+              <slot name="subtitle">
+                <text v-if="profileSubtitle && !profile.slotSubtitle" class="lingyun-page-nav__subtitle-text">{{ profileSubtitle }}</text>
+              </slot>
+              <!-- #ifdef H5 -->
+              <view v-if="profile.slotSubtitle" id="ly-nav-slot-subtitle" class="lingyun-page-nav__slot" />
+              <!-- #endif -->
+            </view>
+          </view>
+        </view>
+        <text v-else class="lingyun-page-nav__title">凌云UI</text>
       </view>
     </view>
     <scroll-view
@@ -70,6 +107,7 @@ import {
 } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
 import {
   LINGYUN_PAGE_NAV_HOME,
+  getLingyunPageNavProfile,
   getLingyunPageNavSections,
   clearLingyunPageNavIntent,
   getLingyunPageNavIntent,
@@ -85,6 +123,9 @@ type NavPage = {
   $page?: { fullPath?: string; route?: string }
 }
 
+const LINGYUN_PAGE_NAV_TITLE = '凌云UI'
+const LINGYUN_PAGE_NAV_SUBTITLE = '一套对齐 Apple Liquid Glass 的 uni-app 多端组件库'
+
 /**
  * 宽屏目录。H5 挂在 body 上，不随 redirectTo 拆掉；小程序嵌在 lingyun-app-page。
  * scroll-top 只在挂载时写入一次，滚动中不回写，避免把列表拽回旧位置。
@@ -97,6 +138,12 @@ export default defineComponent({
       type: Array as PropType<LingyunPageNavSection[] | null>,
       default: null,
     },
+    /** 顶部头像地址。有 #avatar 插槽时不用这张图。 */
+    avatar: { type: String, default: '' },
+    /** 顶部名称。有 #name 插槽时不用这段文字。 */
+    name: { type: String, default: '' },
+    /** 顶部副标题。有 #subtitle 插槽时不用这段文字。 */
+    subtitle: { type: String, default: '' },
   },
   data() {
     return {
@@ -138,6 +185,33 @@ export default defineComponent({
     },
     navHeadStyle() {
       return { paddingTop: `${this.statusBarPx}px` }
+    },
+    profile() {
+      return getLingyunPageNavProfile()
+    },
+    profileAvatar(): string {
+      return this.avatar || this.profile.avatar
+    },
+    profileName(): string {
+      return this.name || this.profile.name || LINGYUN_PAGE_NAV_TITLE
+    },
+    profileSubtitle(): string {
+      if (this.subtitle) return this.subtitle
+      if (this.profile.subtitle) return this.profile.subtitle
+      const customName = !!(this.name || this.profile.name || this.profile.slotName || this.$slots.name)
+      return customName ? '' : LINGYUN_PAGE_NAV_SUBTITLE
+    },
+    showAvatar(): boolean {
+      return !!(this.profileAvatar || this.$slots.avatar || this.profile.slotAvatar)
+    },
+    showName(): boolean {
+      return !!(this.profileName || this.$slots.name || this.profile.slotName)
+    },
+    showSubtitle(): boolean {
+      return !!(this.profileSubtitle || this.$slots.subtitle || this.profile.slotSubtitle)
+    },
+    showProfile(): boolean {
+      return this.showAvatar || this.showName || this.showSubtitle
     },
     navBarStyle() {
       const h = this.barHeightPx || LINGYUN_TOOLBAR_BAR_DESIGN_PX
@@ -331,6 +405,90 @@ export default defineComponent({
   &--zoom {
     background-color: #28c840;
   }
+}
+
+.lingyun-page-nav__profile {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.lingyun-page-nav__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--lingyun-fill-tertiary, #{$lingyun-fill-tertiary});
+}
+
+.lingyun-page-nav__avatar-img {
+  width: 36px;
+  height: 36px;
+}
+
+.lingyun-page-nav__meta {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.lingyun-page-nav__name {
+  height: 28px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.lingyun-page-nav__slot {
+  width: 100%;
+  min-width: 0;
+}
+
+.lingyun-page-nav__avatar .lingyun-page-nav__slot {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lingyun-page-nav__name-text,
+.lingyun-page-nav__subtitle-text {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.lingyun-page-nav__name-text {
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 28px;
+  color: var(--lingyun-label, #{$lingyun-label});
+}
+
+.lingyun-page-nav__subtitle--hang {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+}
+
+.lingyun-page-nav__subtitle-text {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 18px;
+  color: var(--lingyun-label-secondary, #{$lingyun-label-secondary});
 }
 
 .lingyun-page-nav__title {

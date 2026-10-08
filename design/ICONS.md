@@ -47,6 +47,7 @@
 2. 控件内图标优先 `lingyun-icon`，**禁止**再 CSS 自绘 clear / chevron / eye（伪元素在小程序易变形）。
 3. **不换**：Sheet grabber、checkbox/radio 几何选中态、picker indicator 线。
 4. `swipe-action` 的 `iconType` 走 `lingyun-icon`（与 uni-icons type 名兼容）。
+5. 内置图标输出字库字符，不用 `::before`。组件 `virtualHost: true`，字形在 **1em** 方盒内、`line-height: 1`。圆钮 flex 才能把符号居中；小程序上伪元素盒模型不稳。`customPrefix` 不是 `lyicon` 时仍走 class。
 
 ## 文件
 

@@ -30,4 +30,4 @@
 | --- | --- |
 | `update:modelValue` | 确认选择 |
 
-日历中的单日格子是内部组件，不要单独使用。
+日历中的单日格子是内部组件 `lingyun-picker-cal-day`，不要在页面里单独使用。它必须放在自己的目录 `lingyun-picker-cal-day/lingyun-picker-cal-day.vue`。微信 easycom 只认「目录名 = 文件名」，嵌回 `lingyun-picker` 目录后小程序会找不到这一格。

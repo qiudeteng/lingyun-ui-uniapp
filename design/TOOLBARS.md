@@ -46,13 +46,13 @@
 
 **Standard / Title**
 
-- **Leading**：Back Button（**44 × 44** Glass 圆钮 + chevron）+ 可选额外 Leading Buttons
+- **Leading**：Back Button（**44 × 44** Glass 圆钮 + `lingyun-icon` `left` **28**）+ 可选额外 Leading Buttons
 - **Title**：居中；SF Pro **Semibold 600** / **17** / LH **22** / Labels · Liquid Glass **1 Primary**（`#1a1a1a`）
 - **Trailing**：Trailing Button（常见 **44 × 44** Bordered Prominent / System Blue）
 
 **Sheet / Title**
 
-- **Grabber** → **Leading Button**（关闭 􀆄）→ **Title** → **Trailing Button**
+- **Grabber** → **Leading Button**（关闭：`lingyun-icon` `closeempty` **26**）→ **Title** → **Trailing Button**
 
 **Large**
 
@@ -72,7 +72,7 @@
 
 ### 1.5 宽屏（iPad / Mac）
 
-窗口宽度 **≥ 700** 时改走 Sketch **Toolbars/Light/iPad/Top**（画板 **1210**），不再套 iPhone 60。折叠屏展开（如 717 宽）同一档。
+窗口宽度 **≥ 700** 时改走 Sketch **Toolbars/Light/iPad/Top**（画板 **1210**），不再套 iPhone 60。折叠屏展开（如 717 宽）同一档。运行时 `lingyun.screen` 与这一档对齐：宽度 &lt; 700 为 `phone`，700–1199 为 `pad`，≥ 1200 为 `pc`。`lingyun.device` 看硬件，折叠展开不会把手机改成平板。字段见使用手册「屏幕」。
 
 | 项 | iPhone | iPad / Mac |
 |----|--------|------------|
@@ -88,7 +88,7 @@
 
 拉宽 / 收窄窗口时顶栏与 `lingyun-app-page` 占位一起重算。
 
-同一断点下 `lingyun-app-page` 会在左侧停靠导航。固定顶栏的 `left` 为 `var(--lingyun-page-nav-width, 0px)`（有导航时 **220**），栏身只覆盖右侧内容区，标题仍在该栏身内居中。浮层里 `fixed=false` 的顶栏不读这个变量。
+同一断点下 `lingyun-app-page` 会在左侧停靠导航。固定顶栏的 `left` 为 `var(--lingyun-page-nav-width, 0px)`（有导航时 **220**），栏身只覆盖右侧内容区，标题仍在该栏身内居中。浮层里 `fixed=false` 的顶栏不读这个变量。侧栏顶部名称与这一栏标题垂直对齐；副标题挂在名称下，不改变栏高。规格见 [`SIDEBARS.md`](./SIDEBARS.md) §4。
 
 ---
 
@@ -147,7 +147,7 @@
 - [ ] 栏身默认透明；滚动后 `glassProgress` 渐变为 Liquid Glass（约 56px 满）
 - [ ] Standard Title：栏身 **60**（上下各 **8**）；有状态栏时下边距 **13**（8+5）；按钮不贴边
 - [ ] Sheet Grabber **60×4**、居中、Y≈5
-- [ ] 栏身默认透明；滚动后玻璃渐显；Back / 操作钮 **44×44**
+- [ ] 栏身默认透明；滚动后玻璃渐显；Back / 操作钮 **44×44**。钮内用 `lingyun-icon`：返回 `left` **28**，关闭 `closeempty` **26**，分享 `upload` **26**
 - [ ] Inline 标题 Semibold 17 / LH 22 / Liquid Glass 1 Primary（`#1a1a1a`）；Large 左对齐大标题
 - [ ] safeArea 时状态栏用 JS statusBarHeight；微信内容行与胶囊对齐（同 uni-nav-bar）
 - [ ] 微信真机：居中 Title 对齐**屏宽中心**（不因右侧胶囊 inset 偏左）；Grabber 同理；左对齐 Title 不受影响

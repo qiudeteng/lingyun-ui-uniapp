@@ -257,7 +257,7 @@ Liquid Glass 是 **控件与导航功能层** 的材质，不是整页皮肤。
 #### C. `:last-child` / `::before` / `::after` 画分割线、图标 → 小程序失效或变形
 
 - 列表行分割线：自定义组件上 `:not(:last-child)::after` **不可靠** → 用父级登记 + **真实节点**（对齐 `uni-list`）。
-- 复杂图标（如 Share）：纯伪元素拼形状易糊/歪 → 优先 **真实子节点** 或可靠位图/SVG，勿只靠 `::before/::after`。
+- 复杂图标（如 Share）：纯伪元素拼形状易糊/歪 → 优先 **真实子节点** 或可靠位图/SVG，勿只靠 `::before/::after`。`lingyun-icon` 内置字形改为字库字符加 `virtualHost`，圆钮里才能居中。
 
 #### D. 暗黑只改 `document` / 依赖外部 `.theme-dark` 祖先 → 小程序无效
 
