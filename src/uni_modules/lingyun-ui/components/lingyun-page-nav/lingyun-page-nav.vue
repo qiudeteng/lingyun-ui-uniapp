@@ -60,7 +60,7 @@
 </template>
 
 <script lang="ts">
-import { getCurrentInstance } from 'vue'
+import { defineComponent, getCurrentInstance, type PropType } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useThemeStore } from '@/stores/theme'
 import LingyunIcon from '@/uni_modules/lingyun-ui/components/lingyun-icon/lingyun-icon.vue'
@@ -69,25 +69,34 @@ import {
   LINGYUN_TOOLBAR_BAR_DESIGN_PX,
 } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
 import {
-  LINGYUN_PAGE_NAV,
   LINGYUN_PAGE_NAV_HOME,
+  getLingyunPageNavSections,
   clearLingyunPageNavIntent,
   getLingyunPageNavIntent,
   getLingyunPageNavScrollTop,
   normalizeLingyunPagePath,
   setLingyunPageNavIntent,
   setLingyunPageNavScrollTop,
+  type LingyunPageNavSection,
 } from '@/router/pageNav'
+
+type NavPage = {
+  route?: string
+  $page?: { fullPath?: string; route?: string }
+}
 
 /**
  * 宽屏目录。H5 挂在 body 上，不随 redirectTo 拆掉；小程序嵌在 lingyun-app-page。
  * scroll-top 只在挂载时写入一次，滚动中不回写，避免把列表拽回旧位置。
  */
-export default {
+export default defineComponent({
   name: 'LingyunPageNav',
   components: { LingyunIcon },
   props: {
-    sections: { type: Array, default: null },
+    sections: {
+      type: Array as PropType<LingyunPageNavSection[] | null>,
+      default: null,
+    },
   },
   data() {
     return {
@@ -98,13 +107,18 @@ export default {
       currentPath: getLingyunPageNavIntent(),
       navHome: LINGYUN_PAGE_NAV_HOME,
       navScrollTop: getLingyunPageNavScrollTop(),
+      _onHashChange: null as (() => void) | null,
+      _expectPath: '',
+      _routeSeen: '',
+      _routeTimer: null as ReturnType<typeof setTimeout> | null,
+      _navScrollSettled: false,
     }
   },
   setup() {
     const instance = getCurrentInstance()
     onShow(() => {
-      const proxy = instance && instance.proxy
-      if (proxy && typeof proxy.syncRoute === 'function') proxy.syncRoute()
+      const proxy = instance?.proxy as { syncRoute?: () => void } | null | undefined
+      proxy?.syncRoute?.()
     })
     return {}
   },
@@ -116,8 +130,8 @@ export default {
         return 'theme-light'
       }
     },
-    pageNavSections() {
-      return Array.isArray(this.sections) ? this.sections : LINGYUN_PAGE_NAV
+    pageNavSections(): LingyunPageNavSection[] {
+      return Array.isArray(this.sections) ? this.sections : getLingyunPageNavSections()
     },
     windowControls() {
       return !!getLingyunNavLayout(LINGYUN_TOOLBAR_BAR_DESIGN_PX).windowControls
@@ -160,7 +174,7 @@ export default {
     // #endif
   },
   beforeUnmount() {
-    clearTimeout(this._routeTimer)
+    clearTimeout(this._routeTimer ?? undefined)
     // #ifdef H5
     if (typeof window !== 'undefined' && this._onHashChange) {
       window.removeEventListener('hashchange', this._onHashChange)
@@ -178,9 +192,8 @@ export default {
     readRoute() {
       try {
         const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
-        const cur = pages[pages.length - 1]
-        const raw =
-          (cur && (cur.route || (cur.$page && (cur.$page.fullPath || cur.$page.route)))) || ''
+        const cur = pages[pages.length - 1] as NavPage | undefined
+        const raw = (cur && (cur.route || cur.$page?.fullPath || cur.$page?.route)) || ''
         return normalizeLingyunPagePath(raw)
       } catch {
         return ''
@@ -198,7 +211,7 @@ export default {
     },
     /** 等到 getCurrentPages 跟上再对齐。对不上时保持点中的那一项，不要写回上一页。 */
     pullRoute(left = 8) {
-      clearTimeout(this._routeTimer)
+      clearTimeout(this._routeTimer ?? undefined)
       const now = this.readRoute()
       const expect = this._expectPath
       if (expect) {
@@ -218,10 +231,10 @@ export default {
       }
       this._routeTimer = setTimeout(() => this.pullRoute(left - 1), 16)
     },
-    isNavCurrent(url) {
+    isNavCurrent(url: string) {
       return normalizeLingyunPagePath(url) === this.currentPath
     },
-    onNavScroll(event) {
+    onNavScroll(event: { detail?: { scrollTop?: number } }) {
       const y = Number(event && event.detail && event.detail.scrollTop)
       if (!Number.isFinite(y) || y < 0) return
       const saved = getLingyunPageNavScrollTop()
@@ -230,7 +243,7 @@ export default {
       this._navScrollSettled = true
       setLingyunPageNavScrollTop(y)
     },
-    onNavTap(url) {
+    onNavTap(url: string) {
       const target = normalizeLingyunPagePath(url)
       if (!target || target === this.currentPath) return
       setLingyunPageNavIntent(target)
@@ -257,7 +270,7 @@ export default {
       })
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

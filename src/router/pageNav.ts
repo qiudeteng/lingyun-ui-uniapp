@@ -1,3 +1,5 @@
+import { reactive } from 'vue'
+
 /** 宽屏页面壳左侧导航。与首页目录共用，避免两处标题漂移。 */
 
 export const LINGYUN_PAGE_NAV_WIDTH = 220
@@ -111,6 +113,20 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
     ],
   },
 ]
+
+/** 运行时目录。H5 侧栏只挂一次，必须读这份响应式数据，页面 prop 到不了它。 */
+const pageNavState = reactive({
+  sections: LINGYUN_PAGE_NAV,
+})
+
+export function getLingyunPageNavSections(): LingyunPageNavSection[] {
+  return pageNavState.sections
+}
+
+/** 登录后把后台菜单写进来。不传页面 prop 时，宽屏左栏和首页目录都用这份。 */
+export function setLingyunPageNavSections(sections: LingyunPageNavSection[]): void {
+  pageNavState.sections = Array.isArray(sections) ? sections : []
+}
 
 export function normalizeLingyunPagePath(url: string): string {
   return String(url || '')

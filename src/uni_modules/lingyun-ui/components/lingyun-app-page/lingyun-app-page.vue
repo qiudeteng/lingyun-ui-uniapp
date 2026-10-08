@@ -99,7 +99,7 @@ import { setLingyunH5PageNavAllowed } from '@/uni_modules/lingyun-ui/components/
  * @property {String} title / subtitle
  * @property {String} titleStyle / placement
  * @property {Boolean} showBack / showClose / showGrabber / showTrailing / safeArea / bodyScroll / pageScroll / showNav
- * @property {Array} navSections 宽屏左侧导航分组；不传则用 src/router/pageNav.ts
+ * @property {Array} navSections 只覆盖当前页（微信内嵌列）。全局菜单用 setLingyunPageNavSections
  * @property {Number} glassDistance 滚过多少 px 达到满玻璃
  * @event back / close / trailing / scroll
  */
