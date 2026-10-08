@@ -25,11 +25,11 @@
 
 | 项 | 约定 |
 |----|------|
-| 形态 | − / + 双钮胶囊；中间分割 |
+| 形态 | − / + 双钮胶囊；中间分割。`showValue` 时在两钮之间插入当前值文本框 |
 | 高 | 约 **28–32** |
 
 ```vue
-<lingyun-stepper v-model="n" :min="0" :max="10" />
+<lingyun-stepper v-model="n" :min="0" :max="10" show-value />
 ```
 
 | 属性 | 默认 | 说明 |
@@ -37,6 +37,7 @@
 | `modelValue` / `value` | `0` | 当前值 |
 | `min` / `max` / `step` | 0 / 10 / 1 | 范围 |
 | `disabled` | `false` | 禁用 |
+| `showValue` | `false` | 在 − / + 之间展示当前值，可直接改数字 |
 
 事件：`update:modelValue`、`change`
 
