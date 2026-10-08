@@ -4,7 +4,7 @@
     :class="iconClass"
     :style="iconStyle"
     @click="onClick"
-  />
+  >{{ glyph }}</text>
 </template>
 
 <script>
@@ -53,6 +53,10 @@ const SEMANTIC_COLORS = {
 
 export default {
   name: 'LingyunIcon',
+  options: {
+    // 去掉组件宿主，圆钮 flex 直接居中字形盒子（小程序宿主会把符号挤偏）
+    virtualHost: true,
+  },
   emits: ['click'],
   props: {
     type: { type: String, default: '' },
@@ -62,7 +66,16 @@ export default {
     customPrefix: { type: String, default: 'lyicon' },
   },
   computed: {
+    /** 内置字库直接输出字符。::before 在小程序上盒模型不稳，圆钮里会对不齐。 */
+    glyph() {
+      const prefix = this.customPrefix || 'lyicon'
+      const type = this.type || ''
+      if (!type || prefix !== 'lyicon') return ''
+      const found = fontData.find((item) => item.font_class === type)
+      return found ? found.unicode : ''
+    },
     iconClass() {
+      if (this.glyph) return ''
       const prefix = this.customPrefix || 'lyicon'
       const type = this.type || ''
       if (!type) return ''
@@ -119,9 +132,10 @@ export default {
   font-weight: normal;
   text-decoration: none;
   text-align: center;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
   box-sizing: border-box;
 }
 </style>
