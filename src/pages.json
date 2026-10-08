@@ -99,6 +99,13 @@
 			}
 		},
 		{
+			"path": "pages/demo/screen",
+			"style": {
+				"navigationBarTitleText": "Screen",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/sheets",
 			"style": {
 				"navigationBarTitleText": "Sheets",

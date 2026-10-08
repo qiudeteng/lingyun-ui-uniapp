@@ -66,29 +66,7 @@ setLingyunPageNavProfile({
 
 ## 屏幕
 
-`app.use(lingyunUi)` 之后，模板里可以直接判断 `lingyun`。折叠、旋转或拉窗口时会更新。
-
-| 字段 | 取值 | 含义 |
-|------|------|------|
-| `lingyun.screen` | `phone` / `pad` / `pc` | 当前窗口档。宽度 &lt; 700 为 phone，700–1199 为 pad，≥ 1200 为 pc |
-| `lingyun.os` | `ios` / `android` / `harmony` / `windows` / `mac` | 操作系统。手机常见是 `ios`、`android` |
-| `lingyun.device` | `phone` / `pad` / `pc` | 硬件类型。折叠展开不会把手机改成平板 |
-| `lingyun.foldable` | `yes` / `no` | 是否折叠屏 |
-| `lingyun.fold` | `folded` / `expanded` / `half` / `''` | 折叠、展开、半折叠。不是折叠屏时为空串 |
-
-```vue
-<view v-if="lingyun.os == 'ios'">iOS 布局</view>
-<view v-else-if="lingyun.fold == 'expanded'">折叠屏已展开</view>
-<view v-else-if="lingyun.device == 'pad'">平板布局</view>
-```
-
-`<script setup>` 中：
-
-```ts
-import { lingyun } from '@/uni_modules/lingyun-ui'
-```
-
-非页面代码用 `uni.lingyun`。微信没有折叠状态接口：常见折叠屏按机型识别；内屏接近正方形，或同一次使用里短边明显拉开，也会记为折叠屏。半折叠（`half`）只在窗口明显只占一半，或内屏变成宽而扁时能判断出来。
+当前窗口档、操作系统、折叠状态和硬件类型见 [屏幕](./screen.md)。
 
 ## 手册里的手机预览
 

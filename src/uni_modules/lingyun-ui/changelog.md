@@ -1,3 +1,8 @@
+## 1.0.4（2026-10-08）
+- 演示页 `/pages/demo/screen`：实时显示 `lingyun` 的窗口档、系统、硬件和折叠状态。
+- 宽屏左栏顶部支持头像、名称、副标题。页面插槽为 `nav-avatar` / `nav-name` / `nav-subtitle`；全局资料用 `setLingyunPageNavProfile`。
+- 默认名称「凌云UI」，副标题「一套对齐 Apple Liquid Glass 的 uni-app 多端组件库」。名称与内容顶栏对齐，副标题挂在名称下，不撑高栏身。传入自定义名称且不传副标题时，不显示这句介绍。
+- 插槽盖过对应的默认图片或文字。H5 送进挂在 body 上的侧栏，微信嵌在当前页。
 ## 1.0.3（2026-10-08）
 - 全局 `lingyun`：当前窗口档、操作系统、是否折叠屏、折叠状态、硬件类型。模板里可写 `lingyun.os == 'ios'`。
 - `lingyun-picker-cal-day`：挪到独立目录，微信 easycom 能解析日期格。

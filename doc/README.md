@@ -1,6 +1,7 @@
 # 凌云UI 使用手册
 
-当前组件库版本 **1.0.0**。
+<!-- 版本在手册编译时从 lingyun-ui/package.json 读入 -->
+当前组件库版本 **{{ lingyunVersion }}**。
 
 📦 [仓库](https://github.com/qiudeteng/lingyun-ui-uniapp)
 🐛 欢迎反馈：使用中遇到问题或有建议，请在 [仓库 Issues](https://github.com/qiudeteng/lingyun-ui-uniapp/issues) 提交，也欢迎 PR 共同完善。
@@ -11,6 +12,7 @@
 ## 从这里开始
 
 - [接入](./guide/start.md)
+- [屏幕](./guide/screen.md)
 - [反馈：Toast 与 HUD](./guide/feedback.md)
 
 ## 图表

@@ -49,6 +49,7 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
     title: '导航与栏',
     items: [
       { title: 'Toolbars', url: '/pages/demo/toolbars', note: '顶栏 · 滚动玻璃', icon: 'bars' },
+      { title: 'Screen', url: '/pages/demo/screen', note: '窗口档 · 系统 · 折叠 · 硬件', icon: 'tune' },
       { title: 'Tab Bars', url: '/pages/demo/tabbars', note: '底部标签栏', icon: 'list' },
       { title: 'Sidebar', url: '/pages/demo/sidebars', note: '悬浮玻璃侧栏', icon: 'bars' },
       { title: 'Search Bar', url: '/pages/demo/search-bar', note: '搜索栏', icon: 'search' },

@@ -1,13 +1,29 @@
+import { readFileSync } from 'node:fs'
 import { viteBundler } from '@vuepress/bundler-vite'
 import { slimsearchPlugin } from '@vuepress/plugin-slimsearch'
 import { defaultTheme } from '@vuepress/theme-default'
-import { defineUserConfig } from 'vuepress'
+import { defineUserConfig, type Plugin } from 'vuepress'
+
+/** 手册里的 {{ lingyunVersion }} 在编译时换成组件包版本，不在文档里手写。 */
+const lingyunVersion = JSON.parse(
+  readFileSync(new URL('../../src/uni_modules/lingyun-ui/package.json', import.meta.url), 'utf8'),
+).version as string
+
+const lingyunVersionPlugin: Plugin = {
+  name: 'lingyun-version',
+  extendsMarkdown: (md) => {
+    md.core.ruler.before('normalize', 'lingyun-version', (state) => {
+      state.src = state.src.replaceAll('{{ lingyunVersion }}', lingyunVersion)
+    })
+  },
+}
 
 const guideSidebar = [
   {
     text: '接入',
     children: [
       { text: '接入', link: '/guide/start.html' },
+      { text: '屏幕', link: '/guide/screen.html' },
       { text: '反馈', link: '/guide/feedback.html' },
     ],
   },
@@ -138,6 +154,7 @@ export default defineUserConfig({
     repoLabel: 'GitHub',
     sidebarDepth: 0,
     navbar: [
+      { text: lingyunVersion, link: '/' },
       { text: '接入', link: '/guide/start.html', activeMatch: '^/guide/' },
       { text: '组件', link: '/components/app-page.html', activeMatch: '^/components/' },
       { text: '图表', link: '/charts/', activeMatch: '^/charts/' },
@@ -149,6 +166,7 @@ export default defineUserConfig({
     },
   }),
   plugins: [
+    lingyunVersionPlugin,
     slimsearchPlugin({
       indexContent: true,
     }),
