@@ -1,6 +1,6 @@
-name: 建议
+name: 需求提交
 description: 新组件、新能力，或对现有交互与视觉的改进
-title: "[建议] "
+title: "[需求] "
 labels: ["suggestion"]
 body:
   - type: markdown
