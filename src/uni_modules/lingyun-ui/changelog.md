@@ -1,4 +1,5 @@
 ## 1.0.2（2026-09-22）
+- `lingyun-stepper`：新增 `showValue`，为真时在 − / + 之间展示可编辑的当前值。
 - `lingyun-list` / `lingyun-list-item`：首行分割线改为沿 `$parent` 登记一次，去掉列表级 `provide/inject`，避免长列表整表重绘。样式不变。
 - 新增 `lingyun-indexed-list`：索引列表，结构对齐 `uni-indexed-list`，分组卡片加右侧字母条。
 - 新增 `lingyun-grid` / `lingyun-grid-item`：宫格，结构对齐 `uni-grid`，卡片走分组材质。

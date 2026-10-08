@@ -15,8 +15,9 @@
 
       <lingyun-section title="Stepper" :hint="`value = ${n}`" is-last>
         <view class="row">
+          <lingyun-stepper v-model="n" :min="0" :max="9" show-value />
           <lingyun-stepper v-model="n" :min="0" :max="9" />
-          <lingyun-stepper v-model="n" :min="0" :max="9" disabled />
+          <lingyun-stepper v-model="n" :min="0" :max="9" show-value disabled />
         </view>
       </lingyun-section>
     </view>
