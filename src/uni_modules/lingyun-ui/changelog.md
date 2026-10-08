@@ -1,3 +1,8 @@
+## 1.0.3（2026-10-08）
+- `lingyun-picker-cal-day`：挪到独立目录，微信 easycom 能解析日期格。
+- `lingyun-icon`：字形改为直接输出字库字符，并开启 `virtualHost`，圆钮内图标可居中；脚本改为 TypeScript。
+- `lingyun-toolbars`：返回、关闭、分享改用 `lingyun-icon`。圆钮仍为 44px，返回图标 28，关闭与分享 26。
+- 宽屏左侧菜单支持 `setLingyunPageNavSections` 写入后台数据；不传页面 prop 时，侧栏与首页目录共用这份列表。
 ## 1.0.2（2026-09-22）
 - `lingyun-stepper`：新增 `showValue`，为真时在 − / + 之间展示可编辑的当前值。
 - `lingyun-list` / `lingyun-list-item`：首行分割线改为沿 `$parent` 登记一次，去掉列表级 `provide/inject`，避免长列表整表重绘。样式不变。
