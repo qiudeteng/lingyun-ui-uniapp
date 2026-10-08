@@ -7,12 +7,70 @@ body:
     attributes:
       value: |
         说明想解决的问题。若已有替代做法，也写上为什么不够用。
-  - type: input
+  - type: dropdown
     id: component
     attributes:
       label: 相关组件
-      description: 已有组件名，或拟新增的名称。不针对单个组件可写「通用」
-      placeholder: lingyun-toolbars
+      description: 不针对单个组件选「通用」；还没有这个组件时选「新组件」
+      options:
+        - 通用
+        - 新组件
+        - lingyun-action-sheet
+        - lingyun-activity-indicator
+        - lingyun-activity-view
+        - lingyun-alert
+        - lingyun-app-page
+        - lingyun-avatar
+        - lingyun-badge
+        - lingyun-button
+        - lingyun-checkbox
+        - lingyun-chip
+        - lingyun-context-menu
+        - lingyun-data-checkbox
+        - lingyun-data-picker
+        - lingyun-data-radio
+        - lingyun-empty
+        - lingyun-fab
+        - lingyun-feedback-host
+        - lingyun-form
+        - lingyun-form-group
+        - lingyun-form-item
+        - lingyun-goods-nav
+        - lingyun-grid
+        - lingyun-grid-item
+        - lingyun-hud
+        - lingyun-icon
+        - lingyun-image
+        - lingyun-indexed-list
+        - lingyun-list
+        - lingyun-list-item
+        - lingyun-menu
+        - lingyun-page-control
+        - lingyun-picker
+        - lingyun-popover
+        - lingyun-progress
+        - lingyun-radio
+        - lingyun-radio-group
+        - lingyun-refresh
+        - lingyun-search-bar
+        - lingyun-section
+        - lingyun-segmented-control
+        - lingyun-sheets
+        - lingyun-sidebar
+        - lingyun-skeleton
+        - lingyun-slider
+        - lingyun-stepper
+        - lingyun-swipe-action
+        - lingyun-swipe-action-item
+        - lingyun-switch
+        - lingyun-tabbars
+        - lingyun-tag
+        - lingyun-text
+        - lingyun-text-field
+        - lingyun-toast
+        - lingyun-toolbars
+        - lingyun-ui-charts
+        - 其它
     validations:
       required: true
   - type: textarea

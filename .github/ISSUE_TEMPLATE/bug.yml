@@ -7,12 +7,68 @@ body:
     attributes:
       value: |
         请先确认用的是当前仓库版本。微信小程序请说明开发者工具与基础库版本。
-  - type: input
+  - type: dropdown
     id: component
     attributes:
       label: 组件
-      description: 出问题的组件名，例如 lingyun-picker
-      placeholder: lingyun-toolbars
+      description: 出问题的组件。列表里没有时选「其它」，并在补充里写名称
+      options:
+        - lingyun-action-sheet
+        - lingyun-activity-indicator
+        - lingyun-activity-view
+        - lingyun-alert
+        - lingyun-app-page
+        - lingyun-avatar
+        - lingyun-badge
+        - lingyun-button
+        - lingyun-checkbox
+        - lingyun-chip
+        - lingyun-context-menu
+        - lingyun-data-checkbox
+        - lingyun-data-picker
+        - lingyun-data-radio
+        - lingyun-empty
+        - lingyun-fab
+        - lingyun-feedback-host
+        - lingyun-form
+        - lingyun-form-group
+        - lingyun-form-item
+        - lingyun-goods-nav
+        - lingyun-grid
+        - lingyun-grid-item
+        - lingyun-hud
+        - lingyun-icon
+        - lingyun-image
+        - lingyun-indexed-list
+        - lingyun-list
+        - lingyun-list-item
+        - lingyun-menu
+        - lingyun-page-control
+        - lingyun-picker
+        - lingyun-popover
+        - lingyun-progress
+        - lingyun-radio
+        - lingyun-radio-group
+        - lingyun-refresh
+        - lingyun-search-bar
+        - lingyun-section
+        - lingyun-segmented-control
+        - lingyun-sheets
+        - lingyun-sidebar
+        - lingyun-skeleton
+        - lingyun-slider
+        - lingyun-stepper
+        - lingyun-swipe-action
+        - lingyun-swipe-action-item
+        - lingyun-switch
+        - lingyun-tabbars
+        - lingyun-tag
+        - lingyun-text
+        - lingyun-text-field
+        - lingyun-toast
+        - lingyun-toolbars
+        - lingyun-ui-charts
+        - 其它
     validations:
       required: true
   - type: dropdown
