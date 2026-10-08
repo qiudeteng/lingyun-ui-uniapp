@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { onLaunch, onShow, onThemeChange } from '@dcloudio/uni-app'
+  import { refreshLingyunScreen } from '@/uni_modules/lingyun-ui/utils/screen'
   import { useThemeStore } from '@/stores/theme'
   import { useAppStore } from '@/stores/app'
   import { useAuthStore } from '@/stores/auth'
@@ -8,6 +9,7 @@
   const themeStore = useThemeStore()
 
   onLaunch(() => {
+    refreshLingyunScreen()
     themeStore.init()
     const appStore = useAppStore()
     const authStore = useAuthStore()
@@ -20,6 +22,7 @@
 
   /* 每次进前台再刷一次窗体色（小程序页栈切换后可能丢） */
   onShow(() => {
+    refreshLingyunScreen()
     themeStore.apply()
   })
 

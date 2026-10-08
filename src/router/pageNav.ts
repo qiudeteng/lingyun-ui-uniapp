@@ -117,7 +117,21 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
 /** 运行时目录。H5 侧栏只挂一次，必须读这份响应式数据，页面 prop 到不了它。 */
 const pageNavState = reactive({
   sections: LINGYUN_PAGE_NAV,
+  avatar: '',
+  name: '',
+  subtitle: '',
+  slotAvatar: false,
+  slotName: false,
+  slotSubtitle: false,
 })
+
+let pageNavSlotOwner = 0
+
+export interface LingyunPageNavProfile {
+  avatar?: string
+  name?: string
+  subtitle?: string
+}
 
 export function getLingyunPageNavSections(): LingyunPageNavSection[] {
   return pageNavState.sections
@@ -126,6 +140,45 @@ export function getLingyunPageNavSections(): LingyunPageNavSection[] {
 /** 登录后把后台菜单写进来。不传页面 prop 时，宽屏左栏和首页目录都用这份。 */
 export function setLingyunPageNavSections(sections: LingyunPageNavSection[]): void {
   pageNavState.sections = Array.isArray(sections) ? sections : []
+}
+
+export function getLingyunPageNavProfile(): {
+  avatar: string
+  name: string
+  subtitle: string
+  slotAvatar: boolean
+  slotName: boolean
+  slotSubtitle: boolean
+} {
+  return pageNavState
+}
+
+/** 侧栏顶部默认头像、名称、副标题。页面插槽有内容时盖过这里。 */
+export function setLingyunPageNavProfile(profile: LingyunPageNavProfile): void {
+  if (!profile) return
+  if (profile.avatar !== undefined) pageNavState.avatar = profile.avatar
+  if (profile.name !== undefined) pageNavState.name = profile.name
+  if (profile.subtitle !== undefined) pageNavState.subtitle = profile.subtitle
+}
+
+/** H5 侧栏在 body 上，由当前页声明自己有没有顶部插槽。 */
+export function claimLingyunPageNavHeaderSlots(slots: {
+  avatar?: boolean
+  name?: boolean
+  subtitle?: boolean
+}): number {
+  pageNavSlotOwner += 1
+  pageNavState.slotAvatar = !!slots.avatar
+  pageNavState.slotName = !!slots.name
+  pageNavState.slotSubtitle = !!slots.subtitle
+  return pageNavSlotOwner
+}
+
+export function releaseLingyunPageNavHeaderSlots(owner: number): void {
+  if (owner !== pageNavSlotOwner) return
+  pageNavState.slotAvatar = false
+  pageNavState.slotName = false
+  pageNavState.slotSubtitle = false
 }
 
 export function normalizeLingyunPagePath(url: string): string {

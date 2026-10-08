@@ -49,7 +49,7 @@
 | ✅ | `lingyun-goods-nav` | 商品底栏（对齐 uni-goods-nav） | [`GOODS_NAV.md`](./GOODS_NAV.md) |
 | ✅ | `lingyun-grid` / `lingyun-grid-item` | 宫格（对齐 uni-grid） | [`GRID.md`](./GRID.md) |
 | ✅ | `lingyun-indexed-list` | 索引列表（对齐 uni-indexed-list） | [`INDEXED_LIST.md`](./INDEXED_LIST.md) |
-| ✅ | `lingyun-app-page` | 页面壳（顶栏 + 滚动 + 主题 class；宽屏左侧导航） | [`TOOLBARS.md`](./TOOLBARS.md) |
+| ✅ | `lingyun-app-page` | 页面壳（顶栏 + 滚动 + 主题 class；宽屏左侧导航，顶部可带头像 / 名称 / 副标题） | [`TOOLBARS.md`](./TOOLBARS.md) · [`SIDEBARS.md`](./SIDEBARS.md) §4 |
 | ✅ | `lingyun-section` | Demo / 区块布局容器 | demo [`sections`](../src/pages/demo/sections.vue) |
 | ✅ | `lingyun-feedback-host` | 命令式 Toast/HUD 宿主 | [`TOASTS.md`](./TOASTS.md) |
 | ✅ | `lingyun-ui-charts` | 图表（独立包 · uCharts / ECharts） | [`CHARTS.md`](./CHARTS.md) |

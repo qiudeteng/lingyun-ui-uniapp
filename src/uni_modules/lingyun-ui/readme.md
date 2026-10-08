@@ -63,6 +63,36 @@ uni.hideLingyunHud()
 <lingyun-app-page title="订单" :nav-sections="sections" />
 ```
 
+## 屏幕
+
+`app.use(lingyunUi)` 之后，模板里可以直接写 `lingyun`。折叠、旋转、拉窗口时这些字符串会更新。
+
+| 字段 | 取值 | 含义 |
+|------|------|------|
+| `lingyun.screen` | `phone` / `pad` / `pc` | 当前窗口档。宽度 &lt; 700 为 phone，700–1199 为 pad，≥ 1200 为 pc |
+| `lingyun.os` | `ios` / `android` / `harmony` / `windows` / `mac` | 操作系统 |
+| `lingyun.device` | `phone` / `pad` / `pc` | 硬件类型。折叠展开不会把手机改成平板 |
+| `lingyun.foldable` | `yes` / `no` | 是否折叠屏 |
+| `lingyun.fold` | `folded` / `expanded` / `half` / `''` | 折叠、展开、半折叠。不是折叠屏时为空串 |
+
+```vue
+<view v-if="lingyun.os == 'ios'">iOS 布局</view>
+<view v-else-if="lingyun.fold == 'expanded'">折叠屏已展开</view>
+<view v-else-if="lingyun.screen == 'pad'">当前是宽屏</view>
+```
+
+`<script setup>` 里读取：
+
+```ts
+import { lingyun } from '@/uni_modules/lingyun-ui'
+
+if (lingyun.device == 'pad') {
+  // …
+}
+```
+
+非页面代码可读 `uni.lingyun`。微信没有折叠状态接口：常见折叠屏按机型识别；内屏接近正方形，或同一次使用里短边明显拉开，也会记为折叠屏。半折叠只在窗口明显只占一半，或内屏变成宽而扁时记为 `half`。
+
 ## 硬规则
 
 1. **所有 `lingyun-*` 组件只放在本包下**，路径固定为 `components/<组件名>/<组件名>.vue`。

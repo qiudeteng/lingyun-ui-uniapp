@@ -3,7 +3,17 @@
     <!-- 小程序宽屏侧栏留在页面里。H5 由 lingyunUi 挂到 body，避免换页拆掉侧栏。 -->
     <!-- #ifndef H5 -->
     <view v-if="showPageNav" class="lingyun-app-page__nav">
-      <lingyun-page-nav :sections="navSections" />
+      <lingyun-page-nav :sections="navSections">
+        <template v-if="$slots['nav-avatar']" #avatar>
+          <slot name="nav-avatar" />
+        </template>
+        <template v-if="$slots['nav-name']" #name>
+          <slot name="nav-name" />
+        </template>
+        <template v-if="$slots['nav-subtitle']" #subtitle>
+          <slot name="nav-subtitle" />
+        </template>
+      </lingyun-page-nav>
     </view>
     <!-- #endif -->
 
@@ -32,6 +42,19 @@
         <slot name="trailing" />
       </template>
     </lingyun-toolbars>
+
+    <!-- H5 侧栏在 body 上，顶部插槽传送进那一列 -->
+    <!-- #ifdef H5 -->
+    <teleport v-if="navHeaderReady && $slots['nav-avatar']" to="#ly-nav-slot-avatar">
+      <slot name="nav-avatar" />
+    </teleport>
+    <teleport v-if="navHeaderReady && $slots['nav-name']" to="#ly-nav-slot-name">
+      <slot name="nav-name" />
+    </teleport>
+    <teleport v-if="navHeaderReady && $slots['nav-subtitle']" to="#ly-nav-slot-subtitle">
+      <slot name="nav-subtitle" />
+    </teleport>
+    <!-- #endif -->
 
     <!-- 默认形态：页面级滚动。玻璃进度由顶部哨兵的露出比例驱动（无 @scroll 可用） -->
     <view v-if="usePageScroll" class="lingyun-app-page__sentinel" :style="sentinelStyle" />
@@ -84,7 +107,7 @@ import {
   readLingyunResizeWidth,
 } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
 import { useThemeStore } from '@/stores/theme'
-import { LINGYUN_PAGE_NAV_WIDTH } from '@/router/pageNav'
+import { LINGYUN_PAGE_NAV_WIDTH, claimLingyunPageNavHeaderSlots, releaseLingyunPageNavHeaderSlots } from '@/router/pageNav'
 // #ifdef H5
 import { setLingyunH5PageNavAllowed } from '@/uni_modules/lingyun-ui/components/lingyun-page-nav/mountLingyunPageNav'
 // #endif
@@ -100,6 +123,7 @@ import { setLingyunH5PageNavAllowed } from '@/uni_modules/lingyun-ui/components/
  * @property {String} titleStyle / placement
  * @property {Boolean} showBack / showClose / showGrabber / showTrailing / safeArea / bodyScroll / pageScroll / showNav
  * @property {Array} navSections 只覆盖当前页（微信内嵌列）。全局菜单用 setLingyunPageNavSections
+ * 插槽 nav-avatar / nav-name / nav-subtitle：宽屏左栏顶部。不传则显示「凌云UI」和默认介绍
  * @property {Number} glassDistance 滚过多少 px 达到满玻璃
  * @event back / close / trailing / scroll
  */
@@ -140,6 +164,8 @@ export default {
       regular: false,
       /** 横向 swipe 确认后临时关 scroll-y，避免 iOS 斜滑带动页面上下晃 */
       bodyScrollY: true,
+      /** H5：顶部插槽目标节点出现后再传送 */
+      navHeaderReady: false,
     }
   },
   setup() {
@@ -168,9 +194,12 @@ export default {
     this._scrollLockCount = 0
     /** 页面级滚动下驱动玻璃渐变的哨兵观察器 */
     this._glassObserver = null
+    /** @type {number} */
+    this._navSlotClaim = 0
   },
   mounted() {
     this.syncNavLayout()
+    this.syncNavHeaderSlots()
     this.syncH5PageNavHost()
     this.bindResize()
     if (this.usePageScroll) {
@@ -183,6 +212,7 @@ export default {
     }
   },
   beforeUnmount() {
+    this.releaseNavHeaderSlots()
     this.clearScrollSettle()
     this.teardownGlassObserver()
     this.unbindResize()
@@ -341,6 +371,38 @@ export default {
       this.title2LineLargeExtraPx = layout.title2LineLargeExtra
       this.regular = !!layout.regular
       this.syncH5PageNavHost()
+    },
+    syncNavHeaderSlots() {
+      const slots = this.$slots || {}
+      this._navSlotClaim = claimLingyunPageNavHeaderSlots({
+        avatar: !!slots['nav-avatar'],
+        name: !!slots['nav-name'],
+        subtitle: !!slots['nav-subtitle'],
+      })
+      this.armNavHeader()
+    },
+    armNavHeader(left = 30) {
+      const slots = this.$slots || {}
+      const need = []
+      if (slots['nav-avatar']) need.push('ly-nav-slot-avatar')
+      if (slots['nav-name']) need.push('ly-nav-slot-name')
+      if (slots['nav-subtitle']) need.push('ly-nav-slot-subtitle')
+      if (!need.length) return
+      // #ifdef H5
+      const ready =
+        typeof document !== 'undefined' && need.every((id) => document.getElementById(id))
+      if (!ready) {
+        if (left <= 0) return
+        this._navSlotTimer = setTimeout(() => this.armNavHeader(left - 1), 16)
+        return
+      }
+      // #endif
+      this.navHeaderReady = true
+    },
+    releaseNavHeaderSlots() {
+      this.navHeaderReady = false
+      if (this._navSlotTimer) clearTimeout(this._navSlotTimer)
+      releaseLingyunPageNavHeaderSlots(this._navSlotClaim)
     },
     syncH5PageNavHost() {
       // #ifdef H5

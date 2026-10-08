@@ -32,3 +32,5 @@
 | `back` | 返回 |
 | `close` | 关闭 |
 | `trailing` | 右侧按钮 |
+
+返回、关闭、分享都用 `lingyun-icon`。圆钮保持 **44**。返回是 `left`、字号 **28**；关闭是 `closeempty`、分享是 `upload`，字号都是 **26**。
