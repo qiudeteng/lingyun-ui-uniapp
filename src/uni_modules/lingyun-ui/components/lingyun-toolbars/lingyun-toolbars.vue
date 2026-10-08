@@ -34,7 +34,7 @@
           @click.stop="onBack"
         >
           <slot name="back">
-            <lingyun-icon type="left" :size="20" color="var(--lingyun-label, #000)" />
+            <lingyun-icon class="lingyun-toolbars__glyph" type="left" :size="28" color="label" />
           </slot>
         </view>
         <view
@@ -48,7 +48,7 @@
           @click.stop="onClose"
         >
           <slot name="close">
-            <lingyun-icon type="closeempty" :size="18" color="var(--lingyun-label, #000)" />
+            <lingyun-icon class="lingyun-toolbars__glyph" type="closeempty" :size="26" color="label" />
           </slot>
         </view>
         <slot name="leading" />
@@ -76,7 +76,7 @@
           @click.stop="onTrailing"
         >
           <!-- 分享：lingyun-icon upload（近似 square.and.arrow.up） -->
-          <lingyun-icon type="upload" :size="18" color="#ffffff" />
+          <lingyun-icon class="lingyun-toolbars__glyph" type="upload" :size="26" color="white" />
         </view>
       </view>
     </view>
@@ -680,6 +680,18 @@ $ly-toolbar-gap: 8px;
   font-size: 15px;
   font-weight: 400;
   line-height: 20px;
+}
+
+/* 左右圆钮里的字形：固定 em 盒，避免图标字体侧轴承把符号挤偏 */
+.lingyun-toolbars__glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  text-align: center;
 }
 
 .lingyun-toolbars__action {

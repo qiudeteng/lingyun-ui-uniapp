@@ -974,7 +974,7 @@
 <script>
 import { useThemeStore } from '@/stores/theme'
 import { LINGYUN_APP_PAGE_SCROLL_LOCK } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
-import LingyunPickerCalDay from './lingyun-picker-cal-day.vue'
+import LingyunPickerCalDay from '../lingyun-picker-cal-day/lingyun-picker-cal-day.vue'
 import { lunarDayText } from './lunar.js'
 
 /**
