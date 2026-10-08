@@ -7,7 +7,8 @@
   >{{ glyph }}</text>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
 import { fontData } from './icons'
 
 /**
@@ -22,7 +23,7 @@ import { fontData } from './icons'
  */
 
 /** 与 lingyun-text / COLORS 对齐的语义色；未命中则当作自定义 CSS 色 */
-const SEMANTIC_COLORS = {
+const SEMANTIC_COLORS: Record<string, string> = {
   label: 'var(--lingyun-label, #000000)',
   secondary: 'var(--lingyun-label-secondary, rgba(60,60,67,0.6))',
   tertiary: 'var(--lingyun-label-tertiary, rgba(60,60,67,0.3))',
@@ -51,7 +52,7 @@ const SEMANTIC_COLORS = {
   inherit: 'inherit',
 }
 
-export default {
+export default defineComponent({
   name: 'LingyunIcon',
   options: {
     // 去掉组件宿主，圆钮 flex 直接居中字形盒子（小程序宿主会把符号挤偏）
@@ -74,7 +75,7 @@ export default {
       const found = fontData.find((item) => item.font_class === type)
       return found ? found.unicode : ''
     },
-    iconClass() {
+    iconClass(): string | string[] {
       if (this.glyph) return ''
       const prefix = this.customPrefix || 'lyicon'
       const type = this.type || ''
@@ -106,14 +107,14 @@ export default {
     },
   },
   methods: {
-    onClick(e) {
-      this.$emit('click', e)
+    onClick(event: Event) {
+      this.$emit('click', event)
     },
     getIconNames() {
       return fontData.map((item) => item.font_class)
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

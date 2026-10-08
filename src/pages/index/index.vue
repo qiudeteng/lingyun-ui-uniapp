@@ -34,10 +34,10 @@
   import { computed } from 'vue'
   import { useThemeStore } from '@/stores/theme'
   import type { ThemePreference } from '@/utils/theme'
-  import { LINGYUN_PAGE_NAV } from '@/router/pageNav'
+  import { getLingyunPageNavSections } from '@/router/pageNav'
 
   const themeStore = useThemeStore()
-  const sections = LINGYUN_PAGE_NAV
+  const sections = computed(() => getLingyunPageNavSections())
 
   const themeOptions = [
     { key: 'light', text: '浅色' },
