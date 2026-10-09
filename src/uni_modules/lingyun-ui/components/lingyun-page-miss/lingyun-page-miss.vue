@@ -1,6 +1,6 @@
 <template>
   <view class="lingyun-page-miss">
-    <lingyun-empty fill variant="plain" title="404" :description="description">
+    <lingyun-empty variant="plain" title="404" :description="description">
       <template #action>
         <lingyun-button variant="borderedProminent" text="返回首页" @click="onHome" />
       </template>
@@ -35,9 +35,7 @@ export default {
 @import '../../styles/variables.scss';
 
 .lingyun-page-miss {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
+  width: 100%;
   box-sizing: border-box;
 }
 

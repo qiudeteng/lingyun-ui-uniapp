@@ -2,7 +2,6 @@
   <lingyun-app-page title="404">
     <view class="miss">
       <lingyun-empty
-        fill
         variant="plain"
         title="404"
         :description="description"
@@ -74,6 +73,7 @@
     min-height: 100%;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     box-sizing: border-box;
   }
 
