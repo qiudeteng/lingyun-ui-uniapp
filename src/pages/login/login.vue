@@ -4,7 +4,6 @@
     :enterprise-name="enterpriseName"
     :booting="booting"
     @submit="onSubmit"
-    @policy="openPolicy"
   />
 </template>
 
@@ -35,12 +34,6 @@
         uni.reLaunch({ url: appConfig.homePath })
       },
     })
-  }
-
-  function openPolicy(type: 'user' | 'privacy'): void {
-    const url =
-      type === 'user' ? '/pages/login/user-agreement' : '/pages/login/privacy-policy'
-    uni.navigateTo({ url })
   }
 
   function onSubmit(payload: { username: string; password: string }): void {

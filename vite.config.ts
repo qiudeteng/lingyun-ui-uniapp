@@ -11,7 +11,7 @@ export default defineConfig({
 	server: {
 		// 绑所有网卡：真机 / 局域网可直接开 H5，启动日志会打印 Network 地址
 		host: true,
-		port: 5173,
+		port: 5175,
 		// 端口被占时直接报错，避免真机连到另一个端口
 		strictPort: true
 	},

@@ -8,7 +8,7 @@ export const routes: RouteConfig[] = [
 	{
 		path: '/pages/index/index',
 		name: 'pagesIndexIndex',
-		meta: { title: '凌云UI' }
+		meta: { title: '凌云UI', requireAuth: true }
 	},
 	{
 		path: '/pages/login/login',

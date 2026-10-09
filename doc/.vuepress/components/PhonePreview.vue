@@ -124,7 +124,7 @@ const scaleStyle = computed(() => ({
 
 /**
  * 演示应用部署地址。
- * - 本地开发（手册在 localhost）：走 `http://localhost:5173`（`pnpm dev`）
+ * - 本地开发（手册在 localhost）：走 `http://localhost:5175`（`pnpm dev`）
  * - 线上（手册部署到任意域名）：走 `https://demo.xinyicanyin.com`
  * - H5 路由用 hash 模式，地址形如 `https://demo.xinyicanyin.com/#/pages/demo/buttons`
  */
@@ -137,7 +137,7 @@ const isLocalDev = computed(() => {
 
 const origin = computed(() => {
   if (typeof window === 'undefined') return DEMO_ORIGIN
-  return isLocalDev.value ? `${window.location.protocol}//${window.location.hostname}:5173` : DEMO_ORIGIN
+  return isLocalDev.value ? `${window.location.protocol}//${window.location.hostname}:5175` : DEMO_ORIGIN
 })
 
 const src = computed(() => (demoPath.value ? `${origin.value}/#${demoPath.value}` : ''))
