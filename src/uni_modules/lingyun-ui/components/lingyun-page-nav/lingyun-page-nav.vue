@@ -73,11 +73,16 @@
           <template #trigger>
             <view class="lingyun-page-nav__store-pill">
               <view class="lingyun-page-nav__store-label">
-                <text class="lingyun-page-nav__store-text">{{ storeLabel }}</text>
+                <view class="lingyun-page-nav__store-clip lingyun-page-nav__store-clip--head">
+                  <text class="lingyun-page-nav__store-text">{{ storeLabelHead }}</text>
+                </view>
+                <view v-if="storeLabelTail" class="lingyun-page-nav__store-clip lingyun-page-nav__store-clip--tail">
+                  <text class="lingyun-page-nav__store-text">{{ storeLabelTail }}</text>
+                </view>
               </view>
               <view class="lingyun-page-nav__store-chevron">
-                <lingyun-icon type="top" :size="8" color="#ffffff" />
-                <lingyun-icon type="bottom" :size="8" color="#ffffff" />
+                <lingyun-icon type="top" :size="8" color="label" />
+                <lingyun-icon type="bottom" :size="8" color="label" />
               </view>
             </view>
           </template>
@@ -284,6 +289,16 @@ export default defineComponent({
       } catch {
         return '请选择门店'
       }
+    },
+    storeLabelHead(): string {
+      const label = this.storeLabel
+      if (label.length <= 1) return label
+      return label.slice(0, Math.ceil(label.length / 2))
+    },
+    storeLabelTail(): string {
+      const label = this.storeLabel
+      if (label.length <= 1) return ''
+      return label.slice(Math.ceil(label.length / 2))
     },
     storeRange(): { store_id: string | number; store_name: string }[] {
       try {
@@ -650,24 +665,89 @@ export default defineComponent({
 .lingyun-page-nav__store-pill {
   width: 100%;
   max-width: 100%;
-  min-height: 32px;
-  padding: 6px 12px;
+  height: 32px;
+  padding: 0 12px;
   box-sizing: border-box;
   border-radius: 16px;
-  background-color: #1c1c1e;
+  background-color: var(--lingyun-swipe-row-bg, #{$lingyun-system-gray5});
   display: flex;
   flex-direction: row;
   align-items: center;
+  overflow: hidden;
+}
+
+.lingyun-page-nav.theme-light .lingyun-page-nav__store-pill {
+  border: 0;
+  border-radius: 9999px;
+  background: linear-gradient(
+    rgba(248, 248, 248, 0.2),
+    rgba(0, 0, 0, 0.25),
+    rgba(255, 255, 255, 0.25),
+    rgba(68, 68, 68, 0.6)
+  );
+  box-shadow:
+    1.25px 0 0 -0.75px rgba(219, 219, 219, 1),
+    -1.25px 0 0 -0.75px rgba(219, 219, 219, 1),
+    0 0 0 0.5px rgba(219, 219, 219, 1),
+    0 8px 15px 0 rgba(0, 0, 0, 0.02),
+    inset 0 40px 10px -40px rgba(40, 40, 40, 1),
+    inset 0 -40px 10px -40px rgba(40, 40, 40, 1),
+    inset 0 40px 30px -40px rgba(229, 229, 229, 1),
+    inset 0 1px 0 0 rgba(23, 23, 23, 1),
+    inset 0 -1px 0 0 rgba(23, 23, 23, 1),
+    inset 0 4px 0.5px -4px rgba(102, 102, 102, 1),
+    inset 0 -4px 0.5px -4px rgba(102, 102, 102, 1),
+    inset 20px 0 20px -30px rgba(217, 217, 217, 1),
+    inset -20px 0 20px -30px rgba(217, 217, 217, 1);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .lingyun-page-nav.theme-dark .lingyun-page-nav__store-pill {
-  background-color: #2c2c2e;
+  border: 0;
+  border-radius: 9999px;
+  background: linear-gradient(rgba(0, 0, 0, 1), rgba(153, 153, 153, 0.17));
+  box-shadow:
+    1.25px 0 0 -0.75px rgba(191, 191, 191, 1),
+    -1.25px 0 0 -0.75px rgba(191, 191, 191, 1),
+    0 0 0 0.5px rgba(191, 191, 191, 1),
+    0 8px 15px 0 rgba(0, 0, 0, 0.04),
+    inset 0 40px 10px -40px rgba(26, 26, 26, 1),
+    inset 0 -40px 10px -40px rgba(26, 26, 26, 1),
+    inset 0 1px 0 0 rgba(23, 23, 23, 1),
+    inset 0 -1px 0 0 rgba(23, 23, 23, 1),
+    inset 0 4px 0.5px -4px rgba(102, 102, 102, 1),
+    inset 0 -4px 0.5px -4px rgba(102, 102, 102, 1),
+    inset -20px 0 20px -30px rgba(178, 178, 178, 1),
+    inset 20px 0 20px -30px rgba(178, 178, 178, 1);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .lingyun-page-nav__store-label {
   flex: 1;
   min-width: 0;
   margin-right: 6px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  overflow: hidden;
+}
+
+.lingyun-page-nav__store-clip {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.lingyun-page-nav__store-clip--head,
+.lingyun-page-nav__store-clip--tail {
+  flex: 1 1 auto;
+}
+
+.lingyun-page-nav__store-clip--tail {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
 }
 
 .lingyun-page-nav__store-chevron {
@@ -681,13 +761,21 @@ export default defineComponent({
 }
 
 .lingyun-page-nav__store-text {
-  display: block;
-  width: 100%;
   font-size: 15px;
   font-weight: 400;
   line-height: 20px;
-  color: #ffffff;
-  white-space: normal;
+  color: var(--lingyun-label, #{$lingyun-label});
+  white-space: nowrap;
+}
+
+.lingyun-page-nav__store-clip--head .lingyun-page-nav__store-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lingyun-page-nav__store-clip--tail .lingyun-page-nav__store-text {
+  flex-shrink: 0;
 }
 
 .lingyun-page-nav__subtitle--hang {

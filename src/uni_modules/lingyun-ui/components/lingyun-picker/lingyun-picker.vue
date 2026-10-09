@@ -500,6 +500,7 @@
               :model-value="searchQuery"
               :fixed="false"
               :safe-area="false"
+              padding="12px 12px 28px"
               :placeholder="searchPlaceholder"
               @update:model-value="onSearchQuery"
             />
@@ -982,6 +983,7 @@
               :model-value="searchQuery"
               :fixed="false"
               :safe-area="false"
+              padding="12px 12px 28px"
               :placeholder="searchPlaceholder"
               @update:model-value="onSearchQuery"
             />
