@@ -143,6 +143,7 @@
 <script lang="ts">
 import { defineComponent, getCurrentInstance, ref, watch, type PropType } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import LingyunIcon from '@/uni_modules/lingyun-ui/components/lingyun-icon/lingyun-icon.vue'
@@ -151,6 +152,7 @@ import {
   LINGYUN_TOOLBAR_BAR_DESIGN_PX,
 } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
 import {
+  LINGYUN_PAGE_NAV_GUEST_HOME,
   LINGYUN_PAGE_NAV_HOME,
   getLingyunPageNavProfile,
   getLingyunPageNavSections,
@@ -208,7 +210,6 @@ export default defineComponent({
       padTopPx: 0,
       padBottomPx: 0,
       currentPath: getLingyunPageNavIntent(),
-      navHome: LINGYUN_PAGE_NAV_HOME,
       navScrollTop: getLingyunPageNavScrollTop(),
       avatarFailed: false,
       _onHashChange: null as (() => void) | null,
@@ -237,6 +238,14 @@ export default defineComponent({
   computed: {
     navScrollY(): boolean {
       return !(this.pageScrollLocked as boolean)
+    },
+    /** 未登录时「首页」进组件演示，登录后仍进业务首页。 */
+    navHome(): string {
+      try {
+        return useAuthStore().isLogin ? LINGYUN_PAGE_NAV_HOME : LINGYUN_PAGE_NAV_GUEST_HOME
+      } catch {
+        return LINGYUN_PAGE_NAV_HOME
+      }
     },
     themeRootClass() {
       try {

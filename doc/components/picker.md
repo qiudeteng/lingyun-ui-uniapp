@@ -1,33 +1,33 @@
 # lingyun-picker
 
-选择器。`mode` 决定是普通列表、日期、时间还是日期时间。
+选择器。这里是普通列表。日期、区间、周、时间和日期时间见 [日期选择器](./date-picker.md)。
 
 ## 示例
 
 ```vue
 <lingyun-picker v-model="idx" :range="['上海', '北京']" title="城市" />
-<lingyun-picker v-model="day" mode="date" title="日期" />
-<lingyun-picker v-model="when" mode="datetime" title="日期时间" />
-<lingyun-picker v-model="time" mode="time" title="时间" />
+<lingyun-picker v-model="idx" :range="cities" range-key="name" title="城市" show-search />
 ```
 
 ## 属性
 
 | 属性 | 说明 | 默认值 |
 | --- | --- | --- |
-| `modelValue` | 列表为下标；日期时间为对应值 | — |
-| `mode` | `selector` / `date` / `time` / `datetime` | selector |
-| `range` | 普通列表的选项 | — |
-| `rangeKey` | 选项是对象时，显示哪个字段 | — |
+| `modelValue` | 当前下标 | — |
+| `mode` | 列表用 `selector` | selector |
+| `range` | 选项。字符串数组，或对象数组 | — |
+| `rangeKey` | 选项是对象时，显示哪个字段 | '' |
 | `title` | 弹层标题 | '' |
-| `placeholder` | 未选时的文字 | — |
-| `start / end` | 日期范围 | — |
+| `placeholder` | 未选时的文字 | 请选择 |
 | `disabled` | 禁用 | false |
+| `showSearch` | 滚轮下方按名称过滤 | false |
+| `searchPlaceholder` | 搜索框占位 | 搜索 |
+| `cancelText` / `confirmText` | 弹层按钮 | 取消 / 完成 |
 | `variant` | 在 form-item 内自动变成行内 | auto |
 ## 事件
 
 | 事件 | 说明 |
 | --- | --- |
-| `update:modelValue` | 确认选择 |
-
-日历中的单日格子是内部组件 `lingyun-picker-cal-day`，不要在页面里单独使用。它必须放在自己的目录 `lingyun-picker-cal-day/lingyun-picker-cal-day.vue`。微信 easycom 只认「目录名 = 文件名」，嵌回 `lingyun-picker` 目录后小程序会找不到这一格。
+| `update:modelValue` / `update:value` | 确认后的下标 |
+| `change` | `{ value }` |
+| `cancel` | 取消，不改当前值 |

@@ -7,6 +7,9 @@ export const LINGYUN_PAGE_NAV_WIDTH = 220
 
 export const LINGYUN_PAGE_NAV_HOME = '/pages/index/index'
 
+/** 未登录时左侧「首页」打开组件库目录，不进需要登录的业务首页。 */
+export const LINGYUN_PAGE_NAV_GUEST_HOME = '/pages/demo/demo'
+
 export interface LingyunPageNavItem {
   title: string
   url: string

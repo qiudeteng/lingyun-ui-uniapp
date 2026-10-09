@@ -100,6 +100,7 @@ const componentSidebar = [
       { text: '单选列表', link: '/components/data-radio.html' },
       { text: '滑条', link: '/components/slider.html' },
       { text: '选择器', link: '/components/picker.html' },
+      { text: '日期选择器', link: '/components/date-picker.html' },
       { text: '级联选择', link: '/components/data-picker.html' },
     ],
   },
