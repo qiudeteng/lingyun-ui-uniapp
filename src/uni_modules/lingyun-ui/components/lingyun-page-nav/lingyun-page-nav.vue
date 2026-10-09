@@ -68,14 +68,14 @@
           <text class="lingyun-page-nav__label">首页</text>
         </view>
         <view
-          v-for="section in pageNavSections"
-          :key="section.title"
+          v-for="(section, sectionIndex) in pageNavSections"
+          :key="section.title + '-' + sectionIndex"
           class="lingyun-page-nav__section"
         >
-          <text class="lingyun-page-nav__section-title">{{ section.title }}</text>
+          <text v-if="section.title" class="lingyun-page-nav__section-title">{{ section.title }}</text>
           <view
-            v-for="item in section.items"
-            :key="item.url"
+            v-for="(item, itemIndex) in section.items"
+            :key="item.url + '-' + itemIndex"
             class="lingyun-page-nav__item"
             :class="{ 'lingyun-page-nav__item--selected': isNavCurrent(item.url) }"
             hover-class="lingyun-page-nav__item--hover"
@@ -83,7 +83,14 @@
             :hover-stay-time="70"
             @click="onNavTap(item.url)"
           >
+            <image
+              v-if="item.iconSrc"
+              class="lingyun-page-nav__glyph"
+              :src="item.iconSrc"
+              mode="aspectFit"
+            />
             <lingyun-icon
+              v-else
               :type="item.icon || 'circle'"
               :size="22"
               color="var(--lingyun-label, #000)"
@@ -113,6 +120,7 @@ import {
   getLingyunPageNavIntent,
   getLingyunPageNavScrollTop,
   normalizeLingyunPagePath,
+  resolveLingyunPageUrl,
   setLingyunPageNavIntent,
   setLingyunPageNavScrollTop,
   type LingyunPageNavSection,
@@ -318,13 +326,16 @@ export default defineComponent({
       setLingyunPageNavScrollTop(y)
     },
     onNavTap(url: string) {
-      const target = normalizeLingyunPagePath(url)
-      if (!target || target === this.currentPath) return
+      const rawTarget = normalizeLingyunPagePath(url)
+      if (!rawTarget) return
+      const next = resolveLingyunPageUrl(url)
+      const target = normalizeLingyunPagePath(next)
+      if (!target) return
+      if (target === this.currentPath && target === rawTarget) return
       setLingyunPageNavIntent(target)
       this._expectPath = target
       this.currentPath = target
       this.pullRoute()
-      const next = url.charAt(0) === '/' ? url : `/${url}`
       uni.redirectTo({
         url: next,
         animationType: 'none',
@@ -550,6 +561,12 @@ export default defineComponent({
 
 .lingyun-page-nav__item--hover {
   background-color: rgba(120, 120, 128, 0.1);
+}
+
+.lingyun-page-nav__glyph {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
 }
 
 .lingyun-page-nav__label {

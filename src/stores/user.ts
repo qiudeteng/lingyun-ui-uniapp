@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { post } from '@/utils/request'
+import { isLoggedIn } from '@/utils/auth'
+import { clearLingyunPageNavSession, syncLingyunPageNav } from '@/utils/page-nav-menu'
 
 export type UserInfo = {
   brands?: unknown[]
@@ -71,10 +73,16 @@ export const useUserStore = defineStore('user', () => {
     })
   }
 
+  function publishPageNav(): void {
+    if (!isLoggedIn()) return
+    syncLingyunPageNav(userInfo.value, userMenu.value)
+  }
+
   function getUserInfo(callback?: () => void, showLoading = false): Promise<UserInfo> {
     return post<UserInfo>('/core/User/info', {}, showLoading).then((res) => {
       userInfo.value = res
       uni.setStorageSync('qichengcloud_user_info', res)
+      publishPageNav()
       if (res.editpass) {
         uni.showModal({
           title: '安全提示',
@@ -91,12 +99,14 @@ export const useUserStore = defineStore('user', () => {
     return post('/core/User/menu', {}, showLoading).then((res) => {
       userMenu.value = res
       uni.setStorageSync('qichengcloud_user_menu', res)
+      publishPageNav()
       callback?.()
       return res
     })
   }
 
   function refreshData(): void {
+    publishPageNav()
     getUserInfo(undefined, false).then(() => {
       getUserMenu(undefined, false)
       getUserStoreList(undefined, false)
@@ -107,7 +117,10 @@ export const useUserStore = defineStore('user', () => {
     userInfo.value = null
     userMenu.value = null
     storeList.value = []
+    clearLingyunPageNavSession()
   }
+
+  publishPageNav()
 
   return {
     userInfo,
