@@ -5,12 +5,15 @@
   import { useAppStore } from '@/stores/app'
   import { useAuthStore } from '@/stores/auth'
   import { useUserStore } from '@/stores/user'
+  import router from '@/router'
+  import { guardColdStart } from '@/router/guards'
 
   const themeStore = useThemeStore()
 
   onLaunch(() => {
     refreshLingyunScreen()
     themeStore.init()
+    guardColdStart(router)
     const appStore = useAppStore()
     const authStore = useAuthStore()
     const userStore = useUserStore()
