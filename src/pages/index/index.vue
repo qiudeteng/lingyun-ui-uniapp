@@ -1,6 +1,14 @@
 <template>
   <lingyun-app-page title="首页" :show-back="false">
     <view class="page">
+      <lingyun-list header="开发" header-type="nested">
+        <lingyun-list-item
+          title="组件 Demo"
+          note="凌云UI 控件演示"
+          accessory="disclosure"
+          @click="go('/pages/demo/demo')"
+        />
+      </lingyun-list>
       <lingyun-list
         v-for="section in sections"
         :key="section.title"
