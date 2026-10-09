@@ -1,4 +1,5 @@
 ## 1.0.4（2026-10-08）
+- 微信宽屏左侧菜单切到未注册页面时留在当前页，只换右侧内容，侧栏和顶栏不再随跳转拆掉。
 - 宽屏左栏菜单项支持 `iconSrc`。后台菜单图标是图片地址时画 22px 图片，字形图标仍走 `lingyun-icon`。
 - 演示页 `/pages/demo/screen`：实时显示 `lingyun` 的窗口档、系统、硬件和折叠状态。
 - 宽屏左栏顶部支持头像、名称、副标题。页面插槽为 `nav-avatar` / `nav-name` / `nav-subtitle`；全局资料用 `setLingyunPageNavProfile`。

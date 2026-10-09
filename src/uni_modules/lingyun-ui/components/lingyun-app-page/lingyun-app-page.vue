@@ -19,8 +19,8 @@
 
     <lingyun-toolbars
       class="lingyun-app-page__toolbar"
-      :title="title"
-      :subtitle="subtitle"
+      :title="displayTitle"
+      :subtitle="hostedMiss ? '' : subtitle"
       :title-style="titleStyle"
       :placement="placement"
       :show-back="showBackEffective"
@@ -59,7 +59,8 @@
     <!-- 默认形态：页面级滚动。玻璃进度由顶部哨兵的露出比例驱动（无 @scroll 可用） -->
     <view v-if="usePageScroll" class="lingyun-app-page__sentinel" :style="sentinelStyle" />
     <view v-if="usePageScroll" class="lingyun-app-page__pad">
-      <slot />
+      <lingyun-page-miss v-if="hostedMiss" :from="hostedFrom" @home="onHostHome" />
+      <slot v-else />
     </view>
 
     <!-- 逃生口：需要 scroll-y 锁（横向 swipe）等场景仍可用内层 scroll-view -->
@@ -74,14 +75,16 @@
       @scrolltoupper="onScrollToUpper"
     >
       <view class="lingyun-app-page__pad">
-        <slot />
+        <lingyun-page-miss v-if="hostedMiss" :from="hostedFrom" @home="onHostHome" />
+        <slot v-else />
       </view>
     </scroll-view>
 
     <!-- bodyScroll=false：页面自管内层滚动，用 useLingyunAppPageScroll 上报 -->
     <view v-if="!bodyScroll" class="lingyun-app-page__body">
       <view class="lingyun-app-page__pad">
-        <slot />
+        <lingyun-page-miss v-if="hostedMiss" :from="hostedFrom" @home="onHostHome" />
+        <slot v-else />
       </view>
     </view>
 
@@ -108,7 +111,8 @@ import {
 } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
 import { useThemeStore } from '@/stores/theme'
 import { pageRequiresLogin } from '@/router/guards'
-import { LINGYUN_PAGE_NAV_WIDTH, claimLingyunPageNavHeaderSlots, releaseLingyunPageNavHeaderSlots } from '@/router/pageNav'
+import { LINGYUN_PAGE_NAV_HOME, LINGYUN_PAGE_NAV_WIDTH, claimLingyunPageNavHeaderSlots, releaseLingyunPageNavHeaderSlots } from '@/router/pageNav'
+import { clearLingyunPageHost, hostedFromText, hostedPagePath, openLingyunHostedPage } from '@/router/pageHost'
 // #ifdef H5
 import { setLingyunH5PageNavAllowed } from '@/uni_modules/lingyun-ui/components/lingyun-page-nav/mountLingyunPageNav'
 // #endif
@@ -213,6 +217,7 @@ export default {
     }
   },
   beforeUnmount() {
+    clearLingyunPageHost()
     this.releaseNavHeaderSlots()
     this.clearScrollSettle()
     this.teardownGlassObserver()
@@ -260,6 +265,21 @@ export default {
     /** 未登录的受保护页先藏起来，避免冷启动先画出首页和侧栏再跳登录 */
     authHold() {
       return pageRequiresLogin()
+    },
+    /** 宽屏侧栏点到未注册页面：留在本页，只换右侧。 */
+    hostedMiss() {
+      // #ifdef H5
+      return false
+      // #endif
+      // #ifndef H5
+      return this.navDocked && hostedPagePath() === 'pages/404/404'
+      // #endif
+    },
+    hostedFrom() {
+      return hostedFromText()
+    },
+    displayTitle() {
+      return this.hostedMiss ? '404' : this.title
     },
     showPageNav() {
       // #ifdef H5
@@ -499,6 +519,9 @@ export default {
     onScrollToUpper() {
       this.applyScrollTop(0)
       this.scheduleScrollSettle(0)
+    },
+    onHostHome() {
+      openLingyunHostedPage(LINGYUN_PAGE_NAV_HOME)
     },
     onBack() {
       this.$emit('back')

@@ -125,6 +125,7 @@ import {
   setLingyunPageNavScrollTop,
   type LingyunPageNavSection,
 } from '@/router/pageNav'
+import { openLingyunHostedPage, pageHostState } from '@/router/pageHost'
 
 type NavPage = {
   route?: string
@@ -314,7 +315,8 @@ export default defineComponent({
       this._routeTimer = setTimeout(() => this.pullRoute(left - 1), 16)
     },
     isNavCurrent(url: string) {
-      return normalizeLingyunPagePath(url) === this.currentPath
+      const selected = pageHostState.path || this.currentPath
+      return normalizeLingyunPagePath(url) === selected
     },
     onNavScroll(event: { detail?: { scrollTop?: number } }) {
       const y = Number(event && event.detail && event.detail.scrollTop)
@@ -331,10 +333,13 @@ export default defineComponent({
       const next = resolveLingyunPageUrl(url)
       const target = normalizeLingyunPagePath(next)
       if (!target) return
-      if (target === this.currentPath && target === rawTarget) return
+      if (pageHostState.path === rawTarget && pageHostState.url === next) return
+      if (!pageHostState.path && target === this.currentPath && target === rawTarget) return
+      this.currentPath = rawTarget
+      if (openLingyunHostedPage(next, rawTarget)) return
+      this.currentPath = target
       setLingyunPageNavIntent(target)
       this._expectPath = target
-      this.currentPath = target
       this.pullRoute()
       uni.redirectTo({
         url: next,
