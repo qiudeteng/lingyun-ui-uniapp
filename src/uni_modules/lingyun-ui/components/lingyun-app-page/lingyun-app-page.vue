@@ -59,7 +59,9 @@
     <!-- 默认形态：页面级滚动。玻璃进度由顶部哨兵的露出比例驱动（无 @scroll 可用） -->
     <view v-if="usePageScroll" class="lingyun-app-page__sentinel" :style="sentinelStyle" />
     <view v-if="usePageScroll" class="lingyun-app-page__pad">
-      <lingyun-page-miss v-if="hostedMiss" :from="hostedFrom" @home="onHostHome" />
+      <view v-if="hostedMiss" class="lingyun-app-page__hosted">
+        <lingyun-page-miss :from="hostedFrom" @home="onHostHome" />
+      </view>
       <slot v-else />
     </view>
 
@@ -75,7 +77,9 @@
       @scrolltoupper="onScrollToUpper"
     >
       <view class="lingyun-app-page__pad">
-        <lingyun-page-miss v-if="hostedMiss" :from="hostedFrom" @home="onHostHome" />
+        <view v-if="hostedMiss" class="lingyun-app-page__hosted">
+          <lingyun-page-miss :from="hostedFrom" @home="onHostHome" />
+        </view>
         <slot v-else />
       </view>
     </scroll-view>
@@ -83,7 +87,9 @@
     <!-- bodyScroll=false：页面自管内层滚动，用 useLingyunAppPageScroll 上报 -->
     <view v-if="!bodyScroll" class="lingyun-app-page__body">
       <view class="lingyun-app-page__pad">
-        <lingyun-page-miss v-if="hostedMiss" :from="hostedFrom" @home="onHostHome" />
+        <view v-if="hostedMiss" class="lingyun-app-page__hosted">
+          <lingyun-page-miss :from="hostedFrom" @home="onHostHome" />
+        </view>
         <slot v-else />
       </view>
     </view>
@@ -591,6 +597,14 @@ export default {
 
 .lingyun-app-page__pad {
   min-height: 100%;
+  box-sizing: border-box;
+}
+
+/* 宽屏未注册页：首子已被全局样式撑到一屏，这里把 404 放在顶栏以下的正中 */
+.lingyun-app-page__hosted {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   box-sizing: border-box;
 }
 

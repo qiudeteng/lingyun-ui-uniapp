@@ -11,11 +11,13 @@
           <view v-if="showAvatar" class="lingyun-page-nav__avatar">
             <slot name="avatar">
               <image
-                v-if="profileAvatar && !profile.slotAvatar"
+                v-if="profileAvatar && !profile.slotAvatar && !avatarFailed"
                 class="lingyun-page-nav__avatar-img"
                 :src="profileAvatar"
                 mode="aspectFill"
+                @error="onAvatarError"
               />
+              <text v-else-if="!profile.slotAvatar" class="lingyun-page-nav__avatar-fallback">{{ avatarInitial }}</text>
             </slot>
             <!-- #ifdef H5 -->
             <view v-if="profile.slotAvatar" id="ly-nav-slot-avatar" class="lingyun-page-nav__slot" />
@@ -24,7 +26,9 @@
           <view class="lingyun-page-nav__meta">
             <view v-if="showName" class="lingyun-page-nav__name">
               <slot name="name">
-                <text v-if="profileName && !profile.slotName" class="lingyun-page-nav__name-text">{{ profileName }}</text>
+                <view v-if="profileName && !profile.slotName" class="lingyun-page-nav__name-text">
+                  <text class="lingyun-page-nav__name-label">{{ profileName }}</text>
+                </view>
               </slot>
               <!-- #ifdef H5 -->
               <view v-if="profile.slotName" id="ly-nav-slot-name" class="lingyun-page-nav__slot" />
@@ -36,7 +40,9 @@
               :class="{ 'lingyun-page-nav__subtitle--hang': showName }"
             >
               <slot name="subtitle">
-                <text v-if="profileSubtitle && !profile.slotSubtitle" class="lingyun-page-nav__subtitle-text">{{ profileSubtitle }}</text>
+                <view v-if="profileSubtitle && !profile.slotSubtitle" class="lingyun-page-nav__subtitle-text">
+                  <text class="lingyun-page-nav__subtitle-label">{{ profileSubtitle }}</text>
+                </view>
               </slot>
               <!-- #ifdef H5 -->
               <view v-if="profile.slotSubtitle" id="ly-nav-slot-subtitle" class="lingyun-page-nav__slot" />
@@ -163,6 +169,7 @@ export default defineComponent({
       currentPath: getLingyunPageNavIntent(),
       navHome: LINGYUN_PAGE_NAV_HOME,
       navScrollTop: getLingyunPageNavScrollTop(),
+      avatarFailed: false,
       _onHashChange: null as (() => void) | null,
       _expectPath: '',
       _routeSeen: '',
@@ -201,6 +208,10 @@ export default defineComponent({
     profileAvatar(): string {
       return this.avatar || this.profile.avatar
     },
+    avatarInitial(): string {
+      const name = (this.profileName || '').trim()
+      return name ? name.slice(0, 1) : ''
+    },
     profileName(): string {
       return this.name || this.profile.name || LINGYUN_PAGE_NAV_TITLE
     },
@@ -229,6 +240,11 @@ export default defineComponent({
         paddingTop: `${this.padTopPx}px`,
         paddingBottom: `${this.padBottomPx}px`,
       }
+    },
+  },
+  watch: {
+    profileAvatar() {
+      this.avatarFailed = false
     },
   },
   created() {
@@ -265,6 +281,9 @@ export default defineComponent({
     // #endif
   },
   methods: {
+    onAvatarError() {
+      this.avatarFailed = true
+    },
     syncLayout() {
       const layout = getLingyunNavLayout(LINGYUN_TOOLBAR_BAR_DESIGN_PX)
       this.statusBarPx = layout.statusBarHeight || 0
@@ -438,20 +457,29 @@ export default defineComponent({
   border-radius: 18px;
   overflow: hidden;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background-color: var(--lingyun-fill-tertiary, #{$lingyun-fill-tertiary});
 }
 
 .lingyun-page-nav__avatar-img {
   width: 36px;
   height: 36px;
+  display: block;
+}
+
+.lingyun-page-nav__avatar-fallback {
+  width: 36px;
+  height: 36px;
+  line-height: 36px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--lingyun-label, #{$lingyun-label});
 }
 
 .lingyun-page-nav__meta {
   position: relative;
   flex: 1;
+  width: 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -459,7 +487,7 @@ export default defineComponent({
 }
 
 .lingyun-page-nav__name {
-  height: 28px;
+  width: 100%;
   min-width: 0;
   display: flex;
   align-items: center;
@@ -480,13 +508,14 @@ export default defineComponent({
 
 .lingyun-page-nav__name-text,
 .lingyun-page-nav__subtitle-text {
-  display: block;
+  width: 100%;
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.lingyun-page-nav__name-text {
+.lingyun-page-nav__name-label {
   font-size: 22px;
   font-weight: 600;
   line-height: 28px;
@@ -500,7 +529,7 @@ export default defineComponent({
   top: 100%;
 }
 
-.lingyun-page-nav__subtitle-text {
+.lingyun-page-nav__subtitle-label {
   font-size: 13px;
   font-weight: 400;
   line-height: 18px;
