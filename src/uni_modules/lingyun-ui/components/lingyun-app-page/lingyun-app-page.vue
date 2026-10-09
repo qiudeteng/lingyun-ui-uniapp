@@ -18,6 +18,7 @@
     <!-- #endif -->
 
     <lingyun-toolbars
+      v-if="showToolbar"
       class="lingyun-app-page__toolbar"
       :title="displayTitle"
       :subtitle="hostedMiss ? '' : subtitle"
@@ -140,7 +141,7 @@ import { setLingyunH5PageNavAllowed } from '@/uni_modules/lingyun-ui/components/
  *
  * @property {String} title / subtitle
  * @property {String} titleStyle / placement
- * @property {Boolean} showBack / showClose / showGrabber / showTrailing / safeArea / bodyScroll / pageScroll / showNav
+ * @property {Boolean} showBack / showClose / showGrabber / showTrailing / safeArea / bodyScroll / pageScroll / showNav / showToolbar
  * @property {Array} navSections 只覆盖当前页（微信内嵌列）。全局菜单用 setLingyunPageNavSections
  * 插槽 nav-avatar / nav-name / nav-subtitle：宽屏左栏顶部。不传则显示「凌云UI」和默认介绍
  * @property {Number} glassDistance 滚过多少 px 达到满玻璃
@@ -180,6 +181,8 @@ export default defineComponent({
     pageScroll: { type: Boolean, default: true },
     /** 宽屏（≥690，含折叠屏展开）左侧停靠导航。false 关闭。Sheet 形态永不显示。 */
     showNav: { default: true },
+    /** 头部顶栏。false 时不渲染，也不再为顶栏预留高度 */
+    showToolbar: { type: Boolean, default: true },
     /** 覆盖默认目录；null 使用 LINGYUN_PAGE_NAV */
     navSections: {
       type: Array as PropType<LingyunPageNavSection[] | null>,
@@ -327,6 +330,7 @@ export default defineComponent({
       // #endif
     },
     insetTop() {
+      if (!this.showToolbar) return '0px'
       const total = this.toolbarStackPx + (this.safeArea ? this.statusBarPx : 0)
       return `${total}px`
     },
