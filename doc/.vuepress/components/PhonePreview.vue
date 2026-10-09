@@ -4,8 +4,8 @@ import { useRoute } from 'vuepress/client'
 
 /** 文档页文件名 → H5 演示路由（不含 #） */
 const DEMO: Record<string, string> = {
-  'app-page': '/pages/index/index',
-  'page-nav': '/pages/index/index',
+  'app-page': '/pages/demo/demo',
+  'page-nav': '/pages/demo/demo',
   toolbars: '/pages/demo/toolbars',
   screen: '/pages/demo/screen',
   tabbars: '/pages/demo/tabbars',

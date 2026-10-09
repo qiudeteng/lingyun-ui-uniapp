@@ -109,6 +109,26 @@ export function readLingyunResizeWidth(res?: unknown): number {
 }
 
 /**
+ * 微信 PC 客户端（Windows / Mac）。没有手机状态栏，胶囊矩形的 top 会把栏身撑得比设计高。
+ * 这一端栏高与 H5 一致，不跟胶囊走。
+ */
+function isWeixinPc(): boolean {
+  // #ifdef MP-WEIXIN
+  try {
+    const sys =
+      typeof uni.getDeviceInfo === 'function' ? uni.getDeviceInfo() : uni.getSystemInfoSync()
+    const platform = String((sys as { platform?: string }).platform || '').toLowerCase()
+    return platform === 'windows' || platform === 'mac' || platform === 'macos'
+  } catch {
+    return false
+  }
+  // #endif
+  // #ifndef MP-WEIXIN
+  return false
+  // #endif
+}
+
+/**
  * Mac 桌面才显示窗口按钮。iPad（deviceType=pad）与手机、微信都不显示。
  * 微信条件编译直接返回 false，避免开发者工具在 Mac 上误开交通灯。
  */
@@ -145,6 +165,7 @@ function isMacDesktop(): boolean {
  * - 状态栏：`uni.getWindowInfo().statusBarHeight`（真机值）
  * - 窄屏：微信内容行与设计 **60** 取大（上下各 8）
  * - 宽屏（≥700）：iPad 栏身 **54**（上 0 / 下 10），Mac 桌面再加窗口按钮
+ * - 微信 PC：状态栏 0，栏身用同宽度的设计高度，与 H5 一致；右侧仍避开胶囊
  * @see design/TOOLBARS.md
  */
 export function getLingyunNavLayout(
@@ -158,7 +179,8 @@ export function getLingyunNavLayout(
       : win.windowWidth
   const regular = windowWidth >= LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH
   const design = regular ? LINGYUN_TOOLBAR_BAR_REGULAR_PX : designBarHeight
-  let statusBarHeight = win.statusBarHeight
+  const weixinPc = isWeixinPc()
+  let statusBarHeight = weixinPc ? 0 : win.statusBarHeight
   let barHeight = design
   let rightInset = 0
   let fromCapsule = false
@@ -168,9 +190,11 @@ export function getLingyunNavLayout(
     if (typeof uni.getMenuButtonBoundingClientRect === 'function') {
       const menu = uni.getMenuButtonBoundingClientRect()
       if (menu && menu.width > 0 && menu.height > 0 && menu.top != null) {
-        const spaceHeight = Math.max(0, menu.top - statusBarHeight)
-        barHeight = Math.max(menu.height + spaceHeight * 2, ACTION_PX)
-        fromCapsule = true
+        if (!weixinPc) {
+          const spaceHeight = Math.max(0, menu.top - statusBarHeight)
+          barHeight = Math.max(menu.height + spaceHeight * 2, ACTION_PX)
+          fromCapsule = true
+        }
         if (menu.left > 0 && windowWidth > 0) {
           rightInset = Math.max(0, windowWidth - menu.left)
         }
