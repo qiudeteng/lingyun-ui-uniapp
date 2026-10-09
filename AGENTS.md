@@ -128,8 +128,7 @@ pnpm docs:build          # 文档站静态产物 → design/.vuepress/dist
 - ❌ 不要把设计稿堆在 `design/` 根目录或与源码无关的目录名下。
 - ❌ 不要让 凌云UI 或设计稿偏离 Apple Liquid Glass（详见 `design/UI_SPEC.md`）。
 - ❌ 不要在自研样式（`lingyun-ui`、`src/pages`、`src/components`、`src/uni.scss`）里使用 `rpx`；尺寸一律 `px`，与 Sketch **1pt = 1px**。第三方 `uni-*` 不强行改。
-- ❌ **业务侧禁止新增 JavaScript**。`src/pages` / `components` / `api` / `stores` / `utils` / `router` / `config` 以及 `App.vue` / `main.ts` 必须用 TypeScript（`.ts` 或 `<script setup lang="ts">`）；从旧项目搬代码也要改写成 TS。详见 Cursor 规则 `business-typescript.mdc`。
-- ❌ **不要把扩展里的 JS 改成 TS**。`src/uni_modules/`（`uni-*`、`lingyun-ui`）保持现有语言；尤其不要动第三方 `uni-*` 源码，renderjs 必须 `.js`。
+- ❌ **组件与页面禁止用 JavaScript 编写**。`src/pages`、`src/components`、`lingyun-ui`、`lingyun-ui-page`、`lingyun-ui-charts` 以及 `api` / `stores` / `utils` / `router` / `config`、`App.vue` / `main.ts` 必须是 TypeScript（`.ts`，Vue 用 `lang="ts"`）。改到仍是 `.js` 的自研组件或页面脚本时，一并改成 TS。第三方 `uni-*` 不要为全量 TS 改源码；renderjs 必须 `.js`，wxs 必须 `.wxs`。详见 Cursor 规则 `business-typescript.mdc`。
 - ❌ 不要引入第二套 UI / 状态 / 请求栈，除非用户明确要求。
 - ❌ 不要在未征询用户时改 `package.json` 核心依赖大版本、或改动本文件 / `.cursorrules` / `design/README.md` / `design/UI_SPEC.md` / `lingyun-ui/readme.md` 的约定本身。
 
@@ -141,7 +140,7 @@ pnpm docs:build          # 文档站静态产物 → design/.vuepress/dist
 - 新标准页：放 `src/uni_modules/lingyun-ui-page/components/lingyun-<name>/`。`src/pages` 只登记路由并接业务（请求、登录态、跳转），不重写界面。详见 `.cursor/rules/lingyun-ui-page.mdc`。
 - 新接口：`src/api/<domain>.ts` 导出函数，内部调用 `request`。
 - 新状态：`src/stores/<name>.ts`，在需要处 `useXxxStore()`。
-- **业务代码用 TypeScript**：页面 / 业务组件 / api / stores / utils / router / config 一律 `.ts`（Vue 用 `lang="ts"`），禁止业务侧新增 `.js`。扩展（`uni_modules`）不要为「全量 TS」改语言。
+- **组件、页面和业务代码用 TypeScript**：页面、自研组件（含 `lingyun-ui` / `lingyun-ui-page` / `lingyun-ui-charts`）、api / stores / utils / router / config 一律 `.ts`（Vue 用 `lang="ts"`）。第三方 `uni-*` 不改语言；renderjs / wxs 保持平台要求的文件类型。
 - 鉴权相关读写 token：走 `src/utils/auth.ts`。
 - 第三方 UI：在 `src/uni_modules` 按需安装（如 `uni-icons`、`uni-list`）；页面内直接用标签，依赖 easycom。
 - 样式：全局 `uni.scss`；自研扩展用 `lingyun-ui/styles/`（含 `_glass.scss`）；uni-ui 主题见 `uni_modules/uni-scss`（二者前缀隔离）。自研与业务样式尺寸一律 **`px`**，禁止 `rpx`。
@@ -161,7 +160,7 @@ pnpm docs:build          # 文档站静态产物 → design/.vuepress/dist
 ## 8. 自检清单（结束工作前）
 
 - [ ] 改动与本仓库技术栈一致（uni-app / Vue3 / TS）
-- [ ] **业务侧为 TypeScript**（未新增 `src/pages|components|api|stores|utils|router|config` 下的 `.js`）；未把 `uni_modules` 扩展 JS 改成 TS
+- [ ] **组件与页面为 TypeScript**（自研组件、标准页、`src/pages` 以及 api / stores / utils / router / config 未新增 `.js`；改到的 `.js` 脚本已改成 `lang="ts"`）。未改第三方 `uni-*`；renderjs 仍为 `.js`
 - [ ] **微信小程序兼容**：涉及 UI/样式/模板/API 的改动可通过 `pnpm dev:mp-weixin` 编译，WXSS 无 `*` 等非法选择器，微信开发者工具无编译报错（见 `mp-weixin-compat.mdc`）
 - [ ] `pnpm type-check` 通过
 - [ ] 新页面已写入 `pages.json`；入口 HTML 仍为 `/src/main.ts`

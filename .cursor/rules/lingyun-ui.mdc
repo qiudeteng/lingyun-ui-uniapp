@@ -16,7 +16,7 @@ alwaysApply: false
 - 样式底座在 `lingyun-ui/styles/`；控件层必须用 `$lingyun-glass-*` / `@include lingyun-glass-regular` 等，符合 Liquid Glass
 - 尺寸一律 `px`（Sketch **1pt = 1px**）；❌ 禁止 `rpx`
 - **浮层（遮罩+面板）**：H5 `Teleport`→`body`，mp `root-portal`；根自挂 `theme-*`。详见始终加载的 `overlay-portal.mdc`
-- ❌ 禁止把本包已有 `.js`（mixin / renderjs / calendar 等）改成 `.ts`；renderjs 必须 `.js`
+- **脚本必须 TypeScript**（`<script lang="ts">` 或 `<script setup lang="ts">`，同目录逻辑用 `.ts`）。详见始终加载的 `business-typescript.mdc`。renderjs 必须 `.js`；内置第三方算法原文件（如 `calendar.js`）不改写成 TS
 - ❌ 禁止把控件放进 `src/components/`，或再新建无关的 `lingyun-*` 包。例外只有两个：图表 `lingyun-ui-charts`，标准页面 `lingyun-ui-page`（见 `lingyun-ui-page.mdc`，不要把页面塞进本包）
 - ❌ 禁止纯实心扁平、粗边框卡片、glass-on-glass 冒充规范
 - ❌ 禁止把全屏/底部浮层直接挂在 section·card 子树内（会被 `overflow` 裁切）

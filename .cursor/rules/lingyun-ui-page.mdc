@@ -20,6 +20,7 @@ alwaysApply: true
 ## 硬规则
 
 - 目录名 = 文件名 = 标签名。登录页是 `<lingyun-login>`。
+- 标准页脚本必须是 TypeScript（`<script lang="ts">` 或 `<script setup lang="ts">`）。
 - `components/lingyun-ui-page/lingyun-ui-page.vue` 保持空文件，不要删，也不要往里写页面。
 - 标准页不请求接口、不读写 token。文案、logo、加载中用 props；提交和协议跳转用事件。
 - 样式走 `lingyun-ui/styles` 的 `$lingyun-*`，尺寸 `px`。遵守 Liquid Glass 与微信小程序约束。
