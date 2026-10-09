@@ -4,8 +4,11 @@ import { LINGYUN_PAGE_NAV_WIDTH } from '@/router/pageNav'
 import { LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH } from '../lingyun-toolbars/getLingyunNavSafeInset'
 
 let booted = false
-/** 当前页 `showNav` 是否允许停靠侧栏。登录等页会关掉。 */
-let pageAllowsNav = true
+/**
+ * 当前页是否允许停靠侧栏。
+ * 默认关：宿主比页面更早挂上，若默认开，刷新时登录页会先闪出菜单再关掉。
+ */
+let pageAllowsNav = false
 let applyHostVisibility: () => void = () => {}
 
 export function setLingyunH5PageNavAllowed(allowed: boolean): void {
