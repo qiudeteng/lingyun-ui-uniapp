@@ -14,11 +14,11 @@
 
 | 区域 | px | 说明 |
 |------|----|------|
-| 卡片圆角 | 26 | 与分组列表同一档 |
-| 卡片底 | Grouped Secondary | 浅白 / 暗黑 `#1c1c1e` |
+| 卡片圆角 | 26 | 与分组列表同一档。放进 `lingyun-section` 时为 0，圆角由卡片负责 |
+| 卡片底 | Grouped Secondary | 浅白 / 暗黑 `#1c1c1e`。`background` 可改，`transparent` 为透明 |
 | 方形格 | 宽 = 高 | `padding-top: 100%`，不靠 JS 量宽 |
 | 非方形 | 最小高 88 | 图标 + 文案 |
-| 图标 | 28 | `lingyun-icon`，默认系统蓝 |
+| 图标 | 28 | 字形走 `lingyun-icon`。`iconSrc` 或图片地址走 `lingyun-image` |
 | 文案 | 12 / 16 | Secondary Label，单行省略 |
 | 分割线 | 1 | Separator；末列去掉右边，末行去掉下边 |
 
@@ -37,6 +37,16 @@
     :info="item.info"
   />
 </lingyun-grid>
+
+<lingyun-grid
+  background="transparent"
+  :column="4"
+  :items="[
+    { icon: 'image', text: '相册', link: '/pages/demo/images' },
+    { iconSrc: 'https://example.com/a.jpg', text: '图片', link: '/pages/demo/icons' },
+  ]"
+  @change="onChange"
+/>
 ```
 
 | 属性 | 组件 | 说明 | 默认 |
@@ -46,7 +56,12 @@
 | `showBorder` | grid | 分割线 | false |
 | `borderColor` | grid | 分割线颜色 | 系统 Separator |
 | `highlight` | grid | 按下高亮 | true |
+| `background` | grid | 卡片背景。空为分组底，`transparent` 为透明 | `''` |
+| `items` | grid | 数组里有格子时按数据生成，不再用默认插槽。不传或空数组仍用插槽（微信未传的数组会变成 `[]`） | — |
 | `index` | item | 点击回传 | 0 |
-| `icon` / `text` / `color` / `info` | item | 默认快捷入口；有默认插槽时不画 | — |
+| `icon` / `iconSrc` / `text` / `color` / `info` | item | 默认快捷入口。`iconSrc` 或图片地址用 `lingyun-image` | — |
+| `link` | item / items | 页面路径。有值时点击后跳转 | `''` |
 
-`change` 载荷与 uni-grid 相同：`{ detail: { index } }`。
+`change` 载荷与 uni-grid 相同：`{ detail: { index } }`。设置了 `link` 时，回传之后再打开该页。未注册路径进 404。
+
+微信上宫格和格子都去掉宿主节点（`virtualHost`）。列宽写在格子根节点上，用 `flex: 0 0 <百分比>`。只写内部 `width` 时，宿主宽度会变成 0，格子有高度但不显示。

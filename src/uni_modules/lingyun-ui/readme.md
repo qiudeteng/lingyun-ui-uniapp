@@ -1,6 +1,6 @@
 # 凌云UI
 
-凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.6**，变更见 [`changelog.md`](./changelog.md)。
+凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.7**，变更见 [`changelog.md`](./changelog.md)。
 
 📖 [使用手册](https://lingyun.xinyicanyin.com/)（组件用法、属性、示例；右侧手机框实时预览）
 
@@ -84,7 +84,7 @@ uni.hideLingyunHud()
 
 ```
 lingyun-ui/
-├── package.json          # 1.0.6
+├── package.json          # 1.0.7
 ├── readme.md
 ├── changelog.md
 ├── index.ts              # app.use(lingyunUi)
@@ -132,6 +132,11 @@ lingyun-ui/
   <lingyun-grid-item :index="0" icon="shop" text="店铺" />
   <lingyun-grid-item :index="1" icon="cart" text="购物车" :info="2" />
 </lingyun-grid>
+
+<lingyun-grid
+  background="transparent"
+  :items="[{ icon: 'image', text: '相册', link: '/pages/demo/images' }]"
+/>
 
 <lingyun-indexed-list
   :options="[{ letter: 'A', data: ['阿坝', '安庆'] }, { letter: 'B', data: ['北京'] }]"

@@ -1,11 +1,37 @@
 <template>
-  <view class="lingyun-grid" :class="{ 'lingyun-grid--border': showBorder }">
-    <slot />
+  <view class="lingyun-grid" :class="{ 'lingyun-grid--border': showBorder }" :style="gridStyle">
+    <block v-if="useItems">
+      <lingyun-grid-item
+        v-for="(item, index) in itemList"
+        :key="itemKey(item, index)"
+        :index="index"
+        :icon="item.icon || ''"
+        :icon-src="item.iconSrc || ''"
+        :text="item.text || ''"
+        :color="item.color || ''"
+        :info="item.info == null ? '' : item.info"
+        :link="item.link || ''"
+      />
+    </block>
+    <!-- 小程序上没传 items 也会变成 []，不能用 v-else 把插槽关掉 -->
+    <slot v-if="!useItems" />
   </view>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, type PropType } from 'vue'
+
+export type LingyunGridItemInput = {
+  /** lingyun-icon 字形。写成图片地址时按网络图标画 */
+  icon?: string
+  /** 网络或本地图片。有值时用 lingyun-image，不再用字形 */
+  iconSrc?: string
+  text?: string
+  color?: string
+  info?: string | number | boolean
+  /** 页面路径。有值时点击后跳转 */
+  link?: string
+}
 
 /**
  * lingyun-grid
@@ -18,10 +44,16 @@ import { defineComponent } from 'vue'
  * @property {Boolean} showBorder 格子之间的分割线，默认 false
  * @property {String} borderColor 分割线颜色，空则用系统 Separator
  * @property {Boolean} highlight 按下高亮，默认 true
+ * @property {String} background 卡片背景。空为分组白；`transparent` 为透明
+ * @property {Array} items 有数据时按数组生成格子。不传或空数组仍用默认插槽
  * @event change { detail: { index } }
  */
 export default defineComponent({
   name: 'LingyunGrid',
+  options: {
+    // 去掉小程序宿主。否则宿主默认 inline，内部 width:100% 算出来是 0
+    virtualHost: true,
+  },
   emits: ['change'],
   props: {
     column: { type: Number, default: 3 },
@@ -29,6 +61,16 @@ export default defineComponent({
     showBorder: { type: Boolean, default: false },
     borderColor: { type: String, default: '' },
     highlight: { type: Boolean, default: true },
+    /** 空字符串保持分组底。可传 `transparent` 或任意 CSS 颜色 */
+    background: { type: String, default: '' },
+    /**
+     * 有格子数据时自动生成。不传或空数组仍用默认插槽。
+     * 小程序未传的 Array 属性会变成 []，不能单凭「是不是数组」判断。
+     */
+    items: {
+      type: Array as PropType<LingyunGridItemInput[] | null>,
+      default: undefined,
+    },
   },
   provide() {
     return { grid: this }
@@ -38,6 +80,19 @@ export default defineComponent({
       childList: [] as object[],
       epoch: 0,
     }
+  },
+  computed: {
+    useItems(): boolean {
+      return Array.isArray(this.items) && this.items.length > 0
+    },
+    itemList(): LingyunGridItemInput[] {
+      return Array.isArray(this.items) ? this.items : []
+    },
+    gridStyle(): Record<string, string> {
+      const bg = String(this.background || '').trim()
+      if (!bg) return {}
+      return { backgroundColor: bg }
+    },
   },
   watch: {
     column() {
@@ -61,6 +116,9 @@ export default defineComponent({
     change(event: { detail?: { index?: number } }) {
       this.$emit('change', event)
     },
+    itemKey(item: LingyunGridItemInput, index: number): string {
+      return `${index}-${item.link || ''}-${item.iconSrc || item.icon || ''}-${item.text || ''}`
+    },
   },
 })
 </script>
@@ -75,7 +133,7 @@ export default defineComponent({
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;
-  border-radius: 26px;
+  border-radius: var(--lingyun-grid-radius, 26px);
   background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
 }
 </style>

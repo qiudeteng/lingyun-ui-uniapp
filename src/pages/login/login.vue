@@ -4,7 +4,9 @@
     :enterprise-name="enterpriseName"
     :copyright="copyright"
     :booting="booting"
+    demo-text="组件演示"
     @submit="onSubmit"
+    @demo="goDemo"
   />
 </template>
 
@@ -40,6 +42,10 @@
         uni.reLaunch({ url: appConfig.homePath })
       },
     })
+  }
+
+  function goDemo(): void {
+    uni.navigateTo({ url: '/pages/demo/demo' })
   }
 
   function onSubmit(payload: { username: string; password: string }): void {

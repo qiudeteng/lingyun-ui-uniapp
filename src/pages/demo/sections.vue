@@ -6,6 +6,49 @@
         <text class="hero__desc">lingyun-section · 分组卡片 / 布局容器</text>
       </view>
 
+      <lingyun-section
+        title="小图标"
+        subtitle="副标题和主标题左对齐"
+        icon="https://qiniu-web-assets.dcloud.net.cn/unidoc/zh/shuijiao.jpg"
+        icon-size="small"
+        hint="iconSize=small"
+      >
+        <text class="body-text">16px。</text>
+      </lingyun-section>
+
+      <lingyun-section
+        title="默认大小"
+        subtitle="不传 iconSize"
+        icon="https://qiniu-web-assets.dcloud.net.cn/unidoc/zh/shuijiao.jpg"
+        hint="默认 24px"
+      >
+        <text class="body-text">不传 iconSize 时用这一档。</text>
+      </lingyun-section>
+
+      <lingyun-section
+        title="大图标"
+        icon="https://qiniu-web-assets.dcloud.net.cn/unidoc/zh/shuijiao.jpg"
+        icon-size="large"
+        hint="iconSize=large"
+      >
+        <text class="body-text">32px。不能传像素。</text>
+      </lingyun-section>
+
+      <lingyun-section title="绿色" color="green" />
+      <lingyun-section title="蓝色" color="blue" />
+      <lingyun-section title="橙色" color="orange" />
+      <lingyun-section title="黄色" color="yellow" />
+      <lingyun-section title="红色" color="red" />
+
+      <lingyun-section
+        title="快捷入口"
+        subtitle="Section 套 Grid"
+        icon="https://qiniu-web-assets.dcloud.net.cn/unidoc/zh/shuijiao.jpg"
+        hint="宫格透明底，跟这张卡片走"
+      >
+        <lingyun-grid background="transparent" :column="4" :items="shortcuts" @change="onGrid" />
+      </lingyun-section>
+
       <lingyun-section title="Default（Glass）" hint="默认 Liquid Glass 表面">
         <text class="body-text">内容区默认无内边距；用全局工具类排版。</text>
       </lingyun-section>
@@ -96,12 +139,25 @@
 </template>
 
 <script setup lang="ts">
+  const shortcuts = [
+    { icon: 'shop', text: '店铺', color: '#0088ff', link: '/pages/demo/grid' },
+    { icon: 'cart', text: '购物车', color: '#34c759', info: 2 },
+    { icon: 'gift', text: '优惠', color: '#ff8d28' },
+    { icon: 'gear', text: '设置', color: '#8e8e93', link: '/pages/demo/icons' },
+  ]
+
   function toast(title: string): void {
     uni.showToast({ title, icon: 'none' })
   }
 
   function onSectionClick(type: string): void {
     toast(`click: ${type}`)
+  }
+
+  function onGrid(event: { detail?: { index?: number } }): void {
+    const index = event.detail?.index
+    const item = index == null ? undefined : shortcuts[index]
+    toast(item?.text || '宫格')
   }
 </script>
 
