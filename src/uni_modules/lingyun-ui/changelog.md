@@ -1,4 +1,7 @@
 ## 1.0.5（2026-10-09）
+- 级联 `lingyun-data-picker` 与普通 `lingyun-picker`（selector）增加 `showSearch`。为真时滚轮下方显示搜索栏；`lingyun-search-bar` 增加 `showMic`，语音按钮默认关闭。
+- 宽屏左栏门店滚轮打开搜索，可按门店名过滤。
+- 宽屏左栏门店选择器在头像下方，宽度与菜单行对齐；去掉左侧图标，保留右侧箭头。名称下显示用户类型。
 - 凌云UI 组件脚本改为 TypeScript。`render.js`、`wx.wxs` 与内置 `calendar.js` 保持原语言。
 - 404 空态「返回首页」在微信里水平居中：行内操作区交叉轴居中，按钮开启 `virtualHost`，避免胶囊贴在组件宿主左侧。
 - `lingyun-picker` 脚本改为 TypeScript。日期解析在 `picker-date.ts`，农历文案在 `lunar.ts`。公历农历换算表仍用内置 `calendar.js`。

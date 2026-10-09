@@ -10,6 +10,10 @@
         <lingyun-picker v-model="cityIdx" title="City" :range="cities" />
       </lingyun-section>
 
+      <lingyun-section title="Selector · 搜索" :hint="`index=${searchCityIdx}`">
+        <lingyun-picker v-model="searchCityIdx" title="City" show-search :range="cities" />
+      </lingyun-section>
+
       <lingyun-section title="Selector · rangeKey" :hint="fruitHint">
         <lingyun-picker
           v-model="fruitIdx"
@@ -21,6 +25,15 @@
 
       <lingyun-section title="Data Picker · 级联" :hint="regionHint">
         <lingyun-data-picker v-model="region" title="地区" :localdata="regionTree" />
+      </lingyun-section>
+
+      <lingyun-section title="Data Picker · 搜索" :hint="searchHint">
+        <lingyun-data-picker
+          v-model="searchRegion"
+          title="地区"
+          show-search
+          :localdata="regionTree"
+        />
       </lingyun-section>
 
       <lingyun-section title="Data Picker · map" :hint="categoryHint" is-last>
@@ -41,6 +54,7 @@
 
   const cities = ['Shanghai', 'Beijing', 'Guangzhou', 'Shenzhen']
   const cityIdx = ref(0)
+  const searchCityIdx = ref(0)
 
   const fruits = [
     { label: '苹果', value: 'apple' },
@@ -104,6 +118,10 @@
 
   const regionHint = computed(() =>
     region.value.length ? JSON.stringify(region.value) : '未选',
+  )
+  const searchRegion = ref<string[]>([])
+  const searchHint = computed(() =>
+    searchRegion.value.length ? JSON.stringify(searchRegion.value) : '未选',
   )
 
   const category = ref(['elec', 'phone'])

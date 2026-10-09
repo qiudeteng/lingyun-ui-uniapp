@@ -1,6 +1,10 @@
 <template>
   <view class="lingyun-picker" :class="rootClass">
+    <view v-if="hasTrigger" class="lingyun-picker__trigger" @click="open">
+      <slot name="trigger" />
+    </view>
     <view
+      v-else
       class="lingyun-picker__row"
       :class="rowClass"
       @click="open"
@@ -491,6 +495,15 @@
               </picker-view>
             </view>
           </view>
+          <view v-if="showSelectorSearch" class="lingyun-picker-sheet__search">
+            <lingyun-search-bar
+              :model-value="searchQuery"
+              :fixed="false"
+              :safe-area="false"
+              :placeholder="searchPlaceholder"
+              @update:model-value="onSearchQuery"
+            />
+          </view>
         </view>
       </view>
     </root-portal>
@@ -964,6 +977,15 @@
               </picker-view>
             </view>
           </view>
+          <view v-if="showSelectorSearch" class="lingyun-picker-sheet__search">
+            <lingyun-search-bar
+              :model-value="searchQuery"
+              :fixed="false"
+              :safe-area="false"
+              :placeholder="searchPlaceholder"
+              @update:model-value="onSearchQuery"
+            />
+          </view>
         </view>
       </view>
     </teleport>
@@ -1083,6 +1105,9 @@ export default defineComponent({
     weekStartsOn: { type: [Number, String] as PropType<number | string>, default: 0 },
     cancelText: { type: String, default: '取消' },
     confirmText: { type: String, default: '完成' },
+    /** selector 滚轮下方搜索框。默认关闭 */
+    showSearch: { type: Boolean, default: false },
+    searchPlaceholder: { type: String, default: '搜索' },
     zIndex: { type: [Number, String] as PropType<number | string>, default: 1200 },
     variant: { type: String, default: 'auto' },
   },
@@ -1110,6 +1135,10 @@ export default defineComponent({
       timeDraftIndexes: [0, 0] as number[],
       safeBottom: 0,
       windowWidth: 375,
+      searchQuery: '',
+      keyboardHeight: 0,
+      _onKeyboardHeight: null as ((res: { height?: number }) => void) | null,
+      _onVisualViewport: null as (() => void) | null,
       dragStartY: 0,
       dragDy: 0,
       dragging: false,
@@ -1171,6 +1200,9 @@ export default defineComponent({
     },
     isCell() {
       return this.resolvedVariant === 'cell'
+    },
+    hasTrigger(): boolean {
+      return !!this.$slots.trigger
     },
     showTriggerTitle() {
       if (this.isCell) return false
@@ -1296,11 +1328,18 @@ export default defineComponent({
       const w = Math.max(320, Number(this.windowWidth) || 375)
       return Math.max(INSET_MEDIUM, Math.round((w - PANEL_MAX_WIDTH) / 2))
     },
+    panelBottom() {
+      if (this.showSelectorSearch && this.keyboardHeight > 0) return this.keyboardHeight
+      return INSET_MEDIUM
+    },
+    showSelectorSearch() {
+      return this.showSearch && this.modeKey === 'selector'
+    },
     panelStyle(): Record<string, string> {
       const style: Record<string, string> = {
         left: `${this.sideInsetPx}px`,
         right: `${this.sideInsetPx}px`,
-        bottom: `${INSET_MEDIUM}px`,
+        bottom: `${this.panelBottom}px`,
         borderRadius: `${RADIUS}px`,
         paddingBottom: `${Number(this.safeBottom) || 0}px`,
       }
@@ -1457,17 +1496,21 @@ export default defineComponent({
     columns() {
       if (this.modeKey === 'selector') {
         const list = Array.isArray(this.range) ? this.range : []
-        return [
-          list.map((item, index) => {
-            let label = ''
-            if (item != null && typeof item === 'object' && this.rangeKey) {
-              label = String((item as Record<string, unknown>)[this.rangeKey] ?? '')
-            } else {
-              label = item == null ? '' : String(item)
-            }
-            return { label, value: index }
-          }),
-        ]
+        let items = list.map((item, index) => {
+          let label = ''
+          if (item != null && typeof item === 'object' && this.rangeKey) {
+            label = String((item as Record<string, unknown>)[this.rangeKey] ?? '')
+          } else {
+            label = item == null ? '' : String(item)
+          }
+          return { label, value: index }
+        })
+        const query = this.showSelectorSearch ? String(this.searchQuery || '').trim().toLowerCase() : ''
+        if (query) {
+          items = items.filter((item) => item.label.toLowerCase().includes(query))
+        }
+        if (!items.length) return [[{ label: '无匹配', value: -1 }]]
+        return [items]
       }
       if (this.modeKey === 'time') {
         return [this.timeHourColumn, this.timeMinuteColumn]
@@ -1560,6 +1603,7 @@ export default defineComponent({
   },
   beforeUnmount() {
     this.clearTimers()
+    this.unbindSearchKeyboard()
     this.unlockPageScroll()
   },
   methods: {
@@ -1831,7 +1875,11 @@ export default defineComponent({
     },
     valueFromIndexes(indexes: number[]): PickerValue {
       const cols = this.columns
-      if (this.modeKey === 'selector') return indexes[0] || 0
+      if (this.modeKey === 'selector') {
+        const col = cols[0] || []
+        const item = col[indexes[0] || 0]
+        return item ? item.value : 0
+      }
       if (this.modeKey === 'time') {
         const hItem = cols[0][indexes[0] || 0]
         const mItem = cols[1][indexes[1] || 0]
@@ -2261,6 +2309,7 @@ export default defineComponent({
     },
     open() {
       if (this.disabled) return
+      this.searchQuery = ''
       this.timeEditing = false
       this.resetCalSlide()
       if (this.useCalendar) {
@@ -2275,6 +2324,7 @@ export default defineComponent({
         this.$nextTick(() => this.clampDraftToColumns())
       }
       this.syncSafe()
+      this.bindSearchKeyboard()
       this.lockPageScroll()
       this.openAnim()
     },
@@ -2306,6 +2356,7 @@ export default defineComponent({
     closeSheet(after?: () => void) {
       this.clearTimers()
       if (!this.sheetMounted) {
+        this.unbindSearchKeyboard()
         this.unlockPageScroll()
         if (typeof after === 'function') after()
         return
@@ -2319,6 +2370,7 @@ export default defineComponent({
           this.dragging = false
           this.timeEditing = false
           this.resetCalSlide()
+          this.unbindSearchKeyboard()
           this.unlockPageScroll()
           this.leaveTimer = null
           if (typeof after === 'function') after()
@@ -2352,6 +2404,56 @@ export default defineComponent({
         this.onCancel()
       }
     },
+    onSearchQuery(value: unknown) {
+      const col = (this.columns[0] || []) as PickerColumnItem[]
+      const current = col[this.draftIndexes[0] || 0]
+      const keep = current && current.value >= 0 ? current.value : Number(this.current)
+      this.searchQuery = value == null ? '' : String(value)
+      const next = (this.columns[0] || []) as PickerColumnItem[]
+      const found = next.findIndex((item) => item.value === keep)
+      this.draftIndexes = [found >= 0 ? found : 0]
+    },
+    bindSearchKeyboard() {
+      if (!this.showSelectorSearch) return
+      if (typeof uni !== 'undefined' && typeof uni.onKeyboardHeightChange === 'function') {
+        const onKeyboardHeight = (res: { height?: number }) => {
+          this.keyboardHeight = Math.max(0, Number(res && res.height) || 0)
+        }
+        this._onKeyboardHeight = onKeyboardHeight
+        uni.onKeyboardHeightChange(onKeyboardHeight)
+      }
+      // #ifdef H5
+      const viewport = typeof window === 'undefined' ? null : window.visualViewport
+      if (viewport) {
+        const onVisualViewport = () => {
+          const vv = window.visualViewport
+          if (!vv) return
+          const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+          this.keyboardHeight = covered > 80 ? covered : 0
+        }
+        this._onVisualViewport = onVisualViewport
+        viewport.addEventListener('resize', onVisualViewport)
+        viewport.addEventListener('scroll', onVisualViewport)
+      }
+      // #endif
+    },
+    unbindSearchKeyboard() {
+      const onKeyboardHeight = this._onKeyboardHeight
+      if (onKeyboardHeight && typeof uni !== 'undefined' && typeof uni.offKeyboardHeightChange === 'function') {
+        uni.offKeyboardHeightChange(onKeyboardHeight)
+      }
+      this._onKeyboardHeight = null
+      // #ifdef H5
+      const onVisualViewport = this._onVisualViewport
+      const viewport = typeof window === 'undefined' ? null : window.visualViewport
+      if (onVisualViewport && viewport) {
+        viewport.removeEventListener('resize', onVisualViewport)
+        viewport.removeEventListener('scroll', onVisualViewport)
+      }
+      this._onVisualViewport = null
+      // #endif
+      this.keyboardHeight = 0
+    },
     onPickChange(e: PickerChangeEvent) {
       const raw = (e && e.detail && e.detail.value) || []
       this.draftIndexes = raw.map((n) => Number(n) || 0)
@@ -2369,6 +2471,11 @@ export default defineComponent({
       this.closeSheet()
     },
     onConfirm() {
+      if (this.showSelectorSearch) {
+        const col = (this.columns[0] || []) as PickerColumnItem[]
+        const item = col[this.draftIndexes[0] || 0]
+        if (!item || item.value < 0) return
+      }
       let next: PickerValue
       if (this.useCalendar) {
         next = this.valueFromCalendar()
@@ -2444,6 +2551,11 @@ export default defineComponent({
   flex: 1;
   min-width: 0;
   width: 100%;
+}
+
+.lingyun-picker__trigger {
+  width: 100%;
+  min-width: 0;
 }
 
 .lingyun-picker__row {
@@ -2648,6 +2760,11 @@ export default defineComponent({
   position: relative;
   width: 100%;
   flex-shrink: 0;
+}
+
+.lingyun-picker-sheet__search {
+  flex-shrink: 0;
+  width: 100%;
 }
 
 .lingyun-picker-sheet__indicator-pill {

@@ -41,31 +41,8 @@
               <view v-if="useNameSlot" id="ly-nav-slot-name" class="lingyun-page-nav__slot" />
               <!-- #endif -->
             </view>
-            <view v-if="showStorePicker" class="lingyun-page-nav__store">
-              <lingyun-menu
-                class="lingyun-page-nav__store-menu"
-                :show="storeMenuOpen"
-                :actions="storeActions"
-                placement="bottom"
-                @update:show="onStoreMenuShow"
-                @select="onStoreSelect"
-              >
-                <template #trigger>
-                  <view class="lingyun-page-nav__store-pill" @click="onStorePill">
-                    <lingyun-icon type="staff" :size="16" color="#ffffff" />
-                    <view class="lingyun-page-nav__store-label">
-                      <text class="lingyun-page-nav__store-text">{{ storeLabel }}</text>
-                    </view>
-                    <view class="lingyun-page-nav__store-chevron">
-                      <lingyun-icon type="top" :size="8" color="#ffffff" />
-                      <lingyun-icon type="bottom" :size="8" color="#ffffff" />
-                    </view>
-                  </view>
-                </template>
-              </lingyun-menu>
-            </view>
             <view
-              v-else-if="showSubtitle"
+              v-if="showSubtitle"
               class="lingyun-page-nav__subtitle"
               :class="{ 'lingyun-page-nav__subtitle--hang': showName }"
             >
@@ -80,6 +57,31 @@
           </view>
         </view>
         <text v-else class="lingyun-page-nav__title">凌云UI</text>
+      </view>
+      <view v-if="showStorePicker" class="lingyun-page-nav__store">
+        <lingyun-picker
+          class="lingyun-page-nav__store-picker"
+          :model-value="storeIndex"
+          :range="storeRange"
+          range-key="store_name"
+          title="选择门店"
+          show-search
+          search-placeholder="搜索门店"
+          :disabled="!storeRange.length"
+          @change="onStorePick"
+        >
+          <template #trigger>
+            <view class="lingyun-page-nav__store-pill">
+              <view class="lingyun-page-nav__store-label">
+                <text class="lingyun-page-nav__store-text">{{ storeLabel }}</text>
+              </view>
+              <view class="lingyun-page-nav__store-chevron">
+                <lingyun-icon type="top" :size="8" color="#ffffff" />
+                <lingyun-icon type="bottom" :size="8" color="#ffffff" />
+              </view>
+            </view>
+          </template>
+        </lingyun-picker>
       </view>
     </view>
     <scroll-view
@@ -200,7 +202,6 @@ export default defineComponent({
       navHome: LINGYUN_PAGE_NAV_HOME,
       navScrollTop: getLingyunPageNavScrollTop(),
       avatarFailed: false,
-      storeMenuOpen: false,
       _onHashChange: null as (() => void) | null,
       _expectPath: '',
       _routeSeen: '',
@@ -284,17 +285,25 @@ export default defineComponent({
         return '请选择门店'
       }
     },
-    storeActions(): { key: string; label: string; selected: boolean }[] {
+    storeRange(): { store_id: string | number; store_name: string }[] {
       try {
-        const user = useUserStore()
-        const current = user.storeId
-        return user.storeOptions.map((item) => ({
-          key: String(item.store_id),
-          label: item.store_name,
-          selected: current != null && String(current) === String(item.store_id),
+        return useUserStore().storeOptions.map((item) => ({
+          store_id: item.store_id,
+          store_name: item.store_name,
         }))
       } catch {
         return []
+      }
+    },
+    storeIndex(): number {
+      try {
+        const user = useUserStore()
+        const idx = user.storeOptions.findIndex(
+          (item) => user.storeId != null && String(item.store_id) === String(user.storeId),
+        )
+        return idx < 0 ? 0 : idx
+      } catch {
+        return 0
       }
     },
     showAvatar(): boolean {
@@ -358,18 +367,13 @@ export default defineComponent({
     onAvatarError() {
       this.avatarFailed = true
     },
-    onStoreMenuShow(open: boolean) {
-      this.storeMenuOpen = !!open
-    },
-    onStorePill() {
-      if (!this.storeActions.length) return
-      this.storeMenuOpen = !this.storeMenuOpen
-    },
-    onStoreSelect(payload: { key?: string }) {
-      const key = payload?.key
-      if (key == null || key === '') return
+    onStorePick(payload: { value?: number | string | string[] }) {
+      const idx = Number(payload?.value)
+      if (!Number.isFinite(idx) || idx < 0) return
       try {
-        useUserStore().selectStore(key)
+        const item = useUserStore().storeOptions[idx]
+        if (!item) return
+        useUserStore().selectStore(item.store_id)
       } catch {
         /* 门店状态尚未就绪 */
       }
@@ -488,8 +492,8 @@ export default defineComponent({
 
 .lingyun-page-nav__head {
   flex-shrink: 0;
-  padding-left: 20px;
-  padding-right: 20px;
+  padding-left: 8px;
+  padding-right: 8px;
   padding-bottom: 8px;
   box-sizing: border-box;
 }
@@ -640,21 +644,20 @@ export default defineComponent({
 .lingyun-page-nav__store {
   width: 100%;
   min-width: 0;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 .lingyun-page-nav__store-pill {
   width: 100%;
   max-width: 100%;
-  height: 32px;
-  padding: 0 10px 0 12px;
+  min-height: 32px;
+  padding: 6px 12px;
   box-sizing: border-box;
   border-radius: 16px;
   background-color: #1c1c1e;
   display: flex;
   flex-direction: row;
   align-items: center;
-  overflow: hidden;
 }
 
 .lingyun-page-nav.theme-dark .lingyun-page-nav__store-pill {
@@ -664,22 +667,7 @@ export default defineComponent({
 .lingyun-page-nav__store-label {
   flex: 1;
   min-width: 0;
-  height: 20px;
-  margin-left: 6px;
   margin-right: 6px;
-  overflow: hidden;
-}
-
-.lingyun-page-nav__store-text {
-  display: block;
-  width: 100%;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 20px;
-  color: #ffffff;
 }
 
 .lingyun-page-nav__store-chevron {
@@ -690,6 +678,16 @@ export default defineComponent({
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+
+.lingyun-page-nav__store-text {
+  display: block;
+  width: 100%;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 20px;
+  color: #ffffff;
+  white-space: normal;
 }
 
 .lingyun-page-nav__subtitle--hang {

@@ -37,7 +37,7 @@
           <lingyun-icon type="clear" :size="17" color="var(--lingyun-label-secondary, rgba(60,60,67,0.6))" />
         </view>
         <view
-          v-else
+          v-else-if="showMic"
           class="lingyun-search-bar__mic"
           hover-class="lingyun-search-bar__mic--hover"
           :hover-start-time="20"
@@ -88,6 +88,7 @@ import { defineComponent, type PropType } from 'vue'
  * @property {Boolean} fixed 固定底部（默认 true）
  * @property {Boolean} safeArea 预留 Home Indicator（默认 true）
  * @property {Boolean} showCancel 是否允许聚焦后展开取消钮（默认 true）
+ * @property {Boolean} showMic 空内容时是否显示语音按钮（默认 false，暂不支持语音输入）
  * @property {String} cancelText 取消文案；空则用符号
  * @property {Boolean} focus 外部请求聚焦
  * @event {Function} update:modelValue / input / confirm / clear / mic / cancel / focus / blur
@@ -147,6 +148,11 @@ export default defineComponent({
     showCancel: {
       type: Boolean,
       default: true,
+    },
+    /** 空内容时的语音按钮。暂不支持语音输入，默认关闭 */
+    showMic: {
+      type: Boolean,
+      default: false,
     },
     cancelText: {
       type: String,

@@ -81,6 +81,8 @@ Demo：
 | `title` / `placeholder` / `disabled` | — | 同前 |
 | `cancelText` / `confirmText` | `取消` / `完成` | 弹层按钮 |
 | `variant` | `auto` | `field` / `cell` / `auto`（form-item 内 cell） |
+| `showSearch` | `false` | **selector**：滚轮下方是否显示 `lingyun-search-bar`，按选项名称过滤 |
+| `searchPlaceholder` | `搜索` | selector 搜索框占位 |
 
 值格式：
 
@@ -124,6 +126,10 @@ Demo：
 | `separator` | `' / '` | 行上展示拼接符 |
 | `title` / `placeholder` / `disabled` | — | 同 picker |
 | `cancelText` / `confirmText` | `取消` / `完成` | 弹层按钮 |
+| `showSearch` | `false` | 滚轮下方是否显示 `lingyun-search-bar` |
+| `searchPlaceholder` | `搜索` | 搜索框占位 |
+
+搜索按节点名称过滤。命中某一级时保留它的全部下级；只命中下级时，左侧列收成通往命中项的分支。没有命中时滚轮显示「无匹配」，点完成不改变当前值。
 
 事件：`change` → `{ value, text, path, detail }`；`cancel`
 

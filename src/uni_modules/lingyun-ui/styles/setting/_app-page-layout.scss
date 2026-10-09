@@ -18,9 +18,9 @@
   min-height: 100vh;
 }
 
-// 门店胶囊包在 lingyun-menu 里。组件样式隔离打不到菜单根节点，宽度写在全局。
-.lingyun-page-nav__store-menu,
-.lingyun-page-nav__store-menu .lingyun-popover__trigger {
+// 门店选择器包在 lingyun-picker 里。组件样式隔离打不到选择器根节点，宽度写在全局。
+.lingyun-page-nav__store-picker,
+.lingyun-page-nav__store-picker .lingyun-picker__trigger {
   display: flex;
   width: 100%;
   max-width: 100%;
