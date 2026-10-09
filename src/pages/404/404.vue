@@ -16,9 +16,10 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
+  import { computed, ref, watch } from 'vue'
   import { onLoad } from '@dcloudio/uni-app'
   import { LINGYUN_PAGE_NAV_HOME } from '@/router/pageNav'
+  import { openLingyunHostedPage, pageHostState } from '@/router/pageHost'
 
   const missing = ref('')
   const description = computed(() =>
@@ -27,8 +28,24 @@
 
   onLoad((query) => {
     const from = query?.from
-    missing.value = from ? safeDecode(String(from)) : ''
+    if (from) missing.value = safeDecode(String(from))
   })
+
+  watch(
+    () => pageHostState.url,
+    (url) => {
+      if (!url) return
+      const from = queryValue(url, 'from')
+      if (from) missing.value = safeDecode(from)
+    },
+    { immediate: true },
+  )
+
+  function queryValue(url: string, key: string): string {
+    const query = url.split('?')[1] || ''
+    const part = query.split('&').find((item) => item.startsWith(`${key}=`))
+    return part ? part.slice(key.length + 1) : ''
+  }
 
   function safeDecode(value: string): string {
     let next = value
@@ -45,6 +62,7 @@
   }
 
   function goHome(): void {
+    if (openLingyunHostedPage(LINGYUN_PAGE_NAV_HOME)) return
     uni.redirectTo({ url: LINGYUN_PAGE_NAV_HOME })
   }
 </script>

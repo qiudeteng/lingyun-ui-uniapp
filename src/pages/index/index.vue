@@ -35,6 +35,7 @@
   import { useThemeStore } from '@/stores/theme'
   import type { ThemePreference } from '@/utils/theme'
   import { getLingyunPageNavSections, resolveLingyunPageUrl } from '@/router/pageNav'
+  import { openLingyunHostedPage } from '@/router/pageHost'
 
   const themeStore = useThemeStore()
   const sections = computed(() => getLingyunPageNavSections())
@@ -61,6 +62,7 @@
   function go(url: string): void {
     const next = resolveLingyunPageUrl(url)
     if (!next) return
+    if (openLingyunHostedPage(next, url)) return
     uni.navigateTo({ url: next })
   }
 </script>
