@@ -216,9 +216,6 @@ export default {
     this.clearScrollSettle()
     this.teardownGlassObserver()
     this.unbindResize()
-    // #ifdef H5
-    setLingyunH5PageNavAllowed(true)
-    // #endif
   },
   watch: {
     safeArea() {
