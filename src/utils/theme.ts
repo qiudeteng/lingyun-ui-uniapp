@@ -88,29 +88,45 @@ function applyDocumentTheme(theme: ResolvedTheme): void {
   }
 }
 
+/** 接口不存在时跳过；页面未就绪时的 Promise 拒绝也吞掉。 */
+function silence(result: unknown): void {
+  const task = result as { catch?: (onRejected: () => void) => void } | null
+  if (task && typeof task.catch === 'function') task.catch(() => {})
+}
+
 /** 小程序 / App 窗体背景与导航前景（theme.json 只跟系统；手动切换靠此 API） */
 function applyNativePageChrome(theme: ResolvedTheme): void {
   const chrome = THEME_NATIVE_CHROME[theme]
-  try {
-    uni.setBackgroundColor({
-      backgroundColor: chrome.backgroundColor,
-      backgroundColorTop: chrome.backgroundColor,
-      backgroundColorBottom: chrome.backgroundColor,
-    })
-  } catch {
-    /* 部分端无此 API */
+  if (typeof uni.setBackgroundColor === 'function') {
+    try {
+      silence(
+        uni.setBackgroundColor({
+          backgroundColor: chrome.backgroundColor,
+          backgroundColorTop: chrome.backgroundColor,
+          backgroundColorBottom: chrome.backgroundColor,
+          fail() {},
+        }),
+      )
+    } catch {
+      /* H5 无此接口 */
+    }
   }
-  try {
-    uni.setNavigationBarColor({
-      frontColor: chrome.frontColor,
-      backgroundColor: chrome.backgroundColor,
-      animation: {
-        duration: 0,
-        timingFunc: 'linear',
-      },
-    })
-  } catch {
-    /* custom 导航时也可能失败，忽略 */
+  if (typeof uni.setNavigationBarColor === 'function') {
+    try {
+      silence(
+        uni.setNavigationBarColor({
+          frontColor: chrome.frontColor,
+          backgroundColor: chrome.backgroundColor,
+          animation: {
+            duration: 0,
+            timingFunc: 'linear',
+          },
+          fail() {},
+        }),
+      )
+    } catch {
+      /* 自定义导航或页面未就绪 */
+    }
   }
 }
 

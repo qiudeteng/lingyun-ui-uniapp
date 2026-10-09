@@ -2,6 +2,7 @@
   <lingyun-login
     :logo="logo"
     :enterprise-name="enterpriseName"
+    :copyright="copyright"
     :booting="booting"
     @submit="onSubmit"
   />
@@ -20,6 +21,11 @@
 
   const logo = computed(() => appStore.enterprise?.enterprise_logo || '')
   const enterpriseName = computed(() => appStore.enterprise?.enterprise_name || '')
+  const copyright = computed(() => {
+    const name = enterpriseName.value.trim()
+    if (!name) return ''
+    return `© ${new Date().getFullYear()} ${name}`
+  })
 
   function goBack(): void {
     let backUrl = getBackUrl()
