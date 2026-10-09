@@ -1,7 +1,7 @@
 {
 	"id": "lingyun-ui-page",
 	"displayName": "凌云UI 页面",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "凌云UI 标准页面。登录等可复用整页放这里，控件仍用 lingyun-ui。",
 	"keywords": [
         "lingyun-ui-page"

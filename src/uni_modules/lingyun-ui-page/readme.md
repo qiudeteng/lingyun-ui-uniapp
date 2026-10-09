@@ -1,6 +1,6 @@
 # lingyun-ui-page
 
-标准页面扩展。控件仍在 `lingyun-ui`，这里只放可复用的整页，例如登录。
+标准页面扩展。当前版本 **1.0.1**，变更见 [`changelog.md`](./changelog.md)。控件仍在 `lingyun-ui`，这里只放可复用的整页，例如登录。
 
 路由仍登记在业务工程的 `pages.json` / `src/pages`。页面里直接写标签，账号请求、登录态和跳转留在路由文件。
 
@@ -13,7 +13,9 @@
   :logo="logo"
   :enterprise-name="enterpriseName"
   :booting="booting"
+  demo-text="组件演示"
   @submit="onSubmit"
+  @demo="goDemo"
   @policy="openPolicy"
 />
 ```
