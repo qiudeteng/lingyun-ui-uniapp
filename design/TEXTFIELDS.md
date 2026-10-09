@@ -84,7 +84,7 @@
 | `disabled` | boolean | `false` | 禁用 |
 | `readonly` | boolean | `false` | 只读 |
 | `clearable` | boolean | `true` | 有内容时显示清除 |
-| `secure` | boolean | `false` | 密码；内置显隐 |
+| `secure` | boolean | `false` | 密码；内置显隐。遮住时用原生 `password`，系统不切中文输入法 |
 | `multiline` | boolean | `false` | 多行 textarea |
 | `autoHeight` | boolean | `false` | 多行随内容增高 |
 | `rows` | number | `3` | 多行初始行数 |
@@ -106,7 +106,7 @@
 2. **清除 / 眼睛用真实节点** — 小程序伪元素易变形（对齐 search-bar）。
 3. **根挂 `theme-*`** — 防 styleIsolation 暗黑失效。
 4. **error 优先于 hint** — `field` 同时存在只显示 error。
-5. **secure 与 multiline 互斥** — `multiline` 时忽略 secure。
+5. **secure 与 multiline 互斥** — `multiline` 时忽略 secure。遮住时用原生 `type="password"`（小程序用 `password`），不要用圆点样式冒充密码框。点眼睛后改为文本，才能看见明文。浏览器自带的明文眼睛用样式收起。
 6. **尺寸 px** — Sketch 1pt = 1px；禁止 rpx。
 7. **form-item 内勿再写 label** — 避免双 Label。
 8. **小程序 textarea** — 勿把原生 `textarea` 直接当 flex 子项；外包 `__control-wrap` 并写死 px 宽高。`input` / `textarea` 用两个独立 `v-if`（禁止 `v-else`）。祖先（`form-group` card / `section`）禁止 `overflow:hidden`。**cell 多行**：`form-item` control 用 `display:block`（勿 flex 包自定义组件，宿主撑不开原生 textarea）；cell 根 `flex:none` + 宿主 `minHeight`。
