@@ -34,7 +34,7 @@
   import { computed } from 'vue'
   import { useThemeStore } from '@/stores/theme'
   import type { ThemePreference } from '@/utils/theme'
-  import { getLingyunPageNavSections } from '@/router/pageNav'
+  import { getLingyunPageNavSections, resolveLingyunPageUrl } from '@/router/pageNav'
 
   const themeStore = useThemeStore()
   const sections = computed(() => getLingyunPageNavSections())
@@ -59,7 +59,9 @@
   )
 
   function go(url: string): void {
-    uni.navigateTo({ url })
+    const next = resolveLingyunPageUrl(url)
+    if (!next) return
+    uni.navigateTo({ url: next })
   }
 </script>
 

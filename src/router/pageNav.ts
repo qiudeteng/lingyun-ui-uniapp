@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import { routes } from '@/router.config'
 
 /** 宽屏页面壳左侧导航。与首页目录共用，避免两处标题漂移。 */
 
@@ -10,7 +11,10 @@ export interface LingyunPageNavItem {
   title: string
   url: string
   note: string
+  /** lingyun-icon 字形。后台图标是图片时留 circle，改走 iconSrc */
   icon: string
+  /** 后台菜单图标地址。有值时侧栏画图片，不再用 icon */
+  iconSrc?: string
 }
 
 export interface LingyunPageNavSection {
@@ -162,6 +166,14 @@ export function setLingyunPageNavProfile(profile: LingyunPageNavProfile): void {
   if (profile.subtitle !== undefined) pageNavState.subtitle = profile.subtitle
 }
 
+/** 退出登录后恢复组件库目录，并清掉侧栏顶部的用户资料。 */
+export function resetLingyunPageNav(): void {
+  pageNavState.sections = LINGYUN_PAGE_NAV
+  pageNavState.avatar = ''
+  pageNavState.name = ''
+  pageNavState.subtitle = ''
+}
+
 /** H5 侧栏在 body 上，由当前页声明自己有没有顶部插槽。 */
 export function claimLingyunPageNavHeaderSlots(slots: {
   avatar?: boolean
@@ -186,6 +198,25 @@ export function normalizeLingyunPagePath(url: string): string {
   return String(url || '')
     .split('?')[0]
     .replace(/^\//, '')
+}
+
+/** 菜单点到未注册页面时打开这一页。 */
+export const LINGYUN_PAGE_NOT_FOUND = '/pages/404/404'
+
+/** 路径是否写在 pages.json（经 router.config 生成）里。 */
+export function hasLingyunPage(url: string): boolean {
+  const path = normalizeLingyunPagePath(url)
+  if (!path) return false
+  return routes.some((item) => normalizeLingyunPagePath(item.path) === path)
+}
+
+/** 已注册则原样打开；否则改去 404，并用 from 带上缺失路径。 */
+export function resolveLingyunPageUrl(url: string): string {
+  const raw = String(url || '').trim()
+  const path = normalizeLingyunPagePath(raw)
+  if (!path) return ''
+  if (hasLingyunPage(raw)) return raw.charAt(0) === '/' ? raw : `/${raw}`
+  return `${LINGYUN_PAGE_NOT_FOUND}?from=${encodeURIComponent(path)}`
 }
 
 /** 侧栏滚动位置。页面 redirect 会重建组件，用模块变量把位置交回去。 */

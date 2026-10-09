@@ -443,6 +443,13 @@
 				"navigationBarTitleText": "Time Area",
 				"navigationStyle": "custom"
 			}
+		},
+		{
+			"path": "pages/404/404",
+			"style": {
+				"navigationBarTitleText": "404",
+				"navigationStyle": "custom"
+			}
 		}
 	],
 	"globalStyle": {

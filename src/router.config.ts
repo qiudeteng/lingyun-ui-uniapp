@@ -319,6 +319,11 @@ export const routes: RouteConfig[] = [
 		path: '/pages/demo/charts/tarea',
 		name: 'pagesDemoChartsTarea',
 		meta: { title: 'Time Area' }
+	},
+	{
+		path: '/pages/404/404',
+		name: 'pages404404',
+		meta: { title: '404' }
 	}
 ]
 

@@ -129,6 +129,7 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = ''
     isLogin.value = false
     clearToken()
+    userStore.clearUser()
     try {
       const launch = uni.getLaunchOptionsSync()
       const path = launch?.path || ''
