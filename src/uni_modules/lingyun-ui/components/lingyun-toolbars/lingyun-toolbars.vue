@@ -113,7 +113,7 @@ import { useThemeStore } from '@/stores/theme'
 
 /**
  * lingyun-toolbars
- * @description 对齐 Sketch Toolbars。窄屏 iPhone；宽屏（≥700，含折叠屏展开）iPad；Mac 桌面加窗口按钮
+ * @description 对齐 Sketch Toolbars。窄屏 iPhone；宽屏（≥690，含折叠屏展开）iPad；Mac 桌面加窗口按钮
  * @see https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02/symbols?g=Toolbars%252FLight%252FiPhone
  * @see design/TOOLBARS.md
  *

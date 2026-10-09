@@ -47,7 +47,7 @@
 | `safeArea` | 状态栏安全区 | true |
 | `bodyScroll` | 是否由本组件滚动正文 | true |
 | `pageScroll` | 页面级滚动。有输入框时必须保持 true | true |
-| `showNav` | 宽屏（窗口 ≥ 700）是否显示左侧导航 | true |
+| `showNav` | 宽屏（窗口 ≥ 690）是否显示左侧导航 | true |
 | `navSections` | 只覆盖当前页的微信内嵌列。H5 常驻侧栏和首页目录用 `setLingyunPageNavSections` | null |
 | `glassDistance` | 滚动多少 px 后顶栏玻璃铺满 | 56 |
 

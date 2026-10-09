@@ -6,8 +6,8 @@
  * 也记成折叠屏。半折没有系统字段，只在窗口明显只占一半，或展开后变得宽而扁时判断。
  */
 
-/** 与顶栏宽屏门槛一致：窗口宽度达到此值走 pad 档 */
-export const LINGYUN_SCREEN_PAD_MIN = 700
+/** 与顶栏宽屏门槛一致：窗口宽度达到此值走 pad 档。OPPO Find 展开约 692 */
+export const LINGYUN_SCREEN_PAD_MIN = 690
 
 /** 窗口宽度达到此值走 pc 档（iPad 竖屏与常见折叠内屏仍落在 pad） */
 export const LINGYUN_SCREEN_PC_MIN = 1200

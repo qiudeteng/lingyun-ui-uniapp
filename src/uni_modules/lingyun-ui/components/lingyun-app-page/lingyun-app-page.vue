@@ -178,7 +178,7 @@ export default defineComponent({
      * 会把原生输入层与 WXSS 外壳错开（详见 design/TEXTFIELDS.md §5）。
      */
     pageScroll: { type: Boolean, default: true },
-    /** 宽屏（≥700，含折叠屏展开）左侧停靠导航。false 关闭。Sheet 形态永不显示。 */
+    /** 宽屏（≥690，含折叠屏展开）左侧停靠导航。false 关闭。Sheet 形态永不显示。 */
     showNav: { default: true },
     /** 覆盖默认目录；null 使用 LINGYUN_PAGE_NAV */
     navSections: {
