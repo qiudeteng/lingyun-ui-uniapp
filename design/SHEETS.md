@@ -24,7 +24,7 @@
 |----|------|
 | 形态 | 窄屏（iPhone）**底部弹出** Modal Sheet；宽屏（iPad / 桌面 H5）**居中卡片** |
 | 档位 | `medium` ≈ **51.6%** 屏高的悬浮内缩卡片；`large` ≈ 屏高 − 状态栏，贴边贴底 |
-| 断点 | `windowWidth ≥ 700` 视为宽屏，档位不再影响形态 |
+| 断点 | `windowWidth ≥ 690` 视为宽屏，档位不再影响形态 |
 | 交互 | prop 切换档位 + 开合动画；Grabber 区下滑超阈值关闭；点遮罩可关 |
 | ❌ 不做 | 跟手拖拽换档、嵌套堆叠 |
 
@@ -105,7 +105,7 @@ Sketch 画板 1210×834 上面板为 **936×770**，左右各 137、上下各 32
 1. **根挂 `theme-*`** — 小程序 styleIsolation 下父级暗黑选不中面板（对齐 Alert）。
 2. **只有 medium 是玻璃** — medium 走全端 `lingyun-glass-surface` + blur + Sketch alpha 0.72；large 与宽屏卡片是**纯色不透明**，必须显式 `backdrop-filter: none` 清掉 mixin 的模糊。
 3. **屏外起点要含底部留白** — 位移写 `面板高 + 底部 inset`；只写 `100%` 会在收起后残留 8px 露头。
-4. **宽屏不铺满** — `windowWidth ≥ 700` 收成居中卡片，否则 medium 在 iPad / 桌面 H5 会变成一条横带；`uni.onWindowResize` 里要重算。
+4. **宽屏不铺满** — `windowWidth ≥ 690` 收成居中卡片，否则 medium 在 iPad / 桌面 H5 会变成一条横带；`uni.onWindowResize` 里要重算。
 5. **浮层挂载** — H5 `Teleport` → `body`，小程序 `root-portal`，否则被 `lingyun-section` 的 `overflow: hidden` 裁切。
 6. **挡底层滚动 / 滑动穿透** — 打开时通过 `LINGYUN_APP_PAGE_SCROLL_LOCK` 关掉页内 `scroll-view`；H5 另锁 `body.overflow`；遮罩 / Grabber `touchmove.prevent`；面板仅 `touchmove.stop`（勿 prevent，否则掐死内容区滚动）。
 7. **关闭手势只绑 Grabber 顶区** — 勿把整页 touch 当成下滑关，否则与内容滚动冲突。
@@ -117,7 +117,7 @@ Sketch 画板 1210×834 上面板为 **936×770**，左右各 137、上下各 32
 ## 4. 自检
 
 - [ ] medium 四周内缩 8 + 四角 34 玻璃；large 贴边贴底 + 顶角 38 纯色，顶缘在页面顶栏之下（状态栏 + 栏身，避开胶囊）
-- [ ] 宽屏（≥700）为居中卡片：≤936×770、四角 32、纯色、无 Grabber
+- [ ] 宽屏（≥690）为居中卡片：≤936×770、四角 32、纯色、无 Grabber
 - [ ] Grabber 60×4；关闭钮可关；遮罩可关（maskClosable）
 - [ ] 开合动画；档位切换高度过渡；收起后无残留露头
 - [ ] Grabber 区下滑超阈值关闭；内容区可滚动

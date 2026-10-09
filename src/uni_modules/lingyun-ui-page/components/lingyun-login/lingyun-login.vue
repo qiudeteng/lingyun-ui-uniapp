@@ -177,7 +177,7 @@
   }
 
   /* iPad 竖屏等宽屏：登录块在顶栏以下的整屏里垂直居中。手机保持靠上。 */
-  @media (min-width: 700px) and (min-height: 700px) {
+  @media (min-width: 690px) and (min-height: 700px) {
     .lingyun-login {
       display: flex;
       flex-direction: column;

@@ -38,12 +38,12 @@ if (lingyun.device == 'pad') {
 
 ## 窗口档
 
-按窗口宽度划分，和宽屏左侧导航用的 **700** 是同一条线。
+按窗口宽度划分，和宽屏左侧导航用的 **690** 是同一条线。
 
 | 宽度 | `lingyun.screen` |
 |------|------------------|
-| &lt; 700 | `phone` |
-| 700–1199 | `pad` |
+| &lt; 690 | `phone` |
+| 690–1199 | `pad` |
 | ≥ 1200 | `pc` |
 
 `screen` 看现在的窗口，`device` 看机器。折叠屏展开后硬件仍是手机，窗口会进宽屏档：
@@ -54,7 +54,7 @@ if (lingyun.device == 'pad') {
 </view>
 ```
 
-手机横过来、宽度到了 700，`screen` 也会变成 `pad`。iPad 分屏缩得很窄时，`device` 仍是 `pad`，`screen` 可以是 `phone`。
+手机横过来、宽度到了 690，`screen` 也会变成 `pad`。iPad 分屏缩得很窄时，`device` 仍是 `pad`，`screen` 可以是 `phone`。
 
 ## 折叠
 

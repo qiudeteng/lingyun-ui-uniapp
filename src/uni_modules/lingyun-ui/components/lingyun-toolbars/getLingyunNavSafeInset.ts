@@ -14,10 +14,10 @@ export const LINGYUN_TOOLBAR_BAR_PAD_BOTTOM_PX = 8
 export const LINGYUN_TOOLBAR_GAP_PX = 8
 
 /**
- * 宽屏门槛。iPad 竖屏是 768；折叠屏内屏常见 717 左右（如 717×781），
- * 取 700 让展开进入左侧导航。手机竖屏一般 ≤ 430，不会误开。
+ * 宽屏门槛。iPad 竖屏是 768；OPPO Find 展开约 692，
+ * 取 690 让内屏进入左侧导航。手机竖屏一般 ≤ 430，不会误开。
  */
-export const LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH = 700
+export const LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH = 690
 
 /** iPad Top 栏身：1210 × 54（内容行 44 顶对齐，下留 10） */
 export const LINGYUN_TOOLBAR_BAR_REGULAR_PX = 54
@@ -71,7 +71,7 @@ export type LingyunNavLayout = {
   rightInset: number
   /** 是否已按微信胶囊算出内容行高（高度仍可能被抬到 ≥ 设计高度） */
   fromCapsule: boolean
-  /** 宽屏（折叠屏展开 / iPad / Mac，windowWidth ≥ 700）走 iPad 栏身，不走 iPhone 60 */
+  /** 宽屏（折叠屏展开 / iPad / Mac，windowWidth ≥ 690）走 iPad 栏身，不走 iPhone 60 */
   regular: boolean
   padX: number
   padTop: number
@@ -164,7 +164,7 @@ function isMacDesktop(): boolean {
  * 自定义导航高度 / 占位，对齐 `uni-nav-bar`：
  * - 状态栏：`uni.getWindowInfo().statusBarHeight`（真机值）
  * - 窄屏：微信内容行与设计 **60** 取大（上下各 8）
- * - 宽屏（≥700）：iPad 栏身 **54**（上 0 / 下 10），Mac 桌面再加窗口按钮
+ * - 宽屏（≥690）：iPad 栏身 **54**（上 0 / 下 10），Mac 桌面再加窗口按钮
  * - 微信 PC：状态栏 0，栏身用同宽度的设计高度，与 H5 一致；右侧仍避开胶囊
  * @see design/TOOLBARS.md
  */
