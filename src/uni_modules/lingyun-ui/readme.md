@@ -70,7 +70,7 @@ uni.hideLingyunHud()
 ## 硬规则
 
 1. **所有 `lingyun-*` 组件只放在本包下**，路径固定为 `components/<组件名>/<组件名>.vue`。
-2. **禁止**再建 `src/uni_modules/lingyun-xxx` 独立插件包（图表引擎 `lingyun-ui-charts` 除外）。
+2. **禁止**再建无关的 `src/uni_modules/lingyun-xxx` 包。例外：图表 `lingyun-ui-charts`，标准页面 `lingyun-ui-page`。
 3. **禁止**把 `lingyun-*` 放到 `src/components/`。
 4. 目录与文件名必须一致，便于 easycom 自动扫描。
 5. **样式扩展统一走 `styles/`**；控件层必须使用 `$lingyun-glass-*`，禁止组件内私造第二套模糊参数。选型见 `styles/README.md` 与 `design/UI_SPEC.md` §6.2：

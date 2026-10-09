@@ -8,7 +8,7 @@
 |---|---|
 | 类型 | uni-app（Vue 3 + TypeScript + Vite）多端应用 |
 | 包管理 | pnpm |
-| UI | 第三方：`src/uni_modules` 的 uni-ui；自研：`src/uni_modules/lingyun-ui`；图表引擎：`src/uni_modules/lingyun-ui-charts`（fork uCharts，独立于凌云UI 单包） |
+| UI | 第三方：`src/uni_modules` 的 uni-ui；自研控件：`src/uni_modules/lingyun-ui`；标准页面：`src/uni_modules/lingyun-ui-page`；图表引擎：`src/uni_modules/lingyun-ui-charts`（fork uCharts，独立于凌云UI 单包） |
 | 设计 | `design/`（路径见 `design/README.md`；UI 强制 Liquid Glass 见 `UI_SPEC.md`；清单见 `COMPONENTS.md`；专章含 BUTTONS / … / IMAGES / **CHARTS** / **GOODS_NAV** / **GRID** / **INDEXED_LIST** / CHECKS / … + Sketch） |
 | 状态 | Pinia + `pinia-plugin-persistedstate` |
 | 路由 | `@meng-xi/uni-router`（`generateRouter` 由 `pages.json` 生成） |
@@ -45,7 +45,7 @@
 │   ├── pages.json          # 页面注册（路由源）
 │   ├── manifest.json       # 应用配置
 │   ├── uni.scss
-│   ├── uni_modules/        # 插件：uni-*（第三方）+ 凌云UI + lingyun-ui-charts
+│   ├── uni_modules/        # 插件：uni-*（第三方）+ 凌云UI + lingyun-ui-charts + lingyun-ui-page
 │   ├── pages/              # 页面（路径与 pages.json 一致）
 │   ├── components/         # 业务组件（与 design/components 路径对应；不含 lingyun-*）
 │   ├── api/                # 接口按域拆分，走 utils/request
@@ -123,7 +123,7 @@ pnpm docs:build          # 文档站静态产物 → design/.vuepress/dist
 - ❌ 不要把 `index.html` 入口改回 `/main.ts`；必须是 `/src/main.ts`。
 - ❌ 不要单独把 `typescript` 升到纯 `^7` 而去掉 typescript6 别名——会弄坏 `vue-tsc`（除非用户明确要求并接受改 type-check 方案）。
 - ❌ 不要用 npm 安装 `@dcloudio/uni-ui`；uni-ui 只通过 `src/uni_modules` 安装与维护。
-- ❌ 不要把 `lingyun-*` 建成独立 `uni_modules` 包或放进 `src/components/`；一律进 `src/uni_modules/lingyun-ui/components/`（对齐 `uni-list`）。**例外**：图表引擎包 `lingyun-ui-charts`（fork uCharts，含 js_sdk / ECharts 运行时）。
+- ❌ 不要把 `lingyun-*` 控件建成无关的独立包或放进 `src/components/`；控件进 `src/uni_modules/lingyun-ui/components/`（对齐 `uni-list`）。**例外**：图表包 `lingyun-ui-charts`；标准页面包 `lingyun-ui-page`（登录等可复用页面，路由仍在 `src/pages`）。
 - ❌ 不要破坏设计路径映射：`design/pages|components/...` 必须与 `src/pages|components/...` 同相对路径（详见 `design/README.md`）。
 - ❌ 不要把设计稿堆在 `design/` 根目录或与源码无关的目录名下。
 - ❌ 不要让 凌云UI 或设计稿偏离 Apple Liquid Glass（详见 `design/UI_SPEC.md`）。
@@ -138,6 +138,7 @@ pnpm docs:build          # 文档站静态产物 → design/.vuepress/dist
 - 新页面：在 `src/pages/<name>/` 加页面，并登记到 `pages.json`；对应设计稿放 `design/pages/<name>/`。
 - 新业务组件：放 `src/components/...`；对应设计稿放 `design/components/...` 同相对路径。
 - 新自研 UI：放 `src/uni_modules/lingyun-ui/components/lingyun-<name>/lingyun-<name>.vue`，样式用 `$lingyun-glass-*` / `$lingyun-*`、**`px`（禁止 `rpx`）** 并符合 Liquid Glass，更新该包 `readme.md` / `changelog.md`。
+- 新标准页：放 `src/uni_modules/lingyun-ui-page/components/lingyun-<name>/`。`src/pages` 只登记路由并接业务（请求、登录态、跳转），不重写界面。详见 `.cursor/rules/lingyun-ui-page.mdc`。
 - 新接口：`src/api/<domain>.ts` 导出函数，内部调用 `request`。
 - 新状态：`src/stores/<name>.ts`，在需要处 `useXxxStore()`。
 - **业务代码用 TypeScript**：页面 / 业务组件 / api / stores / utils / router / config 一律 `.ts`（Vue 用 `lang="ts"`），禁止业务侧新增 `.js`。扩展（`uni_modules`）不要为「全量 TS」改语言。
@@ -167,7 +168,7 @@ pnpm docs:build          # 文档站静态产物 → design/.vuepress/dist
 - [ ] UI 来自 `src/uni_modules`，未重新引入 `@dcloudio/uni-ui`
 - [ ] 新增 / 修改 UI 已对照 `design/UI_SPEC.md` Liquid Glass 自检清单（含 **§6.2 注意事项**：玻璃 mixin 选型、插槽样式、列表分割线、暗黑）；图表对照 `design/CHARTS.md`
 - [ ] 自研样式尺寸为 `px`（1pt = 1px），未使用 `rpx`
-- [ ] 新增 `lingyun-*` 时已放在 `lingyun-ui/components/`（非独立包、非 `src/components`）
+- [ ] 新增控件 `lingyun-*` 已放在 `lingyun-ui/components/`；标准页已放在 `lingyun-ui-page`（非 `src/components`）
 - [ ] 若涉及设计稿：路径与 `src/pages` / `src/components` 保持对应（见 `design/README.md`）
 - [ ] 请求走 `utils/request`，状态走 Pinia
 - [ ] 未误提交密钥、`.env`、构建产物

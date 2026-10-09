@@ -1,0 +1,36 @@
+---
+description: 标准页面放在 lingyun-ui-page，控件仍在 lingyun-ui
+alwaysApply: true
+---
+
+# 标准页面（lingyun-ui-page）
+
+可复用的标准页面放在 `src/uni_modules/lingyun-ui-page/`。不要写进 `lingyun-ui`，也不要在 `src/pages` 里重做一套界面。
+
+## 放哪里
+
+| 内容 | 位置 |
+|------|------|
+| 按钮、表单、列表等控件 | `lingyun-ui/components/lingyun-*` |
+| 登录等标准页 | `lingyun-ui-page/components/lingyun-<页面>/lingyun-<页面>.vue` |
+| 路由、接口、登录态 | `src/pages` + `src/stores` + `src/api` |
+
+`pages.json` 的路由文件仍在 `src/pages`。页面里直接写 easycom 标签，只传数据和处理提交、跳转。
+
+## 硬规则
+
+- 目录名 = 文件名 = 标签名。登录页是 `<lingyun-login>`。
+- `components/lingyun-ui-page/lingyun-ui-page.vue` 保持空文件，不要删，也不要往里写页面。
+- 标准页不请求接口、不读写 token。文案、logo、加载中用 props；提交和协议跳转用事件。
+- 样式走 `lingyun-ui/styles` 的 `$lingyun-*`，尺寸 `px`。遵守 Liquid Glass 与微信小程序约束。
+- 新增一页时更新本包 `readme.md` 与 `changelog.md`。
+
+```vue
+<lingyun-login
+  :logo="logo"
+  :enterprise-name="name"
+  :booting="booting"
+  @submit="onSubmit"
+  @policy="openPolicy"
+/>
+```
