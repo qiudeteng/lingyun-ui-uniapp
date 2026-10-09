@@ -17,6 +17,14 @@
       </lingyun-section>
 
       <lingyun-section
+        title="小图标只有主标题"
+        icon="https://qiniu-web-assets.dcloud.net.cn/unidoc/zh/shuijiao.jpg"
+        icon-size="small"
+      >
+        <text class="body-text">16px，没有副标题。</text>
+      </lingyun-section>
+
+      <lingyun-section
         title="默认大小"
         subtitle="不传 iconSize"
         icon="https://qiniu-web-assets.dcloud.net.cn/unidoc/zh/shuijiao.jpg"
@@ -26,12 +34,28 @@
       </lingyun-section>
 
       <lingyun-section
+        title="只有主标题"
+        icon="https://qiniu-web-assets.dcloud.net.cn/unidoc/zh/shuijiao.jpg"
+      >
+        <text class="body-text">默认 24px，没有副标题。</text>
+      </lingyun-section>
+
+      <lingyun-section
         title="大图标"
         icon="https://qiniu-web-assets.dcloud.net.cn/unidoc/zh/shuijiao.jpg"
         icon-size="large"
         hint="iconSize=large"
       >
         <text class="body-text">32px。不能传像素。</text>
+      </lingyun-section>
+
+      <lingyun-section
+        title="大图标带副标题"
+        subtitle="相对这两行垂直居中"
+        icon="https://qiniu-web-assets.dcloud.net.cn/unidoc/zh/shuijiao.jpg"
+        icon-size="large"
+      >
+        <text class="body-text">32px，相对主标题和副标题垂直居中。</text>
       </lingyun-section>
 
       <lingyun-section title="绿色" color="green" />
