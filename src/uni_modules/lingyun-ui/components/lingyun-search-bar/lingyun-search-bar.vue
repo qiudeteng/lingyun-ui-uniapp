@@ -154,6 +154,14 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+    /**
+     * 覆盖默认内边距（上 0、左右与下 28）。
+     * 浮层里的搜索需要更小的左右边距，并补上边距。
+     */
+    padding: {
+      type: String,
+      default: '',
+    },
     cancelText: {
       type: String,
       default: '',
@@ -187,10 +195,11 @@ export default defineComponent({
         .join(' ')
     },
     rootStyle() {
-      if (!this.fixed || !(this.keyboardHeight > 0)) return {}
-      return {
-        bottom: `${this.keyboardHeight}px`,
-      }
+      const style: Record<string, string> = {}
+      const pad = String(this.padding || '').trim()
+      if (pad) style.padding = pad
+      if (this.fixed && this.keyboardHeight > 0) style.bottom = `${this.keyboardHeight}px`
+      return style
     },
   },
   mounted() {
