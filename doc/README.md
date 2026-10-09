@@ -11,6 +11,8 @@
 
 ## 从这里开始
 
+组件演示列表是应用里的 `/pages/demo/demo`。首页「组件 Demo」进入这一页。
+
 - [接入](./guide/start.md)
 - [屏幕](./guide/screen.md)
 - [反馈：Toast 与 HUD](./guide/feedback.md)
@@ -77,6 +79,7 @@
 - [单选列表](./components/data-radio.md)
 - [滑条](./components/slider.md)
 - [选择器](./components/picker.md)
+- [日期选择器](./components/date-picker.md)
 - [级联选择](./components/data-picker.md)
 
 ### 列表与内容

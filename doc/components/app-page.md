@@ -48,7 +48,7 @@
 | `bodyScroll` | 是否由本组件滚动正文 | true |
 | `pageScroll` | 页面级滚动。有输入框时必须保持 true | true |
 | `showNav` | 宽屏（窗口 ≥ 690）是否显示左侧导航 | true |
-| `navSections` | 只覆盖当前页的微信内嵌列。H5 常驻侧栏和首页目录用 `setLingyunPageNavSections` | null |
+| `navSections` | 只覆盖当前页的微信内嵌列。H5 常驻侧栏和首页列表用 `setLingyunPageNavSections`。组件演示列表是 `/pages/demo/demo` | null |
 | `glassDistance` | 滚动多少 px 后顶栏玻璃铺满 | 56 |
 
 不传左栏顶部插槽、也不调用 `setLingyunPageNavProfile` 时，宽屏左栏显示「凌云UI」和介绍「一套对齐 Apple Liquid Glass 的 uni-app 多端组件库」。传入自定义名称且不传副标题时，不显示这句介绍。

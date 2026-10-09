@@ -23,7 +23,7 @@ setLingyunPageNavProfile({
 })
 ```
 
-H5 侧栏只挂一次，页面上的 `sections` 到不了它。全局菜单用 `setLingyunPageNavSections`，首页目录读的是同一份。
+H5 侧栏只挂一次，页面上的 `sections` 到不了它。全局菜单用 `setLingyunPageNavSections`，首页列表读的是同一份。组件演示列表是 `/pages/demo/demo`，不读这份运行时菜单。
 
 ## 属性
 

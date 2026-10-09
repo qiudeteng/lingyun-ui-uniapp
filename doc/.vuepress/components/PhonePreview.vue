@@ -34,6 +34,7 @@ const DEMO: Record<string, string> = {
   'data-radio': '/pages/demo/checks',
   slider: '/pages/demo/sliders',
   picker: '/pages/demo/pickers',
+  'date-picker': '/pages/demo/date-time-pickers',
   'data-picker': '/pages/demo/pickers',
   list: '/pages/demo/lists',
   'list-item': '/pages/demo/lists',
