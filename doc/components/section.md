@@ -17,6 +17,8 @@
 | 属性 | 说明 | 默认值 |
 | --- | --- | --- |
 | `title` | 标题 | '' |
+| `icon` | 标题左侧的图片地址 | '' |
+| `iconSize` | 图标大小：不传 24，`small` 16，`large` 32 | '' |
 | `subtitle / hint / extra` | 副标题、提示、右侧额外文字 | '' |
 | `isLast` | 最后一组，收掉底部间距 | false |
 | `glass` | 卡片用玻璃底。设置了 `color` 后不再使用 | true |

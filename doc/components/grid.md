@@ -50,7 +50,7 @@
 | `background` | grid | 卡片背景。空为分组底，`transparent` 为透明 | '' |
 | `icon-size` | grid / item | 图标边长，任意像素。格子或数据项再传则覆盖宫格 | 28 |
 | `shape` | grid / item | 图片图标的显示形式，同 `lingyun-image`：`square` / `rounded` / `circle` | rounded |
-| `radius` | grid / item | 图片图标的圆角，同 `lingyun-image`：`none` / `sm` / `md` / `lg` / `xl` / `2xl` 或像素 | sm |
+| `radius` | grid / item | 图片图标的圆角，同 `lingyun-image`：`none` / `sm` / `md` / `lg` / `xl` / `2xl` 或像素。不传则不传给图片，用图片默认 `2xl`（26） | — |
 | `items` | grid | 数组里有格子时按数据生成，不再用默认插槽。不传或空数组仍用插槽 | — |
 | `index` | item | 点中后回传的下标 | 0 |
 | `icon` | item | 图标名。写成图片地址时用 `lingyun-image` | — |

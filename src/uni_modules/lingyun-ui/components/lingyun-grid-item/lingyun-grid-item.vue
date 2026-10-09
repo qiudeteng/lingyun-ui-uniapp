@@ -17,7 +17,7 @@
               :src="imageSrc"
               :size="iconPx"
               :shape="imageShape"
-              :radius="imageRadius"
+              v-bind="imageRadiusAttr"
               mode="aspectFill"
               :lazy="false"
               :show-error-placeholder="false"
@@ -48,7 +48,7 @@
             :src="imageSrc"
             :size="iconPx"
             :shape="imageShape"
-            :radius="imageRadius"
+            v-bind="imageRadiusAttr"
             mode="aspectFill"
             :lazy="false"
             :show-error-placeholder="false"
@@ -120,7 +120,7 @@ function asGrid(grid: unknown): LingyunGridLike | null {
  * @property {String} iconSrc 网络或本地图片，优先于 icon
  * @property {Number|String} iconSize 图标边长，任意像素。空则用宫格上的 iconSize，再空为 28
  * @property {String} shape 图片图标的显示形式，同 lingyun-image。空则用宫格上的 shape，再空为 rounded
- * @property {Number|String} radius 图片图标的圆角，同 lingyun-image。空则用宫格上的 radius，再空为 sm
+ * @property {Number|String} radius 图片图标的圆角，同 lingyun-image。空则用宫格上的 radius，再空则不传给图片
  * @property {String} text
  * @property {String} color 图标色，默认系统蓝
  * @property {String|Number|Boolean} info 角标；true 为圆点
@@ -206,12 +206,17 @@ export default defineComponent({
       if (grid && grid.shape) return String(grid.shape)
       return 'rounded'
     },
-    imageRadius(): string | number {
+    imageRadius(): string | number | undefined {
       if (this.radius !== '' && this.radius != null) return this.radius
       const grid = asGrid(this.grid)
       const parent = grid ? grid.radius : ''
       if (parent !== '' && parent != null) return parent
-      return 'sm'
+      return undefined
+    },
+    imageRadiusAttr(): Record<string, string | number> {
+      const radius = this.imageRadius
+      if (radius === '' || radius == null) return {}
+      return { radius }
     },
     iconColor(): string {
       return this.color || 'var(--lingyun-system-blue, #0088ff)'
