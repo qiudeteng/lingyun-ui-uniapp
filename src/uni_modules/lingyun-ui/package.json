@@ -1,7 +1,7 @@
 {
 	"id": "lingyun-ui",
 	"displayName": "凌云UI",
-	"version": "1.0.13",
+	"version": "1.0.14",
 	"description": "一套对齐 Apple Liquid Glass 的 uni-app 多端组件库。",
 	"keywords": [
         "lingyun-ui",

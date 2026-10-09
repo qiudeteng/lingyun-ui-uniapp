@@ -56,6 +56,26 @@ if (lingyun.device == 'pad') {
 
 手机横过来、宽度到了 690，`screen` 也会变成 `pad`。iPad 分屏缩得很窄时，`device` 仍是 `pad`，`screen` 可以是 `phone`。
 
+## 分开展示
+
+窄屏和宽屏的内容分成两个组件，判断和上面的窗口档相同。
+
+```vue
+<lingyun-mobile>
+  <view>手机上的内容</view>
+</lingyun-mobile>
+<lingyun-pc>
+  <view>平板和电脑上的内容</view>
+</lingyun-pc>
+```
+
+| 组件 | 何时显示 |
+|------|----------|
+| `lingyun-mobile` | 窗口宽度 &lt; 690，或窗口还没读到 |
+| `lingyun-pc` | 窗口宽度 ≥ 690（`pad` 和 `pc` 都算） |
+
+隐藏的那一支不会渲染。拉宽或收窄窗口后会换成另一支。
+
 ## 折叠
 
 | 状态 | 取值 |
