@@ -430,10 +430,14 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import { getLingyunToolbarStackPx, LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
-import { LINGYUN_APP_PAGE_SCROLL_LOCK } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
+import {
+  LINGYUN_APP_PAGE_SCROLL_LOCK,
+  type LingyunAppPageScrollLock,
+} from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 
 /**
  * lingyun-activity-view
@@ -460,24 +464,63 @@ const RADIUS_REGULAR = 32
 const REGULAR_INSET = 32
 const THUMB = 40
 
-export default {
+type ActivityRaw = Record<string, unknown>
+
+type ActivityTile = {
+  key: string
+  name: string
+  text: string
+  src: string
+  icon: string
+  color: string
+  badge: string
+  badgeColor: string
+  disabled: boolean
+  raw: ActivityRaw
+}
+
+type ActivityGroupInput = {
+  key?: string | number | null
+  actions?: unknown
+}
+
+type ActivityGroup = {
+  key: string | number
+  actions: ActivityTile[]
+}
+
+type ActivitySelectItem = {
+  disabled?: boolean
+  raw?: unknown
+}
+
+/** 与 `value || ''` / `!!value` 同结果，避免 unknown 直接参与逻辑运算 */
+function isFilled(value: unknown): boolean {
+  return !!(value as boolean)
+}
+
+function fieldText(value: unknown): string {
+  return (isFilled(value) ? value : '') as string
+}
+
+export default defineComponent({
   name: 'LingyunActivityView',
   emits: ['update:show', 'update:modelValue', 'close', 'select', 'menu', 'permission'],
   inject: {
     appPageScrollLock: {
       from: LINGYUN_APP_PAGE_SCROLL_LOCK,
-      default: null,
+      default: null as LingyunAppPageScrollLock | null,
     },
   },
   props: {
-    show: { type: Boolean, default: undefined },
-    modelValue: { type: Boolean, default: undefined },
+    show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+    modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
     /** half | full。half 对齐 Sketch Card - Half Height（约 500 高） */
     detent: { type: String, default: 'half' },
     title: { type: String, default: '' },
     subtitle: { type: String, default: '' },
     thumbnail: { type: String, default: '' },
-    thumbnailSize: { type: [Number, String], default: THUMB },
+    thumbnailSize: { type: [Number, String] as PropType<number | string>, default: THUMB },
     showClose: { type: Boolean, default: true },
     /** 顶栏弹出按钮文案，如 Collaborate */
     menuText: { type: String, default: '' },
@@ -485,25 +528,25 @@ export default {
     /** 权限 / drill-in 文案，如 Everyone can make changes */
     permissionText: { type: String, default: '' },
     /** { key, name, src, color, badge, badgeColor } */
-    contacts: { type: Array, default: () => [] },
+    contacts: { type: Array as PropType<ActivityRaw[]>, default: () => [] },
     /** { key, name, icon, color } */
-    apps: { type: Array, default: () => [] },
+    apps: { type: Array as PropType<ActivityRaw[]>, default: () => [] },
     /** { key, text, icon, disabled } */
-    shortcuts: { type: Array, default: () => [] },
+    shortcuts: { type: Array as PropType<ActivityRaw[]>, default: () => [] },
     /** [{ key, actions: [{ key, text, icon, disabled }] }] */
-    groups: { type: Array, default: () => [] },
+    groups: { type: Array as PropType<ActivityGroupInput[]>, default: () => [] },
     editText: { type: String, default: 'Edit Actions' },
     showEdit: { type: Boolean, default: true },
     maskClosable: { type: Boolean, default: true },
     closeOnSelect: { type: Boolean, default: true },
-    zIndex: { type: [Number, String], default: 1120 },
+    zIndex: { type: [Number, String] as PropType<number | string>, default: 1120 },
   },
   data() {
     return {
       mounted: false,
-      phase: '',
-      leaveTimer: null,
-      enterTimer: null,
+      phase: '' as '' | 'enter' | 'open' | 'leave',
+      leaveTimer: null as ReturnType<typeof setTimeout> | null,
+      enterTimer: null as ReturnType<typeof setTimeout> | null,
       safeBottom: 0,
       /** 全屏顶缘：页面顶栏（状态栏 + 栏身），避开微信胶囊 */
       fullTopGap: 104,
@@ -618,13 +661,14 @@ export default {
     shortcutItems() {
       return this.normalizeTiles(this.shortcuts, 'text')
     },
-    actionGroups() {
+    actionGroups(): ActivityGroup[] {
       const list = Array.isArray(this.groups) ? this.groups : []
       return list
         .map((group, index) => {
           const actions = this.normalizeTiles(group && group.actions, 'text')
+          const rawKey = group ? group.key : ''
           return {
-            key: (group && group.key) || `g-${index}`,
+            key: rawKey ? rawKey : `g-${index}`,
             actions,
           }
         })
@@ -634,7 +678,7 @@ export default {
   watch: {
     visible: {
       immediate: true,
-      handler(val) {
+      handler(val: boolean) {
         if (val) {
           this.syncWindow()
           this.lockPageScroll()
@@ -653,28 +697,28 @@ export default {
     this.unlockPageScroll()
   },
   methods: {
-    normalizeTiles(list, labelKey) {
-      const items = Array.isArray(list) ? list : []
+    normalizeTiles(list: unknown, labelKey: string): ActivityTile[] {
+      const items = (Array.isArray(list) ? list : []) as ActivityRaw[]
       return items
-        .filter((item) => item && (item[labelKey] || item.name || item.text))
+        .filter((item) => !!item && (isFilled(item[labelKey]) || isFilled(item.name) || isFilled(item.text)))
         .map((item, index) => ({
           key: item.key != null ? String(item.key) : `${labelKey}-${index}`,
           name: item.name != null ? String(item.name) : '',
           text: item.text != null ? String(item.text) : item.name != null ? String(item.name) : '',
-          src: item.src || '',
-          icon: item.icon || '',
-          color: item.color || '',
-          badge: item.badge || '',
-          badgeColor: item.badgeColor || '',
+          src: fieldText(item.src),
+          icon: fieldText(item.icon),
+          color: fieldText(item.color),
+          badge: fieldText(item.badge),
+          badgeColor: fieldText(item.badgeColor),
           disabled: item.disabled === true,
           raw: item,
         }))
     },
-    badgeStyle(item) {
+    badgeStyle(item: ActivityTile): Record<string, string> {
       if (!item.badgeColor) return {}
       return { backgroundColor: item.badgeColor }
     },
-    appIconStyle(item) {
+    appIconStyle(item: ActivityTile): Record<string, string> {
       return { backgroundColor: item.color || 'var(--lingyun-primary, #0088ff)' }
     },
     syncWindow() {
@@ -738,7 +782,7 @@ export default {
         this.reduceMotion ? 16 : LEAVE_MS,
       )
     },
-    setVisible(next) {
+    setVisible(next: boolean) {
       const val = !!next
       this.$emit('update:show', val)
       this.$emit('update:modelValue', val)
@@ -757,11 +801,11 @@ export default {
     onPermission() {
       this.$emit('permission')
     },
-    onSelect(kind, item, index, groupIndex) {
+    onSelect(kind: string, item: ActivitySelectItem | null | undefined, index: number, groupIndex?: number) {
       if (!item || item.disabled) return
       const payload = {
         kind,
-        item: item.raw || item,
+        item: isFilled(item.raw) ? item.raw : item,
         index,
         groupIndex: groupIndex == null ? -1 : groupIndex,
       }
@@ -771,7 +815,7 @@ export default {
     },
     lockPageScroll() {
       try {
-        const lockApi = this.appPageScrollLock
+        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
         if (lockApi && typeof lockApi.lock === 'function' && !this._appScrollLocked) {
           lockApi.lock()
           this._appScrollLocked = true
@@ -795,7 +839,7 @@ export default {
     },
     unlockPageScroll() {
       try {
-        const lockApi = this.appPageScrollLock
+        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
         if (this._appScrollLocked && lockApi && typeof lockApi.unlock === 'function') {
           lockApi.unlock()
         }
@@ -815,7 +859,7 @@ export default {
       // #endif
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

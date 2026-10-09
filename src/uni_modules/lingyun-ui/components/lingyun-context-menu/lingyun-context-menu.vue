@@ -156,9 +156,15 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
-import { normalizeMenuActions } from '../lingyun-menu/normalizeMenuActions'
+import {
+  normalizeMenuActions,
+  type MenuAction,
+  type MenuActionInput,
+  type MenuItem,
+} from '../lingyun-menu/normalizeMenuActions'
 
 /**
  * lingyun-context-menu
@@ -168,19 +174,19 @@ import { normalizeMenuActions } from '../lingyun-menu/normalizeMenuActions'
 const LEAVE_MS = 200
 const QUERY_TIMEOUT_MS = 180
 
-export default {
+export default defineComponent({
   name: 'LingyunContextMenu',
   emits: ['select', 'open', 'close'],
   props: {
-    actions: { type: Array, default: () => [] },
+    actions: { type: Array as PropType<MenuActionInput[]>, default: () => [] as MenuActionInput[] },
     maskClosable: { type: Boolean, default: true },
-    zIndex: { type: [Number, String], default: 1100 },
+    zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
   },
   data() {
     return {
       mounted: false,
       phase: '',
-      leaveTimer: null,
+      leaveTimer: null as ReturnType<typeof setTimeout> | null,
       panelTop: 160,
       panelLeft: 16,
       panelWidth: 200,
@@ -203,7 +209,7 @@ export default {
         width: `${this.panelWidth}px`,
       }
     },
-    normalizedActions() {
+    normalizedActions(): MenuAction[] {
       return normalizeMenuActions(this.actions)
     },
   },
@@ -211,12 +217,12 @@ export default {
     if (this.leaveTimer) clearTimeout(this.leaveTimer)
   },
   methods: {
-    iconColor(action) {
+    iconColor(action: { disabled?: boolean; role?: string }): string {
       if (action.disabled) return 'tertiary'
       if (action.role === 'destructive') return 'red'
       return 'label'
     },
-    rowClass(action) {
+    rowClass(action: MenuAction): string {
       if (action.kind === 'separator') return 'lingyun-menu__sep'
       if (action.kind === 'title') return 'lingyun-menu__heading'
       if (action.kind === 'controls') return 'lingyun-menu__controls'
@@ -229,7 +235,7 @@ export default {
         .filter(Boolean)
         .join(' ')
     },
-    controlClass(item) {
+    controlClass(item: MenuItem): string {
       return [
         item.disabled ? 'lingyun-menu__control--disabled' : '',
         item.role === 'destructive' ? 'lingyun-menu__control--destructive' : '',
@@ -237,24 +243,24 @@ export default {
         .filter(Boolean)
         .join(' ')
     },
-    hoverClass(action) {
+    hoverClass(action: MenuAction): string {
       if (action.kind !== 'item' || action.disabled) return ''
       return 'lingyun-menu__item--hover'
     },
-    emitSelect(action) {
+    emitSelect(action: MenuItem) {
       this.$emit('select', { action: action.raw || action, key: action.key })
       this.close()
     },
-    onRow(action) {
+    onRow(action: MenuAction) {
       if (!action || action.kind !== 'item' || action.disabled) return
       this.emitSelect(action)
     },
-    onControl(item) {
+    onControl(item: MenuItem) {
       if (!item || item.disabled) return
       this.emitSelect(item)
     },
-    measure(includePanel) {
-      return new Promise((resolve) => {
+    measure(includePanel: boolean): Promise<void> {
+      return new Promise<void>((resolve) => {
         let settled = false
         const finish = () => {
           if (settled) return
@@ -338,7 +344,7 @@ export default {
       this.close()
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

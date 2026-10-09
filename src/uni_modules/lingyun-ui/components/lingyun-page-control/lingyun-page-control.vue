@@ -10,12 +10,14 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
+
 /**
  * lingyun-page-control
  * @see design/PAGE_CONTROLS.md
  */
-export default {
+export default defineComponent({
   name: 'LingyunPageControl',
   emits: ['update:modelValue', 'update:current', 'change'],
   props: {
@@ -34,13 +36,13 @@ export default {
     },
   },
   methods: {
-    onDot(index) {
+    onDot(index: number) {
       this.$emit('update:modelValue', index)
       this.$emit('update:current', index)
       this.$emit('change', index)
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

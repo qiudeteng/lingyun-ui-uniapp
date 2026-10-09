@@ -14,13 +14,27 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
+type DataFieldMap = {
+  text?: string
+  value?: string
+  disabled?: string
+}
+
+type DataRadioItem = {
+  text: string
+  value: string | number
+  disabled: boolean
+}
+
 /**
  * lingyun-data-radio
  * 数据驱动单选：localdata → lingyun-radio-group + lingyun-radio
  * @see design/CHECKS.md
  */
-export default {
+export default defineComponent({
   name: 'LingyunDataRadio',
   emits: ['update:modelValue', 'update:value', 'change'],
   options: {
@@ -28,11 +42,11 @@ export default {
     styleIsolation: 'shared',
   },
   props: {
-    modelValue: { type: [String, Number], default: undefined },
-    value: { type: [String, Number], default: undefined },
-    localdata: { type: Array, default: () => [] },
+    modelValue: { type: [String, Number] as PropType<string | number | undefined>, default: undefined },
+    value: { type: [String, Number] as PropType<string | number | undefined>, default: undefined },
+    localdata: { type: Array as PropType<unknown[]>, default: () => [] as unknown[] },
     map: {
-      type: Object,
+      type: Object as PropType<DataFieldMap>,
       default: () => ({ text: 'text', value: 'value', disabled: 'disabled' }),
     },
     disabled: { type: Boolean, default: false },
@@ -40,7 +54,7 @@ export default {
     emptyText: { type: String, default: '暂无数据' },
   },
   computed: {
-    current() {
+    current(): string | number | undefined {
       if (this.modelValue !== undefined && this.modelValue !== null) return this.modelValue
       return this.value
     },
@@ -53,22 +67,23 @@ export default {
     disabledKey() {
       return (this.map && this.map.disabled) || 'disabled'
     },
-    normalizedItems() {
+    normalizedItems(): DataRadioItem[] {
       const list = Array.isArray(this.localdata) ? this.localdata : []
       return list.map((raw) => {
         if (raw == null || typeof raw !== 'object') {
-          return { text: String(raw), value: raw, disabled: false }
+          return { text: String(raw), value: raw as string | number, disabled: false }
         }
+        const row = raw as Record<string, unknown>
         return {
-          text: raw[this.textKey] != null ? String(raw[this.textKey]) : '',
-          value: raw[this.valueKey],
-          disabled: !!raw[this.disabledKey],
+          text: row[this.textKey] != null ? String(row[this.textKey]) : '',
+          value: row[this.valueKey] as string | number,
+          disabled: !!row[this.disabledKey],
         }
       })
     },
   },
   methods: {
-    onGroupChange(next) {
+    onGroupChange(next: string | number) {
       if (this.disabled) return
       this.$emit('update:modelValue', next)
       this.$emit('update:value', next)
@@ -78,7 +93,7 @@ export default {
       })
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

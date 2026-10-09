@@ -19,9 +19,13 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
-import { LINGYUN_APP_PAGE_SCROLL_LOCK } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
+import {
+  LINGYUN_APP_PAGE_SCROLL_LOCK,
+  type LingyunAppPageScrollLock,
+} from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 
 /**
  * lingyun-hud
@@ -30,28 +34,28 @@ import { LINGYUN_APP_PAGE_SCROLL_LOCK } from '@/uni_modules/lingyun-ui/component
 const LEAVE_MS = 240
 const ENTER_KICK_MS = 40
 
-export default {
+export default defineComponent({
   name: 'LingyunHud',
   emits: ['update:show', 'update:modelValue', 'close'],
   inject: {
     appPageScrollLock: {
       from: LINGYUN_APP_PAGE_SCROLL_LOCK,
-      default: null,
+      default: null as LingyunAppPageScrollLock | null,
     },
   },
   props: {
-    show: { type: Boolean, default: undefined },
-    modelValue: { type: Boolean, default: undefined },
+    show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+    modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
     text: { type: String, default: '' },
     maskClosable: { type: Boolean, default: false },
-    zIndex: { type: [Number, String], default: 1200 },
+    zIndex: { type: [Number, String] as PropType<number | string>, default: 1200 },
   },
   data() {
     return {
       mounted: false,
       phase: '',
-      leaveTimer: null,
-      enterTimer: null,
+      leaveTimer: null as ReturnType<typeof setTimeout> | null,
+      enterTimer: null as ReturnType<typeof setTimeout> | null,
       _appScrollLocked: false,
     }
   },
@@ -77,7 +81,7 @@ export default {
   watch: {
     visible: {
       immediate: true,
-      handler(val) {
+      handler(val: boolean) {
         if (val) {
           this.lockPageScroll()
           this.openAnim()
@@ -130,7 +134,7 @@ export default {
         this.unlockPageScroll()
       }, LEAVE_MS)
     },
-    setVisible(next) {
+    setVisible(next: unknown) {
       const val = !!next
       this.$emit('update:show', val)
       this.$emit('update:modelValue', val)
@@ -145,7 +149,7 @@ export default {
     },
     lockPageScroll() {
       try {
-        const lockApi = this.appPageScrollLock
+        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
         if (lockApi && typeof lockApi.lock === 'function' && !this._appScrollLocked) {
           lockApi.lock()
           this._appScrollLocked = true
@@ -156,7 +160,7 @@ export default {
     },
     unlockPageScroll() {
       try {
-        const lockApi = this.appPageScrollLock
+        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
         if (this._appScrollLocked && lockApi && typeof lockApi.unlock === 'function') {
           lockApi.unlock()
         }
@@ -166,7 +170,7 @@ export default {
       }
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

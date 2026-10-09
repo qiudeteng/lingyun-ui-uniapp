@@ -99,8 +99,8 @@
   </view>
 </template>
 
-<script>
-import { getCurrentInstance, inject } from 'vue'
+<script lang="ts">
+import { defineComponent, getCurrentInstance, inject, type PropType } from 'vue'
 import { onResize } from '@dcloudio/uni-app'
 import {
   LINGYUN_APP_PAGE_BIND_SCROLL,
@@ -117,7 +117,13 @@ import {
 } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
 import { useThemeStore } from '@/stores/theme'
 import { pageRequiresLogin } from '@/router/guards'
-import { LINGYUN_PAGE_NAV_HOME, LINGYUN_PAGE_NAV_WIDTH, claimLingyunPageNavHeaderSlots, releaseLingyunPageNavHeaderSlots } from '@/router/pageNav'
+import {
+  LINGYUN_PAGE_NAV_HOME,
+  LINGYUN_PAGE_NAV_WIDTH,
+  claimLingyunPageNavHeaderSlots,
+  releaseLingyunPageNavHeaderSlots,
+  type LingyunPageNavSection,
+} from '@/router/pageNav'
 import { clearLingyunPageHost, hostedFromText, hostedPagePath, openLingyunHostedPage } from '@/router/pageHost'
 // #ifdef H5
 import { setLingyunH5PageNavAllowed } from '@/uni_modules/lingyun-ui/components/lingyun-page-nav/mountLingyunPageNav'
@@ -138,7 +144,18 @@ import { setLingyunH5PageNavAllowed } from '@/uni_modules/lingyun-ui/components/
  * @property {Number} glassDistance 滚过多少 px 达到满玻璃
  * @event back / close / trailing / scroll
  */
-export default {
+type MpGlassObserver = {
+  relativeToViewport: () => {
+    observe: (selector: string, callback: (res: { intersectionRatio?: number }) => void) => void
+  }
+  disconnect?: () => void
+}
+
+type MpComponentScope = {
+  createIntersectionObserver?: (options: object) => MpGlassObserver
+}
+
+export default defineComponent({
   name: 'LingyunAppPage',
   emits: ['back', 'close', 'trailing', 'scroll'],
   props: {
@@ -162,7 +179,10 @@ export default {
     /** 宽屏（≥700，含折叠屏展开）左侧停靠导航。false 关闭。Sheet 形态永不显示。 */
     showNav: { default: true },
     /** 覆盖默认目录；null 使用 LINGYUN_PAGE_NAV */
-    navSections: { type: Array, default: null },
+    navSections: {
+      type: Array as PropType<LingyunPageNavSection[] | null>,
+      default: null,
+    },
     glassDistance: { type: Number, default: 56 },
   },
   data() {
@@ -177,12 +197,22 @@ export default {
       bodyScrollY: true,
       /** H5：顶部插槽目标节点出现后再传送 */
       navHeaderReady: false,
+      _scrollSettleTimer: null as ReturnType<typeof setTimeout> | null,
+      _scrollLockCount: 0,
+      /** 页面级滚动下驱动玻璃渐变的哨兵观察器 */
+      _glassObserver: null as MpGlassObserver | null,
+      _navSlotClaim: 0,
+      _lastReportedTop: undefined as number | undefined,
+      _navSlotTimer: null as ReturnType<typeof setTimeout> | null,
+      _onWindowResize: null as ((res?: unknown) => void) | null,
     }
   },
   setup() {
     const instance = getCurrentInstance()
     onResize((res) => {
-      const proxy = instance && instance.proxy
+      const proxy = (instance && instance.proxy) as
+        | { syncNavLayout?: (windowWidth?: number) => void }
+        | null
       if (proxy && typeof proxy.syncNavLayout === 'function') {
         proxy.syncNavLayout(readLingyunResizeWidth(res))
       }
@@ -193,19 +223,15 @@ export default {
   },
   created() {
     if (typeof this.bindScroll === 'function') {
-      this.bindScroll((scrollTop) => {
+      this.bindScroll((scrollTop: number) => {
         this.applyScrollTop(scrollTop)
         this.scheduleScrollSettle(scrollTop)
       })
     }
     this.syncNavLayout()
-    /** @type {ReturnType<typeof setTimeout> | null} */
     this._scrollSettleTimer = null
-    /** @type {number} */
     this._scrollLockCount = 0
-    /** 页面级滚动下驱动玻璃渐变的哨兵观察器 */
     this._glassObserver = null
-    /** @type {number} */
     this._navSlotClaim = 0
   },
   mounted() {
@@ -336,7 +362,7 @@ export default {
   },
   provide() {
     return {
-      [LINGYUN_APP_PAGE_REPORT_SCROLL]: (scrollTop) => {
+      [LINGYUN_APP_PAGE_REPORT_SCROLL]: (scrollTop: number) => {
         this.applyScrollTop(scrollTop)
         this.scheduleScrollSettle(scrollTop)
       },
@@ -355,17 +381,17 @@ export default {
       this.teardownGlassObserver()
       const dist = Math.max(1, Number(this.glassDistance) || 56)
       const steps = 40
-      const thresholds = []
+      const thresholds: number[] = []
       for (let i = 0; i <= steps; i += 1) thresholds.push(i / steps)
       try {
         const options = { thresholds, nativeMode: true }
         // 微信会对传入的组件实例枚举键，Vue 代理会告警。用小程序组件实例创建观察器。
-        const scope = this.$scope
-        const observer =
+        const scope = (this as unknown as { $scope?: MpComponentScope }).$scope
+        const observer: MpGlassObserver =
           scope && typeof scope.createIntersectionObserver === 'function'
             ? scope.createIntersectionObserver(options)
-            : uni.createIntersectionObserver(scope || this, options)
-        observer.relativeToViewport().observe('.lingyun-app-page__sentinel', (res) => {
+            : (uni.createIntersectionObserver(scope, options) as MpGlassObserver)
+        observer.relativeToViewport().observe('.lingyun-app-page__sentinel', (res: { intersectionRatio?: number }) => {
           const ratio = Number(res && res.intersectionRatio)
           if (!Number.isFinite(ratio)) return
           const progress = Math.min(1, Math.max(0, 1 - ratio))
@@ -378,9 +404,10 @@ export default {
       }
     },
     teardownGlassObserver() {
-      if (this._glassObserver) {
+      const observer = this._glassObserver
+      if (observer) {
         try {
-          this._glassObserver.disconnect()
+          observer.disconnect?.()
         } catch {
           /* ignore */
         }
@@ -395,7 +422,7 @@ export default {
       this._scrollLockCount = Math.max(0, (this._scrollLockCount || 0) - 1)
       if (this._scrollLockCount === 0 && !this.bodyScrollY) this.bodyScrollY = true
     },
-    syncNavLayout(windowWidth) {
+    syncNavLayout(windowWidth?: number) {
       const width = Number(windowWidth)
       const layout = getLingyunNavLayout(
         LINGYUN_TOOLBAR_BAR_DESIGN_PX,
@@ -417,9 +444,9 @@ export default {
       })
       this.armNavHeader()
     },
-    armNavHeader(left = 30) {
+    armNavHeader(left: number = 30) {
       const slots = this.$slots || {}
-      const need = []
+      const need: string[] = []
       if (slots['nav-avatar']) need.push('ly-nav-slot-avatar')
       if (slots['nav-name']) need.push('ly-nav-slot-name')
       if (slots['nav-subtitle']) need.push('ly-nav-slot-subtitle')
@@ -446,29 +473,31 @@ export default {
       // #endif
     },
     bindResize() {
-      this._onWindowResize = (res) => {
+      const onWindowResize = (res?: unknown) => {
         this.syncNavLayout(readLingyunResizeWidth(res))
       }
+      this._onWindowResize = onWindowResize
       try {
-        if (typeof uni.onWindowResize === 'function') uni.onWindowResize(this._onWindowResize)
+        if (typeof uni.onWindowResize === 'function') uni.onWindowResize(onWindowResize)
       } catch {
         /* 端不支持 */
       }
       // #ifdef H5
-      if (typeof window !== 'undefined') window.addEventListener('resize', this._onWindowResize)
+      if (typeof window !== 'undefined') window.addEventListener('resize', onWindowResize)
       // #endif
     },
     unbindResize() {
+      const onWindowResize = this._onWindowResize
       try {
-        if (this._onWindowResize && typeof uni.offWindowResize === 'function') {
-          uni.offWindowResize(this._onWindowResize)
+        if (onWindowResize && typeof uni.offWindowResize === 'function') {
+          uni.offWindowResize(onWindowResize)
         }
       } catch {
         /* 端不支持 */
       }
       // #ifdef H5
-      if (typeof window !== 'undefined' && this._onWindowResize) {
-        window.removeEventListener('resize', this._onWindowResize)
+      if (typeof window !== 'undefined' && onWindowResize) {
+        window.removeEventListener('resize', onWindowResize)
       }
       // #endif
       this._onWindowResize = null
@@ -485,7 +514,7 @@ export default {
      * 滚动过程中仍即时更新，不改渐变手感。
      * @param {number} [reportedTop] 内层注入上报时传入，避免误查不存在的 scroller
      */
-    scheduleScrollSettle(reportedTop) {
+    scheduleScrollSettle(reportedTop?: number) {
       if (reportedTop != null && Number.isFinite(Number(reportedTop))) {
         this._lastReportedTop = Math.max(0, Number(reportedTop))
       }
@@ -503,17 +532,16 @@ export default {
     },
     syncScrollTopFromScroller() {
       if (!this.useInnerScroll) return
-      uni
-        .createSelectorQuery()
-        .in(this)
-        .select('.lingyun-app-page__scroller')
-        .scrollOffset()
-        .exec((res) => {
+      const node = uni.createSelectorQuery().in(this).select('.lingyun-app-page__scroller')
+      const offset = node.scrollOffset as unknown as () => {
+        exec: (cb: (res: Array<{ scrollTop?: number } | undefined> | undefined) => void) => void
+      }
+      offset().exec((res) => {
           const top = Number(res?.[0]?.scrollTop)
           this.applyScrollTop(Number.isFinite(top) ? top : 0)
         })
     },
-    applyScrollTop(scrollTop) {
+    applyScrollTop(scrollTop: number) {
       const dist = Math.max(1, Number(this.glassDistance) || 56)
       // 亚像素 / 回弹残留：视为已在顶，避免玻璃卡在极低进度
       const y = Math.max(0, Number(scrollTop) || 0)
@@ -522,7 +550,7 @@ export default {
       this.glassProgress = next
       this.$emit('scroll', effective)
     },
-    onBodyScroll(e) {
+    onBodyScroll(e: { detail?: { scrollTop?: number }; target?: { scrollTop?: number } }) {
       const top = Number(e?.detail?.scrollTop ?? e?.target?.scrollTop ?? 0)
       const y = Number.isFinite(top) ? top : 0
       this.applyScrollTop(y)
@@ -551,7 +579,7 @@ export default {
       this.$emit('trailing')
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

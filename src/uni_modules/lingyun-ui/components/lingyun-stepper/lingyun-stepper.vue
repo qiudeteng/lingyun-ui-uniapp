@@ -38,17 +38,25 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
 /**
  * lingyun-stepper
  * @see design/SWITCHES.md
  */
-export default {
+
+type StepperFieldEvent = {
+  detail?: { value?: string | number }
+  target?: { value?: string | number } | null
+}
+
+export default defineComponent({
   name: 'LingyunStepper',
   emits: ['update:modelValue', 'update:value', 'change'],
   props: {
-    modelValue: { type: Number, default: undefined },
-    value: { type: Number, default: undefined },
+    modelValue: { type: Number as PropType<number | undefined>, default: undefined },
+    value: { type: Number as PropType<number | undefined>, default: undefined },
     min: { type: Number, default: 0 },
     max: { type: Number, default: 10 },
     step: { type: Number, default: 1 },
@@ -65,38 +73,38 @@ export default {
   watch: {
     current: {
       immediate: true,
-      handler(val) {
+      handler(val: number) {
         if (!this.editing) this.draft = this.format(val)
       },
     },
   },
   computed: {
-    current() {
+    current(): number {
       if (this.modelValue !== undefined && this.modelValue !== null) return Number(this.modelValue)
       if (this.value !== undefined && this.value !== null) return Number(this.value)
       return 0
     },
-    atMin() {
+    atMin(): boolean {
       return this.disabled || this.current <= this.min
     },
-    atMax() {
+    atMax(): boolean {
       return this.disabled || this.current >= this.max
     },
-    valueStyle() {
+    valueStyle(): { width: string } {
       const text = this.editing ? String(this.draft) : this.format(this.current)
       const len = Math.max(1, text.length)
       return { width: `${Math.max(36, len * 12 + 8)}px` }
     },
   },
   methods: {
-    format(n) {
+    format(n: number): string {
       const value = Number(n)
       if (!Number.isFinite(value)) return ''
       const step = Number(this.step) || 1
       const digits = (String(step).split('.')[1] || '').length
       return digits ? String(Number(value.toFixed(Math.min(8, digits)))) : String(value)
     },
-    emitValue(next) {
+    emitValue(next: number) {
       this.editing = false
       this.draft = this.format(next)
       if (next === this.current) return
@@ -104,7 +112,7 @@ export default {
       this.$emit('update:value', next)
       this.$emit('change', next)
     },
-    onStep(dir) {
+    onStep(dir: number) {
       if (this.disabled) return
       const next = this.current + dir * (Number(this.step) || 1)
       const clamped = Math.min(this.max, Math.max(this.min, next))
@@ -118,7 +126,7 @@ export default {
     onFocus() {
       this.editing = true
     },
-    readEventValue(event) {
+    readEventValue(event?: StepperFieldEvent | null): string | null {
       if (!event) return null
       const detail = event.detail
       if (detail && detail.value != null) return String(detail.value)
@@ -126,12 +134,12 @@ export default {
       if (target && target.value != null) return String(target.value)
       return null
     },
-    onDraft(event) {
-      const value = this.readEventValue(event)
+    onDraft(event?: unknown) {
+      const value = this.readEventValue(event as StepperFieldEvent)
       this.draft = value == null ? '' : value
     },
-    commitDraft(event) {
-      const typed = this.readEventValue(event)
+    commitDraft(event?: unknown) {
+      const typed = this.readEventValue(event as StepperFieldEvent)
       if (typed != null) this.draft = typed
       this.editing = false
       const raw = String(this.draft).trim()
@@ -153,7 +161,7 @@ export default {
       this.emitValue(next)
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

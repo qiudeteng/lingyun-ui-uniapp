@@ -21,30 +21,37 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
+type RadioGroupContext = {
+  current: string | number | undefined
+  select?: (next: string | number) => void
+}
+
 /**
  * lingyun-radio（须放在 lingyun-radio-group 内）
  * 自绘环 + lingyun-icon 实心点（避免 mp 原生 radio 默认绿 / color 失效）
  * @see design/CHECKS.md
  */
-export default {
+export default defineComponent({
   name: 'LingyunRadio',
   inject: {
-    lingyunRadioGroup: { default: null },
+    lingyunRadioGroup: { default: null as RadioGroupContext | null },
   },
   options: {
     virtualHost: true,
     styleIsolation: 'shared',
   },
   props: {
-    value: { type: [String, Number], required: true },
+    value: { type: [String, Number] as PropType<string | number>, required: true },
     label: { type: String, default: '' },
     disabled: { type: Boolean, default: false },
     color: { type: String, default: '' },
   },
   computed: {
     isChecked() {
-      const g = this.lingyunRadioGroup
+      const g = this.lingyunRadioGroup as RadioGroupContext | null
       if (!g) return false
       return String(g.current) === String(this.value)
     },
@@ -65,13 +72,13 @@ export default {
   methods: {
     onTap() {
       if (this.disabled) return
-      const g = this.lingyunRadioGroup
+      const g = this.lingyunRadioGroup as RadioGroupContext | null
       if (g && typeof g.select === 'function') {
         g.select(this.value)
       }
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

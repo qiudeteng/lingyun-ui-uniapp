@@ -176,9 +176,13 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
-import { LINGYUN_APP_PAGE_SCROLL_LOCK } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
+import {
+  LINGYUN_APP_PAGE_SCROLL_LOCK,
+  type LingyunAppPageScrollLock,
+} from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 
 /**
  * lingyun-data-picker
@@ -192,27 +196,44 @@ const RADIUS = 34
 const DISMISS_DY = 72
 const ITEM_H = 36
 
-function normalizeNode(raw, map) {
+type DataPickerMap = {
+  text?: string
+  value?: string
+  children?: string
+}
+
+type DataColumnItem = {
+  text: string
+  value: unknown
+  children: unknown[]
+}
+
+type DataPickerChangeEvent = {
+  detail?: { value?: Array<number | string> }
+}
+
+function normalizeNode(raw: unknown, map?: DataPickerMap | null): DataColumnItem | null {
   if (raw == null) return null
   if (typeof raw !== 'object') {
     return { text: String(raw), value: raw, children: [] }
   }
+  const record = raw as Record<string, unknown>
   const textKey = (map && map.text) || 'text'
   const valueKey = (map && map.value) || 'value'
   const childrenKey = (map && map.children) || 'children'
-  const kids = raw[childrenKey]
+  const kids = record[childrenKey]
   return {
-    text: raw[textKey] != null ? String(raw[textKey]) : '',
-    value: raw[valueKey],
+    text: record[textKey] != null ? String(record[textKey]) : '',
+    value: record[valueKey],
     children: Array.isArray(kids) ? kids : [],
   }
 }
 
-function toColumn(nodes, map) {
+function toColumn(nodes: unknown, map?: DataPickerMap | null): DataColumnItem[] {
   const list = Array.isArray(nodes) ? nodes : []
   return list
     .map((n) => normalizeNode(n, map))
-    .filter(Boolean)
+    .filter((n): n is DataColumnItem => n != null)
     .map((n) => ({
       text: n.text,
       value: n.value,
@@ -223,7 +244,11 @@ function toColumn(nodes, map) {
 /**
  * 由选中值路径构建列与下标；缺省时每级取第 0 项并继续展开 children
  */
-function buildCascade(tree, selectedValues, map) {
+function buildCascade(
+  tree: unknown,
+  selectedValues: unknown[] | undefined,
+  map?: DataPickerMap | null,
+): { columns: DataColumnItem[][]; indexes: number[]; path: DataColumnItem[] } {
   const columns = []
   const indexes = []
   const path = []
@@ -253,22 +278,22 @@ function buildCascade(tree, selectedValues, map) {
   return { columns, indexes, path }
 }
 
-export default {
+export default defineComponent({
   name: 'LingyunDataPicker',
   emits: ['update:modelValue', 'update:value', 'change', 'cancel'],
   inject: {
     appPageScrollLock: {
       from: LINGYUN_APP_PAGE_SCROLL_LOCK,
-      default: null,
+      default: null as LingyunAppPageScrollLock | null,
     },
-    lingyunFormItem: { default: null },
+    lingyunFormItem: { default: null as object | null },
   },
   props: {
-    modelValue: { type: Array, default: undefined },
-    value: { type: Array, default: undefined },
-    localdata: { type: Array, default: () => [] },
+    modelValue: { type: Array as PropType<unknown[] | undefined>, default: undefined },
+    value: { type: Array as PropType<unknown[] | undefined>, default: undefined },
+    localdata: { type: Array as PropType<unknown[]>, default: () => [] },
     map: {
-      type: Object,
+      type: Object as PropType<DataPickerMap>,
       default: () => ({ text: 'text', value: 'value', children: 'children' }),
     },
     title: { type: String, default: '' },
@@ -277,7 +302,7 @@ export default {
     disabled: { type: Boolean, default: false },
     cancelText: { type: String, default: '取消' },
     confirmText: { type: String, default: '完成' },
-    zIndex: { type: [Number, String], default: 1200 },
+    zIndex: { type: [Number, String] as PropType<number | string>, default: 1200 },
     /**
      * field = 独立触发条；cell = form-item 行内嵌；auto = form-item 内默认 cell
      */
@@ -286,11 +311,11 @@ export default {
   data() {
     return {
       sheetMounted: false,
-      phase: '',
-      leaveTimer: null,
-      enterTimer: null,
-      draftIndexes: [0],
-      draftColumns: [],
+      phase: '' as '' | 'enter' | 'open' | 'leave',
+      leaveTimer: null as ReturnType<typeof setTimeout> | null,
+      enterTimer: null as ReturnType<typeof setTimeout> | null,
+      draftIndexes: [0] as number[],
+      draftColumns: [] as DataColumnItem[][],
       colEpoch: 0,
       safeBottom: 0,
       dragStartY: 0,
@@ -311,7 +336,8 @@ export default {
     resolvedVariant() {
       const v = this.variant
       if (v === 'field' || v === 'cell') return v
-      return this.lingyunFormItem ? 'cell' : 'field'
+      const formItem = this.lingyunFormItem as object | null
+      return formItem ? 'cell' : 'field'
     },
     isCell() {
       return this.resolvedVariant === 'cell'
@@ -370,7 +396,7 @@ export default {
       return { zIndex: Number(this.zIndex) || 1200 }
     },
     panelStyle() {
-      const style = {
+      const style: Record<string, string> = {
         left: `${INSET_MEDIUM}px`,
         right: `${INSET_MEDIUM}px`,
         borderTopLeftRadius: `${RADIUS}px`,
@@ -416,7 +442,7 @@ export default {
     this.unlockPageScroll()
   },
   methods: {
-    colKey(colIndex) {
+    colKey(colIndex: number) {
       return `c-${this.colEpoch}-${colIndex}`
     },
     clearTimers() {
@@ -457,7 +483,7 @@ export default {
       }
       return { values, texts, path }
     },
-    applyDraftFromValues(selectedValues) {
+    applyDraftFromValues(selectedValues: unknown[]) {
       const built = buildCascade(this.localdata, selectedValues, this.map)
       this.draftColumns = built.columns
       this.draftIndexes = built.indexes.length ? built.indexes : [0]
@@ -495,7 +521,7 @@ export default {
         }
       })
     },
-    closeSheet(after) {
+    closeSheet(after?: () => void) {
       this.clearTimers()
       if (!this.sheetMounted) {
         this.unlockPageScroll()
@@ -517,14 +543,14 @@ export default {
       )
     },
     onPanelTouchMove() {},
-    onChromeTouchStart(e) {
+    onChromeTouchStart(e: TouchEvent) {
       const t = e.touches && e.touches[0]
       if (!t) return
       this.dragStartY = t.clientY
       this.dragDy = 0
       this.dragging = true
     },
-    onChromeTouchMove(e) {
+    onChromeTouchMove(e: TouchEvent) {
       if (!this.dragging) return
       const t = e.touches && e.touches[0]
       if (!t) return
@@ -538,7 +564,7 @@ export default {
       this.dragDy = 0
       if (dy >= DISMISS_DY) this.onCancel()
     },
-    onPickChange(e) {
+    onPickChange(e: DataPickerChangeEvent) {
       const raw = (e && e.detail && e.detail.value) || []
       const nextIndexes = raw.map((n) => Number(n) || 0)
       // 找出变化的最左列，其后列按新节点重算
@@ -578,7 +604,7 @@ export default {
     },
     lockPageScroll() {
       try {
-        const lockApi = this.appPageScrollLock
+        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
         if (lockApi && typeof lockApi.lock === 'function' && !this._appScrollLocked) {
           lockApi.lock()
           this._appScrollLocked = true
@@ -602,7 +628,7 @@ export default {
     },
     unlockPageScroll() {
       try {
-        const lockApi = this.appPageScrollLock
+        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
         if (this._appScrollLocked && lockApi && typeof lockApi.unlock === 'function') {
           lockApi.unlock()
         }
@@ -622,7 +648,7 @@ export default {
       // #endif
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

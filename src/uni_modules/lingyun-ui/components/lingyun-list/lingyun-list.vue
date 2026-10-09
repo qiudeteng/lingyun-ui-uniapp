@@ -30,7 +30,9 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
+
 /**
  * lingyun-list
  * @description 对齐 Apple iOS 27 UI Kit Lists · Grouped（Sketch）+ HIG。内容层标准材质，禁止每行独立玻璃。
@@ -45,7 +47,7 @@
  * @property {Boolean} inset 左右 16pt inset（默认 true）
  * @event {Function} action 点击 headerAction
  */
-export default {
+export default defineComponent({
   name: 'LingyunList',
   emits: ['action'],
   /**
@@ -75,20 +77,20 @@ export default {
     },
   },
   created() {
-    this.firstChildAppend = false
+    ;(this as unknown as { firstChildAppend: boolean }).firstChildAppend = false
   },
   computed: {
-    showHeader() {
+    showHeader(): boolean {
       return !!(this.header || this.$slots.header)
     },
-    showHeaderAction() {
+    showHeaderAction(): boolean {
       return !!(this.headerAction || this.$slots['header-action'])
     },
-    showFooter() {
+    showFooter(): boolean {
       return !!(this.footer || this.$slots.footer)
     },
-    resolvedHeaderType() {
-      const map = {
+    resolvedHeaderType(): string {
+      const map: Record<string, string> = {
         extraProminent: 'extra-prominent',
         'extra-prominent': 'extra-prominent',
         prominent: 'prominent',
@@ -96,7 +98,7 @@ export default {
       }
       return map[this.headerType] || 'nested'
     },
-    rootClass() {
+    rootClass(): string {
       return [
         this.inset ? 'lingyun-list--inset' : '',
         this.showHeader ? `lingyun-list--header-${this.resolvedHeaderType}` : '',
@@ -104,7 +106,7 @@ export default {
         .filter(Boolean)
         .join(' ')
     },
-    headerClass() {
+    headerClass(): string {
       return `lingyun-list__header--${this.resolvedHeaderType}`
     },
   },
@@ -113,7 +115,7 @@ export default {
       this.$emit('action')
     },
   },
-}
+})
 </script>
 
 <style lang="scss" scoped>

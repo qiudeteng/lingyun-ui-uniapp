@@ -4,12 +4,14 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
 /**
  * lingyun-radio-group
  * @see design/CHECKS.md
  */
-export default {
+export default defineComponent({
   name: 'LingyunRadioGroup',
   emits: ['update:modelValue', 'update:value', 'change'],
   options: {
@@ -17,8 +19,8 @@ export default {
     styleIsolation: 'shared',
   },
   props: {
-    modelValue: { type: [String, Number], default: undefined },
-    value: { type: [String, Number], default: undefined },
+    modelValue: { type: [String, Number] as PropType<string | number | undefined>, default: undefined },
+    value: { type: [String, Number] as PropType<string | number | undefined>, default: undefined },
   },
   provide() {
     return {
@@ -32,13 +34,13 @@ export default {
     },
   },
   methods: {
-    select(next) {
+    select(next: string | number) {
       this.$emit('update:modelValue', next)
       this.$emit('update:value', next)
       this.$emit('change', next)
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

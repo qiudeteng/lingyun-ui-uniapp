@@ -36,14 +36,16 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
 /**
  * lingyun-image
  * shape=显示形式 · size/width/height=尺寸 · radius=圆角幅度（仅 rounded）
  * @see design/IMAGES.md
  */
 
-const MODE_ALIAS = {
+const MODE_ALIAS: Record<string, string> = {
   cover: 'aspectFill',
   contain: 'aspectFit',
   fill: 'scaleToFill',
@@ -64,10 +66,12 @@ const VALID_MODES = [
   'top right',
   'bottom left',
   'bottom right',
-]
+] as const
+
+type ImageMode = (typeof VALID_MODES)[number]
 
 /** 尺寸档：控制显示宽高（px），不是圆角 */
-const SIZE_PRESET = {
+const SIZE_PRESET: Record<string, number> = {
   xs: 32,
   sm: 48,
   md: 72,
@@ -76,7 +80,7 @@ const SIZE_PRESET = {
 }
 
 /** 圆角幅度（仅 shape=rounded） */
-const RADIUS_PRESET = {
+const RADIUS_PRESET: Record<string, number> = {
   none: 0,
   sm: 4,
   md: 8,
@@ -84,7 +88,7 @@ const RADIUS_PRESET = {
   xl: 16,
 }
 
-function toCssSize(v, fallback) {
+function toCssSize(v: string | number | null | undefined, fallback: string): string {
   if (v === undefined || v === null || v === '') return fallback
   if (typeof v === 'number' && Number.isFinite(v)) return `${v}px`
   const s = String(v).trim()
@@ -93,26 +97,26 @@ function toCssSize(v, fallback) {
   return s
 }
 
-function hasExplicitSize(v) {
+function hasExplicitSize(v: string | number | null | undefined): boolean {
   return v !== undefined && v !== null && v !== ''
 }
 
-export default {
+export default defineComponent({
   name: 'LingyunImage',
   emits: ['load', 'error', 'click'],
   props: {
     src: { type: String, default: '' },
     mode: { type: String, default: 'aspectFill' },
     lazy: { type: Boolean, default: true },
-    lazyLoad: { type: Boolean, default: undefined },
+    lazyLoad: { type: Boolean as PropType<boolean | undefined>, default: undefined },
     /**
      * 显示尺寸档（控制宽高，非圆角）
      * xs=32 / sm=48 / md=72 / lg=96 / xl=120；也可传数字 px
      * 若同时传 width/height，以 width/height 为准
      */
-    size: { type: [String, Number], default: '' },
-    width: { type: [String, Number], default: '' },
-    height: { type: [String, Number], default: '' },
+    size: { type: [String, Number] as PropType<string | number>, default: '' },
+    width: { type: [String, Number] as PropType<string | number>, default: '' },
+    height: { type: [String, Number] as PropType<string | number>, default: '' },
     /**
      * 显示形式：square 直角 · rounded 圆角 · circle 圆形
      */
@@ -120,14 +124,14 @@ export default {
     /** @deprecated 请用 shape="circle" */
     circle: { type: Boolean, default: false },
     /** 圆角幅度，仅 shape=rounded 生效；none/sm/md/lg/xl 或数字 px */
-    radius: { type: [String, Number], default: 'md' },
+    radius: { type: [String, Number] as PropType<string | number>, default: 'md' },
     errorSrc: { type: String, default: '' },
     errorText: { type: String, default: '加载失败' },
     showErrorPlaceholder: { type: Boolean, default: true },
     showLoading: { type: Boolean, default: true },
     fade: { type: Boolean, default: true },
     preview: { type: Boolean, default: false },
-    previewUrls: { type: Array, default: () => [] },
+    previewUrls: { type: Array as PropType<string[]>, default: () => [] as string[] },
   },
   data() {
     return {
@@ -151,10 +155,11 @@ export default {
     isSquare() {
       return this.resolvedShape === 'square'
     },
-    resolvedMode() {
+    resolvedMode(): ImageMode {
       const raw = (this.mode || 'aspectFill').trim()
       const mapped = MODE_ALIAS[raw] || raw
-      return VALID_MODES.indexOf(mapped) >= 0 ? mapped : 'aspectFill'
+      const modes: readonly string[] = VALID_MODES
+      return modes.indexOf(mapped) >= 0 ? (mapped as ImageMode) : 'aspectFill'
     },
     resolvedLazy() {
       if (this.lazyLoad !== undefined && this.lazyLoad !== null) return !!this.lazyLoad
@@ -165,7 +170,10 @@ export default {
       if (!hasExplicitSize(s)) return null
       if (typeof s === 'number' && Number.isFinite(s)) return Math.max(0, s)
       const key = String(s).trim().toLowerCase()
-      if (Object.prototype.hasOwnProperty.call(SIZE_PRESET, key)) return SIZE_PRESET[key]
+      if (Object.prototype.hasOwnProperty.call(SIZE_PRESET, key)) {
+        const preset = SIZE_PRESET[key]
+        if (preset != null) return preset
+      }
       const n = Number(s)
       if (Number.isFinite(n)) return Math.max(0, n)
       return null
@@ -175,7 +183,10 @@ export default {
       const r = this.radius
       if (typeof r === 'number' && Number.isFinite(r)) return Math.max(0, r)
       const key = String(r || 'md').trim().toLowerCase()
-      if (Object.prototype.hasOwnProperty.call(RADIUS_PRESET, key)) return RADIUS_PRESET[key]
+      if (Object.prototype.hasOwnProperty.call(RADIUS_PRESET, key)) {
+        const preset = RADIUS_PRESET[key]
+        if (preset != null) return preset
+      }
       const n = Number(r)
       if (Number.isFinite(n)) return Math.max(0, n)
       return RADIUS_PRESET.md
@@ -219,8 +230,8 @@ export default {
           : '',
       ]
     },
-    rootStyle() {
-      const style = {
+    rootStyle(): Record<string, string> {
+      const style: Record<string, string> = {
         width: this.boxWidth,
         height: this.boxHeight,
       }
@@ -245,12 +256,12 @@ export default {
       this.failed = false
       this.useErrorSrc = false
     },
-    onLoad(e) {
+    onLoad(e: { detail?: unknown }) {
       this.loaded = true
       this.failed = false
       this.$emit('load', e)
     },
-    onError(e) {
+    onError(e: { detail?: unknown }) {
       if (!this.useErrorSrc && this.errorSrc) {
         this.useErrorSrc = true
         this.loaded = false
@@ -261,23 +272,23 @@ export default {
       this.loaded = false
       this.$emit('error', e)
     },
-    onClick(e) {
+    onClick(e: TouchEvent) {
       this.$emit('click', e)
       if (!this.preview) return
       const current = this.displaySrc
       if (!current || this.failed) return
       const urls =
         Array.isArray(this.previewUrls) && this.previewUrls.length
-          ? this.previewUrls.filter(Boolean)
+          ? this.previewUrls.filter((url) => Boolean(url))
           : [current]
       try {
         uni.previewImage({ urls, current })
-      } catch (err) {
+      } catch {
         /* ignore */
       }
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

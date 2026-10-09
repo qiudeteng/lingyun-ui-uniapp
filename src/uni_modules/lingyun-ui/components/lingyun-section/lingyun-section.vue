@@ -57,7 +57,9 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
+
 /**
  * lingyun-section
  * @description Demo / 业务分组卡片：对齐 Buttons Demo 的玻璃区块，API 参考 uni-card
@@ -78,7 +80,7 @@
  * @property {Boolean} isLast / isShadow / border / glass
  * @event click 点击分区，payload 为 section|cover|title|extra|content|actions
  */
-export default {
+export default defineComponent({
   name: 'LingyunSection',
   emits: ['click'],
   props: {
@@ -208,11 +210,11 @@ export default {
     },
   },
   methods: {
-    onClick(type) {
+    onClick(type: string) {
       this.$emit('click', type)
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

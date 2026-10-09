@@ -13,19 +13,21 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
 /**
  * lingyun-progress
  * @see design/PROGRESS.md
  * circle 用 conic-gradient；小程序基础库支持有限时降级为边框弧近似
  */
-export default {
+export default defineComponent({
   name: 'LingyunProgress',
   props: {
     type: { type: String, default: 'line' },
-    percent: { type: [Number, String], default: 0 },
-    strokeWidth: { type: [Number, String], default: undefined },
-    size: { type: [Number, String], default: 40 },
+    percent: { type: [Number, String] as PropType<number | string>, default: 0 },
+    strokeWidth: { type: [Number, String] as PropType<number | string | undefined>, default: undefined },
+    size: { type: [Number, String] as PropType<number | string>, default: 40 },
     showInfo: { type: Boolean, default: false },
     activeColor: { type: String, default: '' },
     backgroundColor: { type: String, default: '' },
@@ -89,7 +91,7 @@ export default {
       }
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

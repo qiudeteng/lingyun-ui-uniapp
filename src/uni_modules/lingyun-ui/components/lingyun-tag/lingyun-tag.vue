@@ -4,12 +4,14 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
+
 /**
  * lingyun-tag
  * @see design/TAGS.md
  */
-export default {
+export default defineComponent({
   name: 'LingyunTag',
   emits: ['click'],
   props: {
@@ -25,11 +27,11 @@ export default {
     },
   },
   methods: {
-    onClick(e) {
+    onClick(e: Event) {
       this.$emit('click', e)
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

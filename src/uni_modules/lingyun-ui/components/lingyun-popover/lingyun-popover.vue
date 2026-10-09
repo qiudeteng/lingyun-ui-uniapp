@@ -51,7 +51,8 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 
 /**
@@ -71,33 +72,41 @@ const PANEL_MAX_W = 280
 const QUERY_TIMEOUT_MS = 200
 const EST_PANEL_H = 52
 
-export default {
+type PopoverPhase = '' | 'enter' | 'open' | 'leave'
+type AnchorBox = {
+  top?: number
+  left?: number
+  width?: number
+  height?: number
+}
+
+export default defineComponent({
   name: 'LingyunPopover',
   emits: ['update:show', 'update:modelValue', 'close'],
   props: {
-    show: { type: Boolean, default: undefined },
-    modelValue: { type: Boolean, default: undefined },
+    show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+    modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
     /** top | bottom | left | right；空间不够会翻到对侧 */
     placement: { type: String, default: 'bottom' },
     /** 箭头；Sketch Popover 每档都有 Arrow */
     showArrow: { type: Boolean, default: true },
     /** 面板宽（px）。0 表示跟触发器，并限制在 160–280 */
-    width: { type: [Number, String], default: 0 },
+    width: { type: [Number, String] as PropType<number | string>, default: 0 },
     /** auto 指向触发器中心；leading / middle / trailing 固定在边上 */
     arrowAlign: { type: String, default: 'auto' },
     maskClosable: { type: Boolean, default: true },
-    zIndex: { type: [Number, String], default: 1100 },
+    zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
     /** menu：Sketch Menus 面板（圆角 32、内边距 10），给 lingyun-menu 用 */
     variant: { type: String, default: '' },
   },
   data() {
     return {
       mounted: false,
-      phase: '',
+      phase: '' as PopoverPhase,
       resolvedPlace: 'bottom',
       noTrans: false,
-      leaveTimer: null,
-      enterTimer: null,
+      leaveTimer: null as ReturnType<typeof setTimeout> | null,
+      enterTimer: null as ReturnType<typeof setTimeout> | null,
       panelTop: 0,
       panelLeft: 16,
       panelWidth: 200,
@@ -167,7 +176,7 @@ export default {
   watch: {
     visible: {
       immediate: true,
-      handler(val) {
+      handler(val: boolean) {
         if (val) this.openAnim()
         else this.closeAnim()
       },
@@ -187,7 +196,7 @@ export default {
         this.enterTimer = null
       }
     },
-    setVisible(val) {
+    setVisible(val: boolean) {
       this.$emit('update:show', val)
       this.$emit('update:modelValue', val)
       if (!val) this.$emit('close')
@@ -199,10 +208,10 @@ export default {
       if (!this.maskClosable) return
       this.setVisible(false)
     },
-    queryTrigger() {
+    queryTrigger(): Promise<{ rect: AnchorBox | null; viewport: AnchorBox | null }> {
       return new Promise((resolve) => {
         let settled = false
-        const finish = (rect, viewport) => {
+        const finish = (rect: AnchorBox | null, viewport: AnchorBox | null) => {
           if (settled) return
           settled = true
           resolve({ rect, viewport })
@@ -215,7 +224,7 @@ export default {
           q.exec((res) => {
             clearTimeout(timer)
             const list = Array.isArray(res) ? res : []
-            finish(list[0] || null, list[1] || null)
+            finish((list[0] || null) as AnchorBox | null, (list[1] || null) as AnchorBox | null)
           })
         } catch {
           clearTimeout(timer)
@@ -223,13 +232,13 @@ export default {
         }
       })
     },
-    applyAnchor(trigger, panelH, viewport) {
+    applyAnchor(trigger: AnchorBox | null, panelH: number, viewport: AnchorBox | null) {
       const vw = (viewport && viewport.width) || 375
       const vh = (viewport && viewport.height) || 667
       const height = panelH > 0 ? panelH : EST_PANEL_H
       const along = this.showArrow ? ARROW_H + TIP_GAP : GAP
 
-      if (!trigger || !(trigger.width > 0) || trigger.top == null) {
+      if (!trigger || typeof trigger.width !== 'number' || !(trigger.width > 0) || trigger.top == null) {
         this.resolvedPlace = 'bottom'
         this.panelTop = Math.round(vh * 0.28)
         this.panelLeft = 16
@@ -238,23 +247,28 @@ export default {
         return
       }
 
-      const width = this.resolvePanelWidth(trigger ? trigger.width : 0, vw)
-      const allowed = ['top', 'bottom', 'left', 'right']
+      const anchorLeft = trigger.left ?? 0
+      const anchorTop = trigger.top
+      const anchorWidth = trigger.width
+      const anchorHeight = trigger.height ?? 0
+
+      const width = this.resolvePanelWidth(anchorWidth, vw)
+      const allowed: string[] = ['top', 'bottom', 'left', 'right']
       let place = allowed.indexOf(this.placement) >= 0 ? this.placement : 'bottom'
 
       if (place === 'left' || place === 'right') {
-        const roomRight = vw - (trigger.left + trigger.width) - along - width
-        const roomLeft = trigger.left - along - width
+        const roomRight = vw - (anchorLeft + anchorWidth) - along - width
+        const roomLeft = anchorLeft - along - width
         if (place === 'right' && roomRight < 12 && roomLeft >= 12) place = 'left'
         if (place === 'left' && roomLeft < 12 && roomRight >= 12) place = 'right'
 
         let left =
           place === 'right'
-            ? trigger.left + trigger.width + along
-            : trigger.left - width - along
+            ? anchorLeft + anchorWidth + along
+            : anchorLeft - width - along
         left = Math.max(12, Math.min(left, vw - width - 12))
 
-        let top = trigger.top + trigger.height / 2 - height / 2
+        let top = anchorTop + anchorHeight / 2 - height / 2
         top = Math.max(12, Math.min(top, vh - height - 12))
 
         this.resolvedPlace = place
@@ -262,17 +276,17 @@ export default {
         this.panelLeft = Math.round(left)
         this.panelWidth = Math.round(width)
         this.arrowOffset = this.resolveArrowOffset(
-          trigger.top + trigger.height / 2 - top,
+          anchorTop + anchorHeight / 2 - top,
           height,
         )
         return
       }
 
-      let left = trigger.left + trigger.width / 2 - width / 2
+      let left = anchorLeft + anchorWidth / 2 - width / 2
       left = Math.max(12, Math.min(left, vw - width - 12))
 
-      const below = trigger.top + trigger.height + along
-      const above = trigger.top - along - height
+      const below = anchorTop + anchorHeight + along
+      const above = anchorTop - along - height
       if (place === 'bottom' && below + height > vh - 12 && above >= 12) place = 'top'
       if (place === 'top' && above < 12 && below + height <= vh - 12) place = 'bottom'
 
@@ -284,18 +298,18 @@ export default {
       this.panelLeft = Math.round(left)
       this.panelWidth = Math.round(width)
       this.arrowOffset = this.resolveArrowOffset(
-        trigger.left + trigger.width / 2 - left,
+        anchorLeft + anchorWidth / 2 - left,
         width,
       )
     },
-    resolvePanelWidth(triggerWidth, vw) {
+    resolvePanelWidth(triggerWidth: number, vw: number): number {
       const raw = Number(this.width)
       const cap = Math.max(PANEL_MIN_W, vw - 24)
       if (raw > 0) return Math.round(Math.min(Math.max(raw, 120), cap))
       const basis = Math.max(Number(triggerWidth) || 0, PANEL_MIN_W)
       return Math.round(Math.min(PANEL_MAX_W, Math.max(PANEL_MIN_W, Math.min(basis, cap))))
     },
-    resolveArrowOffset(anchorCenter, span) {
+    resolveArrowOffset(anchorCenter: number, span: number): number {
       const align = String(this.arrowAlign || 'auto').toLowerCase()
       let center = anchorCenter
       if (align === 'leading' || align === 'start') center = ARROW_INSET
@@ -339,7 +353,7 @@ export default {
       }, LEAVE_MS)
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

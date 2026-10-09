@@ -44,7 +44,26 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
+type LingyunGridLike = {
+  column?: number | string
+  square?: boolean
+  showBorder?: boolean
+  highlight?: boolean
+  childList?: unknown[]
+  epoch?: number
+  borderColor?: string
+  register?: (child: unknown) => void
+  unregister?: (child: unknown) => void
+  change?: (event: { detail: { index: number } }) => void
+}
+
+function asGrid(grid: unknown): LingyunGridLike | null {
+  return (grid as LingyunGridLike | null | undefined) || null
+}
+
 /**
  * lingyun-grid-item
  * @description 宫格子项。index 会随 lingyun-grid 的 change 回传。
@@ -55,7 +74,7 @@
  * @property {String} color 图标色，默认系统蓝
  * @property {String|Number|Boolean} info 角标；true 为圆点
  */
-export default {
+export default defineComponent({
   name: 'LingyunGridItem',
   inject: ['grid'],
   props: {
@@ -63,53 +82,63 @@ export default {
     icon: { type: String, default: '' },
     text: { type: String, default: '' },
     color: { type: String, default: '' },
-    info: { type: [String, Number, Boolean], default: '' },
+    info: {
+      type: [String, Number, Boolean] as PropType<string | number | boolean>,
+      default: '',
+    },
   },
   computed: {
-    column() {
-      const count = Number(this.grid && this.grid.column) || 3
+    column(): number {
+      const grid = asGrid(this.grid)
+      const count = Number(grid && grid.column) || 3
       return count > 0 ? count : 3
     },
-    square() {
-      return !this.grid || this.grid.square !== false
+    square(): boolean {
+      const grid = asGrid(this.grid)
+      return !grid || grid.square !== false
     },
-    showBorder() {
-      return !!(this.grid && this.grid.showBorder)
+    showBorder(): boolean {
+      const grid = asGrid(this.grid)
+      return !!(grid && grid.showBorder)
     },
-    highlight() {
-      return !this.grid || this.grid.highlight !== false
+    highlight(): boolean {
+      const grid = asGrid(this.grid)
+      return !grid || grid.highlight !== false
     },
-    order() {
-      const list = (this.grid && this.grid.childList) || []
-      const epoch = this.grid ? this.grid.epoch : 0
+    order(): number {
+      const grid = asGrid(this.grid)
+      const list: unknown[] = (grid && grid.childList) || []
+      const epoch = grid ? grid.epoch : 0
       void epoch
       const found = list.indexOf(this)
       return found >= 0 ? found : 0
     },
-    count() {
-      const list = (this.grid && this.grid.childList) || []
-      const epoch = this.grid ? this.grid.epoch : 0
+    count(): number {
+      const grid = asGrid(this.grid)
+      const list: unknown[] = (grid && grid.childList) || []
+      const epoch = grid ? grid.epoch : 0
       void epoch
       return list.length
     },
     cellStyle() {
       return { width: `${100 / this.column}%` }
     },
-    iconColor() {
+    iconColor(): string {
       return this.color || 'var(--lingyun-system-blue, #0088ff)'
     },
-    badgeRaw() {
+    badgeRaw(): string | number {
       if (this.info === true || this.info === 'dot') return 'dot'
-      if (this.info === 0 || this.info) return this.info
+      if (typeof this.info === 'number') return this.info
+      if (typeof this.info === 'string' && this.info) return this.info
       return ''
     },
-    hasBadge() {
+    hasBadge(): boolean {
       return this.badgeRaw !== ''
     },
-    badgeDot() {
+    badgeDot(): boolean {
       return this.badgeRaw === 'dot'
     },
-    badgeText() {
+    badgeText(): string | number {
       return this.badgeDot ? '' : this.badgeRaw
     },
     boxClass() {
@@ -129,8 +158,9 @@ export default {
         .filter(Boolean)
         .join(' ')
     },
-    borderStyle() {
-      const color = this.grid && this.grid.borderColor
+    borderStyle(): Record<string, string> {
+      const grid = asGrid(this.grid)
+      const color = grid && grid.borderColor
       if (!this.showBorder || !color) return {}
       return {
         borderRightColor: color,
@@ -139,20 +169,23 @@ export default {
     },
   },
   created() {
-    if (this.grid && typeof this.grid.register === 'function') this.grid.register(this)
+    const grid = asGrid(this.grid)
+    if (grid && typeof grid.register === 'function') grid.register(this)
   },
   beforeUnmount() {
-    if (this.grid && typeof this.grid.unregister === 'function') this.grid.unregister(this)
+    const grid = asGrid(this.grid)
+    if (grid && typeof grid.unregister === 'function') grid.unregister(this)
   },
   methods: {
     onClick() {
-      if (!this.grid || typeof this.grid.change !== 'function') return
-      this.grid.change({
+      const grid = asGrid(this.grid)
+      if (!grid || typeof grid.change !== 'function') return
+      grid.change({
         detail: { index: this.index },
       })
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

@@ -98,8 +98,22 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+
+type SwipeSurface = {
+  hideDivider?: boolean
+  hideDividerFromPrev?: boolean
+}
+
+type ListHost = {
+  $options?: { name?: string }
+  $parent?: ListHost | null
+  firstChildAppend?: boolean
+}
+
+type SwitchChangeEvent = { detail?: { value?: unknown } }
 
 /**
  * lingyun-list-item
@@ -123,7 +137,7 @@ import { useThemeStore } from '@/stores/theme'
  * @property {Number} sliderValue / sliderMin / sliderMax / sliderStep
  * @event {Function} click / switchChange / stepperChange / sliderChange
  */
-export default {
+export default defineComponent({
   name: 'LingyunListItem',
   emits: ['click', 'switchChange', 'update:switchChecked', 'stepperChange', 'update:stepperValue', 'sliderChange', 'update:sliderValue'],
   inject: {
@@ -133,7 +147,7 @@ export default {
     },
     /** 滑动表面状态：hideDivider / hideDividerFromPrev 为 true 时藏顶部分割线。一对一，不挂整表 */
     lingyunSwipeSurface: {
-      default: null,
+      default: null as SwipeSurface | null,
     },
   },
   props: {
@@ -163,12 +177,13 @@ export default {
       isFirstChild: false,
       sliderDragging: false,
       innerSliderValue: 50,
+      listBound: false,
     }
   },
   watch: {
     sliderValue: {
       immediate: true,
-      handler(v) {
+      handler(v: number) {
         if (this.sliderDragging) return
         const next = Number(v)
         if (!Number.isFinite(next)) return
@@ -190,8 +205,8 @@ export default {
   },
   computed: {
     /** 本行在滑 / 上一行在滑（借走本行顶线当对方底边） */
-    dividerHiddenBySwipe() {
-      const s = this.lingyunSwipeSurface
+    dividerHiddenBySwipe(): boolean {
+      const s = this.lingyunSwipeSurface as SwipeSurface | null
       if (!s) return false
       return !!(s.hideDivider || s.hideDividerFromPrev)
     },
@@ -281,11 +296,11 @@ export default {
      * 沿 $parent 找到最近的 LingyunList，只登记一次首行。
      * 对齐 uni-list getForm：不 inject 列表实例，父级数据变化不会带动每一行更新。
      */
-    getList() {
-      let parent = this.$parent
+    getList(): ListHost | null {
+      let parent = this.$parent as ListHost | null
       while (parent) {
         if (parent.$options && parent.$options.name === 'LingyunList') return parent
-        parent = parent.$parent
+        parent = parent.$parent || null
       }
       return null
     },
@@ -302,12 +317,12 @@ export default {
       if (!this.isInteractive) return
       this.$emit('click')
     },
-    onSwitchChange(e) {
+    onSwitchChange(e: SwitchChangeEvent) {
       const checked = !!(e && e.detail && e.detail.value)
       this.$emit('update:switchChecked', checked)
       this.$emit('switchChange', e.detail || { value: checked })
     },
-    onStep(dir) {
+    onStep(dir: number) {
       if (this.disabled) return
       const next = this.stepperValue + dir * this.stepperStep
       const clamped = Math.min(this.stepperMax, Math.max(this.stepperMin, next))
@@ -315,13 +330,13 @@ export default {
       this.$emit('update:stepperValue', clamped)
       this.$emit('stepperChange', clamped)
     },
-    onSliderChanging(value) {
+    onSliderChanging(value: unknown) {
       const next = Number(value)
       if (!Number.isFinite(next)) return
       this.sliderDragging = true
       this.$emit('update:sliderValue', next)
     },
-    onSliderChange(value) {
+    onSliderChange(value: unknown) {
       const next = Number(value)
       if (!Number.isFinite(next)) return
       this.sliderDragging = false
@@ -330,7 +345,7 @@ export default {
       this.$emit('sliderChange', next)
     },
   },
-}
+})
 </script>
 
 <style lang="scss" scoped>

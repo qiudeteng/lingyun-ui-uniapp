@@ -21,13 +21,15 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
 /**
  * lingyun-checkbox
  * 自绘框 + lingyun-icon 勾（避免 mp 原生 checkbox 默认绿 / color 失效）
  * @see design/CHECKS.md
  */
-export default {
+export default defineComponent({
   name: 'LingyunCheckbox',
   emits: ['update:modelValue', 'update:checked', 'change'],
   options: {
@@ -35,8 +37,8 @@ export default {
     styleIsolation: 'shared',
   },
   props: {
-    modelValue: { type: Boolean, default: undefined },
-    checked: { type: Boolean, default: undefined },
+    modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+    checked: { type: Boolean as PropType<boolean | undefined>, default: undefined },
     label: { type: String, default: '' },
     disabled: { type: Boolean, default: false },
     color: { type: String, default: '' },
@@ -69,7 +71,7 @@ export default {
       this.$emit('change', next)
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

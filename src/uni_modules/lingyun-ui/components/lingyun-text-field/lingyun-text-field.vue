@@ -117,7 +117,8 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 
 /**
@@ -135,7 +136,7 @@ const RING_GUARD_MS = 900
 /** 起手位移超过此值视为滚动而非点击 */
 const RING_MOVE_TOLERANCE_PX = 8
 
-export default {
+export default defineComponent({
   name: 'LingyunTextField',
   emits: [
     'update:modelValue',
@@ -150,11 +151,17 @@ export default {
     'keyboardheightchange',
   ],
   inject: {
-    lingyunFormItem: { default: null },
+    lingyunFormItem: { default: null as { isStackLayout?: boolean } | null },
   },
   props: {
-    modelValue: { type: [String, Number], default: undefined },
-    value: { type: [String, Number], default: undefined },
+    modelValue: {
+      type: [String, Number] as PropType<string | number | undefined>,
+      default: undefined,
+    },
+    value: {
+      type: [String, Number] as PropType<string | number | undefined>,
+      default: undefined,
+    },
     label: { type: String, default: '' },
     placeholder: { type: String, default: ' ' },
     hint: { type: String, default: '' },
@@ -167,8 +174,8 @@ export default {
     passwordIcon: { type: Boolean, default: true },
     multiline: { type: Boolean, default: false },
     autoHeight: { type: Boolean, default: false },
-    rows: { type: [Number, String], default: 3 },
-    maxlength: { type: [Number, String], default: -1 },
+    rows: { type: [Number, String] as PropType<number | string>, default: 3 },
+    maxlength: { type: [Number, String] as PropType<number | string>, default: -1 },
     type: { type: String, default: 'text' },
     confirmType: { type: String, default: 'done' },
     focus: { type: Boolean, default: false },
@@ -181,12 +188,12 @@ export default {
     cursorSpacing: { type: Number, default: -1 },
     adjustPosition: { type: Boolean, default: true },
     /** 是否去除空格：false | true(both) | both/left/right/start/end/all/none */
-    trim: { type: [Boolean, String], default: false },
+    trim: { type: [Boolean, String] as PropType<boolean | string>, default: false },
   },
   data() {
     return {
       /** 本地值（对齐 easyinput.val，勿直接用 prop 做 :value） */
-      val: '',
+      val: '' as string | number,
       /** 驱动原生 :focus（对齐 easyinput.focused） */
       focused: false,
       /** 聚焦样式（对齐 easyinput.focusShow） */
@@ -194,6 +201,11 @@ export default {
       showPassword: false,
       /** 回车确认时避免 blur 再发一次 change */
       isEnter: false,
+      _ringGuardTimer: null as ReturnType<typeof setTimeout> | null,
+      /** 原生 focus 是否已到（预点亮的撤销依据） */
+      _nativeFocused: false,
+      _ringTouchX: 0,
+      _ringTouchY: 0,
     }
   },
   computed: {
@@ -213,7 +225,8 @@ export default {
       return this.resolvedVariant === 'cell'
     },
     cellStack() {
-      return !!(this.isCell && this.lingyunFormItem && this.lingyunFormItem.isStackLayout)
+      const item = this.lingyunFormItem as { isStackLayout?: boolean } | null
+      return !!(this.isCell && item && item.isStackLayout)
     },
     isMultiline() {
       return !!this.multiline || this.type === 'textarea'
@@ -345,21 +358,21 @@ export default {
     },
   },
   watch: {
-    value(newVal) {
+    value(newVal: string | number | undefined) {
       if (newVal === null || newVal === undefined) {
         this.val = ''
         return
       }
       this.val = newVal
     },
-    modelValue(newVal) {
+    modelValue(newVal: string | number | undefined) {
       if (newVal === null || newVal === undefined) {
         this.val = ''
         return
       }
       this.val = newVal
     },
-    focus(newVal) {
+    focus(newVal: boolean) {
       this.$nextTick(() => {
         this.focused = !!newVal
         this.focusShow = !!newVal
@@ -368,9 +381,7 @@ export default {
   },
   created() {
     this.initVal()
-    /** @type {ReturnType<typeof setTimeout> | null} */
     this._ringGuardTimer = null
-    /** 原生 focus 是否已到（预点亮的撤销依据） */
     this._nativeFocused = false
     this._ringTouchX = 0
     this._ringTouchY = 0
@@ -386,16 +397,18 @@ export default {
   },
   methods: {
     initVal() {
-      if (this.value || this.value === 0) {
-        this.val = this.value
-      } else if (this.modelValue || this.modelValue === 0 || this.modelValue === '') {
-        this.val = this.modelValue
+      const current = this.value
+      const model = this.modelValue
+      if (current || current === 0) {
+        this.val = current as string | number
+      } else if (model || model === 0 || model === '') {
+        this.val = model as string | number
       } else {
         this.val = ''
       }
     },
-    onInput(event) {
-      let value = event && event.detail ? event.detail.value : ''
+    onInput(event: { detail?: { value?: string } }) {
+      let value = (event && event.detail ? event.detail.value : '') as string
       if (this.trim) {
         if (typeof this.trim === 'boolean' && this.trim) {
           value = this.trimStr(value)
@@ -412,7 +425,7 @@ export default {
      * 焦点环不等原生 focus：真机上系统要等键盘唤起才回调，视觉会晚一大拍。
      * 按下即点亮，若最终没聚焦（滑动 / 点击被忽略）再撤销。
      */
-    onControlTouchStart(event) {
+    onControlTouchStart(event: TouchEvent) {
       if (this.disabled || this.readonly || this.focusShow) return
       const touch = this.firstTouch(event)
       this._ringTouchX = Number(touch && touch.pageX) || 0
@@ -425,7 +438,7 @@ export default {
       }, RING_GUARD_MS)
     },
     /** 起手就滑：这是滚动不是点击，撤销预点亮 */
-    onControlTouchMove(event) {
+    onControlTouchMove(event: TouchEvent) {
       if (this._nativeFocused || this._ringGuardTimer == null) return
       const touch = this.firstTouch(event)
       if (!touch) return
@@ -435,8 +448,8 @@ export default {
       this.clearRingGuard()
       this.focusShow = false
     },
-    firstTouch(event) {
-      const list = (event && (event.touches || event.changedTouches)) || []
+    firstTouch(event: TouchEvent): Touch | null {
+      const list: ArrayLike<Touch> = (event && (event.touches || event.changedTouches)) || []
       return list[0] || null
     },
     clearRingGuard() {
@@ -445,13 +458,13 @@ export default {
         this._ringGuardTimer = null
       }
     },
-    onNativeFocus(event) {
+    onNativeFocus(event: { detail?: unknown }) {
       this._nativeFocused = true
       this.clearRingGuard()
       this.focusShow = true
       this.$emit('focus', event)
     },
-    onNativeBlur(event) {
+    onNativeBlur(event: { detail?: unknown }) {
       this._nativeFocused = false
       this.clearRingGuard()
       this.focusShow = false
@@ -480,10 +493,10 @@ export default {
       this.showPassword = !this.showPassword
       this.$emit('eyes', this.showPassword)
     },
-    onKeyboardHeightChange(event) {
+    onKeyboardHeightChange(event: { detail?: unknown }) {
       this.$emit('keyboardheightchange', event)
     },
-    trimStr(str, pos = 'both') {
+    trimStr(str: unknown, pos: string = 'both') {
       const s = str == null ? '' : String(str)
       if (pos === 'both') return s.trim()
       if (pos === 'left' || pos === 'start') return s.replace(/^\s+/, '')
@@ -492,7 +505,7 @@ export default {
       return s
     },
   },
-}
+})
 </script>
 
 <style lang="scss">
