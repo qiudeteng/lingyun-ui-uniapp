@@ -21,7 +21,9 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
+
 /**
  * lingyun-button
  * @description 对齐 Apple iOS 27 UI Kit Buttons（Sketch）+ HIG + Liquid Glass
@@ -40,7 +42,7 @@
  * @property {Boolean} loading
  * @event {Function} click
  */
-export default {
+export default defineComponent({
   name: 'LingyunButton',
   options: {
     // 去掉宿主，父级 flex 才能居中到按钮本身（否则小程序胶囊贴在宿主左侧）
@@ -96,15 +98,15 @@ export default {
       try {
         const nodes = slot()
         return Array.isArray(nodes) && nodes.length > 0
-      } catch (e) {
+      } catch {
         return false
       }
     },
     isIconOnly() {
       return this.showIcon && !this.showLabel
     },
-    resolvedVariant() {
-      const map = {
+    resolvedVariant(): string {
+      const map: Record<string, string> = {
         borderedProminent: 'bordered-prominent',
         'bordered-prominent': 'bordered-prominent',
         filled: 'bordered-prominent',
@@ -143,12 +145,12 @@ export default {
     },
   },
   methods: {
-    onClick(e) {
+    onClick(e: TouchEvent) {
       if (this.isDisabled) return
       this.$emit('click', e)
     },
   },
-}
+})
 </script>
 
 <style lang="scss" scoped>

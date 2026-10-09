@@ -42,7 +42,28 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
+type GoodsNavOption = {
+  key?: string | number
+  icon: string
+  text?: string
+  info?: string | number | boolean | null
+  badge?: string | number | boolean | null
+}
+
+type GoodsNavButton = {
+  key?: string | number
+  text?: string | number
+}
+
+type ResolvedGoodsButton = {
+  key: string
+  text: string
+  raw: GoodsNavButton
+}
+
 /**
  * lingyun-goods-nav
  * @description 商品底栏。结构对齐 uni-goods-nav：左侧图标入口 + 右侧胶囊按钮组。
@@ -57,19 +78,19 @@
  * @event click 左侧入口 { index, content }
  * @event buttonClick 右侧按钮 { index, content }
  */
-export default {
+export default defineComponent({
   name: 'LingyunGoodsNav',
   emits: ['click', 'buttonClick'],
   props: {
     options: {
-      type: Array,
+      type: Array as PropType<GoodsNavOption[]>,
       default: () => [
         { icon: 'shop', text: '店铺' },
         { icon: 'cart', text: '购物车' },
       ],
     },
     buttonGroup: {
-      type: Array,
+      type: Array as PropType<GoodsNavButton[]>,
       default: () => [{ text: '加入购物车' }, { text: '立即购买' }],
     },
     fill: {
@@ -103,9 +124,10 @@ export default {
       if (!this.safeArea) return {}
       return { paddingBottom: `${this.safeBottom}px` }
     },
-    buttons() {
-      return (this.buttonGroup || [])
-        .filter((item) => item && item.text)
+    buttons(): ResolvedGoodsButton[] {
+      const list = Array.isArray(this.buttonGroup) ? this.buttonGroup : []
+      return list
+        .filter((item): item is GoodsNavButton & { text: string | number } => !!(item && item.text))
         .map((item, index) => ({
           key: item.key != null ? String(item.key) : `btn-${index}`,
           text: String(item.text),
@@ -123,41 +145,42 @@ export default {
           typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
         const inset = info && info.safeAreaInsets
         this.safeBottom = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
-      } catch (e) {
+      } catch {
         this.safeBottom = 0
       }
     },
-    badgeRaw(item) {
+    badgeRaw(item: GoodsNavOption | null | undefined): string | number | boolean {
       if (!item) return ''
       if (item.badge != null && item.badge !== false && item.badge !== '') return item.badge
       if (item.info != null && item.info !== false && item.info !== '' && item.info !== 0) return item.info
       return ''
     },
-    hasBadge(item) {
+    hasBadge(item: GoodsNavOption | null | undefined): boolean {
       const raw = this.badgeRaw(item)
       return raw === true || raw === 'dot' || raw === 0 || !!raw
     },
-    badgeDot(item) {
+    badgeDot(item: GoodsNavOption | null | undefined): boolean {
       const raw = this.badgeRaw(item)
       return raw === true || raw === 'dot'
     },
-    badgeText(item) {
+    badgeText(item: GoodsNavOption | null | undefined): string | number {
       if (this.badgeDot(item)) return ''
       const raw = this.badgeRaw(item)
-      return raw == null ? '' : raw
+      if (raw == null || typeof raw === 'boolean') return ''
+      return raw
     },
-    buttonClass(index) {
+    buttonClass(index: number): string {
       const last = index === this.buttons.length - 1
       return last ? 'lingyun-goods-nav__btn--prominent' : 'lingyun-goods-nav__btn--bordered'
     },
-    onOption(index, item) {
+    onOption(index: number, item: GoodsNavOption) {
       this.$emit('click', { index, content: item })
     },
-    onButton(index, item) {
+    onButton(index: number, item: ResolvedGoodsButton) {
       this.$emit('buttonClick', { index, content: item.raw })
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

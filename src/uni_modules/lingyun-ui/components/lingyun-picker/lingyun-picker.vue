@@ -978,8 +978,6 @@ import {
   LINGYUN_APP_PAGE_SCROLL_LOCK,
   type LingyunAppPageScrollLock,
 } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
-// 日格组件脚本仍是 JS，类型由运行时注册补上。
-// @ts-expect-error 无独立声明文件
 import LingyunPickerCalDay from '../lingyun-picker-cal-day/lingyun-picker-cal-day.vue'
 import { lunarDayText } from './lunar'
 import {

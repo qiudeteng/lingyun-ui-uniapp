@@ -14,15 +14,17 @@
   </view>
 </template>
 
-<script>
-export default {
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
+export default defineComponent({
   name: 'LingyunPickerCalDay',
   options: {
     virtualHost: true,
     styleIsolation: 'shared',
   },
   props: {
-    day: { type: [Number, String], required: true },
+    day: { type: [Number, String] as PropType<number | string>, required: true },
     /** 右上角小字，如「班」「休」 */
     badgeText: { type: String, default: '' },
     /** 数字下方农历 */
@@ -57,7 +59,7 @@ export default {
       }
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

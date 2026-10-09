@@ -10,12 +10,14 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
+
 /**
  * lingyun-avatar
  * @see design/AVATARS.md
  */
-export default {
+export default defineComponent({
   name: 'LingyunAvatar',
   props: {
     src: { type: String, default: '' },
@@ -40,7 +42,7 @@ export default {
       return {}
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

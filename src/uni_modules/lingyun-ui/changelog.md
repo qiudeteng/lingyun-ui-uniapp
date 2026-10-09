@@ -1,4 +1,5 @@
 ## 1.0.5（2026-10-09）
+- 凌云UI 组件脚本改为 TypeScript。`render.js`、`wx.wxs` 与内置 `calendar.js` 保持原语言。
 - 404 空态「返回首页」在微信里水平居中：行内操作区交叉轴居中，按钮开启 `virtualHost`，避免胶囊贴在组件宿主左侧。
 - `lingyun-picker` 脚本改为 TypeScript。日期解析在 `picker-date.ts`，农历文案在 `lunar.ts`。公历农历换算表仍用内置 `calendar.js`。
 - `lingyun-menu` 脚本改为 TypeScript。行数据归一化仍从 `normalizeMenuActions` 导出。

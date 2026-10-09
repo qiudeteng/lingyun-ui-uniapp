@@ -29,23 +29,26 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 
 /** Sketch Sliders/Light/No Glyphs：拇指 37×24，轨道高 6 */
 const KNOB_W = 37
+
+type TrackRect = { left: number; width: number }
 
 /**
  * lingyun-slider
  * 自绘，对齐 Apple iOS 27 UI Kit · Sliders（不用原生 slider，原生拇指/轨道对不上稿）
  * @see design/SLIDERS.md
  */
-export default {
+export default defineComponent({
   name: 'LingyunSlider',
   emits: ['update:modelValue', 'update:value', 'changing', 'change'],
   props: {
-    modelValue: { type: Number, default: undefined },
-    value: { type: Number, default: undefined },
+    modelValue: { type: Number as PropType<number | undefined>, default: undefined },
+    value: { type: Number as PropType<number | undefined>, default: undefined },
     min: { type: Number, default: 0 },
     max: { type: Number, default: 100 },
     step: { type: Number, default: 1 },
@@ -66,25 +69,29 @@ export default {
       pressed: false,
       touching: false,
       innerValue: 50,
-      trackRect: null,
-      pendingX: null,
+      trackRect: null as TrackRect | null,
+      pendingX: null as number | null,
       tickCount: 5,
+      _mouseMove: null as ((event: MouseEvent) => void) | null,
+      _mouseUp: null as (() => void) | null,
+      _measuring: false,
+      _releaseWaiting: false,
     }
   },
   computed: {
-    propValue() {
+    propValue(): number {
       if (this.modelValue !== undefined && this.modelValue !== null) return Number(this.modelValue)
       if (this.value !== undefined && this.value !== null) return Number(this.value)
       return 50
     },
-    themeClass() {
+    themeClass(): string {
       try {
         return useThemeStore().rootClass || 'theme-light'
       } catch {
         return 'theme-light'
       }
     },
-    rootClass() {
+    rootClass(): string {
       return [
         this.themeClass,
         this.flush ? 'lingyun-slider--flush' : '',
@@ -94,27 +101,27 @@ export default {
         .filter(Boolean)
         .join(' ')
     },
-    ratio() {
+    ratio(): number {
       const min = Number(this.min)
       const max = Number(this.max)
       if (!(max > min)) return 0
       const next = (Number(this.innerValue) - min) / (max - min)
       return Math.min(1, Math.max(0, next))
     },
-    trackStyle() {
+    trackStyle(): { backgroundColor?: string } {
       if (!this.backgroundColor) return {}
       return { backgroundColor: this.backgroundColor }
     },
-    fillStyle() {
+    fillStyle(): { width: string; backgroundColor?: string } {
       const ratio = this.ratio
       const pct = (ratio * 100).toFixed(4)
       // 填充画到拇指中心：18.5 + ratio * (track - 37)
       const extra = (KNOB_W / 2 - ratio * KNOB_W).toFixed(4)
-      const style = { width: `calc(${pct}% + ${extra}px)` }
+      const style: { width: string; backgroundColor?: string } = { width: `calc(${pct}% + ${extra}px)` }
       if (this.activeColor) style.backgroundColor = this.activeColor
       return style
     },
-    knobStyle() {
+    knobStyle(): { left: string } {
       const ratio = this.ratio
       const pct = (ratio * 100).toFixed(4)
       const shift = (ratio * KNOB_W).toFixed(4)
@@ -124,7 +131,7 @@ export default {
   watch: {
     propValue: {
       immediate: true,
-      handler(v) {
+      handler(v: number) {
         if (this.dragging) return
         const next = Number(v)
         if (!Number.isFinite(next)) return
@@ -135,9 +142,9 @@ export default {
     },
   },
   created() {
-    this._mouseMove = (e) => {
+    this._mouseMove = (event: MouseEvent) => {
       if (!this.dragging) return
-      this.seek(e.clientX)
+      this.seek(event.clientX)
     }
     this._mouseUp = () => this.endDrag()
   },
@@ -145,7 +152,7 @@ export default {
     this.detachMouse()
   },
   methods: {
-    quantize(raw) {
+    quantize(raw: number): number {
       const min = Number(this.min)
       const max = Number(this.max)
       const step = Number(this.step) > 0 ? Number(this.step) : 1
@@ -155,32 +162,35 @@ export default {
       const next = Number((min + steps * step).toFixed(6))
       return Math.min(max, Math.max(min, next))
     },
-    clientX(e) {
-      const touch = (e && e.touches && e.touches[0]) || (e && e.changedTouches && e.changedTouches[0])
-      if (touch && typeof touch.clientX === 'number') return touch.clientX
-      if (e && typeof e.clientX === 'number') return e.clientX
+    clientX(event: TouchEvent | MouseEvent): number | null {
+      if ('touches' in event) {
+        const touch = event.touches[0] || event.changedTouches[0]
+        if (touch && typeof touch.clientX === 'number') return touch.clientX
+      }
+      if ('clientX' in event && typeof event.clientX === 'number') return event.clientX
       return null
     },
-    measure(cb) {
+    measure(cb?: (rect: TrackRect | null) => void) {
       uni
         .createSelectorQuery()
         .in(this)
         .select('.lingyun-slider__body')
         .boundingClientRect((rect) => {
-          if (rect && rect.width) {
-            this.trackRect = { left: rect.left, width: rect.width }
+          const info = Array.isArray(rect) ? rect[0] : rect
+          if (info && info.width) {
+            this.trackRect = { left: info.left ?? 0, width: info.width }
           }
           if (cb) cb(this.trackRect)
         })
         .exec()
     },
-    beginDrag(clientX) {
+    beginDrag(clientX: number | null) {
       if (this.disabled || clientX == null) return
       this.pressed = true
       this.dragging = true
       this.seek(clientX)
     },
-    seek(clientX) {
+    seek(clientX: number | null) {
       if (clientX == null) return
       this.pendingX = clientX
       if (this.trackRect) {
@@ -198,7 +208,7 @@ export default {
         }
       })
     },
-    applyX(clientX) {
+    applyX(clientX: number | null) {
       const rect = this.trackRect
       if (!rect || clientX == null || !(rect.width > KNOB_W)) return
       const span = rect.width - KNOB_W
@@ -231,14 +241,14 @@ export default {
       this.$emit('update:value', value)
       this.$emit('change', value)
     },
-    onTouchStart(e) {
+    onTouchStart(event: TouchEvent) {
       if (this.disabled) return
       this.touching = true
-      this.beginDrag(this.clientX(e))
+      this.beginDrag(this.clientX(event))
     },
-    onTouchMove(e) {
+    onTouchMove(event: TouchEvent) {
       if (!this.dragging || this.disabled) return
-      this.seek(this.clientX(e))
+      this.seek(this.clientX(event))
     },
     onTouchEnd() {
       this.endDrag()
@@ -246,25 +256,29 @@ export default {
         this.touching = false
       }, 400)
     },
-    onMouseDown(e) {
+    onMouseDown(event: MouseEvent) {
       if (this.disabled || this.touching) return
-      this.beginDrag(this.clientX(e))
+      this.beginDrag(this.clientX(event))
       this.attachMouse()
     },
     attachMouse() {
       // #ifdef H5
-      window.addEventListener('mousemove', this._mouseMove)
-      window.addEventListener('mouseup', this._mouseUp)
+      const onMove = this._mouseMove
+      const onUp = this._mouseUp
+      if (onMove) window.addEventListener('mousemove', onMove as EventListener)
+      if (onUp) window.addEventListener('mouseup', onUp as EventListener)
       // #endif
     },
     detachMouse() {
       // #ifdef H5
-      window.removeEventListener('mousemove', this._mouseMove)
-      window.removeEventListener('mouseup', this._mouseUp)
+      const onMove = this._mouseMove
+      const onUp = this._mouseUp
+      if (onMove) window.removeEventListener('mousemove', onMove as EventListener)
+      if (onUp) window.removeEventListener('mouseup', onUp as EventListener)
       // #endif
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

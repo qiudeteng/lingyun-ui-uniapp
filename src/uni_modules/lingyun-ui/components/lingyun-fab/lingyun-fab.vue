@@ -50,8 +50,31 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+
+type FabContent = {
+  key?: string | number
+  icon?: string
+  text?: string
+  name?: string
+  iconPath?: string
+  selectedIconPath?: string
+  active?: boolean
+  disabled?: boolean
+}
+
+type FabItem = {
+  key: string
+  icon: string
+  text: string
+  iconPath: string
+  selectedIconPath: string
+  active: boolean
+  disabled: boolean
+  raw: FabContent
+}
 
 /**
  * lingyun-fab
@@ -70,20 +93,20 @@ import { useThemeStore } from '@/stores/theme'
 const BTN = 56
 const GAP = 16
 
-export default {
+export default defineComponent({
   name: 'LingyunFab',
   emits: ['fabClick', 'trigger', 'update:show'],
   props: {
     horizontal: { type: String, default: 'right' },
     vertical: { type: String, default: 'bottom' },
     direction: { type: String, default: 'vertical' },
-    content: { type: Array, default: () => [] },
+    content: { type: Array as PropType<FabContent[]>, default: () => [] as FabContent[] },
     popMenu: { type: Boolean, default: true },
     show: { type: Boolean, default: false },
     icon: { type: String, default: 'plusempty' },
     safeArea: { type: Boolean, default: true },
-    gap: { type: [Number, String], default: GAP },
-    zIndex: { type: [Number, String], default: 200 },
+    gap: { type: [Number, String] as PropType<number | string>, default: GAP },
+    zIndex: { type: [Number, String] as PropType<number | string>, default: 200 },
     closeOnSelect: { type: Boolean, default: true },
   },
   data() {
@@ -93,7 +116,7 @@ export default {
     }
   },
   computed: {
-    items() {
+    items(): FabItem[] {
       const list = Array.isArray(this.content) ? this.content : []
       return list.map((item, index) => ({
         key: item && item.key != null ? String(item.key) : `fab-${index}`,
@@ -112,7 +135,7 @@ export default {
     themeClass() {
       try {
         return useThemeStore().rootClass || 'theme-light'
-      } catch (e) {
+      } catch {
         return 'theme-light'
       }
     },
@@ -132,10 +155,10 @@ export default {
         'lingyun-fab__menu--after': horizontalMenu && this.horizontal === 'left',
       }
     },
-    anchorStyle() {
+    anchorStyle(): Record<string, string | number> {
       const gap = Math.max(0, Number(this.gap) || GAP)
       const bottomExtra = this.vertical !== 'top' && this.safeArea ? this.safeBottom : 0
-      const style = {
+      const style: Record<string, string | number> = {
         zIndex: Number(this.zIndex) || 200,
         width: `${BTN}px`,
         height: `${BTN}px`,
@@ -150,7 +173,7 @@ export default {
   watch: {
     show: {
       immediate: true,
-      handler(val) {
+      handler(val: boolean) {
         this.opened = !!val
       },
     },
@@ -165,7 +188,7 @@ export default {
           typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
         const inset = info && info.safeAreaInsets
         this.safeBottom = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
-      } catch (e) {
+      } catch {
         this.safeBottom = 0
       }
     },
@@ -175,7 +198,7 @@ export default {
       this.opened = !this.opened
       this.$emit('update:show', this.opened)
     },
-    onItem(index, item) {
+    onItem(index: number, item: FabItem) {
       if (!this.opened || item.disabled) return
       this.$emit('trigger', { index, item: item.raw })
       if (this.closeOnSelect) {
@@ -192,7 +215,7 @@ export default {
       this.$emit('update:show', false)
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

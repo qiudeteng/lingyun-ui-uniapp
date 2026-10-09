@@ -17,14 +17,15 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 
 /**
  * lingyun-skeleton
  * @see design/SKELETONS.md
  */
-export default {
+export default defineComponent({
   name: 'LingyunSkeleton',
   props: {
     rows: { type: Number, default: 3 },
@@ -44,12 +45,12 @@ export default {
     },
   },
   methods: {
-    lineStyle(n) {
+    lineStyle(n: number) {
       const widths = ['100%', '92%', '78%', '86%', '64%']
       return { width: widths[(n - 1) % widths.length] }
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

@@ -92,8 +92,8 @@
   </view>
 </template>
 
-<script>
-import { getCurrentInstance } from 'vue'
+<script lang="ts">
+import { defineComponent, getCurrentInstance } from 'vue'
 import { onResize } from '@dcloudio/uni-app'
 import {
   coerceTriFlag,
@@ -120,7 +120,7 @@ import { useThemeStore } from '@/stores/theme'
  * @property {Number} glassProgress 0~1：栏身玻璃强度（0 全透明，1 满液态玻璃）
  * 暗黑：根挂 theme-*，圆钮用浅银霜半透明（勿走 Alert 高 alpha）
  */
-export default {
+export default defineComponent({
   name: 'LingyunToolbars',
   emits: ['back', 'close', 'trailing'],
   props: {
@@ -185,12 +185,15 @@ export default {
       windowControls: false,
       largeExtraPx: LINGYUN_TOOLBAR_LARGE_EXTRA_PX,
       title2LineLargeExtraPx: LINGYUN_TOOLBAR_2LINE_LARGE_EXTRA_PX,
+      _onWindowResize: null as ((res?: unknown) => void) | null,
     }
   },
   setup() {
     const instance = getCurrentInstance()
     onResize((res) => {
-      const proxy = instance && instance.proxy
+      const proxy = (instance && instance.proxy) as
+        | { syncNavLayout?: (windowWidth?: number) => void }
+        | null
       if (proxy && typeof proxy.syncNavLayout === 'function') {
         proxy.syncNavLayout(readLingyunResizeWidth(res))
       }
@@ -220,7 +223,7 @@ export default {
       return this.placement === 'sheet' ? 'sheet' : 'standard'
     },
     styleKey() {
-      const allowed = [
+      const allowed: string[] = [
         'title',
         'compactLarge',
         'large',
@@ -296,8 +299,8 @@ export default {
       }
       return h
     },
-    rootStyle() {
-      const style = {
+    rootStyle(): Record<string, string> {
+      const style: Record<string, string> = {
         minHeight: `${this.contentMinHeightPx}px`,
       }
       /*
@@ -373,7 +376,7 @@ export default {
     },
   },
   methods: {
-    syncNavLayout(windowWidth) {
+    syncNavLayout(windowWidth?: number) {
       const width = Number(windowWidth)
       const layout = getLingyunNavLayout(
         LINGYUN_TOOLBAR_BAR_DESIGN_PX,
@@ -402,30 +405,32 @@ export default {
       this.rightInsetPx = this.safeArea ? layout.rightInset : 0
     },
     bindResize() {
-      this._onWindowResize = (res) => {
+      const onWindowResize = (res?: unknown) => {
         this.syncNavLayout(readLingyunResizeWidth(res))
       }
+      this._onWindowResize = onWindowResize
       try {
-        if (typeof uni.onWindowResize === 'function') uni.onWindowResize(this._onWindowResize)
+        if (typeof uni.onWindowResize === 'function') uni.onWindowResize(onWindowResize)
       } catch {
         /* 端不支持 */
       }
       // H5 拖窗口不一定走 uni.onWindowResize
       // #ifdef H5
-      if (typeof window !== 'undefined') window.addEventListener('resize', this._onWindowResize)
+      if (typeof window !== 'undefined') window.addEventListener('resize', onWindowResize)
       // #endif
     },
     unbindResize() {
+      const onWindowResize = this._onWindowResize
       try {
-        if (this._onWindowResize && typeof uni.offWindowResize === 'function') {
-          uni.offWindowResize(this._onWindowResize)
+        if (onWindowResize && typeof uni.offWindowResize === 'function') {
+          uni.offWindowResize(onWindowResize)
         }
       } catch {
         /* 端不支持 */
       }
       // #ifdef H5
-      if (typeof window !== 'undefined' && this._onWindowResize) {
-        window.removeEventListener('resize', this._onWindowResize)
+      if (typeof window !== 'undefined' && onWindowResize) {
+        window.removeEventListener('resize', onWindowResize)
       }
       // #endif
       this._onWindowResize = null
@@ -440,7 +445,7 @@ export default {
       this.$emit('trailing')
     },
   },
-}
+})
 </script>
 
 <style lang="scss" scoped>

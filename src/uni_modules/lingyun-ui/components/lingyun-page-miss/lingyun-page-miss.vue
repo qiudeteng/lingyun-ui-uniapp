@@ -8,11 +8,13 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
+
 /**
  * 菜单点到未注册页面时的 404。嵌在当前页里，避免小程序整页重开。
  */
-export default {
+export default defineComponent({
   name: 'LingyunPageMiss',
   props: {
     from: { type: String, default: '' },
@@ -28,7 +30,7 @@ export default {
       this.$emit('home')
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

@@ -144,10 +144,14 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import { getLingyunToolbarStackPx, LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
-import { LINGYUN_APP_PAGE_SCROLL_LOCK } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
+import {
+  LINGYUN_APP_PAGE_SCROLL_LOCK,
+  type LingyunAppPageScrollLock,
+} from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 
 /**
  * lingyun-sheets
@@ -181,22 +185,22 @@ const REGULAR_MAX_HEIGHT = 770
 const REGULAR_INSET = 32
 const RADIUS_REGULAR = 32
 
-export default {
+export default defineComponent({
   name: 'LingyunSheets',
   emits: ['update:show', 'update:modelValue', 'close', 'update:detent', 'trailing'],
   inject: {
     appPageScrollLock: {
       from: LINGYUN_APP_PAGE_SCROLL_LOCK,
-      default: null,
+      default: null as LingyunAppPageScrollLock | null,
     },
   },
   props: {
     show: {
-      type: Boolean,
+      type: Boolean as PropType<boolean | undefined>,
       default: undefined,
     },
     modelValue: {
-      type: Boolean,
+      type: Boolean as PropType<boolean | undefined>,
       default: undefined,
     },
     title: {
@@ -224,7 +228,7 @@ export default {
       default: true,
     },
     zIndex: {
-      type: [Number, String],
+      type: [Number, String] as PropType<number | string>,
       default: 1000,
     },
   },
@@ -232,9 +236,9 @@ export default {
     return {
       mounted: false,
       /** enter | open | leave */
-      phase: '',
-      leaveTimer: null,
-      enterTimer: null,
+      phase: '' as '' | 'enter' | 'open' | 'leave',
+      leaveTimer: null as ReturnType<typeof setTimeout> | null,
+      enterTimer: null as ReturnType<typeof setTimeout> | null,
       windowHeight: 667,
       windowWidth: 375,
       /** large 顶部留白：状态栏 + 页顶 toolbars 栏身，避免挡住底层导航 */
@@ -243,6 +247,12 @@ export default {
       dragStartY: 0,
       dragDy: 0,
       dragging: false,
+      _onWindowResize: null as (() => void) | null,
+      _appScrollLocked: false,
+      _scrollLocked: false,
+      _prevBodyOverflow: '',
+      _prevBodyOverscroll: '',
+      _prevHtmlOverscroll: '',
     }
   },
   computed: {
@@ -336,11 +346,11 @@ export default {
     offsetOutPx() {
       return this.panelHeightPx + this.bottomInsetPx
     },
-    panelStyle() {
+    panelStyle(): Record<string, string> {
       const radius = this.panelRadiusPx
       // large 贴边贴底：只圆顶角；medium / iPad 卡片四角同值
       const bottomRadius = !this.isRegular && this.isLarge ? 0 : radius
-      const style = {
+      const style: Record<string, string> = {
         height: `${this.panelHeightPx}px`,
         left: `${this.sideInsetPx}px`,
         right: `${this.sideInsetPx}px`,
@@ -370,7 +380,7 @@ export default {
   watch: {
     visible: {
       immediate: true,
-      handler(val) {
+      handler(val: boolean) {
         if (val) {
           this.syncWindow()
           this.lockPageScroll()
@@ -415,19 +425,21 @@ export default {
       }
     },
     bindResize() {
-      this._onWindowResize = () => {
+      const onWindowResize = () => {
         this.syncWindow()
       }
+      this._onWindowResize = onWindowResize
       try {
-        if (typeof uni.onWindowResize === 'function') uni.onWindowResize(this._onWindowResize)
+        if (typeof uni.onWindowResize === 'function') uni.onWindowResize(onWindowResize)
       } catch {
         /* 端不支持 */
       }
     },
     unbindResize() {
+      const onWindowResize = this._onWindowResize
       try {
-        if (this._onWindowResize && typeof uni.offWindowResize === 'function') {
-          uni.offWindowResize(this._onWindowResize)
+        if (onWindowResize && typeof uni.offWindowResize === 'function') {
+          uni.offWindowResize(onWindowResize)
         }
       } catch {
         /* 端不支持 */
@@ -490,7 +502,7 @@ export default {
         this.reduceMotion ? 16 : LEAVE_MS,
       )
     },
-    setVisible(next) {
+    setVisible(next: boolean) {
       const val = !!next
       this.$emit('update:show', val)
       this.$emit('update:modelValue', val)
@@ -509,7 +521,7 @@ export default {
     /** 打开时锁住底层页面滚动（app-page scroll-view + H5 body），避免内容区滑动穿透 */
     lockPageScroll() {
       try {
-        const lockApi = this.appPageScrollLock
+        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
         if (lockApi && typeof lockApi.lock === 'function' && !this._appScrollLocked) {
           lockApi.lock()
           this._appScrollLocked = true
@@ -533,7 +545,7 @@ export default {
     },
     unlockPageScroll() {
       try {
-        const lockApi = this.appPageScrollLock
+        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
         if (this._appScrollLocked && lockApi && typeof lockApi.unlock === 'function') {
           lockApi.unlock()
         }
@@ -559,14 +571,14 @@ export default {
     onPanelTouchMove() {
       /* stop 已在模板；占位避免空 handler 被优化掉 */
     },
-    onChromeTouchStart(e) {
+    onChromeTouchStart(e: TouchEvent) {
       const t = e.touches && e.touches[0]
       if (!t) return
       this.dragStartY = t.clientY
       this.dragDy = 0
       this.dragging = true
     },
-    onChromeTouchMove(e) {
+    onChromeTouchMove(e: TouchEvent) {
       if (!this.dragging) return
       const t = e.touches && e.touches[0]
       if (!t) return
@@ -583,7 +595,7 @@ export default {
       }
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

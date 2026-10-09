@@ -8,18 +8,20 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
 /**
  * lingyun-chip · 可选中筛选胶囊
  * @see design/TAGS.md
  */
-export default {
+export default defineComponent({
   name: 'LingyunChip',
   emits: ['update:selected', 'update:modelValue', 'change', 'click'],
   props: {
     text: { type: String, default: '' },
-    selected: { type: Boolean, default: undefined },
-    modelValue: { type: Boolean, default: undefined },
+    selected: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+    modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
     selectable: { type: Boolean, default: true },
     disabled: { type: Boolean, default: false },
   },
@@ -36,7 +38,7 @@ export default {
     },
   },
   methods: {
-    onClick(e) {
+    onClick(e: Event) {
       if (this.disabled) return
       this.$emit('click', e)
       if (!this.selectable) return
@@ -46,7 +48,7 @@ export default {
       this.$emit('change', next)
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

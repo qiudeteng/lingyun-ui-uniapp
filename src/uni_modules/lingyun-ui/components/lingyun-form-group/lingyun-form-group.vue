@@ -12,13 +12,15 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
+
 /**
  * lingyun-form-group
  * 视觉对齐 lingyun-list 分组卡，不依赖 list 组件
  * @see design/FORMS.md
  */
-export default {
+export default defineComponent({
   name: 'LingyunFormGroup',
   props: {
     title: { type: String, default: '' },
@@ -37,7 +39,7 @@ export default {
   created() {
     this.firstChildAppend = false
   },
-}
+})
 </script>
 
 <style lang="scss">

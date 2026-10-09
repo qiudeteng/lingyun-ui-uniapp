@@ -114,9 +114,42 @@
   <!-- #endif -->
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
-import { LINGYUN_APP_PAGE_SCROLL_LOCK } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
+import {
+  LINGYUN_APP_PAGE_SCROLL_LOCK,
+  type LingyunAppPageScrollLock,
+} from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
+
+type SidebarGroupInput = {
+  title?: unknown
+  items?: unknown
+}
+
+type SidebarItemInput = {
+  key?: unknown
+  label?: unknown
+  icon?: unknown
+  badge?: unknown
+  disabled?: unknown
+}
+
+type SidebarItem = {
+  key: string
+  label: string
+  icon: string
+  badge: string
+  disabled: boolean
+  raw: unknown
+  index: number
+}
+
+type SidebarSection = {
+  key: string
+  title: string
+  items: SidebarItem[]
+}
 
 /**
  * lingyun-sidebar
@@ -131,33 +164,33 @@ const MAX_W = 320
 const MIN_W = 240
 const RADIUS = 34
 
-export default {
+export default defineComponent({
   name: 'LingyunSidebar',
   emits: ['update:show', 'update:modelValue', 'update:current', 'select', 'close'],
   inject: {
     appPageScrollLock: {
       from: LINGYUN_APP_PAGE_SCROLL_LOCK,
-      default: null,
+      default: null as LingyunAppPageScrollLock | null,
     },
   },
   props: {
-    show: { type: Boolean, default: undefined },
-    modelValue: { type: Boolean, default: undefined },
-    current: { type: [String, Number], default: '' },
+    show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+    modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+    current: { type: [String, Number] as PropType<string | number>, default: '' },
     title: { type: String, default: '' },
-    sections: { type: Array, default: () => [] },
-    items: { type: Array, default: () => [] },
+    sections: { type: Array as PropType<SidebarGroupInput[]>, default: () => [] as SidebarGroupInput[] },
+    items: { type: Array as PropType<SidebarItemInput[]>, default: () => [] as SidebarItemInput[] },
     placement: { type: String, default: 'leading' },
     maskClosable: { type: Boolean, default: true },
     closeOnSelect: { type: Boolean, default: true },
-    zIndex: { type: [Number, String], default: 1300 },
+    zIndex: { type: [Number, String] as PropType<number | string>, default: 1300 },
   },
   data() {
     return {
       panelMounted: false,
-      phase: '',
-      leaveTimer: null,
-      enterTimer: null,
+      phase: '' as '' | 'enter' | 'open' | 'leave',
+      leaveTimer: null as ReturnType<typeof setTimeout> | null,
+      enterTimer: null as ReturnType<typeof setTimeout> | null,
       windowWidth: 375,
       statusBar: 0,
       safeBottom: 0,
@@ -217,7 +250,7 @@ export default {
         MAX_W,
         Math.max(MIN_W, (Number(this.windowWidth) || 375) - INSET - PEEK),
       )
-      const style = {
+      const style: Record<string, string> = {
         top: `${top}px`,
         bottom: `${bottom}px`,
         width: `${width}px`,
@@ -227,8 +260,8 @@ export default {
       else style.left = `${INSET}px`
       return style
     },
-    sectionList() {
-      const out = []
+    sectionList(): SidebarSection[] {
+      const out: SidebarSection[] = []
       const groups = Array.isArray(this.sections) ? this.sections : []
       groups.forEach((group, index) => {
         const items = this.normalizeItems(group && group.items, `s${index}`)
@@ -249,7 +282,7 @@ export default {
   watch: {
     visible: {
       immediate: true,
-      handler(val) {
+      handler(val: boolean) {
         if (val) {
           this.syncWindow()
           this.lockPageScroll()
@@ -268,19 +301,22 @@ export default {
     this.unlockPageScroll()
   },
   methods: {
-    normalizeItems(list, prefix) {
-      const raw = Array.isArray(list) ? list : []
-      return raw.map((item, index) => ({
-        key: item && item.key != null ? String(item.key) : `${prefix}-${index}`,
-        label: item && item.label != null ? String(item.label) : '',
-        icon: item && item.icon != null ? String(item.icon) : '',
-        badge: item && item.badge != null && item.badge !== '' ? String(item.badge) : '',
-        disabled: !!(item && item.disabled),
-        raw: item,
-        index,
-      }))
+    normalizeItems(list: unknown, prefix: string): SidebarItem[] {
+      const raw: unknown[] = Array.isArray(list) ? list : []
+      return raw.map((item: unknown, index: number) => {
+        const rec = (item || {}) as SidebarItemInput
+        return {
+          key: item && rec.key != null ? String(rec.key) : `${prefix}-${index}`,
+          label: item && rec.label != null ? String(rec.label) : '',
+          icon: item && rec.icon != null ? String(rec.icon) : '',
+          badge: item && rec.badge != null && rec.badge !== '' ? String(rec.badge) : '',
+          disabled: !!(item && rec.disabled),
+          raw: item,
+          index,
+        }
+      })
     },
-    itemClass(item) {
+    itemClass(item: SidebarItem) {
       const selected = String(this.current) === String(item.key)
       return {
         'lingyun-sidebar__item--selected': selected,
@@ -349,7 +385,7 @@ export default {
         this.reduceMotion ? 16 : LEAVE_MS,
       )
     },
-    setVisible(next) {
+    setVisible(next: unknown) {
       const val = !!next
       this.$emit('update:show', val)
       this.$emit('update:modelValue', val)
@@ -362,7 +398,7 @@ export default {
       if (!this.maskClosable) return
       this.close()
     },
-    onSelect(item) {
+    onSelect(item: SidebarItem | null, _sIndex?: number, _iIndex?: number) {
       if (!item || item.disabled) return
       this.$emit('update:current', item.key)
       this.$emit('select', { key: item.key, item: item.raw || item, index: item.index })
@@ -370,7 +406,7 @@ export default {
     },
     lockPageScroll() {
       try {
-        const lockApi = this.appPageScrollLock
+        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
         if (lockApi && typeof lockApi.lock === 'function' && !this._appScrollLocked) {
           lockApi.lock()
           this._appScrollLocked = true
@@ -394,7 +430,7 @@ export default {
     },
     unlockPageScroll() {
       try {
-        const lockApi = this.appPageScrollLock
+        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
         if (this._appScrollLocked && lockApi && typeof lockApi.unlock === 'function') {
           lockApi.unlock()
         }
@@ -414,7 +450,7 @@ export default {
       // #endif
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

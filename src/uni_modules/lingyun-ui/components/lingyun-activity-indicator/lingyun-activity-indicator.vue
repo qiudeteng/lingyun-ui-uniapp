@@ -8,13 +8,15 @@
   />
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
+
 /**
  * lingyun-activity-indicator
  * @description 环形转圈加载；Toast/HUD/页面内嵌复用
  * @see design/ACTIVITY_INDICATORS.md
  */
-export default {
+export default defineComponent({
   name: 'LingyunActivityIndicator',
   props: {
     size: { type: String, default: 'medium' },
@@ -43,7 +45,7 @@ export default {
       return { borderTopColor: this.color, borderRightColor: this.color }
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

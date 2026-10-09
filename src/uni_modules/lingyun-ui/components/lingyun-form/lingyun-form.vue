@@ -4,13 +4,26 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
+
+type FormModel = Record<string, unknown>
+
+type FormRule = {
+  required?: boolean
+  message?: string
+  pattern?: RegExp | string
+  validator?: (value: unknown, model: FormModel) => unknown
+}
+
+type FormRules = Record<string, FormRule[]>
+
 /**
  * lingyun-form
  * Grouped 表单壳：model + 精简 rules；provide 给 form-item
  * @see design/FORMS.md
  */
-export default {
+export default defineComponent({
   name: 'LingyunForm',
   props: {
     model: {
@@ -28,8 +41,8 @@ export default {
   },
   data() {
     return {
-      fieldErrors: {},
-      fields: {},
+      fieldErrors: {} as Record<string, string>,
+      fields: {} as Record<string, object>,
     }
   },
   provide() {
@@ -38,23 +51,23 @@ export default {
     }
   },
   methods: {
-    registerField(name, item) {
+    registerField(name: string, item: object) {
       if (!name) return
       this.fields[name] = item
     },
-    unregisterField(name) {
+    unregisterField(name: string) {
       if (!name) return
       if (this.fields[name]) delete this.fields[name]
     },
-    getFieldValue(name) {
+    getFieldValue(name: string): unknown {
       if (!name || !this.model) return undefined
-      return this.model[name]
+      return (this.model as FormModel)[name]
     },
-    getFieldError(name) {
+    getFieldError(name: string) {
       if (!name) return ''
       return this.fieldErrors[name] || ''
     },
-    setFieldError(name, message) {
+    setFieldError(name: string, message: unknown) {
       if (!name) return
       if (!message) {
         if (this.fieldErrors[name]) {
@@ -66,21 +79,22 @@ export default {
       }
       this.fieldErrors = { ...this.fieldErrors, [name]: String(message) }
     },
-    clearValidate(name) {
+    clearValidate(name?: string) {
       if (name) {
         this.setFieldError(name, '')
         return
       }
       this.fieldErrors = {}
     },
-    isEmpty(value) {
+    isEmpty(value: unknown) {
       if (value === undefined || value === null) return true
       if (typeof value === 'string') return value.trim() === ''
       if (Array.isArray(value)) return value.length === 0
       return false
     },
-    runRules(name, value) {
-      const list = (this.rules && this.rules[name]) || []
+    runRules(name: string, value: unknown) {
+      const rules = this.rules as FormRules | undefined
+      const list = (rules && rules[name]) || []
       if (!Array.isArray(list) || !list.length) return ''
       for (let i = 0; i < list.length; i += 1) {
         const rule = list[i]
@@ -97,14 +111,14 @@ export default {
           }
         }
         if (typeof rule.validator === 'function') {
-          const res = rule.validator(value, this.model)
+          const res = rule.validator(value, this.model as FormModel)
           if (res === false) return rule.message || '校验失败'
           if (typeof res === 'string' && res) return res
         }
       }
       return ''
     },
-    validateField(name) {
+    validateField(name: string) {
       if (!name) return Promise.resolve()
       const value = this.getFieldValue(name)
       const msg = this.runRules(name, value)
@@ -118,7 +132,7 @@ export default {
       const names = Object.keys(this.rules || {})
       const registered = Object.keys(this.fields || {})
       const all = Array.from(new Set([...names, ...registered]))
-      const errors = {}
+      const errors: Record<string, string> = {}
       all.forEach((name) => {
         const msg = this.runRules(name, this.getFieldValue(name))
         if (msg) errors[name] = msg
@@ -130,7 +144,7 @@ export default {
       return Promise.resolve(this.model)
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

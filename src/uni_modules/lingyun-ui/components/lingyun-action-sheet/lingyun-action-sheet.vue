@@ -54,9 +54,29 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
-import { LINGYUN_APP_PAGE_SCROLL_LOCK } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
+import {
+  LINGYUN_APP_PAGE_SCROLL_LOCK,
+  type LingyunAppPageScrollLock,
+} from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
+
+type ActionSheetAction = {
+  key?: string | number
+  text?: string | number
+  role?: string
+  disabled?: boolean
+  close?: boolean | null
+}
+
+type ResolvedAction = {
+  key?: string | number
+  text: string
+  role: 'destructive' | 'default'
+  disabled: boolean
+  close: boolean | null | undefined
+}
 
 /**
  * lingyun-action-sheet
@@ -72,33 +92,33 @@ const INSET_X = 8
 const GAP_CANCEL = 8
 const PAD_BOTTOM = 8
 
-export default {
+export default defineComponent({
   name: 'LingyunActionSheet',
   emits: ['update:show', 'update:modelValue', 'action', 'close', 'cancel'],
   inject: {
     appPageScrollLock: {
       from: LINGYUN_APP_PAGE_SCROLL_LOCK,
-      default: null,
+      default: null as LingyunAppPageScrollLock | null,
     },
   },
   props: {
-    show: { type: Boolean, default: undefined },
-    modelValue: { type: Boolean, default: undefined },
+    show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+    modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
     title: { type: String, default: '' },
     message: { type: String, default: '' },
-    actions: { type: Array, default: () => [] },
+    actions: { type: Array as PropType<ActionSheetAction[]>, default: () => [] as ActionSheetAction[] },
     cancelText: { type: String, default: 'Cancel' },
     showCancel: { type: Boolean, default: true },
     maskClosable: { type: Boolean, default: true },
     closeOnAction: { type: Boolean, default: true },
-    zIndex: { type: [Number, String], default: 1100 },
+    zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
   },
   data() {
     return {
       mounted: false,
       phase: '',
-      leaveTimer: null,
-      enterTimer: null,
+      leaveTimer: null as ReturnType<typeof setTimeout> | null,
+      enterTimer: null as ReturnType<typeof setTimeout> | null,
       safeBottom: 0,
       _appScrollLocked: false,
       _scrollLocked: false,
@@ -126,10 +146,10 @@ export default {
     hasHeader() {
       return !!(this.title || this.message)
     },
-    resolvedActions() {
+    resolvedActions(): ResolvedAction[] {
       const list = Array.isArray(this.actions) ? this.actions : []
       return list
-        .filter((a) => a && a.text)
+        .filter((a): a is ActionSheetAction & { text: string | number } => !!(a && a.text))
         .map((a) => {
           const role = a.role === 'destructive' ? 'destructive' : 'default'
           return {
@@ -173,7 +193,7 @@ export default {
   watch: {
     visible: {
       immediate: true,
-      handler(val) {
+      handler(val: boolean) {
         if (val) {
           this.syncSafe()
           this.lockPageScroll()
@@ -252,7 +272,7 @@ export default {
         this.reduceMotion ? 16 : LEAVE_MS,
       )
     },
-    setVisible(next) {
+    setVisible(next: unknown) {
       const val = !!next
       this.$emit('update:show', val)
       this.$emit('update:modelValue', val)
@@ -265,13 +285,13 @@ export default {
       if (!this.maskClosable) return
       this.close()
     },
-    rowClass(action) {
+    rowClass(action: ResolvedAction) {
       return {
         'lingyun-action-sheet__row--destructive': action.role === 'destructive',
         'lingyun-action-sheet__row--disabled': action.disabled,
       }
     },
-    onAction(action, index) {
+    onAction(action: ResolvedAction, index: number) {
       if (!action || action.disabled) return
       const payload = { action, index }
       this.$emit('action', payload)
@@ -287,7 +307,7 @@ export default {
     },
     lockPageScroll() {
       try {
-        const lockApi = this.appPageScrollLock
+        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
         if (lockApi && typeof lockApi.lock === 'function' && !this._appScrollLocked) {
           lockApi.lock()
           this._appScrollLocked = true
@@ -311,7 +331,7 @@ export default {
     },
     unlockPageScroll() {
       try {
-        const lockApi = this.appPageScrollLock
+        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
         if (this._appScrollLocked && lockApi && typeof lockApi.unlock === 'function') {
           lockApi.unlock()
         }
@@ -331,7 +351,7 @@ export default {
       // #endif
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

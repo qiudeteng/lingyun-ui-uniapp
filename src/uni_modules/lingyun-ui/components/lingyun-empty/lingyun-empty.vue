@@ -47,13 +47,15 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
+
 /**
  * lingyun-empty
  * Sketch Examples/Empty State：plain · symbol · circle
  * @see design/EMPTY.md
  */
-export default {
+export default defineComponent({
   name: 'LingyunEmpty',
   props: {
     title: { type: String, default: '' },
@@ -90,12 +92,12 @@ export default {
       }
       return true
     },
-    iconStyle() {
+    iconStyle(): Record<string, string> {
       if (!this.iconColor) return {}
       return { color: this.iconColor }
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

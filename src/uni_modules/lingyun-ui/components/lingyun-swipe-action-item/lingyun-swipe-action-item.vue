@@ -215,12 +215,13 @@ export default {
 }
 </script>
 
-<script>
-import mpWxs from './mp-wxs.js'
-import mpJs from './mp-js.js'
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+import mpWxs from './mp-wxs.ts'
+import mpJs from './mp-js.ts'
 import { useThemeStore } from '@/stores/theme'
 
-const ROLE_COLORS = {
+const ROLE_COLORS: Record<string, string> = {
   destructive: '#ff383c',
   warning: '#ff8d28',
   success: '#34c759',
@@ -235,6 +236,40 @@ const ROLE_COLORS = {
   pink: '#ff2d55',
   indigo: '#5856d6',
   teal: '#5ac8fa',
+}
+
+type SwipeOptionStyle = {
+  backgroundColor?: string
+  color?: string
+  fontSize?: string | number
+  width?: string | number
+  minWidth?: string | number
+}
+
+type SwipeOptionInput = {
+  text?: string
+  icon?: string
+  iconType?: string
+  key?: string | number
+  role?: string
+  color?: string
+  style?: SwipeOptionStyle | null
+}
+
+type SwipeOption = {
+  text: string
+  key: string | number
+  role: string
+  icon?: string
+  iconType?: string
+  style?: SwipeOptionStyle | null
+}
+
+type ParentChain = {
+  $options?: { name?: string }
+  $parent?: ParentChain | null
+  children?: unknown[]
+  closeOther?: (vm: unknown) => void
 }
 
 /**
@@ -252,7 +287,7 @@ const ROLE_COLORS = {
  * @event click { content, index, position, key }
  * @event change none|left|right
  */
-export default {
+export default defineComponent({
   name: 'LingyunSwipeActionItem',
   mixins: [mpWxs, mpJs],
   emits: ['click', 'change'],
@@ -273,15 +308,15 @@ export default {
     closeOnClick: { type: Boolean, default: true },
     threshold: { type: Number, default: 30 },
     leftOptions: {
-      type: Array,
+      type: Array as PropType<Array<string | SwipeOptionInput>>,
       default() {
-        return []
+        return [] as Array<string | SwipeOptionInput>
       },
     },
     rightOptions: {
-      type: Array,
+      type: Array as PropType<Array<string | SwipeOptionInput>>,
       default() {
-        return []
+        return [] as Array<string | SwipeOptionInput>
       },
     },
   },
@@ -302,37 +337,40 @@ export default {
   },
   // #ifdef VUE3
   unmounted() {
-    this.__isUnmounted = true
+    const vm = this as unknown as { __isUnmounted?: boolean }
+    vm.__isUnmounted = true
     this.uninstall()
   },
   // #endif
   // #ifndef VUE3
   destroyed() {
-    if (this.__isUnmounted) return
+    const vm = this as unknown as { __isUnmounted?: boolean }
+    if (vm.__isUnmounted) return
     this.uninstall()
   },
   // #endif
   methods: {
-    normalizeOptions(list) {
+    normalizeOptions(list: unknown): SwipeOption[] {
       if (!Array.isArray(list)) return []
-      return list.map((item, index) => {
+      return list.map((item: unknown, index: number) => {
         if (typeof item === 'string') {
           return { text: item, key: `opt-${index}`, role: 'default' }
         }
+        const rec = item as SwipeOptionInput
         return {
-          text: item.text || '',
-          icon: item.icon || '',
-          iconType: item.iconType || '',
-          key: item.key != null ? item.key : `opt-${index}`,
-          role: item.role || item.color || 'default',
-          style: item.style || null,
+          text: rec.text || '',
+          icon: rec.icon || '',
+          iconType: rec.iconType || '',
+          key: rec.key != null ? rec.key : `opt-${index}`,
+          role: rec.role || rec.color || 'default',
+          style: rec.style || null,
         }
       })
     },
-    hasIcon(item) {
+    hasIcon(item: SwipeOption | null | undefined) {
       return !!(item && (item.iconType || item.icon))
     },
-    btnClass(item) {
+    btnClass(item: SwipeOption | null | undefined) {
       const role = (item && item.role) || 'default'
       const known = ROLE_COLORS[role] ? role : 'default'
       const onlyIcon = !!(this.hasIcon(item) && !(item && item.text))
@@ -343,8 +381,8 @@ export default {
         .filter(Boolean)
         .join(' ')
     },
-    btnInlineStyle(item) {
-      const style = {}
+    btnInlineStyle(item: SwipeOption | null | undefined): Record<string, string | number> {
+      const style: Record<string, string | number> = {}
       const custom = (item && item.style) || {}
       const role = (item && item.role) || 'default'
       const bg = custom.backgroundColor || ROLE_COLORS[role] || ROLE_COLORS.default
@@ -365,16 +403,16 @@ export default {
       const i = this.swipeaction.children.indexOf(this)
       if (i >= 0) this.swipeaction.children.splice(i, 1)
     },
-    getSwipeAction(name = 'LingyunSwipeAction') {
-      let parent = this.$parent
+    getSwipeAction(name: string = 'LingyunSwipeAction'): ParentChain | null {
+      let parent = this.$parent as ParentChain | null
       while (parent) {
         if (parent.$options && parent.$options.name === name) return parent
-        parent = parent.$parent
+        parent = parent.$parent || null
       }
       return null
     },
   },
-}
+})
 </script>
 
 <style lang="scss" scoped>

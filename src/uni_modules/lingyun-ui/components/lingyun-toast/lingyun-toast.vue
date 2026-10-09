@@ -15,7 +15,8 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 
 /**
@@ -26,38 +27,40 @@ import { useThemeStore } from '@/stores/theme'
 const LEAVE_MS = 220
 const ENTER_KICK_MS = 32
 
-export default {
+type ToastPhase = '' | 'enter' | 'open' | 'leave'
+
+export default defineComponent({
   name: 'LingyunToast',
   emits: ['update:show', 'update:modelValue', 'close'],
   props: {
-    show: { type: Boolean, default: undefined },
-    modelValue: { type: Boolean, default: undefined },
+    show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+    modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
     text: { type: String, default: '' },
     type: { type: String, default: 'default' },
     duration: { type: Number, default: 2000 },
-    zIndex: { type: [Number, String], default: 1200 },
+    zIndex: { type: [Number, String] as PropType<number | string>, default: 1200 },
   },
   data() {
     return {
       mounted: false,
-      phase: '',
-      leaveTimer: null,
-      enterTimer: null,
-      autoTimer: null,
+      phase: '' as ToastPhase,
+      leaveTimer: null as ReturnType<typeof setTimeout> | null,
+      enterTimer: null as ReturnType<typeof setTimeout> | null,
+      autoTimer: null as ReturnType<typeof setTimeout> | null,
     }
   },
   computed: {
-    visible() {
+    visible(): boolean {
       if (this.show !== undefined && this.show !== null) return !!this.show
       if (this.modelValue !== undefined && this.modelValue !== null) return !!this.modelValue
       return false
     },
-    typeKey() {
+    typeKey(): string {
       const t = this.type
       if (t === 'success' || t === 'error' || t === 'loading') return t
       return 'default'
     },
-    rootClass() {
+    rootClass(): string {
       let themeClass = 'theme-light'
       try {
         themeClass = useThemeStore().rootClass || 'theme-light'
@@ -66,14 +69,14 @@ export default {
       }
       return [themeClass, this.phase ? `lingyun-toast--${this.phase}` : ''].filter(Boolean).join(' ')
     },
-    rootStyle() {
+    rootStyle(): { zIndex: number } {
       return { zIndex: Number(this.zIndex) || 1200 }
     },
   },
   watch: {
     visible: {
       immediate: true,
-      handler(val) {
+      handler(val: boolean) {
         if (val) this.openAnim()
         else this.closeAnim()
       },
@@ -84,11 +87,12 @@ export default {
   },
   methods: {
     clearTimers() {
-      ;['leaveTimer', 'enterTimer', 'autoTimer'].forEach((k) => {
-        if (this[k]) {
-          clearTimeout(this[k])
-          this[k] = null
-        }
+      const keys = ['leaveTimer', 'enterTimer', 'autoTimer'] as const
+      keys.forEach((key) => {
+        const timer = this[key]
+        if (!timer) return
+        clearTimeout(timer)
+        this[key] = null
       })
     },
     openAnim() {
@@ -129,14 +133,14 @@ export default {
         this.leaveTimer = null
       }, LEAVE_MS)
     },
-    setVisible(next) {
+    setVisible(next: boolean) {
       const val = !!next
       this.$emit('update:show', val)
       this.$emit('update:modelValue', val)
       if (!val) this.$emit('close')
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

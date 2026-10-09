@@ -19,16 +19,29 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
+
+type LingyunFormLike = {
+  fieldErrors?: Record<string, string>
+  registerField?: (name: string, item: unknown) => void
+  unregisterField?: (name: string) => void
+  validateField?: (name: string) => Promise<unknown>
+}
+
+type LingyunFormGroupLike = {
+  firstChildAppend: boolean
+}
+
 /**
  * lingyun-form-item
  * @see design/FORMS.md
  */
-export default {
+export default defineComponent({
   name: 'LingyunFormItem',
   inject: {
-    lingyunForm: { default: null },
-    lingyunFormGroup: { default: null },
+    lingyunForm: { default: null as LingyunFormLike | null },
+    lingyunFormGroup: { default: null as LingyunFormGroupLike | null },
   },
   provide() {
     return {
@@ -58,8 +71,8 @@ export default {
     showLabel() {
       return !!this.label
     },
-    formError() {
-      const form = this.lingyunForm
+    formError(): string {
+      const form = this.lingyunForm as LingyunFormLike | null | undefined
       if (!form || !this.name) return ''
       const map = form.fieldErrors || {}
       return map[this.name] || ''
@@ -81,7 +94,7 @@ export default {
     },
   },
   created() {
-    const group = this.lingyunFormGroup
+    const group = this.lingyunFormGroup as LingyunFormGroupLike | null | undefined
     if (!group) {
       this.isFirstChild = true
     } else if (!group.firstChildAppend) {
@@ -90,28 +103,28 @@ export default {
     } else {
       this.isFirstChild = false
     }
-    const form = this.lingyunForm
+    const form = this.lingyunForm as LingyunFormLike | null | undefined
     if (form && this.name && typeof form.registerField === 'function') {
       form.registerField(this.name, this)
     }
   },
   beforeUnmount() {
-    const form = this.lingyunForm
+    const form = this.lingyunForm as LingyunFormLike | null | undefined
     if (form && this.name && typeof form.unregisterField === 'function') {
       form.unregisterField(this.name)
     }
   },
   methods: {
     /** 供外部 / 控件侧触发单字段校验 */
-    validate() {
-      const form = this.lingyunForm
+    validate(): Promise<unknown> {
+      const form = this.lingyunForm as LingyunFormLike | null | undefined
       if (form && this.name && typeof form.validateField === 'function') {
         return form.validateField(this.name)
       }
       return Promise.resolve()
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

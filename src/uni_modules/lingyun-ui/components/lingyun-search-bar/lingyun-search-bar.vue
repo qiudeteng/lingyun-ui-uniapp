@@ -73,7 +73,9 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
 /**
  * lingyun-search-bar
  * @description 对齐 Sketch Tab Bars / Search Selected - Placeholder 的底部玻璃搜索条
@@ -90,7 +92,12 @@
  * @property {Boolean} focus 外部请求聚焦
  * @event {Function} update:modelValue / input / confirm / clear / mic / cancel / focus / blur
  */
-export default {
+
+type SearchDetailEvent = {
+  detail?: { value?: string | number; height?: number }
+}
+
+export default defineComponent({
   name: 'LingyunSearchBar',
   emits: [
     'update:modelValue',
@@ -109,15 +116,20 @@ export default {
       innerFocused: false,
       /** 键盘高度（px）；fixed 底栏据此上推，避免被挡住 */
       keyboardHeight: 0,
+      _blurTimer: null as ReturnType<typeof setTimeout> | null,
+      _onFocusIn: null as (() => void) | null,
+      _onFocusOut: null as ((event: FocusEvent) => void) | null,
+      _onKeyboardHeight: null as ((res: { height?: number }) => void) | null,
+      _onVisualViewport: null as (() => void) | null,
     }
   },
   props: {
     modelValue: {
-      type: String,
+      type: String as PropType<string | undefined>,
       default: undefined,
     },
     value: {
-      type: String,
+      type: String as PropType<string | undefined>,
       default: undefined,
     },
     placeholder: {
@@ -181,9 +193,9 @@ export default {
       const root = this.$el
       if (!root || !root.addEventListener) return
       this._onFocusIn = () => this.onFocus()
-      this._onFocusOut = (event) => {
+      this._onFocusOut = (event: FocusEvent) => {
         const next = event && event.relatedTarget
-        if (next && root.contains && root.contains(next)) return
+        if (next && root.contains && root.contains(next as Node)) return
         this.onBlur()
       }
       root.addEventListener('focusin', this._onFocusIn)
@@ -204,60 +216,67 @@ export default {
     /* #endif */
   },
   methods: {
-    setKeyboardHeight(height) {
+    setKeyboardHeight(height: unknown) {
       const next = Math.max(0, Number(height) || 0)
       if (next === this.keyboardHeight) return
       this.keyboardHeight = next
     },
-    onKeyboardHeightChange(event) {
+    onKeyboardHeightChange(event: SearchDetailEvent) {
       const height = event && event.detail ? event.detail.height : 0
       this.setKeyboardHeight(height)
     },
     bindKeyboardHeight() {
       if (!this.fixed) return
       if (typeof uni === 'undefined' || typeof uni.onKeyboardHeightChange !== 'function') return
-      this._onKeyboardHeight = (res) => {
+      const onKeyboardHeight = (res: { height?: number }) => {
         this.setKeyboardHeight(res && res.height)
       }
-      uni.onKeyboardHeightChange(this._onKeyboardHeight)
+      this._onKeyboardHeight = onKeyboardHeight
+      uni.onKeyboardHeightChange(onKeyboardHeight)
     },
     unbindKeyboardHeight() {
-      if (!this._onKeyboardHeight) return
+      const onKeyboardHeight = this._onKeyboardHeight
+      if (!onKeyboardHeight) return
       if (typeof uni !== 'undefined' && typeof uni.offKeyboardHeightChange === 'function') {
-        uni.offKeyboardHeightChange(this._onKeyboardHeight)
+        uni.offKeyboardHeightChange(onKeyboardHeight)
       }
       this._onKeyboardHeight = null
     },
     /* #ifdef H5 */
     bindVisualViewport() {
-      if (!this.fixed || typeof window === 'undefined' || !window.visualViewport) return
-      this._onVisualViewport = () => {
+      const viewport = typeof window === 'undefined' ? null : window.visualViewport
+      if (!this.fixed || !viewport) return
+      const onVisualViewport = () => {
         const vv = window.visualViewport
+        if (!vv) return
         const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
         this.setKeyboardHeight(covered > 80 ? covered : 0)
       }
-      window.visualViewport.addEventListener('resize', this._onVisualViewport)
-      window.visualViewport.addEventListener('scroll', this._onVisualViewport)
+      this._onVisualViewport = onVisualViewport
+      viewport.addEventListener('resize', onVisualViewport)
+      viewport.addEventListener('scroll', onVisualViewport)
     },
     unbindVisualViewport() {
-      if (!this._onVisualViewport || typeof window === 'undefined' || !window.visualViewport) return
-      window.visualViewport.removeEventListener('resize', this._onVisualViewport)
-      window.visualViewport.removeEventListener('scroll', this._onVisualViewport)
+      const onVisualViewport = this._onVisualViewport
+      const viewport = typeof window === 'undefined' ? null : window.visualViewport
+      if (!onVisualViewport || !viewport) return
+      viewport.removeEventListener('resize', onVisualViewport)
+      viewport.removeEventListener('scroll', onVisualViewport)
       this._onVisualViewport = null
     },
     /* #endif */
-    setValue(next) {
+    setValue(next: unknown) {
       const value = next == null ? '' : String(next)
       this.localValue = value
       this.$emit('update:modelValue', value)
       this.$emit('update:value', value)
     },
-    onInput(event) {
+    onInput(event: SearchDetailEvent) {
       const value = event && event.detail ? event.detail.value : ''
       this.setValue(value)
       this.$emit('input', value)
     },
-    onConfirm(event) {
+    onConfirm(event: SearchDetailEvent) {
       const value = event && event.detail ? event.detail.value : this.innerValue
       this.$emit('confirm', value)
     },
@@ -287,9 +306,10 @@ export default {
       clearTimeout(this._blurTimer)
       this._blurTimer = null
     },
-    queryInput() {
-      const root = this.$el
-      return root && root.querySelector ? root.querySelector('input') : null
+    queryInput(): HTMLInputElement | null {
+      const root = this.$el as { querySelector?: (selectors: string) => HTMLInputElement | null } | null
+      if (!root || !root.querySelector) return null
+      return root.querySelector('input')
     },
     focusInput() {
       /* #ifdef H5 */
@@ -327,7 +347,7 @@ export default {
       this.$emit('cancel')
     },
   },
-}
+})
 </script>
 
 <style lang="scss" scoped>

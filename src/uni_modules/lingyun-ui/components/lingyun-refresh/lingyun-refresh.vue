@@ -17,7 +17,8 @@
   </scroll-view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 
 /**
@@ -25,14 +26,14 @@ import { useThemeStore } from '@/stores/theme'
  * @description 包装 scroll-view refresher；暗黑下须设 refresher-background（默认白）
  * @see design/REFRESH.md
  */
-export default {
+export default defineComponent({
   name: 'LingyunRefresh',
   emits: ['update:refreshing', 'refresh'],
   props: {
     refreshing: { type: Boolean, default: false },
     enabled: { type: Boolean, default: true },
     threshold: { type: Number, default: 45 },
-    height: { type: [String, Number], default: '100%' },
+    height: { type: [String, Number] as PropType<string | number>, default: '100%' },
     /** 覆盖下拉区背景；空则跟主题 Grouped Primary */
     refresherBackground: { type: String, default: '' },
     /** black | white | none；空则跟主题自动选 */
@@ -72,7 +73,7 @@ export default {
       /* 由业务把 refreshing 设回 false */
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

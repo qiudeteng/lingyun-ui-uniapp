@@ -57,7 +57,43 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
+type TabBadgeObject = {
+  text?: string | number | boolean | null
+  color?: string
+  type?: string
+  dot?: boolean
+  max?: number | string | null
+}
+
+type TabBadge = number | string | boolean | TabBadgeObject
+
+type TabItem = {
+  key?: string | number
+  text?: string
+  icon?: string
+  badge?: TabBadge | null
+  role?: string
+}
+
+type BadgeView = {
+  dot: boolean
+  text: string | number | boolean
+  color: string
+  max: number
+}
+
+type SpringState = { pos: number; vel: number }
+
+type LensRect = {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
 /**
  * lingyun-tabbars
  * @description 对齐 Apple iOS 27 UI Kit Tab Bars（Sketch）+ HIG + Liquid Glass
@@ -74,7 +110,7 @@
  * @property {Boolean} fixed 固定底部悬浮（默认 true）
  * @event {Function} change / update:modelValue
  */
-export default {
+export default defineComponent({
   name: 'LingyunTabbars',
   emits: ['change', 'update:modelValue', 'update:value'],
   data() {
@@ -89,19 +125,28 @@ export default {
         visible: false,
         ready: false,
       },
+      _onResize: null as (() => void) | null,
+      _lensRaf: null as number | null,
+      _lensLast: 0,
+      _edgeL: null as SpringState | null,
+      _edgeR: null as SpringState | null,
+      _targetL: 0,
+      _targetR: 0,
+      _targetTop: 0,
+      _targetH: 0,
     }
   },
   props: {
     items: {
-      type: Array,
-      default: () => [],
+      type: Array as PropType<Array<TabItem | null | undefined>>,
+      default: () => [] as Array<TabItem | null | undefined>,
     },
     modelValue: {
-      type: [String, Number],
+      type: [String, Number] as PropType<string | number | undefined>,
       default: undefined,
     },
     value: {
-      type: [String, Number],
+      type: [String, Number] as PropType<string | number | undefined>,
       default: undefined,
     },
     variant: {
@@ -123,7 +168,7 @@ export default {
       return this.value
     },
     mainItems() {
-      const list = (this.items || []).filter((i) => i && i.role !== 'search')
+      const list = (this.items || []).filter((i): i is TabItem => !!(i && i.role !== 'search'))
       /* 带搜索圆钮时最多 4+1；无搜索时 Sketch 最多 5 */
       return this.searchItem ? list.slice(0, 4) : list.slice(0, 5)
     },
@@ -189,18 +234,20 @@ export default {
       setTimeout(() => this.syncIndicator({ liquid: false }), 20)
     })
     /* #ifdef H5 */
-    this._onResize = () => this.syncIndicator({ liquid: false })
-    window.addEventListener('resize', this._onResize)
+    const onResize = () => this.syncIndicator({ liquid: false })
+    this._onResize = onResize
+    window.addEventListener('resize', onResize)
     /* #endif */
   },
   beforeUnmount() {
     this.stopLens()
     /* #ifdef H5 */
-    if (this._onResize) window.removeEventListener('resize', this._onResize)
+    const onResize = this._onResize
+    if (onResize) window.removeEventListener('resize', onResize)
     /* #endif */
   },
   methods: {
-    itemId(item) {
+    itemId(item: TabItem | null | undefined) {
       return `${this.instanceId}-item-${item && item.key}`
     },
     prefersReducedMotion() {
@@ -211,37 +258,42 @@ export default {
       /* #endif */
       return false
     },
-    scheduleFrame(fn) {
+    scheduleFrame(fn: (time: number) => void): number {
       /* #ifdef H5 */
       return window.requestAnimationFrame(fn)
       /* #endif */
       return setTimeout(() => fn(Date.now()), 16)
     },
-    cancelFrame(id) {
-      if (id == null) return
+    cancelFrame(id?: number | null) {
+      if (typeof id !== 'number') return
+      const frameId = id as number
       /* #ifdef H5 */
-      window.cancelAnimationFrame(id)
+      window.cancelAnimationFrame(frameId)
       return
       /* #endif */
-      clearTimeout(id)
+      clearTimeout(frameId)
     },
     stopLens() {
       this.cancelFrame(this._lensRaf)
       this._lensRaf = null
     },
-    stepSpring(state, target, stiffness, damping, dt) {
+    stepSpring(state: SpringState, target: number, stiffness: number, damping: number, dt: number) {
       const force = (target - state.pos) * stiffness
       const damp = -state.vel * damping
       state.vel += (force + damp) * dt
       state.pos += state.vel * dt
     },
     lensSettled() {
-      const near = (state, target) => Math.abs(state.pos - target) < 0.35 && Math.abs(state.vel) < 12
-      return near(this._edgeL, this._targetL) && near(this._edgeR, this._targetR)
+      const near = (state: SpringState, target: number) => Math.abs(state.pos - target) < 0.35 && Math.abs(state.vel) < 12
+      const edgeL = this._edgeL!
+      const edgeR = this._edgeR!
+      return near(edgeL, this._targetL) && near(edgeR, this._targetR)
     },
     paintLens() {
-      const left = this._edgeL.pos
-      const width = Math.max(this._edgeR.pos - this._edgeL.pos, 8)
+      const edgeL = this._edgeL!
+      const edgeR = this._edgeR!
+      const left = edgeL.pos
+      const width = Math.max(edgeR.pos - edgeL.pos, 8)
       const rest = Math.max(this._targetR - this._targetL, 8)
       const stretch = width / rest
       const scaleY = Math.max(0.72, Math.min(1, 1 / Math.sqrt(Math.max(stretch, 1))))
@@ -251,17 +303,19 @@ export default {
       this.indicator.height = this._targetH
       this.indicator.scaleY = scaleY
     },
-    tickLens(now) {
+    tickLens(now: number) {
+      const edgeL = this._edgeL!
+      const edgeR = this._edgeR!
       const last = this._lensLast || now
       const dt = Math.min(0.032, Math.max(0.008, (now - last) / 1000))
       this._lensLast = now
       const toCenter = (this._targetL + this._targetR) / 2
-      const curCenter = (this._edgeL.pos + this._edgeR.pos) / 2
+      const curCenter = (edgeL.pos + edgeR.pos) / 2
       const goingRight = toCenter >= curCenter
       const lead = { k: 420, d: 28 }
       const trail = { k: 155, d: 20 }
-      this.stepSpring(this._edgeL, this._targetL, goingRight ? trail.k : lead.k, goingRight ? trail.d : lead.d, dt)
-      this.stepSpring(this._edgeR, this._targetR, goingRight ? lead.k : trail.k, goingRight ? lead.d : trail.d, dt)
+      this.stepSpring(edgeL, this._targetL, goingRight ? trail.k : lead.k, goingRight ? trail.d : lead.d, dt)
+      this.stepSpring(edgeR, this._targetR, goingRight ? lead.k : trail.k, goingRight ? lead.d : trail.d, dt)
       this.paintLens()
       if (this.lensSettled()) {
         this._edgeL = { pos: this._targetL, vel: 0 }
@@ -272,7 +326,7 @@ export default {
       }
       this._lensRaf = this.scheduleFrame((t) => this.tickLens(t))
     },
-    snapLens(rect) {
+    snapLens(rect: LensRect) {
       this.stopLens()
       this._targetL = rect.left
       this._targetR = rect.left + rect.width
@@ -282,7 +336,7 @@ export default {
       this._edgeR = { pos: this._targetR, vel: 0 }
       this.paintLens()
     },
-    flowLens(rect) {
+    flowLens(rect: LensRect) {
       if (!this._edgeL || !this._edgeR) {
         this.snapLens(rect)
         return
@@ -297,7 +351,7 @@ export default {
         this._lensRaf = this.scheduleFrame((t) => this.tickLens(t))
       }
     },
-    syncIndicator(options) {
+    syncIndicator(options?: { liquid?: boolean }) {
       const liquid = !!(options && options.liquid)
       const active = (this.mainItems || []).find((item) => this.isActive(item))
       if (!active) {
@@ -343,14 +397,14 @@ export default {
           })
       })
     },
-    isActive(item) {
+    isActive(item: TabItem | null | undefined) {
       if (!item) return false
       if (this.current === undefined || this.current === null || this.current === '') {
         return this.mainItems[0] && this.mainItems[0].key === item.key
       }
       return String(this.current) === String(item.key)
     },
-    itemClass(item) {
+    itemClass(item: TabItem) {
       return [
         this.isActive(item) ? 'lingyun-tabbars__item--active' : '',
         item.text ? '' : 'lingyun-tabbars__item--icon-only',
@@ -358,7 +412,7 @@ export default {
         .filter(Boolean)
         .join(' ')
     },
-    badgeConfig(item) {
+    badgeConfig(item: TabItem | null | undefined): BadgeView | null {
       const b = item && item.badge
       if (b == null || b === false || b === '') return null
       if (b === true || b === 'dot') return { dot: true, text: '', color: 'red', max: 99 }
@@ -372,35 +426,35 @@ export default {
       }
       return { text: b, color: 'red', dot: false, max: 99 }
     },
-    hasBadge(item) {
+    hasBadge(item: TabItem | null | undefined) {
       const c = this.badgeConfig(item)
       if (!c) return false
       return c.dot || c.text === 0 || !!c.text
     },
-    badgeText(item) {
+    badgeText(item: TabItem | null | undefined) {
       const c = this.badgeConfig(item)
       return c ? c.text : ''
     },
-    badgeColor(item) {
+    badgeColor(item: TabItem | null | undefined) {
       const c = this.badgeConfig(item)
       return c ? c.color : 'red'
     },
-    badgeDot(item) {
+    badgeDot(item: TabItem | null | undefined) {
       const c = this.badgeConfig(item)
       return !!(c && c.dot)
     },
-    badgeMax(item) {
+    badgeMax(item: TabItem | null | undefined) {
       const c = this.badgeConfig(item)
       return c && c.max != null ? c.max : 99
     },
-    onSelect(item) {
+    onSelect(item: TabItem | null | undefined) {
       if (!item) return
       this.$emit('update:modelValue', item.key)
       this.$emit('update:value', item.key)
       this.$emit('change', item)
     },
   },
-}
+})
 </script>
 
 <style lang="scss" scoped>

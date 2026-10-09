@@ -13,13 +13,27 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
+type DataFieldMap = {
+  text?: string
+  value?: string
+  disabled?: string
+}
+
+type DataCheckboxItem = {
+  text: string
+  value: unknown
+  disabled: boolean
+}
+
 /**
  * lingyun-data-checkbox
  * 数据驱动多选：localdata → 自绘 lingyun-checkbox
  * @see design/CHECKS.md
  */
-export default {
+export default defineComponent({
   name: 'LingyunDataCheckbox',
   emits: ['update:modelValue', 'update:value', 'change'],
   options: {
@@ -27,21 +41,21 @@ export default {
     styleIsolation: 'shared',
   },
   props: {
-    modelValue: { type: Array, default: undefined },
-    value: { type: Array, default: undefined },
-    localdata: { type: Array, default: () => [] },
+    modelValue: { type: Array as PropType<unknown[] | undefined>, default: undefined },
+    value: { type: Array as PropType<unknown[] | undefined>, default: undefined },
+    localdata: { type: Array as PropType<unknown[]>, default: () => [] as unknown[] },
     map: {
-      type: Object,
+      type: Object as PropType<DataFieldMap>,
       default: () => ({ text: 'text', value: 'value', disabled: 'disabled' }),
     },
     disabled: { type: Boolean, default: false },
     color: { type: String, default: '' },
-    min: { type: [Number, String], default: '' },
-    max: { type: [Number, String], default: '' },
+    min: { type: [Number, String] as PropType<number | string>, default: '' },
+    max: { type: [Number, String] as PropType<number | string>, default: '' },
     emptyText: { type: String, default: '暂无数据' },
   },
   computed: {
-    current() {
+    current(): unknown[] {
       const raw = this.modelValue !== undefined ? this.modelValue : this.value
       return Array.isArray(raw) ? raw.slice() : []
     },
@@ -54,16 +68,17 @@ export default {
     disabledKey() {
       return (this.map && this.map.disabled) || 'disabled'
     },
-    normalizedItems() {
+    normalizedItems(): DataCheckboxItem[] {
       const list = Array.isArray(this.localdata) ? this.localdata : []
       return list.map((raw) => {
         if (raw == null || typeof raw !== 'object') {
           return { text: String(raw), value: raw, disabled: false }
         }
+        const row = raw as Record<string, unknown>
         return {
-          text: raw[this.textKey] != null ? String(raw[this.textKey]) : '',
-          value: raw[this.valueKey],
-          disabled: !!raw[this.disabledKey],
+          text: row[this.textKey] != null ? String(row[this.textKey]) : '',
+          value: row[this.valueKey],
+          disabled: !!row[this.disabledKey],
         }
       })
     },
@@ -79,10 +94,10 @@ export default {
     },
   },
   methods: {
-    isSelected(val) {
+    isSelected(val: unknown) {
       return this.current.some((v) => String(v) === String(val))
     },
-    emitValue(next) {
+    emitValue(next: unknown[]) {
       this.$emit('update:modelValue', next)
       this.$emit('update:value', next)
       this.$emit('change', {
@@ -90,7 +105,7 @@ export default {
         detail: { value: next },
       })
     },
-    onItemChange(val, on) {
+    onItemChange(val: unknown, on: boolean) {
       if (this.disabled) return
       const selected = this.isSelected(val)
       if (on && selected) return
@@ -107,7 +122,7 @@ export default {
       this.emitValue(next)
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

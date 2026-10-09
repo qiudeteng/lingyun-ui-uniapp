@@ -62,7 +62,8 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 
 /**
@@ -84,7 +85,41 @@ import { useThemeStore } from '@/stores/theme'
 const LEAVE_MS = 240
 const NUDGE_MS = 420
 
-export default {
+type AlertInputField = {
+  key?: string
+  type?: string
+  password?: boolean
+  value?: unknown
+  placeholder?: string
+  maxlength?: number
+}
+
+type AlertAction = {
+  key?: string
+  text?: string
+  role?: string
+  primary?: boolean
+  disabled?: boolean
+  close?: boolean
+  onClick?: (payload: AlertActionPayload) => void
+}
+
+type AlertActionPayload = {
+  action: AlertAction
+  index: number
+  values: string[]
+  inputs: Array<AlertInputField & { value: string }>
+}
+
+/** input / keyboardheightchange：detail 可选，target 保持 unknown，避免窄于原生或 uni 事件 */
+type AlertFieldEvent = {
+  detail?: { value?: unknown; height?: unknown }
+  target?: unknown
+}
+
+type KeyboardHeightHandler = (result: UniNamespace.OnKeyboardHeightChangeResult) => void
+
+export default defineComponent({
   name: 'LingyunAlert',
   emits: [
     'update:show',
@@ -96,11 +131,11 @@ export default {
   ],
   props: {
     show: {
-      type: Boolean,
+      type: Boolean as PropType<boolean | undefined>,
       default: undefined,
     },
     modelValue: {
-      type: Boolean,
+      type: Boolean as PropType<boolean | undefined>,
       default: undefined,
     },
     title: {
@@ -112,7 +147,7 @@ export default {
       default: '',
     },
     actions: {
-      type: Array,
+      type: Array as PropType<AlertAction[]>,
       default: () => [],
     },
     layout: {
@@ -120,7 +155,7 @@ export default {
       default: 'auto',
     },
     inputs: {
-      type: Array,
+      type: Array as PropType<AlertInputField[]>,
       default: () => [],
     },
     maskClosable: {
@@ -136,21 +171,24 @@ export default {
       default: true,
     },
     zIndex: {
-      type: [Number, String],
+      type: [Number, String] as PropType<number | string>,
       default: 1000,
     },
   },
   data() {
     return {
-      fieldValues: [],
+      fieldValues: [] as string[],
       mounted: false,
       /** enter | open | leave */
-      phase: '',
-      leaveTimer: null,
-      enterTimer: null,
+      phase: '' as '' | 'enter' | 'open' | 'leave',
+      leaveTimer: null as ReturnType<typeof setTimeout> | null,
+      enterTimer: null as ReturnType<typeof setTimeout> | null,
       /** 拒绝点遮罩关闭时的轻抖 */
       rejectNudge: false,
-      nudgeTimer: null,
+      nudgeTimer: null as ReturnType<typeof setTimeout> | null,
+      _blurKbTimer: null as ReturnType<typeof setTimeout> | null,
+      _onKeyboardHeight: null as KeyboardHeightHandler | null,
+      _onVisualViewport: null as (() => void) | null,
       /** 键盘高度（含输入框时上推面板） */
       keyboardHeight: 0,
       /** 面板实测高度，用于贴键盘定位 */
@@ -166,15 +204,15 @@ export default {
     showHeader() {
       return !!(this.title || this.message || this.$slots.header)
     },
-    normalizedInputs() {
+    normalizedInputs(): AlertInputField[] {
       const list = Array.isArray(this.inputs) ? this.inputs.slice(0, 2) : []
-      return list.filter(Boolean)
+      return list.filter((field): field is AlertInputField => !!field)
     },
     hasInputs() {
       return this.normalizedInputs.length > 0
     },
-    resolvedActions() {
-      return (this.actions || []).filter((a) => a && a.text)
+    resolvedActions(): AlertAction[] {
+      return (this.actions || []).filter((action): action is AlertAction => !!(action && action.text))
     },
     resolvedLayout() {
       if (this.layout === 'row' || this.layout === 'stack') return this.layout
@@ -270,16 +308,16 @@ export default {
     inputs: {
       immediate: true,
       deep: true,
-      handler(list) {
-        const next = (Array.isArray(list) ? list.slice(0, 2) : []).map((f) =>
-          f && f.value != null ? String(f.value) : '',
+      handler(list: AlertInputField[]) {
+        const next = (Array.isArray(list) ? list.slice(0, 2) : []).map((field) =>
+          field && field.value != null ? String(field.value) : '',
         )
         this.fieldValues = next
       },
     },
     visible: {
       immediate: true,
-      handler(val) {
+      handler(val: boolean) {
         if (val) {
           if (this.hasInputs) {
             this.fieldValues = this.normalizedInputs.map((f) =>
@@ -326,14 +364,14 @@ export default {
       }
       this.rejectNudge = false
     },
-    setKeyboardHeight(height) {
+    setKeyboardHeight(height: unknown) {
       const next = Math.max(0, Number(height) || 0)
       if (next === this.keyboardHeight) return
       this.keyboardHeight = next
       if (next > 0) this.measurePanelHeight()
     },
     resetKeyboardLift() {
-      clearTimeout(this._blurKbTimer)
+      clearTimeout(this._blurKbTimer ?? undefined)
       this._blurKbTimer = null
       this.setKeyboardHeight(0)
       this.panelHeightPx = 0
@@ -362,7 +400,8 @@ export default {
           const q = uni.createSelectorQuery().in(this)
           q.select('.lingyun-alert__panel')
             .boundingClientRect((rect) => {
-              const h = rect && rect.height ? Number(rect.height) : 0
+              const node = rect && !Array.isArray(rect) ? rect : null
+              const h = node && node.height ? Number(node.height) : 0
               if (h > 40 && h !== this.panelHeightPx) this.panelHeightPx = h
             })
             .exec()
@@ -381,21 +420,21 @@ export default {
     },
     onInputBlur() {
       /* 延迟清零：切到下一输入框时避免闪回中间 */
-      clearTimeout(this._blurKbTimer)
+      clearTimeout(this._blurKbTimer ?? undefined)
       this._blurKbTimer = setTimeout(() => {
         this.setKeyboardHeight(0)
         this._blurKbTimer = null
       }, 80)
     },
-    onInputKeyboardHeight(event) {
+    onInputKeyboardHeight(event: AlertFieldEvent) {
       const height = event && event.detail ? event.detail.height : 0
-      clearTimeout(this._blurKbTimer)
+      clearTimeout(this._blurKbTimer ?? undefined)
       this.setKeyboardHeight(height)
     },
     bindKeyboardHeight() {
       if (this._onKeyboardHeight) return
       if (typeof uni === 'undefined' || typeof uni.onKeyboardHeightChange !== 'function') return
-      this._onKeyboardHeight = (res) => {
+      this._onKeyboardHeight = (res: UniNamespace.OnKeyboardHeightChangeResult) => {
         this.setKeyboardHeight(res && res.height)
       }
       uni.onKeyboardHeightChange(this._onKeyboardHeight)
@@ -403,7 +442,8 @@ export default {
     unbindKeyboardHeight() {
       if (!this._onKeyboardHeight) return
       if (typeof uni !== 'undefined' && typeof uni.offKeyboardHeightChange === 'function') {
-        uni.offKeyboardHeightChange(this._onKeyboardHeight)
+        const offKeyboard = uni.offKeyboardHeightChange as (callback?: KeyboardHeightHandler) => void
+        offKeyboard(this._onKeyboardHeight)
       }
       this._onKeyboardHeight = null
     },
@@ -412,7 +452,7 @@ export default {
       if (this._onVisualViewport) return
       if (typeof window === 'undefined' || !window.visualViewport) return
       this._onVisualViewport = () => {
-        const vv = window.visualViewport
+        const vv = window.visualViewport!
         const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
         this.setKeyboardHeight(covered > 80 ? covered : 0)
       }
@@ -455,7 +495,7 @@ export default {
         this.leaveTimer = null
       }, wait)
     },
-    actionClass(action) {
+    actionClass(action: AlertAction) {
       const role = this.resolveRole(action)
       const primary = this.isPrimary(action)
       return [
@@ -463,14 +503,14 @@ export default {
         primary ? 'lingyun-alert__action--primary' : 'lingyun-alert__action--secondary',
       ].join(' ')
     },
-    resolveRole(action) {
+    resolveRole(action: AlertAction | null | undefined) {
       const role = action && action.role
       if (role === 'destructive' || role === 'cancel' || role === 'primary' || role === 'secondary') {
         return role === 'primary' ? 'normal' : role
       }
       return 'normal'
     },
-    isPrimary(action) {
+    isPrimary(action: AlertAction | null | undefined) {
       if (!action) return false
       if (action.primary === true) return true
       if (action.primary === false) return false
@@ -481,12 +521,17 @@ export default {
       if (this.resolvedLayout === 'stack') return list[0] === action
       return list[list.length - 1] === action
     },
-    onInput(index, event) {
+    onInput(index: number, event: AlertFieldEvent) {
+      const detail = event && event.detail
+      const target =
+        event && event.target && typeof event.target === 'object'
+          ? (event.target as { value?: unknown })
+          : null
       const value =
-        event && event.detail && event.detail.value != null
-          ? String(event.detail.value)
-          : event && event.target && event.target.value != null
-            ? String(event.target.value)
+        detail && detail.value != null
+          ? String(detail.value)
+          : target && target.value != null
+            ? String(target.value)
             : ''
       const next = this.fieldValues.slice()
       next[index] = value
@@ -494,7 +539,7 @@ export default {
       this.$emit('input', { index, value, values: next.slice() })
       this.$emit('update:inputs', this.buildInputsPayload(next))
     },
-    buildInputsPayload(values) {
+    buildInputsPayload(values: string[]) {
       return this.normalizedInputs.map((field, i) => ({
         ...field,
         value: values[i] != null ? values[i] : '',
@@ -519,7 +564,10 @@ export default {
     },
     playRejectNudge() {
       try {
-        uni.vibrateShort({ type: 'medium' })
+        const vibrateOptions: UniNamespace.VibrateShortOptions & { type: 'medium' } = {
+          type: 'medium',
+        }
+        uni.vibrateShort(vibrateOptions)
       } catch {
         try {
           uni.vibrateShort({})
@@ -538,7 +586,7 @@ export default {
         }, NUDGE_MS)
       })
     },
-    onAction(action, index) {
+    onAction(action: AlertAction | null | undefined, index: number) {
       if (!action || action.disabled) return
       if (this.phase === 'leave') return
       const payload = {
@@ -556,7 +604,7 @@ export default {
       }
     },
   },
-}
+})
 </script>
 
 <style lang="scss" scoped>

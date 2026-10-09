@@ -11,21 +11,23 @@
   </text>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
 /**
  * lingyun-text
  * Apple Text Styles + Labels / 自定义色
  * @see design/TEXTS.md
  */
 
-const TYPE_ALIAS = {
+const TYPE_ALIAS: Record<string, string> = {
   title: 'title3',
   subtitle: 'subheadline',
   caption: 'caption1',
   hint: 'footnote',
 }
 
-const TYPE_DEFAULT_COLOR = {
+const TYPE_DEFAULT_COLOR: Record<string, string> = {
   subtitle: 'secondary',
   subheadline: 'secondary',
   caption: 'secondary',
@@ -35,7 +37,7 @@ const TYPE_DEFAULT_COLOR = {
   footnote: 'secondary',
 }
 
-const SEMANTIC_COLORS = {
+const SEMANTIC_COLORS: Record<string, string> = {
   label: 'var(--lingyun-label, #1c1c1e)',
   secondary: 'var(--lingyun-label-secondary, #3c3c43)',
   tertiary: 'var(--lingyun-label-tertiary, #3c3c43)',
@@ -49,7 +51,7 @@ const SEMANTIC_COLORS = {
   inherit: 'inherit',
 }
 
-const VALID_TYPES = [
+const VALID_TYPES: string[] = [
   'largeTitle',
   'title1',
   'title2',
@@ -63,7 +65,7 @@ const VALID_TYPES = [
   'caption2',
 ]
 
-export default {
+export default defineComponent({
   name: 'LingyunText',
   emits: ['click'],
   props: {
@@ -74,31 +76,31 @@ export default {
     color: { type: String, default: '' },
     align: { type: String, default: 'left' },
     /** 0 = 不限制；>0 省略 */
-    lines: { type: [Number, String], default: 0 },
+    lines: { type: [Number, String] as PropType<number | string>, default: 0 },
     emphasized: { type: Boolean, default: false },
     bold: { type: Boolean, default: false },
     block: { type: Boolean, default: false },
     selectable: { type: Boolean, default: false },
   },
   computed: {
-    resolvedType() {
+    resolvedType(): string {
       const raw = (this.type || 'body').trim()
       const mapped = TYPE_ALIAS[raw] || raw
       return VALID_TYPES.indexOf(mapped) >= 0 ? mapped : 'body'
     },
-    isEmphasized() {
+    isEmphasized(): boolean {
       return !!(this.emphasized || this.bold)
     },
-    lineClamp() {
+    lineClamp(): number {
       const n = Number(this.lines)
       return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0
     },
-    resolvedAlign() {
+    resolvedAlign(): string {
       const a = (this.align || 'left').trim()
       if (a === 'center' || a === 'right') return a
       return 'left'
     },
-    colorValue() {
+    colorValue(): string {
       const raw = (this.color || '').trim()
       if (raw) {
         const key = raw.toLowerCase()
@@ -109,7 +111,7 @@ export default {
       if (def && SEMANTIC_COLORS[def]) return SEMANTIC_COLORS[def]
       return SEMANTIC_COLORS.label
     },
-    rootClass() {
+    rootClass(): string[] {
       const list = [
         `lingyun-text--${this.resolvedType}`,
         `lingyun-text--align-${this.resolvedAlign}`,
@@ -120,8 +122,8 @@ export default {
       if (this.lineClamp > 1) list.push('lingyun-text--clamp')
       return list
     },
-    rootStyle() {
-      const style = {
+    rootStyle(): { color: string; WebkitLineClamp?: string; lineClamp?: string } {
+      const style: { color: string; WebkitLineClamp?: string; lineClamp?: string } = {
         color: this.colorValue,
       }
       if (this.lineClamp > 1) {
@@ -132,11 +134,11 @@ export default {
     },
   },
   methods: {
-    onClick(e) {
-      this.$emit('click', e)
+    onClick(event: Event) {
+      this.$emit('click', event)
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

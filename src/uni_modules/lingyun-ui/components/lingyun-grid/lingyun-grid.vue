@@ -4,7 +4,9 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
+
 /**
  * lingyun-grid
  * @description 宫格。结构对齐 uni-grid：column / square / showBorder / highlight，点击回传 index。
@@ -18,7 +20,7 @@
  * @property {Boolean} highlight 按下高亮，默认 true
  * @event change { detail: { index } }
  */
-export default {
+export default defineComponent({
   name: 'LingyunGrid',
   emits: ['change'],
   props: {
@@ -33,7 +35,7 @@ export default {
   },
   data() {
     return {
-      childList: [],
+      childList: [] as object[],
       epoch: 0,
     }
   },
@@ -48,19 +50,19 @@ export default {
     })
   },
   methods: {
-    register(child) {
+    register(child: object) {
       if (this.childList.indexOf(child) < 0) this.childList.push(child)
     },
-    unregister(child) {
+    unregister(child: object) {
       const index = this.childList.indexOf(child)
       if (index >= 0) this.childList.splice(index, 1)
       this.epoch += 1
     },
-    change(event) {
+    change(event: { detail?: { index?: number } }) {
       this.$emit('change', event)
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

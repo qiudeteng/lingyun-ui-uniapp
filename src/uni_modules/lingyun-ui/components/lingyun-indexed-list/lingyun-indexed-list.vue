@@ -73,7 +73,9 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
 /**
  * lingyun-indexed-list
  * @description 索引列表。数据与点击对齐 uni-indexed-list。
@@ -84,13 +86,36 @@
  * @property {Boolean} showSelect 点选模式，回传已选项
  * @event click { item, select }
  */
-export default {
+
+type IndexedSource = string | { name?: string; checked?: boolean }
+
+type IndexedOption = {
+  letter?: string
+  key?: string
+  data?: IndexedSource[]
+}
+
+type IndexedRow = {
+  key: string
+  name: string
+  itemIndex: number
+  checked: boolean
+}
+
+type IndexedGroup = {
+  title: string
+  key: string
+  items: IndexedRow[]
+  itemIndex: number
+}
+
+export default defineComponent({
   name: 'LingyunIndexedList',
   emits: ['click'],
   props: {
     options: {
-      type: Array,
-      default: () => [],
+      type: Array as PropType<IndexedOption[]>,
+      default: (): IndexedOption[] => [],
     },
     showSelect: {
       type: Boolean,
@@ -99,7 +124,7 @@ export default {
   },
   data() {
     return {
-      lists: [],
+      lists: [] as IndexedGroup[],
       menuTop: 0,
       itemHeight: 0,
       touchmove: false,
@@ -109,7 +134,7 @@ export default {
     }
   },
   computed: {
-    activeKey() {
+    activeKey(): string {
       const group = this.lists[this.touchmoveIndex]
       return group ? group.key : ''
     },
@@ -130,7 +155,7 @@ export default {
   },
   methods: {
     setList() {
-      const lists = []
+      const lists: IndexedGroup[] = []
       let cursor = 0
       ;(this.options || []).forEach((group) => {
         const letter = group && (group.letter || group.key)
@@ -139,7 +164,7 @@ export default {
         const itemIndex = cursor
         const items = data.map((raw) => {
           const name = raw && typeof raw === 'object' ? raw.name || '' : String(raw)
-          const row = {
+          const row: IndexedRow = {
             key: letter,
             name,
             itemIndex: cursor,
@@ -158,30 +183,34 @@ export default {
       this.lists = lists
       if (this.touchmoveIndex >= lists.length) this.touchmoveIndex = -1
     },
-    detectPC() {
+    detectPC(): boolean {
       const ua = navigator.userAgent || ''
       return !/Android|iPhone|SymbianOS|Windows Phone|iPad|iPod/i.test(ua)
     },
-    pointY(event) {
-      const touch = (event.touches && event.touches[0]) || (event.changedTouches && event.changedTouches[0])
-      if (touch && touch.clientY != null) return touch.clientY
-      return event.clientY
+    pointY(event: TouchEvent | MouseEvent): number {
+      if ('touches' in event) {
+        const touch = event.touches[0] || event.changedTouches[0]
+        if (touch && touch.clientY != null) return touch.clientY
+      }
+      if ('clientY' in event && typeof event.clientY === 'number') return event.clientY
+      return Number.NaN
     },
-    measureMenu(done) {
+    measureMenu(done?: () => void) {
       uni
         .createSelectorQuery()
         .in(this)
         .select('#ly-indexed-menu')
         .boundingClientRect((rect) => {
-          if (rect && rect.height && this.lists.length) {
-            this.menuTop = rect.top
-            this.itemHeight = rect.height / this.lists.length
+          const info = Array.isArray(rect) ? rect[0] : rect
+          if (info && info.height && this.lists.length) {
+            this.menuTop = info.top ?? 0
+            this.itemHeight = info.height / this.lists.length
           }
           if (done) done()
         })
         .exec()
     },
-    jumpTo(index) {
+    jumpTo(index: number) {
       if (!this.lists[index]) return
       this.touchmoveIndex = index
       const id = 'ly-indexed-' + index
@@ -194,17 +223,17 @@ export default {
       }
       this.scrollViewId = id
     },
-    pick(event) {
+    pick(event: TouchEvent | MouseEvent) {
       if (!this.itemHeight) return
       const index = Math.floor((this.pointY(event) - this.menuTop) / this.itemHeight)
       if (index === this.touchmoveIndex) return
       this.jumpTo(index)
     },
-    onTouchStart(event) {
+    onTouchStart(event: TouchEvent | MouseEvent) {
       this.touchmove = true
       this.measureMenu(() => this.pick(event))
     },
-    onTouchMove(event) {
+    onTouchMove(event: TouchEvent | MouseEvent) {
       this.touchmove = true
       if (!this.itemHeight) {
         this.measureMenu(() => this.pick(event))
@@ -215,24 +244,24 @@ export default {
     onTouchEnd() {
       this.touchmove = false
     },
-    onMouseDown(event) {
+    onMouseDown(event: MouseEvent) {
       if (!this.isPC) return
       this.onTouchStart(event)
     },
-    onMouseMove(event) {
+    onMouseMove(event: MouseEvent) {
       if (!this.isPC || !this.touchmove) return
       this.onTouchMove(event)
     },
-    onClick(idx, index) {
+    onClick(idx: number, index: number) {
       const row = this.lists[idx] && this.lists[idx].items[index]
       if (!row) return
-      const item = {
+      const item: IndexedRow = {
         key: row.key,
         name: row.name,
         itemIndex: row.itemIndex,
         checked: row.checked,
       }
-      const select = []
+      const select: IndexedRow[] = []
       if (this.showSelect) {
         row.checked = !row.checked
         item.checked = row.checked
@@ -252,7 +281,7 @@ export default {
       this.$emit('click', { item, select })
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

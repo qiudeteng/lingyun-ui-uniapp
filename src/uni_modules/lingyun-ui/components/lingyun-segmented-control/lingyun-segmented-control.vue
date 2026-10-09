@@ -38,8 +38,33 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+
+type SegmentObject = {
+  key?: string | number
+  text?: string | number
+  icon?: string
+  disabled?: boolean
+}
+
+type SegmentInput = SegmentObject | string | number | null | undefined
+
+type SegmentItem = {
+  key: string
+  text: string
+  icon: string
+  disabled: boolean
+  raw: SegmentInput
+}
+
+type SpringState = { pos: number; vel: number }
+
+type ThumbRect = {
+  left: number
+  width: number
+}
 
 /**
  * lingyun-segmented-control
@@ -58,20 +83,20 @@ import { useThemeStore } from '@/stores/theme'
  * @property {Boolean} block 通栏（默认 true，对齐稿面等分）
  * @event {Function} change / update:modelValue
  */
-export default {
+export default defineComponent({
   name: 'LingyunSegmentedControl',
   emits: ['change', 'update:modelValue', 'update:value'],
   props: {
     items: {
-      type: Array,
-      default: () => [],
+      type: Array as PropType<SegmentInput[]>,
+      default: () => [] as SegmentInput[],
     },
     modelValue: {
-      type: [String, Number],
+      type: [String, Number] as PropType<string | number | undefined>,
       default: undefined,
     },
     value: {
-      type: [String, Number],
+      type: [String, Number] as PropType<string | number | undefined>,
       default: undefined,
     },
     size: {
@@ -97,6 +122,15 @@ export default {
         ready: false,
         visible: false,
       },
+      _onResize: null as (() => void) | null,
+      _resizeRaf: null as number | null,
+      _ro: null as ResizeObserver | null,
+      _lensRaf: null as number | null,
+      _lensLast: 0,
+      _edgeL: null as SpringState | null,
+      _edgeR: null as SpringState | null,
+      _targetL: 0,
+      _targetR: 0,
     }
   },
   computed: {
@@ -106,8 +140,8 @@ export default {
     resolvedSize() {
       return this.size === 'small' ? 'small' : 'large'
     },
-    normalizedItems() {
-      return (this.items || []).map((item, index) => {
+    normalizedItems(): SegmentItem[] {
+      return (this.items || []).map((item, index): SegmentItem => {
         if (item != null && typeof item === 'object') {
           return {
             key: item.key != null ? String(item.key) : String(index),
@@ -181,7 +215,7 @@ export default {
     this.unbindThumbResize()
   },
   methods: {
-    segmentId(index) {
+    segmentId(index: number) {
       return `${this.instanceId}-seg-${index}`
     },
     prefersReducedMotion() {
@@ -192,19 +226,20 @@ export default {
       /* #endif */
       return false
     },
-    scheduleFrame(fn) {
+    scheduleFrame(fn: (time: number) => void): number {
       /* #ifdef H5 */
       return window.requestAnimationFrame(fn)
       /* #endif */
       return setTimeout(() => fn(Date.now()), 16)
     },
-    cancelFrame(id) {
-      if (id == null) return
+    cancelFrame(id?: number | null) {
+      if (typeof id !== 'number') return
+      const frameId = id as number
       /* #ifdef H5 */
-      window.cancelAnimationFrame(id)
+      window.cancelAnimationFrame(frameId)
       return
       /* #endif */
-      clearTimeout(id)
+      clearTimeout(frameId)
     },
     /** 窗口或轨道尺寸变化后，等布局结束再量选中块，避免量到 flex 还没分完的宽度 */
     scheduleThumbSync() {
@@ -217,35 +252,39 @@ export default {
       })
     },
     bindThumbResize() {
-      this._onResize = () => this.scheduleThumbSync()
+      const onResize = () => this.scheduleThumbSync()
+      this._onResize = onResize
       if (typeof uni !== 'undefined' && typeof uni.onWindowResize === 'function') {
-        uni.onWindowResize(this._onResize)
+        uni.onWindowResize(onResize)
       }
       /* #ifdef H5 */
       if (typeof window !== 'undefined') {
-        window.addEventListener('resize', this._onResize)
+        window.addEventListener('resize', onResize)
       }
       this.$nextTick(() => {
         const el = typeof document !== 'undefined' ? document.getElementById(this.trackId) : null
         if (!el || typeof ResizeObserver === 'undefined') return
-        this._ro = new ResizeObserver(() => this.scheduleThumbSync())
-        this._ro.observe(el)
+        const ro = new ResizeObserver(() => this.scheduleThumbSync())
+        this._ro = ro
+        ro.observe(el)
       })
       /* #endif */
     },
     unbindThumbResize() {
       this.cancelFrame(this._resizeRaf)
       this._resizeRaf = null
-      if (this._onResize && typeof uni !== 'undefined' && typeof uni.offWindowResize === 'function') {
-        uni.offWindowResize(this._onResize)
+      const onResize = this._onResize
+      if (onResize && typeof uni !== 'undefined' && typeof uni.offWindowResize === 'function') {
+        uni.offWindowResize(onResize)
       }
       /* #ifdef H5 */
-      if (this._ro) {
-        this._ro.disconnect()
+      const ro = this._ro
+      if (ro) {
+        ro.disconnect()
         this._ro = null
       }
-      if (this._onResize && typeof window !== 'undefined') {
-        window.removeEventListener('resize', this._onResize)
+      if (onResize && typeof window !== 'undefined') {
+        window.removeEventListener('resize', onResize)
       }
       /* #endif */
       this._onResize = null
@@ -254,19 +293,23 @@ export default {
       this.cancelFrame(this._lensRaf)
       this._lensRaf = null
     },
-    stepSpring(state, target, stiffness, damping, dt) {
+    stepSpring(state: SpringState, target: number, stiffness: number, damping: number, dt: number) {
       const force = (target - state.pos) * stiffness
       const damp = -state.vel * damping
       state.vel += (force + damp) * dt
       state.pos += state.vel * dt
     },
     lensSettled() {
-      const near = (state, target) => Math.abs(state.pos - target) < 0.35 && Math.abs(state.vel) < 12
-      return near(this._edgeL, this._targetL) && near(this._edgeR, this._targetR)
+      const near = (state: SpringState, target: number) => Math.abs(state.pos - target) < 0.35 && Math.abs(state.vel) < 12
+      const edgeL = this._edgeL!
+      const edgeR = this._edgeR!
+      return near(edgeL, this._targetL) && near(edgeR, this._targetR)
     },
     paintLens() {
-      const left = this._edgeL.pos
-      const width = Math.max(this._edgeR.pos - this._edgeL.pos, 8)
+      const edgeL = this._edgeL!
+      const edgeR = this._edgeR!
+      const left = edgeL.pos
+      const width = Math.max(edgeR.pos - edgeL.pos, 8)
       const rest = Math.max(this._targetR - this._targetL, 8)
       const stretch = width / rest
       const scaleY = Math.max(0.78, Math.min(1, 1 / Math.sqrt(Math.max(stretch, 1))))
@@ -274,17 +317,19 @@ export default {
       this.thumb.width = width
       this.thumb.scaleY = scaleY
     },
-    tickLens(now) {
+    tickLens(now: number) {
+      const edgeL = this._edgeL!
+      const edgeR = this._edgeR!
       const last = this._lensLast || now
       const dt = Math.min(0.032, Math.max(0.008, (now - last) / 1000))
       this._lensLast = now
       const toCenter = (this._targetL + this._targetR) / 2
-      const curCenter = (this._edgeL.pos + this._edgeR.pos) / 2
+      const curCenter = (edgeL.pos + edgeR.pos) / 2
       const goingRight = toCenter >= curCenter
       const lead = { k: 420, d: 28 }
       const trail = { k: 155, d: 20 }
-      this.stepSpring(this._edgeL, this._targetL, goingRight ? trail.k : lead.k, goingRight ? trail.d : lead.d, dt)
-      this.stepSpring(this._edgeR, this._targetR, goingRight ? lead.k : trail.k, goingRight ? lead.d : trail.d, dt)
+      this.stepSpring(edgeL, this._targetL, goingRight ? trail.k : lead.k, goingRight ? trail.d : lead.d, dt)
+      this.stepSpring(edgeR, this._targetR, goingRight ? lead.k : trail.k, goingRight ? lead.d : trail.d, dt)
       this.paintLens()
       if (this.lensSettled()) {
         this._edgeL = { pos: this._targetL, vel: 0 }
@@ -295,7 +340,7 @@ export default {
       }
       this._lensRaf = this.scheduleFrame((t) => this.tickLens(t))
     },
-    snapLens(rect) {
+    snapLens(rect: ThumbRect) {
       this.stopLens()
       this._targetL = rect.left
       this._targetR = rect.left + rect.width
@@ -303,7 +348,7 @@ export default {
       this._edgeR = { pos: this._targetR, vel: 0 }
       this.paintLens()
     },
-    flowLens(rect) {
+    flowLens(rect: ThumbRect) {
       if (!this._edgeL || !this._edgeR) {
         this.snapLens(rect)
         return
@@ -316,7 +361,7 @@ export default {
         this._lensRaf = this.scheduleFrame((t) => this.tickLens(t))
       }
     },
-    syncThumb(options) {
+    syncThumb(options?: { liquid?: boolean }) {
       const liquid = !!(options && options.liquid)
       const activeIndex = this.normalizedItems.findIndex((it) => this.isActive(it))
       const active = activeIndex >= 0 ? this.normalizedItems[activeIndex] : null
@@ -361,14 +406,14 @@ export default {
           })
       })
     },
-    isActive(item) {
+    isActive(item: SegmentItem | null | undefined) {
       if (!item) return false
       if (this.current === undefined || this.current === null || this.current === '') {
         return this.normalizedItems[0] && this.normalizedItems[0].key === item.key
       }
       return String(this.current) === String(item.key)
     },
-    onSelect(item) {
+    onSelect(item: SegmentItem | null, _index?: number) {
       if (this.disabled || !item || item.disabled) return
       this.$emit('update:modelValue', item.key)
       this.$emit('update:value', item.key)
@@ -376,7 +421,7 @@ export default {
       this.$nextTick(() => this.syncThumb({ liquid: true }))
     },
   },
-}
+})
 </script>
 
 <style lang="scss" scoped>

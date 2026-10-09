@@ -10,7 +10,9 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
 /**
  * lingyun-badge
  * @description 对齐 Apple iOS 27 UI Kit · App Icons / Badge（Sketch）
@@ -23,7 +25,7 @@
  * @property {Boolean} dot 仅显示小圆点（无文案）
  * @event {Function} click
  */
-export default {
+export default defineComponent({
   name: 'LingyunBadge',
   emits: ['click'],
   props: {
@@ -37,7 +39,7 @@ export default {
       default: '',
     },
     text: {
-      type: [String, Number],
+      type: [String, Number] as PropType<string | number>,
       default: '',
     },
     max: {
@@ -52,7 +54,7 @@ export default {
   computed: {
     resolvedColor() {
       const raw = (this.type || this.color || 'red').toLowerCase()
-      const map = {
+      const map: Record<string, string> = {
         red: 'red',
         error: 'red',
         danger: 'red',
@@ -83,7 +85,7 @@ export default {
               .trim()
             if (parts) return parts
           }
-        } catch (e) {
+        } catch {
           /* ignore */
         }
       }
@@ -110,11 +112,11 @@ export default {
     },
   },
   methods: {
-    onClick(e) {
+    onClick(e: Event) {
       this.$emit('click', e)
     },
   },
-}
+})
 </script>
 
 <style lang="scss" scoped>
