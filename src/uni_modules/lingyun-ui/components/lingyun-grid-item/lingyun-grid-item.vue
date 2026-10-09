@@ -11,18 +11,18 @@
         @click="onClick"
       >
         <slot>
-          <view v-if="imageSrc || iconType" class="lingyun-grid-item__icon-wrap">
+          <view v-if="imageSrc || iconType" class="lingyun-grid-item__icon-wrap" :style="iconWrapStyle">
             <lingyun-image
               v-if="imageSrc"
               :src="imageSrc"
-              :size="28"
-              shape="rounded"
-              radius="sm"
+              :size="iconPx"
+              :shape="imageShape"
+              :radius="imageRadius"
               mode="aspectFill"
               :lazy="false"
               :show-error-placeholder="false"
             />
-            <lingyun-icon v-else :type="iconType" :size="28" :color="iconColor" />
+            <lingyun-icon v-else :type="iconType" :size="iconPx" :color="iconColor" />
             <view v-if="hasBadge" class="lingyun-grid-item__badge">
               <lingyun-badge :text="badgeText" :dot="badgeDot" />
             </view>
@@ -42,18 +42,18 @@
       @click="onClick"
     >
       <slot>
-        <view v-if="imageSrc || iconType" class="lingyun-grid-item__icon-wrap">
+        <view v-if="imageSrc || iconType" class="lingyun-grid-item__icon-wrap" :style="iconWrapStyle">
           <lingyun-image
             v-if="imageSrc"
             :src="imageSrc"
-            :size="28"
-            shape="rounded"
-            radius="sm"
+            :size="iconPx"
+            :shape="imageShape"
+            :radius="imageRadius"
             mode="aspectFill"
             :lazy="false"
             :show-error-placeholder="false"
           />
-          <lingyun-icon v-else :type="iconType" :size="28" :color="iconColor" />
+          <lingyun-icon v-else :type="iconType" :size="iconPx" :color="iconColor" />
           <view v-if="hasBadge" class="lingyun-grid-item__badge">
             <lingyun-badge :text="badgeText" :dot="badgeDot" />
           </view>
@@ -68,6 +68,19 @@
 import { defineComponent, type PropType } from 'vue'
 import { resolveLingyunPageUrl } from '@/router/pageNav'
 import { openLingyunHostedPage } from '@/router/pageHost'
+
+const DEFAULT_ICON_PX = 28
+
+function parseIconPx(value: unknown): number {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) return value
+  const text = String(value ?? '')
+    .trim()
+    .toLowerCase()
+  const matched = /^(\d+(?:\.\d+)?)(px)?$/.exec(text)
+  if (!matched) return 0
+  const size = Number(matched[1])
+  return size > 0 ? size : 0
+}
 
 function isImageSource(value: string): boolean {
   if (!value) return false
@@ -86,6 +99,9 @@ type LingyunGridLike = {
   childList?: unknown[]
   epoch?: number
   borderColor?: string
+  iconSize?: number | string
+  shape?: string
+  radius?: number | string
   register?: (child: unknown) => void
   unregister?: (child: unknown) => void
   change?: (event: { detail: { index: number } }) => void
@@ -102,6 +118,9 @@ function asGrid(grid: unknown): LingyunGridLike | null {
  * @property {Number} index
  * @property {String} icon lingyun-icon 名称。写成图片地址时用 lingyun-image
  * @property {String} iconSrc 网络或本地图片，优先于 icon
+ * @property {Number|String} iconSize 图标边长，任意像素。空则用宫格上的 iconSize，再空为 28
+ * @property {String} shape 图片图标的显示形式，同 lingyun-image。空则用宫格上的 shape，再空为 rounded
+ * @property {Number|String} radius 图片图标的圆角，同 lingyun-image。空则用宫格上的 radius，再空为 sm
  * @property {String} text
  * @property {String} color 图标色，默认系统蓝
  * @property {String|Number|Boolean} info 角标；true 为圆点
@@ -118,6 +137,9 @@ export default defineComponent({
     index: { type: Number, default: 0 },
     icon: { type: String, default: '' },
     iconSrc: { type: String, default: '' },
+    iconSize: { type: [Number, String], default: '' },
+    shape: { type: String, default: '' },
+    radius: { type: [Number, String], default: '' },
     text: { type: String, default: '' },
     color: { type: String, default: '' },
     link: { type: String, default: '' },
@@ -166,6 +188,30 @@ export default defineComponent({
         width,
         flex: `0 0 ${width}`,
       }
+    },
+    iconPx(): number {
+      const own = parseIconPx(this.iconSize)
+      if (own > 0) return own
+      const grid = asGrid(this.grid)
+      const parent = parseIconPx(grid && grid.iconSize)
+      return parent > 0 ? parent : DEFAULT_ICON_PX
+    },
+    iconWrapStyle(): Record<string, string> {
+      const size = `${this.iconPx}px`
+      return { width: size, height: size }
+    },
+    imageShape(): string {
+      if (this.shape) return this.shape
+      const grid = asGrid(this.grid)
+      if (grid && grid.shape) return String(grid.shape)
+      return 'rounded'
+    },
+    imageRadius(): string | number {
+      if (this.radius !== '' && this.radius != null) return this.radius
+      const grid = asGrid(this.grid)
+      const parent = grid ? grid.radius : ''
+      if (parent !== '' && parent != null) return parent
+      return 'sm'
     },
     iconColor(): string {
       return this.color || 'var(--lingyun-system-blue, #0088ff)'

@@ -18,7 +18,8 @@
 | `mode` | 裁切方式，同 `image` 的 mode | — |
 | `size` | 预设尺寸：`sm` / `md` / `lg` | — |
 | `width / height` | 自定义宽高 | — |
-| `shape` | `rounded` 等 | — |
+| `shape` | `rounded` 等。`square` 直角，`circle` 圆形 | rounded |
+| `radius` | 圆角：`none` / `sm` / `md` / `lg` / `xl` / `2xl`，或像素。仅 `rounded` 生效 | 2xl（26px） |
 | `circle` | 圆形 | false |
 | `lazy / lazyLoad` | 懒加载 | — |
 | `errorSrc / errorText` | 失败时的图或文字 | — |

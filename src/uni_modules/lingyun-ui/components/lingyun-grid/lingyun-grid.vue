@@ -7,6 +7,9 @@
         :index="index"
         :icon="item.icon || ''"
         :icon-src="item.iconSrc || ''"
+        :icon-size="item.iconSize == null ? '' : item.iconSize"
+        :shape="item.shape == null ? '' : item.shape"
+        :radius="item.radius == null ? '' : item.radius"
         :text="item.text || ''"
         :color="item.color || ''"
         :info="item.info == null ? '' : item.info"
@@ -26,6 +29,12 @@ export type LingyunGridItemInput = {
   icon?: string
   /** 网络或本地图片。有值时用 lingyun-image，不再用字形 */
   iconSrc?: string
+  /** 图标边长，单位 px。不传则用宫格上的 iconSize */
+  iconSize?: number | string
+  /** 同 lingyun-image 的 shape，原样传给图片 */
+  shape?: string
+  /** 同 lingyun-image 的 radius，原样传给图片 */
+  radius?: number | string
   text?: string
   color?: string
   info?: string | number | boolean
@@ -45,6 +54,9 @@ export type LingyunGridItemInput = {
  * @property {String} borderColor 分割线颜色，空则用系统 Separator
  * @property {Boolean} highlight 按下高亮，默认 true
  * @property {String} background 卡片背景。空为分组白；`transparent` 为透明
+ * @property {Number|String} iconSize 图标边长，任意像素。空为 28。格子或 items 里再传则覆盖
+ * @property {String} shape 图片图标的显示形式，同 lingyun-image：square / rounded / circle。空为 rounded
+ * @property {Number|String} radius 图片图标的圆角，同 lingyun-image：none / sm / md / lg / xl 或像素。空为 sm
  * @property {Array} items 有数据时按数组生成格子。不传或空数组仍用默认插槽
  * @event change { detail: { index } }
  */
@@ -63,6 +75,12 @@ export default defineComponent({
     highlight: { type: Boolean, default: true },
     /** 空字符串保持分组底。可传 `transparent` 或任意 CSS 颜色 */
     background: { type: String, default: '' },
+    /** 图标边长，单位 px。空则 28。可传数字或 `40` / `40px` */
+    iconSize: { type: [Number, String], default: '' },
+    /** 图片图标的 shape，原样传给 lingyun-image。空为 rounded */
+    shape: { type: String, default: '' },
+    /** 图片图标的 radius，原样传给 lingyun-image。空为 sm */
+    radius: { type: [Number, String], default: '' },
     /**
      * 有格子数据时自动生成。不传或空数组仍用默认插槽。
      * 小程序未传的 Array 属性会变成 []，不能单凭「是不是数组」判断。

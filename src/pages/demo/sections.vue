@@ -40,6 +40,13 @@
       <lingyun-section title="黄色" color="yellow" />
       <lingyun-section title="红色" color="red" />
 
+      <lingyun-section title="直角" radius="none" hint="radius=none" />
+      <lingyun-section title="小圆角" radius="sm" hint="radius=sm" />
+      <lingyun-section title="中圆角" radius="md" hint="radius=md" />
+      <lingyun-section title="大圆角" radius="lg" hint="radius=lg" />
+      <lingyun-section title="超大圆角" radius="xl" hint="radius=xl" />
+      <lingyun-section title="卡片圆角" radius="2xl" hint="radius=2xl · 26px，也是默认" />
+
       <lingyun-section
         title="快捷入口"
         subtitle="Section 套 Grid"
