@@ -86,6 +86,16 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Screen' }
 	},
 	{
+		path: '/pages/demo/responsive',
+		name: 'pagesDemoResponsive',
+		meta: { title: 'Mobile / PC' }
+	},
+	{
+		path: '/pages/demo/responsive',
+		name: 'pagesDemoResponsive',
+		meta: { title: 'Mobile / PC' }
+	},
+	{
 		path: '/pages/demo/sheets',
 		name: 'pagesDemoSheets',
 		meta: { title: 'Sheets' }

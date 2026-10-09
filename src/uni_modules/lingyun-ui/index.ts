@@ -10,6 +10,7 @@ import { installLingyunPageNav } from './components/lingyun-page-nav/mountLingyu
 
 export * from './utils/feedback'
 export {
+  isLingyunWideScreen,
   lingyun,
   refreshLingyunScreen,
 } from './utils/screen'

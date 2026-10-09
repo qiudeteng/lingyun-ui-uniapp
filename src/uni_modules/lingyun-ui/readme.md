@@ -1,6 +1,6 @@
 # 凌云UI
 
-凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.13**，变更见 [`changelog.md`](./changelog.md)。
+凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.14**，变更见 [`changelog.md`](./changelog.md)。
 
 📖 [使用手册](https://lingyun.xinyicanyin.com/)（组件用法、属性、示例；右侧手机框实时预览）
 
@@ -67,6 +67,17 @@ uni.hideLingyunHud()
 
 当前窗口档、操作系统、折叠状态和硬件类型见使用手册 [屏幕](../../../doc/guide/screen.md)。模板里可写 `lingyun.os == 'ios'`，脚本里 `import { lingyun } from '@/uni_modules/lingyun-ui'`。
 
+窄屏和宽屏分成两个组件。窗口宽度小于 **690** 显示 `lingyun-mobile`，达到 **690** 的平板和电脑显示 `lingyun-pc`。
+
+```vue
+<lingyun-mobile>
+  <lingyun-section title="手机上的内容" />
+</lingyun-mobile>
+<lingyun-pc>
+  <lingyun-section title="平板和电脑上的内容" />
+</lingyun-pc>
+```
+
 ## 硬规则
 
 1. **所有 `lingyun-*` 组件只放在本包下**，路径固定为 `components/<组件名>/<组件名>.vue`。
@@ -84,7 +95,7 @@ uni.hideLingyunHud()
 
 ```
 lingyun-ui/
-├── package.json          # 1.0.13
+├── package.json          # 1.0.14
 ├── readme.md
 ├── changelog.md
 ├── index.ts              # app.use(lingyunUi)
@@ -92,6 +103,8 @@ lingyun-ui/
 ├── styles/               # variables、theme、Liquid Glass mixin
 └── components/
     ├── lingyun-app-page/ # 页面壳；宽屏时为左侧导航留位
+    ├── lingyun-mobile/   # 窄屏才显示
+    ├── lingyun-pc/       # 平板和电脑才显示
     ├── lingyun-page-nav/ # 宽屏目录。H5 挂载见 mountLingyunPageNav.ts
     ├── lingyun-toolbars/
     ├── lingyun-fab/

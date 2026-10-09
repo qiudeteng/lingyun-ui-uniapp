@@ -28,6 +28,11 @@ export const lingyun = reactive<LingyunEnv>({
   device: '',
 })
 
+/** 当前窗口是否已到平板或电脑档（宽度 ≥ 690）。还没读到窗口时为 false。 */
+export function isLingyunWideScreen(): boolean {
+  return lingyun.screen === 'pad' || lingyun.screen === 'pc'
+}
+
 let minShort = 0
 let maxShort = 0
 let listening = false
