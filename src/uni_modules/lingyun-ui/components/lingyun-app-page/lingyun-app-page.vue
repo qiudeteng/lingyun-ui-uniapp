@@ -1,8 +1,4 @@
 <template>
-  <!-- 微信页面级滚动不受 scroll-view 的 scroll-y 控制。浮层打开时用它锁住页面滚轮。 -->
-  <!-- #ifdef MP-WEIXIN -->
-  <page-meta :page-style="pageMetaStyle" />
-  <!-- #endif -->
   <view class="lingyun-app-page" :class="rootClass" :style="pageVars">
     <!-- 小程序宽屏侧栏留在页面里。H5 由 lingyunUi 挂到 body，避免换页拆掉侧栏。 -->
     <!-- #ifndef H5 -->
@@ -341,9 +337,6 @@ export default defineComponent({
     useInnerScroll() {
       return this.bodyScroll && !this.pageScroll
     },
-    pageMetaStyle(): string {
-      return this.scrollLocked ? 'overflow: hidden' : 'overflow: visible'
-    },
     /** 哨兵高 = 满玻璃距离：露出比例即滚动进度 */
     sentinelStyle() {
       return { height: `${Math.max(1, Number(this.glassDistance) || 56)}px` }
@@ -450,7 +443,7 @@ export default defineComponent({
           api.setPageStyle({ style: { overflow: locked ? 'hidden' : 'visible' } })
         }
       } catch {
-        /* 低版本基础库没有 setPageStyle，靠 page-meta */
+        /* 低版本基础库没有 setPageStyle 时不锁页面滚轮 */
       }
       // #endif
     },

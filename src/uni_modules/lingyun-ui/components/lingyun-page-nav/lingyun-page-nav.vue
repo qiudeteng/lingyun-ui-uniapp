@@ -73,12 +73,7 @@
           <template #trigger>
             <view class="lingyun-page-nav__store-pill">
               <view class="lingyun-page-nav__store-label">
-                <view class="lingyun-page-nav__store-clip lingyun-page-nav__store-clip--head">
-                  <text class="lingyun-page-nav__store-text">{{ storeLabelHead }}</text>
-                </view>
-                <view v-if="storeLabelTail" class="lingyun-page-nav__store-clip lingyun-page-nav__store-clip--tail">
-                  <text class="lingyun-page-nav__store-text">{{ storeLabelTail }}</text>
-                </view>
+                <text class="lingyun-page-nav__store-text">{{ storeLabel }}</text>
               </view>
               <view class="lingyun-page-nav__store-chevron">
                 <lingyun-icon type="top" :size="8" color="label" />
@@ -309,16 +304,6 @@ export default defineComponent({
       } catch {
         return '请选择门店'
       }
-    },
-    storeLabelHead(): string {
-      const label = this.storeLabel
-      if (label.length <= 1) return label
-      return label.slice(0, Math.ceil(label.length / 2))
-    },
-    storeLabelTail(): string {
-      const label = this.storeLabel
-      if (label.length <= 1) return ''
-      return label.slice(Math.ceil(label.length / 2))
     },
     storeRange(): { store_id: string | number; store_name: string }[] {
       try {
@@ -787,26 +772,7 @@ export default defineComponent({
   flex: 1;
   min-width: 0;
   margin-right: 6px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
   overflow: hidden;
-}
-
-.lingyun-page-nav__store-clip {
-  min-width: 0;
-  overflow: hidden;
-}
-
-.lingyun-page-nav__store-clip--head,
-.lingyun-page-nav__store-clip--tail {
-  flex: 1 1 auto;
-}
-
-.lingyun-page-nav__store-clip--tail {
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-end;
 }
 
 .lingyun-page-nav__store-chevron {
@@ -820,21 +786,15 @@ export default defineComponent({
 }
 
 .lingyun-page-nav__store-text {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 15px;
   font-weight: 400;
   line-height: 20px;
   color: var(--lingyun-label, #{$lingyun-label});
-  white-space: nowrap;
-}
-
-.lingyun-page-nav__store-clip--head .lingyun-page-nav__store-text {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.lingyun-page-nav__store-clip--tail .lingyun-page-nav__store-text {
-  flex-shrink: 0;
 }
 
 .lingyun-page-nav__subtitle--hang {

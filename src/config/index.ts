@@ -10,7 +10,8 @@ const prodApi = {
 }
 
 const testApi = {
-  apiUrl: 'https://api217.baxidangao.com',
+  apiUrl: 'https://api.gkwxhxcj.cn',
+  // apiUrl: 'https://api217.baxidangao.com',
   appid: 100,
   secretKey: 'rtyuiqoweqwe',
 }
