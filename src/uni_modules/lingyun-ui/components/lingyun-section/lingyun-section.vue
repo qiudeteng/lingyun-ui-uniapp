@@ -54,6 +54,8 @@
         </view>
       </slot>
 
+      <view v-if="showHeaderLine" class="lingyun-section__rule" />
+
       <view class="lingyun-section__body" :style="bodyStyle" @click.stop="onClick('content')">
         <slot />
       </view>
@@ -116,6 +118,7 @@ const SECTION_COLORS = ['green', 'blue', 'orange', 'yellow', 'red'] as const
  * @property {String} iconSize 图标大小：空为 24，small 为 16，large 为 32
  * @property {String} color 卡片背景：green / blue / orange / yellow / red，走系统色
  * @property {String|Number} radius 卡片圆角，同 lingyun-image：none / sm / md / lg / xl / 2xl 或像素。空为 2xl（26）
+ * @property {Boolean} headerLine 标题和内容之间是否显示横线，默认否
  * @property {String} cover / thumbnail
  * @property {String} margin / spacing
  * @property {String} padding / bodyPadding 内容区内边距（bodyPadding 优先）
@@ -235,6 +238,8 @@ export default defineComponent({
      * 空则 2xl（26）。通栏仍是直角。
      */
     radius: { type: [String, Number], default: '' },
+    /** 为真时，在标题和内容之间画一条横线。没有标题时不画 */
+    headerLine: { type: Boolean, default: false },
   },
   computed: {
     resolvedSubtitle() {
@@ -251,6 +256,10 @@ export default defineComponent({
         this.$slots.hint ||
         this.$slots.extra
       )
+    },
+    showHeaderLine(): boolean {
+      if (!this.headerLine) return false
+      return this.showHeader || !!(this.$slots && this.$slots.title)
     },
     iconPx(): number {
       if (this.iconSize === 'small') return ICON_SMALL
@@ -273,6 +282,7 @@ export default defineComponent({
         'lingyun-section--glass': this.glass && !this.resolvedColor,
         'lingyun-section--plain': !this.glass && !this.resolvedColor,
         'lingyun-section--solid': !!this.resolvedColor,
+        'lingyun-section--header-line': this.showHeaderLine,
         [`lingyun-section--color-${this.resolvedColor}`]: !!this.resolvedColor,
       }
     },
@@ -405,6 +415,20 @@ $ly-section-radius: 26px;
 
 .lingyun-section__inner {
   box-sizing: border-box;
+}
+
+.lingyun-section--header-line .lingyun-section__header {
+  margin-bottom: 0;
+}
+
+.lingyun-section__rule {
+  height: 0;
+  margin: 12px 0;
+  border-top: 1px solid var(--lingyun-separator, #{$lingyun-separator});
+}
+
+.lingyun-section--solid .lingyun-section__rule {
+  border-top-color: rgba(255, 255, 255, 0.35);
 }
 
 .lingyun-section__header {
