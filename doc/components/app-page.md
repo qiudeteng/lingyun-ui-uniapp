@@ -14,6 +14,11 @@
   <view>正文</view>
 </lingyun-app-page>
 
+<!-- 关掉头部顶栏，正文从顶部开始 -->
+<lingyun-app-page :show-toolbar="false">
+  <view>正文</view>
+</lingyun-app-page>
+
 <!-- 关掉宽屏左侧导航 -->
 <lingyun-app-page title="登录" :show-nav="false" />
 
@@ -48,6 +53,7 @@
 | `bodyScroll` | 是否由本组件滚动正文 | true |
 | `pageScroll` | 页面级滚动。有输入框时必须保持 true | true |
 | `showNav` | 宽屏（窗口 ≥ 690）是否显示左侧导航 | true |
+| `showToolbar` | 是否显示头部顶栏。关掉后不再预留顶栏高度 | true |
 | `navSections` | 只覆盖当前页的微信内嵌列。H5 常驻侧栏和首页列表用 `setLingyunPageNavSections`。组件演示列表是 `/pages/demo/demo` | null |
 | `glassDistance` | 滚动多少 px 后顶栏玻璃铺满 | 56 |
 
