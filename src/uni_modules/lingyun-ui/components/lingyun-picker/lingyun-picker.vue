@@ -417,6 +417,33 @@
                 :style="indicatorPillStyle"
                 aria-hidden="true"
               />
+              <!-- #ifdef MP-WEIXIN -->
+              <view class="lingyun-picker-sheet__mp-cols lingyun-picker-sheet__mp-cols--time">
+                <scroll-view
+                  v-for="(col, colIndex) in timeWheelColumns"
+                  :key="`t-${colIndex}`"
+                  class="lingyun-picker-sheet__mp-col"
+                  style="height: 144px"
+                  scroll-y
+                  :show-scrollbar="false"
+                  :scroll-top="mpTimeWheelTops[colIndex]"
+                  :scroll-with-animation="false"
+                  @scroll="onMpTimeWheelScroll($event, colIndex)"
+                >
+                  <view class="lingyun-picker-sheet__mp-pad lingyun-picker-sheet__mp-pad--time" />
+                  <view
+                    v-for="(item, rowIndex) in col"
+                    :key="`t-${colIndex}-${rowIndex}`"
+                    class="lingyun-picker-sheet__item"
+                  >
+                    <text class="lingyun-picker-sheet__item-text">{{ item.label }}</text>
+                  </view>
+                  <view class="lingyun-picker-sheet__mp-pad lingyun-picker-sheet__mp-pad--time" />
+                </scroll-view>
+              </view>
+              <view class="lingyun-picker-sheet__mp-mask" :class="maskClass" />
+              <!-- #endif -->
+              <!-- #ifndef MP-WEIXIN -->
               <picker-view
                 class="lingyun-picker-sheet__view lingyun-picker-sheet__view--time"
                 :value="timeDraftIndexes"
@@ -445,6 +472,7 @@
                   </view>
                 </picker-view-column>
               </picker-view>
+              <!-- #endif -->
             </view>
           </view>
 
@@ -474,6 +502,33 @@
                 :style="indicatorPillStyle"
                 aria-hidden="true"
               />
+              <!-- #ifdef MP-WEIXIN -->
+              <view class="lingyun-picker-sheet__mp-cols">
+                <scroll-view
+                  v-for="(col, colIndex) in columns"
+                  :key="colIndex"
+                  class="lingyun-picker-sheet__mp-col"
+                  style="height: 216px"
+                  scroll-y
+                  :show-scrollbar="false"
+                  :scroll-top="mpWheelTops[colIndex]"
+                  :scroll-with-animation="false"
+                  @scroll="onMpWheelScroll($event, colIndex)"
+                >
+                  <view class="lingyun-picker-sheet__mp-pad" />
+                  <view
+                    v-for="(item, rowIndex) in col"
+                    :key="`${colIndex}-${rowIndex}`"
+                    class="lingyun-picker-sheet__item"
+                  >
+                    <text class="lingyun-picker-sheet__item-text">{{ item.label }}</text>
+                  </view>
+                  <view class="lingyun-picker-sheet__mp-pad" />
+                </scroll-view>
+              </view>
+              <view class="lingyun-picker-sheet__mp-mask" :class="maskClass" />
+              <!-- #endif -->
+              <!-- #ifndef MP-WEIXIN -->
               <picker-view
                 class="lingyun-picker-sheet__view"
                 :value="draftIndexes"
@@ -493,6 +548,7 @@
                   </view>
                 </picker-view-column>
               </picker-view>
+              <!-- #endif -->
             </view>
           </view>
           <view v-if="showSelectorSearch" class="lingyun-picker-sheet__search">
@@ -900,6 +956,33 @@
                 :style="indicatorPillStyle"
                 aria-hidden="true"
               />
+              <!-- #ifdef MP-WEIXIN -->
+              <view class="lingyun-picker-sheet__mp-cols lingyun-picker-sheet__mp-cols--time">
+                <scroll-view
+                  v-for="(col, colIndex) in timeWheelColumns"
+                  :key="`t-${colIndex}`"
+                  class="lingyun-picker-sheet__mp-col"
+                  style="height: 144px"
+                  scroll-y
+                  :show-scrollbar="false"
+                  :scroll-top="mpTimeWheelTops[colIndex]"
+                  :scroll-with-animation="false"
+                  @scroll="onMpTimeWheelScroll($event, colIndex)"
+                >
+                  <view class="lingyun-picker-sheet__mp-pad lingyun-picker-sheet__mp-pad--time" />
+                  <view
+                    v-for="(item, rowIndex) in col"
+                    :key="`t-${colIndex}-${rowIndex}`"
+                    class="lingyun-picker-sheet__item"
+                  >
+                    <text class="lingyun-picker-sheet__item-text">{{ item.label }}</text>
+                  </view>
+                  <view class="lingyun-picker-sheet__mp-pad lingyun-picker-sheet__mp-pad--time" />
+                </scroll-view>
+              </view>
+              <view class="lingyun-picker-sheet__mp-mask" :class="maskClass" />
+              <!-- #endif -->
+              <!-- #ifndef MP-WEIXIN -->
               <picker-view
                 class="lingyun-picker-sheet__view lingyun-picker-sheet__view--time"
                 :value="timeDraftIndexes"
@@ -928,6 +1011,7 @@
                   </view>
                 </picker-view-column>
               </picker-view>
+              <!-- #endif -->
             </view>
           </view>
 
@@ -957,6 +1041,33 @@
                 :style="indicatorPillStyle"
                 aria-hidden="true"
               />
+              <!-- #ifdef MP-WEIXIN -->
+              <view class="lingyun-picker-sheet__mp-cols">
+                <scroll-view
+                  v-for="(col, colIndex) in columns"
+                  :key="colIndex"
+                  class="lingyun-picker-sheet__mp-col"
+                  style="height: 216px"
+                  scroll-y
+                  :show-scrollbar="false"
+                  :scroll-top="mpWheelTops[colIndex]"
+                  :scroll-with-animation="false"
+                  @scroll="onMpWheelScroll($event, colIndex)"
+                >
+                  <view class="lingyun-picker-sheet__mp-pad" />
+                  <view
+                    v-for="(item, rowIndex) in col"
+                    :key="`${colIndex}-${rowIndex}`"
+                    class="lingyun-picker-sheet__item"
+                  >
+                    <text class="lingyun-picker-sheet__item-text">{{ item.label }}</text>
+                  </view>
+                  <view class="lingyun-picker-sheet__mp-pad" />
+                </scroll-view>
+              </view>
+              <view class="lingyun-picker-sheet__mp-mask" :class="maskClass" />
+              <!-- #endif -->
+              <!-- #ifndef MP-WEIXIN -->
               <picker-view
                 class="lingyun-picker-sheet__view"
                 :value="draftIndexes"
@@ -976,6 +1087,7 @@
                   </view>
                 </picker-view-column>
               </picker-view>
+              <!-- #endif -->
             </view>
           </view>
           <view v-if="showSelectorSearch" class="lingyun-picker-sheet__search">
@@ -1161,6 +1273,11 @@ export default defineComponent({
       _prevBodyOverflow: '',
       _prevBodyOverscroll: '',
       _prevHtmlOverscroll: '',
+      mpWheelTops: [] as number[],
+      mpTimeWheelTops: [] as number[],
+      _mpWheelUser: false,
+      _mpSnapApplying: false,
+      _mpSnapMap: {} as Record<string, ReturnType<typeof setTimeout>>,
     }
   },
   computed: {
@@ -1370,6 +1487,9 @@ export default defineComponent({
     },
     maskClass() {
       return this.isDark ? 'lingyun-picker-sheet__mask--dark' : 'lingyun-picker-sheet__mask--light'
+    },
+    timeWheelColumns(): PickerColumnItem[][] {
+      return [this.timeHourColumn, this.timeMinuteColumn]
     },
     dateBounds(): { start: Ymd; end: Ymd } {
       const now = new Date()
@@ -1622,6 +1742,12 @@ export default defineComponent({
         clearTimeout(this.calAnimTimer)
         this.calAnimTimer = null
       }
+      const snaps = this._mpSnapMap || {}
+      Object.keys(snaps).forEach((key) => {
+        const timer = snaps[key]
+        if (timer) clearTimeout(timer)
+      })
+      this._mpSnapMap = {}
     },
     /**
      * 天视图格子：`{ y, m, d, out }`，共 42 格。
@@ -1874,6 +2000,7 @@ export default defineComponent({
           Math.max(0, this.timeMinuteColumn.findIndex((x) => x.value === mi)),
         ]
       }
+      if (!this._mpWheelUser) this.applyMpTimeWheelTops(this.timeDraftIndexes)
     },
     valueFromIndexes(indexes: number[]): PickerValue {
       const cols = this.columns
@@ -1938,7 +2065,10 @@ export default defineComponent({
       })
       const changed =
         next.some((v, i) => v !== (this.draftIndexes[i] || 0)) || next.length !== this.draftIndexes.length
-      if (changed) this.draftIndexes = next
+      if (changed) {
+        this.draftIndexes = next
+        if (!this._mpWheelUser) this.applyMpWheelTops(next)
+      }
     },
     isDayDisabledAt(day: number, y: number, m: number): boolean {
       if (!day) return true
@@ -2323,6 +2453,7 @@ export default defineComponent({
           this.draftMi = this.snapMinute(hm.mi)
         }
         this.draftIndexes = this.indexesFromValue()
+        this.applyMpWheelTops(this.draftIndexes)
         this.$nextTick(() => this.clampDraftToColumns())
       }
       this.syncSafe()
@@ -2414,6 +2545,7 @@ export default defineComponent({
       const next = (this.columns[0] || []) as PickerColumnItem[]
       const found = next.findIndex((item) => item.value === keep)
       this.draftIndexes = [found >= 0 ? found : 0]
+      this.applyMpWheelTops(this.draftIndexes)
     },
     bindSearchKeyboard() {
       if (!this.showSelectorSearch) return
@@ -2489,6 +2621,60 @@ export default defineComponent({
       this.$emit('update:value', next)
       this.$emit('change', { value: next })
       this.closeSheet()
+    },
+    applyMpWheelTops(indexes?: number[]) {
+      const src = indexes || this.draftIndexes
+      this.mpWheelTops = src.map((idx) => Math.max(0, Number(idx) || 0) * ITEM_H)
+    },
+    applyMpTimeWheelTops(indexes?: number[]) {
+      const src = indexes || this.timeDraftIndexes
+      this.mpTimeWheelTops = src.map((idx) => Math.max(0, Number(idx) || 0) * ITEM_H)
+    },
+    onMpWheelScroll(event: unknown, colIndex: number) {
+      this.onMpColumnScroll(event, colIndex, 'main')
+    },
+    onMpTimeWheelScroll(event: unknown, colIndex: number) {
+      this.onMpColumnScroll(event, colIndex, 'time')
+    },
+    onMpColumnScroll(event: unknown, colIndex: number, which: 'main' | 'time') {
+      if (this._mpSnapApplying) return
+      const detail = (event as { detail?: { scrollTop?: number } } | null)?.detail
+      const top = Number(detail && detail.scrollTop) || 0
+      const cols = which === 'time' ? this.timeWheelColumns : this.columns
+      const col = cols[colIndex] || []
+      const max = Math.max(0, col.length - 1)
+      const idx = Math.min(max, Math.max(0, Math.round(top / ITEM_H)))
+      this._mpWheelUser = true
+      if (which === 'time') {
+        const next = this.timeDraftIndexes.slice()
+        next[colIndex] = idx
+        this.onTimePickChange({ detail: { value: next } })
+      } else {
+        const next = this.draftIndexes.slice()
+        next[colIndex] = idx
+        this.onPickChange({ detail: { value: next } })
+      }
+      this.scheduleMpSnap(which, colIndex, top)
+    },
+    scheduleMpSnap(which: 'main' | 'time', colIndex: number, top: number) {
+      const key = `${which}:${colIndex}`
+      const prev = this._mpSnapMap[key]
+      if (prev) clearTimeout(prev)
+      this._mpSnapMap[key] = setTimeout(() => {
+        delete this._mpSnapMap[key]
+        this._mpWheelUser = false
+        const snapped = Math.round(Math.max(0, top) / ITEM_H) * ITEM_H
+        if (Math.abs(top - snapped) < 0.5) return
+        const tops = (which === 'time' ? this.mpTimeWheelTops : this.mpWheelTops).slice()
+        const cur = tops[colIndex]
+        tops[colIndex] = snapped === cur ? snapped + 0.01 : snapped
+        this._mpSnapApplying = true
+        if (which === 'time') this.mpTimeWheelTops = tops
+        else this.mpWheelTops = tops
+        this.$nextTick(() => {
+          this._mpSnapApplying = false
+        })
+      }, 80)
     },
     lockPageScroll() {
       try {
@@ -2762,6 +2948,47 @@ export default defineComponent({
   position: relative;
   width: 100%;
   flex-shrink: 0;
+}
+
+.lingyun-picker-sheet__mp-cols {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 216px;
+  position: relative;
+  z-index: 1;
+}
+
+.lingyun-picker-sheet__mp-cols--time {
+  height: 144px;
+}
+
+.lingyun-picker-sheet__mp-col {
+  flex: 1;
+  width: 0;
+  height: 216px;
+}
+
+.lingyun-picker-sheet__mp-cols--time .lingyun-picker-sheet__mp-col {
+  height: 144px;
+}
+
+.lingyun-picker-sheet__mp-pad {
+  height: 90px;
+}
+
+.lingyun-picker-sheet__mp-pad--time {
+  height: 54px;
+}
+
+.lingyun-picker-sheet__mp-mask {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .lingyun-picker-sheet__search {

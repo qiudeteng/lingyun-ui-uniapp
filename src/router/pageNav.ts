@@ -1,4 +1,4 @@
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { routes } from '@/router.config'
 
 /** 宽屏页面壳左侧导航。与首页目录共用，避免两处标题漂移。 */
@@ -233,18 +233,22 @@ export function setLingyunPageNavScrollTop(value: number): void {
 
 /**
  * 刚点中的路径。小程序 redirect 后新页面的 getCurrentPages 还会停在上一页，
- * 先用这里的值画选中，避免高亮闪回旧菜单。
+ * 先用这里的值画选中，避免高亮闪回旧菜单。用 ref，已挂上的侧栏能跟着变。
  */
-let pageNavIntentPath = ''
+const pageNavIntentPath = ref('')
 
 export function getLingyunPageNavIntent(): string {
-  return pageNavIntentPath
+  return pageNavIntentPath.value
 }
 
 export function setLingyunPageNavIntent(url: string): void {
-  pageNavIntentPath = normalizeLingyunPagePath(url)
+  pageNavIntentPath.value = normalizeLingyunPagePath(url)
 }
 
 export function clearLingyunPageNavIntent(): void {
-  pageNavIntentPath = ''
+  pageNavIntentPath.value = ''
+}
+
+export function useLingyunPageNavIntent() {
+  return pageNavIntentPath
 }

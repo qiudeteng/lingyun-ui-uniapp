@@ -1,4 +1,8 @@
 <template>
+  <!-- 微信页面级滚动不受 scroll-view 的 scroll-y 控制。浮层打开时用它锁住页面滚轮。 -->
+  <!-- #ifdef MP-WEIXIN -->
+  <page-meta :page-style="pageMetaStyle" />
+  <!-- #endif -->
   <view class="lingyun-app-page" :class="rootClass" :style="pageVars">
     <!-- 小程序宽屏侧栏留在页面里。H5 由 lingyunUi 挂到 body，避免换页拆掉侧栏。 -->
     <!-- #ifndef H5 -->
@@ -100,12 +104,13 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, getCurrentInstance, inject, type PropType } from 'vue'
+import { defineComponent, getCurrentInstance, inject, provide, ref, type PropType } from 'vue'
 import { onResize } from '@dcloudio/uni-app'
 import {
   LINGYUN_APP_PAGE_BIND_SCROLL,
   LINGYUN_APP_PAGE_REPORT_SCROLL,
   LINGYUN_APP_PAGE_SCROLL_LOCK,
+  LINGYUN_APP_PAGE_SCROLL_LOCKED,
 } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 import {
   coerceTriFlag,
@@ -122,6 +127,7 @@ import {
   LINGYUN_PAGE_NAV_WIDTH,
   claimLingyunPageNavHeaderSlots,
   releaseLingyunPageNavHeaderSlots,
+  setLingyunPageNavIntent,
   type LingyunPageNavSection,
 } from '@/router/pageNav'
 import { clearLingyunPageHost, hostedFromText, hostedPagePath, openLingyunHostedPage } from '@/router/pageHost'
@@ -209,6 +215,8 @@ export default defineComponent({
   },
   setup() {
     const instance = getCurrentInstance()
+    const scrollLocked = ref(false)
+    provide(LINGYUN_APP_PAGE_SCROLL_LOCKED, scrollLocked)
     onResize((res) => {
       const proxy = (instance && instance.proxy) as
         | { syncNavLayout?: (windowWidth?: number) => void }
@@ -219,6 +227,7 @@ export default defineComponent({
     })
     return {
       bindScroll: inject(LINGYUN_APP_PAGE_BIND_SCROLL, null),
+      scrollLocked,
     }
   },
   created() {
@@ -332,6 +341,9 @@ export default defineComponent({
     useInnerScroll() {
       return this.bodyScroll && !this.pageScroll
     },
+    pageMetaStyle(): string {
+      return this.scrollLocked ? 'overflow: hidden' : 'overflow: visible'
+    },
     /** 哨兵高 = 满玻璃距离：露出比例即滚动进度 */
     sentinelStyle() {
       return { height: `${Math.max(1, Number(this.glassDistance) || 56)}px` }
@@ -417,10 +429,30 @@ export default defineComponent({
     lockBodyScroll() {
       this._scrollLockCount = (this._scrollLockCount || 0) + 1
       if (this.bodyScrollY) this.bodyScrollY = false
+      this.scrollLocked = true
+      this.applyMpPageOverflow(true)
     },
     unlockBodyScroll() {
       this._scrollLockCount = Math.max(0, (this._scrollLockCount || 0) - 1)
       if (this._scrollLockCount === 0 && !this.bodyScrollY) this.bodyScrollY = true
+      if (this._scrollLockCount === 0) {
+        this.scrollLocked = false
+        this.applyMpPageOverflow(false)
+      }
+    },
+    applyMpPageOverflow(locked: boolean) {
+      // #ifdef MP-WEIXIN
+      try {
+        const api = uni as unknown as {
+          setPageStyle?: (options: { style?: { overflow?: string } }) => void
+        }
+        if (typeof api.setPageStyle === 'function') {
+          api.setPageStyle({ style: { overflow: locked ? 'hidden' : 'visible' } })
+        }
+      } catch {
+        /* 低版本基础库没有 setPageStyle，靠 page-meta */
+      }
+      // #endif
     },
     syncNavLayout(windowWidth?: number) {
       const width = Number(windowWidth)
@@ -561,7 +593,9 @@ export default defineComponent({
       this.scheduleScrollSettle(0)
     },
     onHostHome() {
-      openLingyunHostedPage(LINGYUN_PAGE_NAV_HOME)
+      setLingyunPageNavIntent(LINGYUN_PAGE_NAV_HOME)
+      if (openLingyunHostedPage(LINGYUN_PAGE_NAV_HOME, LINGYUN_PAGE_NAV_HOME)) return
+      uni.redirectTo({ url: LINGYUN_PAGE_NAV_HOME })
     },
     onBack() {
       this.$emit('back')
