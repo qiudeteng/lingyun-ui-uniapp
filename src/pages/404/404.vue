@@ -17,7 +17,7 @@
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue'
   import { onLoad } from '@dcloudio/uni-app'
-  import { LINGYUN_PAGE_NAV_HOME } from '@/router/pageNav'
+  import { LINGYUN_PAGE_NAV_HOME, setLingyunPageNavIntent } from '@/router/pageNav'
   import { openLingyunHostedPage, pageHostState } from '@/router/pageHost'
 
   const missing = ref('')
@@ -61,7 +61,8 @@
   }
 
   function goHome(): void {
-    if (openLingyunHostedPage(LINGYUN_PAGE_NAV_HOME)) return
+    setLingyunPageNavIntent(LINGYUN_PAGE_NAV_HOME)
+    if (openLingyunHostedPage(LINGYUN_PAGE_NAV_HOME, LINGYUN_PAGE_NAV_HOME)) return
     uni.redirectTo({ url: LINGYUN_PAGE_NAV_HOME })
   }
 </script>

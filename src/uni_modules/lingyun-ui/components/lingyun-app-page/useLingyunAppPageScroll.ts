@@ -1,4 +1,4 @@
-import { inject, provide, type InjectionKey } from 'vue'
+import { inject, provide, type InjectionKey, type Ref } from 'vue'
 
 export const LINGYUN_APP_PAGE_REPORT_SCROLL: InjectionKey<(scrollTop: number) => void> =
   Symbol('lingyunAppPageReportScroll')
@@ -19,6 +19,11 @@ export type LingyunAppPageScrollLock = {
 
 export const LINGYUN_APP_PAGE_SCROLL_LOCK: InjectionKey<LingyunAppPageScrollLock> = Symbol(
   'lingyunAppPageScrollLock',
+)
+
+/** 浮层打开时为 true。侧栏等页内滚动区据此停掉滚轮。 */
+export const LINGYUN_APP_PAGE_SCROLL_LOCKED: InjectionKey<Ref<boolean>> = Symbol(
+  'lingyunAppPageScrollLocked',
 )
 
 /** 内层 scroll-view 上报滚动，驱动顶栏玻璃渐变 */

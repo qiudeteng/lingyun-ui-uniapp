@@ -91,7 +91,7 @@
     </view>
     <scroll-view
       class="lingyun-page-nav__scroll"
-      scroll-y
+      :scroll-y="navScrollY"
       :show-scrollbar="false"
       :scroll-top="navScrollTop"
       :scroll-with-animation="false"
@@ -146,7 +146,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, getCurrentInstance, type PropType } from 'vue'
+import { defineComponent, getCurrentInstance, ref, watch, type PropType } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
@@ -166,13 +166,16 @@ import {
   resolveLingyunPageUrl,
   setLingyunPageNavIntent,
   setLingyunPageNavScrollTop,
+  useLingyunPageNavIntent,
   type LingyunPageNavSection,
 } from '@/router/pageNav'
-import { openLingyunHostedPage, pageHostState } from '@/router/pageHost'
+import { clearLingyunPageHost, openLingyunHostedPage, pageHostState } from '@/router/pageHost'
+import { LINGYUN_APP_PAGE_SCROLL_LOCKED } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 
 type NavPage = {
   route?: string
-  $page?: { fullPath?: string; route?: string }
+  options?: Record<string, string>
+  $page?: { fullPath?: string; route?: string; options?: Record<string, string> }
 }
 
 const LINGYUN_PAGE_NAV_TITLE = '凌云UI'
@@ -185,6 +188,12 @@ const LINGYUN_PAGE_NAV_SUBTITLE = '一套对齐 Apple Liquid Glass 的 uni-app �
 export default defineComponent({
   name: 'LingyunPageNav',
   components: { LingyunIcon },
+  inject: {
+    pageScrollLocked: {
+      from: LINGYUN_APP_PAGE_SCROLL_LOCKED,
+      default: () => ref(false),
+    },
+  },
   props: {
     sections: {
       type: Array as PropType<LingyunPageNavSection[] | null>,
@@ -216,6 +225,14 @@ export default defineComponent({
   },
   setup() {
     const instance = getCurrentInstance()
+    const intent = useLingyunPageNavIntent()
+    watch(intent, (value) => {
+      if (!value) return
+      const proxy = instance?.proxy as { currentPath?: string; _routeSeen?: string } | null | undefined
+      if (!proxy) return
+      proxy.currentPath = value
+      proxy._routeSeen = value
+    })
     onShow(() => {
       const proxy = instance?.proxy as { syncRoute?: () => void } | null | undefined
       proxy?.syncRoute?.()
@@ -223,6 +240,9 @@ export default defineComponent({
     return {}
   },
   computed: {
+    navScrollY(): boolean {
+      return !(this.pageScrollLocked as boolean)
+    },
     themeRootClass() {
       try {
         return useThemeStore().rootClass
@@ -352,11 +372,27 @@ export default defineComponent({
   mounted() {
     this.syncLayout()
     this.syncRoute()
+    // 刷新不会走 hashchange。侧栏往往比路由更早挂上，404 的 from 要等路由就绪再写进选中项。
+    this._routeSeen = ''
+    this.pullRoute(40)
     // #ifdef H5
     this._onHashChange = () => {
-      if (this._expectPath) return
-      this._routeSeen = this.currentPath
-      this.pullRoute()
+      clearTimeout(this._routeTimer ?? undefined)
+      this._expectPath = ''
+      const hashPath = this.hashRoute()
+      if (!hashPath) return
+      if (hashPath === 'pages/404/404') {
+        const from = this.missedMenuPath()
+        if (from) {
+          this.currentPath = from
+          this._routeSeen = from
+        }
+        return
+      }
+      clearLingyunPageHost()
+      clearLingyunPageNavIntent()
+      this.currentPath = hashPath
+      this._routeSeen = hashPath
     }
     if (typeof window !== 'undefined') window.addEventListener('hashchange', this._onHashChange)
     // #endif
@@ -410,15 +446,28 @@ export default defineComponent({
         return ''
       }
     },
+    /** H5 地址栏。`#/` 是首页。hashchange 时路由栈可能还停在 404。 */
+    hashRoute(): string {
+      // #ifdef H5
+      if (typeof window === 'undefined') return ''
+      const raw = (window.location.hash || '').replace(/^#/, '').split('?')[0]
+      if (!raw || raw === '/') return normalizeLingyunPagePath(LINGYUN_PAGE_NAV_HOME)
+      return normalizeLingyunPagePath(raw)
+      // #endif
+      // #ifndef H5
+      return ''
+      // #endif
+    },
     syncRoute() {
       const next = this.readRoute()
       const intent = getLingyunPageNavIntent()
-      if (intent && next !== intent) {
+      const highlight = this.routeHighlight(next)
+      if (intent && highlight !== intent) {
         this.currentPath = intent
         return
       }
-      if (intent && next === intent) clearLingyunPageNavIntent()
-      if (next) this.currentPath = next
+      if (intent && highlight === intent) clearLingyunPageNavIntent()
+      if (highlight) this.currentPath = highlight
     },
     /** 等到 getCurrentPages 跟上再对齐。对不上时保持点中的那一项，不要写回上一页。 */
     pullRoute(left = 8) {
@@ -427,13 +476,22 @@ export default defineComponent({
       const expect = this._expectPath
       if (expect) {
         if (now === expect) {
-          this.currentPath = now
+          this.currentPath = this.routeHighlight(now)
           this._expectPath = ''
           clearLingyunPageNavIntent()
           return
         }
       } else if (now && now !== this._routeSeen) {
-        this.currentPath = now
+        const highlight = this.routeHighlight(now)
+        if (now === 'pages/404/404' && (!highlight || highlight === 'pages/404/404')) {
+          if (left <= 0) {
+            this._expectPath = ''
+            return
+          }
+          this._routeTimer = setTimeout(() => this.pullRoute(left - 1), 16)
+          return
+        }
+        this.currentPath = highlight
         return
       }
       if (left <= 0) {
@@ -441,6 +499,53 @@ export default defineComponent({
         return
       }
       this._routeTimer = setTimeout(() => this.pullRoute(left - 1), 16)
+    },
+    /**
+     * 404 对不上菜单项。已有点中的菜单路径就留着；刷新进 404 时才用地址里的 from。
+     */
+    routeHighlight(route: string): string {
+      if (pageHostState.path && route === 'pages/404/404') return pageHostState.path
+      if (route === 'pages/404/404') {
+        if (this.currentPath && this.currentPath !== 'pages/404/404') return this.currentPath
+        const from = this.missedMenuPath()
+        if (from) return from
+      }
+      if (pageHostState.path && !route) return pageHostState.path
+      return route
+    },
+    missedMenuPath(): string {
+      let raw = ''
+      try {
+        const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+        const cur = pages[pages.length - 1] as NavPage | undefined
+        raw = cur?.options?.from || cur?.$page?.options?.from || ''
+        if (!raw && cur?.$page?.fullPath) raw = this.queryValue(cur.$page.fullPath, 'from')
+      } catch {
+        raw = ''
+      }
+      // #ifdef H5
+      if (!raw && typeof window !== 'undefined') raw = this.queryValue(window.location.hash || '', 'from')
+      // #endif
+      if (!raw) return ''
+      return normalizeLingyunPagePath(this.safeDecode(raw))
+    },
+    queryValue(url: string, key: string): string {
+      const query = String(url || '').split('?')[1] || ''
+      const part = query.split('&').find((item) => item.startsWith(`${key}=`))
+      return part ? part.slice(key.length + 1) : ''
+    },
+    safeDecode(value: string): string {
+      let next = value
+      for (let i = 0; i < 2; i += 1) {
+        try {
+          const decoded = decodeURIComponent(next)
+          if (decoded === next) break
+          next = decoded
+        } catch {
+          break
+        }
+      }
+      return next
     },
     isNavCurrent(url: string) {
       const selected = pageHostState.path || this.currentPath
@@ -463,10 +568,12 @@ export default defineComponent({
       if (!target) return
       if (pageHostState.path === rawTarget && pageHostState.url === next) return
       if (!pageHostState.path && target === this.currentPath && target === rawTarget) return
+      if (pageHostState.path && target !== 'pages/404/404') clearLingyunPageHost()
       this.currentPath = rawTarget
       if (openLingyunHostedPage(next, rawTarget)) return
-      this.currentPath = target
-      setLingyunPageNavIntent(target)
+      const highlight = target === 'pages/404/404' ? rawTarget : target
+      this.currentPath = highlight
+      setLingyunPageNavIntent(highlight)
       this._expectPath = target
       this.pullRoute()
       uni.redirectTo({
@@ -674,54 +781,6 @@ export default defineComponent({
   flex-direction: row;
   align-items: center;
   overflow: hidden;
-}
-
-.lingyun-page-nav.theme-light .lingyun-page-nav__store-pill {
-  border: 0;
-  border-radius: 9999px;
-  background: linear-gradient(
-    rgba(248, 248, 248, 0.2),
-    rgba(0, 0, 0, 0.25),
-    rgba(255, 255, 255, 0.25),
-    rgba(68, 68, 68, 0.6)
-  );
-  box-shadow:
-    1.25px 0 0 -0.75px rgba(219, 219, 219, 1),
-    -1.25px 0 0 -0.75px rgba(219, 219, 219, 1),
-    0 0 0 0.5px rgba(219, 219, 219, 1),
-    0 8px 15px 0 rgba(0, 0, 0, 0.02),
-    inset 0 40px 10px -40px rgba(40, 40, 40, 1),
-    inset 0 -40px 10px -40px rgba(40, 40, 40, 1),
-    inset 0 40px 30px -40px rgba(229, 229, 229, 1),
-    inset 0 1px 0 0 rgba(23, 23, 23, 1),
-    inset 0 -1px 0 0 rgba(23, 23, 23, 1),
-    inset 0 4px 0.5px -4px rgba(102, 102, 102, 1),
-    inset 0 -4px 0.5px -4px rgba(102, 102, 102, 1),
-    inset 20px 0 20px -30px rgba(217, 217, 217, 1),
-    inset -20px 0 20px -30px rgba(217, 217, 217, 1);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-}
-
-.lingyun-page-nav.theme-dark .lingyun-page-nav__store-pill {
-  border: 0;
-  border-radius: 9999px;
-  background: linear-gradient(rgba(0, 0, 0, 1), rgba(153, 153, 153, 0.17));
-  box-shadow:
-    1.25px 0 0 -0.75px rgba(191, 191, 191, 1),
-    -1.25px 0 0 -0.75px rgba(191, 191, 191, 1),
-    0 0 0 0.5px rgba(191, 191, 191, 1),
-    0 8px 15px 0 rgba(0, 0, 0, 0.04),
-    inset 0 40px 10px -40px rgba(26, 26, 26, 1),
-    inset 0 -40px 10px -40px rgba(26, 26, 26, 1),
-    inset 0 1px 0 0 rgba(23, 23, 23, 1),
-    inset 0 -1px 0 0 rgba(23, 23, 23, 1),
-    inset 0 4px 0.5px -4px rgba(102, 102, 102, 1),
-    inset 0 -4px 0.5px -4px rgba(102, 102, 102, 1),
-    inset -20px 0 20px -30px rgba(178, 178, 178, 1),
-    inset 20px 0 20px -30px rgba(178, 178, 178, 1);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
 }
 
 .lingyun-page-nav__store-label {
