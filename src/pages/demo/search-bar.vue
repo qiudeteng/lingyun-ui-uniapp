@@ -29,7 +29,6 @@
         v-model="query"
         placeholder="Search"
         @confirm="onConfirm"
-        @mic="onMic"
         @cancel="onCancel"
         @focus="focused = true"
         @blur="focused = false"
@@ -56,10 +55,6 @@
 
   function onConfirm(value: string): void {
     uni.showToast({ title: value || 'Search', icon: 'none' })
-  }
-
-  function onMic(): void {
-    uni.showToast({ title: '麦克风', icon: 'none' })
   }
 
   function onCancel(): void {

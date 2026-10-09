@@ -69,6 +69,7 @@
 | `fixed` | boolean | `true` | 底部 fixed；键盘弹起时随高度上推（`adjust-position=false` + keyboardheightchange） |
 | `safeArea` | boolean | `true` | 预留 Home Indicator |
 | `showCancel` | boolean | `true` | 是否允许聚焦后展开取消钮 |
+| `showMic` | boolean | `false` | 空内容时是否显示语音按钮。暂不支持语音输入，需要时再打开 |
 | `cancelText` | string | `''` | 取消文案；空则为符号 |
 | `focus` | boolean | `false` | 外部请求聚焦 |
 

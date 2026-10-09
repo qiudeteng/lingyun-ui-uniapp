@@ -93,6 +93,15 @@
               </picker-view-column>
             </picker-view>
           </view>
+          <view v-if="showSearch" class="lingyun-data-picker-sheet__search">
+            <lingyun-search-bar
+              :model-value="searchQuery"
+              :fixed="false"
+              :safe-area="false"
+              :placeholder="searchPlaceholder"
+              @update:model-value="onSearchQuery"
+            />
+          </view>
         </view>
       </view>
     </root-portal>
@@ -168,6 +177,15 @@
                 </view>
               </picker-view-column>
             </picker-view>
+          </view>
+          <view v-if="showSearch" class="lingyun-data-picker-sheet__search">
+            <lingyun-search-bar
+              :model-value="searchQuery"
+              :fixed="false"
+              :safe-area="false"
+              :placeholder="searchPlaceholder"
+              @update:model-value="onSearchQuery"
+            />
           </view>
         </view>
       </view>
@@ -278,6 +296,36 @@ function buildCascade(
   return { columns, indexes, path }
 }
 
+/** 保留名称命中的节点；命中父级时保留其全部下级，只命中下级时收成命中分支。 */
+function filterCascadeTree(tree: unknown, query: string, map?: DataPickerMap | null): unknown[] {
+  const q = query.trim().toLowerCase()
+  const list = Array.isArray(tree) ? tree : []
+  if (!q) return list
+  const textKey = (map && map.text) || 'text'
+  const childrenKey = (map && map.children) || 'children'
+  const walk = (nodes: unknown): unknown[] => {
+    const rows = Array.isArray(nodes) ? nodes : []
+    const out: unknown[] = []
+    for (const raw of rows) {
+      if (raw == null || typeof raw !== 'object') {
+        const text = raw == null ? '' : String(raw)
+        if (text.toLowerCase().includes(q)) out.push(raw)
+        continue
+      }
+      const record = raw as Record<string, unknown>
+      const text = record[textKey] != null ? String(record[textKey]) : ''
+      const kids = walk(record[childrenKey])
+      if (text.toLowerCase().includes(q)) {
+        out.push(raw)
+      } else if (kids.length) {
+        out.push({ ...record, [childrenKey]: kids })
+      }
+    }
+    return out
+  }
+  return walk(list)
+}
+
 export default defineComponent({
   name: 'LingyunDataPicker',
   emits: ['update:modelValue', 'update:value', 'change', 'cancel'],
@@ -303,6 +351,9 @@ export default defineComponent({
     cancelText: { type: String, default: '取消' },
     confirmText: { type: String, default: '完成' },
     zIndex: { type: [Number, String] as PropType<number | string>, default: 1200 },
+    /** 滚轮下方搜索框。默认关闭 */
+    showSearch: { type: Boolean, default: false },
+    searchPlaceholder: { type: String, default: '搜索' },
     /**
      * field = 独立触发条；cell = form-item 行内嵌；auto = form-item 内默认 cell
      */
@@ -326,6 +377,11 @@ export default defineComponent({
       _prevBodyOverflow: '',
       _prevBodyOverscroll: '',
       _prevHtmlOverscroll: '',
+      searchQuery: '',
+      searchEmpty: false,
+      keyboardHeight: 0,
+      _onKeyboardHeight: null as ((res: { height?: number }) => void) | null,
+      _onVisualViewport: null as (() => void) | null,
     }
   },
   computed: {
@@ -401,7 +457,7 @@ export default defineComponent({
         right: `${INSET_MEDIUM}px`,
         borderTopLeftRadius: `${RADIUS}px`,
         borderTopRightRadius: `${RADIUS}px`,
-        paddingBottom: `${Number(this.safeBottom) || 0}px`,
+        paddingBottom: `${this.panelBottom}px`,
       }
       if (this.dragging) {
         style.transform = `translate3d(0, ${this.dragDy}px, 0)`
@@ -430,6 +486,14 @@ export default defineComponent({
         ? 'lingyun-data-picker-sheet__mask--dark'
         : 'lingyun-data-picker-sheet__mask--light'
     },
+    panelBottom() {
+      if (this.showSearch && this.keyboardHeight > 0) return this.keyboardHeight
+      return Number(this.safeBottom) || 0
+    },
+    searchTree(): unknown[] {
+      if (!this.showSearch) return this.localdata
+      return filterCascadeTree(this.localdata, this.searchQuery, this.map)
+    },
     displayText() {
       if (!this.current.length) return ''
       const built = buildCascade(this.localdata, this.current, this.map)
@@ -439,6 +503,7 @@ export default defineComponent({
   },
   beforeUnmount() {
     this.clearTimers()
+    this.unbindSearchKeyboard()
     this.unlockPageScroll()
   },
   methods: {
@@ -484,15 +549,71 @@ export default defineComponent({
       return { values, texts, path }
     },
     applyDraftFromValues(selectedValues: unknown[]) {
-      const built = buildCascade(this.localdata, selectedValues, this.map)
-      this.draftColumns = built.columns
-      this.draftIndexes = built.indexes.length ? built.indexes : [0]
+      const built = buildCascade(this.searchTree, selectedValues, this.map)
+      if (!built.columns.length) {
+        this.searchEmpty = true
+        this.draftColumns = [[{ text: '无匹配', value: '', children: [] }]]
+        this.draftIndexes = [0]
+      } else {
+        this.searchEmpty = false
+        this.draftColumns = built.columns
+        this.draftIndexes = built.indexes.length ? built.indexes : [0]
+      }
       this.colEpoch += 1
+    },
+    onSearchQuery(value: unknown) {
+      this.searchQuery = value == null ? '' : String(value)
+      const selected = this.valuesFromDraft().values.filter((item) => item !== '' && item != null)
+      this.applyDraftFromValues(selected.length ? selected : this.current)
+    },
+    bindSearchKeyboard() {
+      if (!this.showSearch) return
+      if (typeof uni !== 'undefined' && typeof uni.onKeyboardHeightChange === 'function') {
+        const onKeyboardHeight = (res: { height?: number }) => {
+          this.keyboardHeight = Math.max(0, Number(res && res.height) || 0)
+        }
+        this._onKeyboardHeight = onKeyboardHeight
+        uni.onKeyboardHeightChange(onKeyboardHeight)
+      }
+      // #ifdef H5
+      const viewport = typeof window === 'undefined' ? null : window.visualViewport
+      if (viewport) {
+        const onVisualViewport = () => {
+          const vv = window.visualViewport
+          if (!vv) return
+          const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+          this.keyboardHeight = covered > 80 ? covered : 0
+        }
+        this._onVisualViewport = onVisualViewport
+        viewport.addEventListener('resize', onVisualViewport)
+        viewport.addEventListener('scroll', onVisualViewport)
+      }
+      // #endif
+    },
+    unbindSearchKeyboard() {
+      const onKeyboardHeight = this._onKeyboardHeight
+      if (onKeyboardHeight && typeof uni !== 'undefined' && typeof uni.offKeyboardHeightChange === 'function') {
+        uni.offKeyboardHeightChange(onKeyboardHeight)
+      }
+      this._onKeyboardHeight = null
+      // #ifdef H5
+      const onVisualViewport = this._onVisualViewport
+      const viewport = typeof window === 'undefined' ? null : window.visualViewport
+      if (onVisualViewport && viewport) {
+        viewport.removeEventListener('resize', onVisualViewport)
+        viewport.removeEventListener('scroll', onVisualViewport)
+      }
+      this._onVisualViewport = null
+      // #endif
+      this.keyboardHeight = 0
     },
     open() {
       if (this.disabled) return
+      this.searchQuery = ''
+      this.searchEmpty = false
       this.applyDraftFromValues(this.current)
       this.syncSafe()
+      this.bindSearchKeyboard()
       this.lockPageScroll()
       this.openAnim()
     },
@@ -524,6 +645,7 @@ export default defineComponent({
     closeSheet(after?: () => void) {
       this.clearTimers()
       if (!this.sheetMounted) {
+        this.unbindSearchKeyboard()
         this.unlockPageScroll()
         if (typeof after === 'function') after()
         return
@@ -535,6 +657,7 @@ export default defineComponent({
           this.phase = ''
           this.dragDy = 0
           this.dragging = false
+          this.unbindSearchKeyboard()
           this.unlockPageScroll()
           this.leaveTimer = null
           if (typeof after === 'function') after()
@@ -591,7 +714,9 @@ export default defineComponent({
       this.closeSheet()
     },
     onConfirm() {
+      if (this.searchEmpty) return
       const { values, texts, path } = this.valuesFromDraft()
+      if (!values.length) return
       this.$emit('update:modelValue', values)
       this.$emit('update:value', values)
       this.$emit('change', {
@@ -860,6 +985,11 @@ export default defineComponent({
   position: relative;
   width: 100%;
   flex-shrink: 0;
+}
+
+.lingyun-data-picker-sheet__search {
+  flex-shrink: 0;
+  width: 100%;
 }
 
 .lingyun-data-picker-sheet__indicator-pill {
