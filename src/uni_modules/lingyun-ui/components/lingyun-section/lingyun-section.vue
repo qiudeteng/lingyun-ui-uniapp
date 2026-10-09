@@ -22,6 +22,18 @@
           <view v-if="thumbnail" class="lingyun-section__thumb">
             <image class="lingyun-section__thumb-image" :src="thumbnail" mode="aspectFit" />
           </view>
+          <lingyun-image
+            v-if="icon"
+            class="lingyun-section__icon"
+            :class="{ 'lingyun-section__icon--small': iconSize === 'small' }"
+            :src="icon"
+            :size="iconPx"
+            shape="rounded"
+            radius="sm"
+            mode="aspectFill"
+            :lazy="false"
+            :show-error-placeholder="false"
+          />
           <view class="lingyun-section__heading">
             <text v-if="title" class="lingyun-section__title">{{ title }}</text>
             <text v-if="resolvedSubtitle" class="lingyun-section__subtitle">{{
@@ -60,6 +72,14 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 
+/** 标题左侧图标不接受自定义像素。默认 24，small 16，large 32。 */
+const ICON_SMALL = 16
+const ICON_DEFAULT = 24
+const ICON_LARGE = 32
+
+/** 卡片背景只接受这五种系统色。 */
+const SECTION_COLORS = ['green', 'blue', 'orange', 'yellow', 'red'] as const
+
 /**
  * lingyun-section
  * @description Demo / 业务分组卡片：对齐 Buttons Demo 的玻璃区块，API 参考 uni-card
@@ -72,6 +92,9 @@ import { defineComponent } from 'vue'
  * - lingyun-section-matrix / lingyun-section-matrix__label：矩阵分组
  *
  * @property {String} title / subtitle（或 subTitle）/ hint / extra
+ * @property {String} icon 标题左侧图片地址
+ * @property {String} iconSize 图标大小：空为 24，small 为 16，large 为 32
+ * @property {String} color 卡片背景：green / blue / orange / yellow / red，走系统色
  * @property {String} cover / thumbnail
  * @property {String} margin / spacing
  * @property {String} padding / bodyPadding 内容区内边距（bodyPadding 优先）
@@ -87,6 +110,20 @@ export default defineComponent({
     title: {
       type: String,
       default: '',
+    },
+    /** 标题左侧的图片地址 */
+    icon: {
+      type: String,
+      default: '',
+    },
+    /**
+     * 图标大小。空为默认 24。small 为 16，large 为 32。
+     * 不接受像素。
+     */
+    iconSize: {
+      type: String,
+      default: '',
+      validator: (value: string) => value === '' || value === 'small' || value === 'large',
     },
     subtitle: {
       type: String,
@@ -162,6 +199,16 @@ export default defineComponent({
       type: Boolean,
       default: true,
     },
+    /**
+     * 卡片背景色。只接受 green、blue、orange、yellow、red。
+     * 对应系统色，浅色 / 暗黑各用各的色值。空则保持原来的底。
+     */
+    color: {
+      type: String,
+      default: '',
+      validator: (value: string) =>
+        value === '' || (SECTION_COLORS as readonly string[]).indexOf(value) >= 0,
+    },
   },
   computed: {
     resolvedSubtitle() {
@@ -170,6 +217,7 @@ export default defineComponent({
     showHeader() {
       return !!(
         this.title ||
+        this.icon ||
         this.resolvedSubtitle ||
         this.hint ||
         this.extra ||
@@ -177,6 +225,15 @@ export default defineComponent({
         this.$slots.hint ||
         this.$slots.extra
       )
+    },
+    iconPx(): number {
+      if (this.iconSize === 'small') return ICON_SMALL
+      if (this.iconSize === 'large') return ICON_LARGE
+      return ICON_DEFAULT
+    },
+    resolvedColor(): string {
+      const value = String(this.color || '').trim()
+      return (SECTION_COLORS as readonly string[]).indexOf(value) >= 0 ? value : ''
     },
     resolvedBodyPadding() {
       return this.bodyPadding !== '' ? this.bodyPadding : this.padding
@@ -189,6 +246,7 @@ export default defineComponent({
         'lingyun-section--border': this.border,
         'lingyun-section--glass': this.glass,
         'lingyun-section--plain': !this.glass,
+        [`lingyun-section--color-${this.resolvedColor}`]: !!this.resolvedColor,
       }
     },
     rootStyle() {
@@ -229,6 +287,8 @@ $ly-section-radius: 14px;
   /* 勿 overflow:hidden：会裁掉同层原生 textarea（Text Fields 多行空白） */
   overflow: visible;
   background-color: var(--lingyun-bg-secondary, #{$lingyun-bg-secondary});
+  /* 宫格嵌在卡片里时去掉自己的圆角，圆角由这张卡片负责 */
+  --lingyun-grid-radius: 0;
 }
 
 .lingyun-section--glass {
@@ -238,6 +298,54 @@ $ly-section-radius: 14px;
 
 .lingyun-section--plain {
   background-color: var(--lingyun-bg-secondary, #{$lingyun-bg-secondary});
+}
+
+.lingyun-section--color-green,
+.lingyun-section--color-blue,
+.lingyun-section--color-orange,
+.lingyun-section--color-yellow,
+.lingyun-section--color-red {
+  .lingyun-section__title,
+  .lingyun-section__subtitle,
+  .lingyun-section__hint,
+  .lingyun-section__extra-text {
+    color: #ffffff;
+  }
+}
+
+.lingyun-section--color-green {
+  background-image: linear-gradient(
+    var(--lingyun-section-tint-green, #{rgba($lingyun-system-green, 0.46)}),
+    var(--lingyun-section-tint-green, #{rgba($lingyun-system-green, 0.46)})
+  );
+}
+
+.lingyun-section--color-blue {
+  background-image: linear-gradient(
+    var(--lingyun-section-tint-blue, #{rgba($lingyun-system-blue, 0.46)}),
+    var(--lingyun-section-tint-blue, #{rgba($lingyun-system-blue, 0.46)})
+  );
+}
+
+.lingyun-section--color-orange {
+  background-image: linear-gradient(
+    var(--lingyun-section-tint-orange, #{rgba($lingyun-system-orange, 0.46)}),
+    var(--lingyun-section-tint-orange, #{rgba($lingyun-system-orange, 0.46)})
+  );
+}
+
+.lingyun-section--color-yellow {
+  background-image: linear-gradient(
+    var(--lingyun-section-tint-yellow, #{rgba($lingyun-system-yellow, 0.46)}),
+    var(--lingyun-section-tint-yellow, #{rgba($lingyun-system-yellow, 0.46)})
+  );
+}
+
+.lingyun-section--color-red {
+  background-image: linear-gradient(
+    var(--lingyun-section-tint-red, #{rgba($lingyun-system-red, 0.46)}),
+    var(--lingyun-section-tint-red, #{rgba($lingyun-system-red, 0.46)})
+  );
 }
 
 .lingyun-section--border:not(.lingyun-section--glass) {
@@ -307,8 +415,19 @@ $ly-section-radius: 14px;
   flex-direction: column;
 }
 
+.lingyun-section__icon {
+  flex-shrink: 0;
+  margin-top: 0;
+  margin-right: 6px;
+}
+
+.lingyun-section__icon--small {
+  margin-top: 2px;
+}
+
 .lingyun-section__title {
   display: block;
+  min-width: 0;
   font-size: 14px;
   font-weight: 600;
   line-height: 20px;

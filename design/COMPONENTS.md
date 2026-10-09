@@ -114,6 +114,7 @@
 
 | 日期 | 说明 |
 |------|------|
+| 2026-10-09 | `lingyun-grid` 1.0.7：微信空 `items` 仍走插槽；去掉宿主并用 flex-basis 分列宽。专章 `GRID.md` |
 | 2026-09-22 | 新增 `lingyun-indexed-list`（索引列表 · 对齐 uni-indexed-list）；专章 `INDEXED_LIST.md` |
 | 2026-09-22 | 新增 `lingyun-grid`（宫格 · 对齐 uni-grid）；专章 `GRID.md` |
 | 2026-09-22 | 新增 `lingyun-goods-nav`（商品底栏 · 对齐 uni-goods-nav）；专章 `GOODS_NAV.md` |

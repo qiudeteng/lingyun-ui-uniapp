@@ -48,6 +48,9 @@
           :text="submitText"
           @click="onSubmit"
         />
+        <view v-if="demoText" class="lingyun-login__demo">
+          <lingyun-button variant="bordered" block :text="demoText" @click="emit('demo')" />
+        </view>
         <text v-if="copyright" class="lingyun-login__copyright">{{ copyright }}</text>
       </view>
     </view>
@@ -80,6 +83,8 @@
       /** 静默登录中，只显示转圈 */
       booting?: boolean
       submitText?: string
+      /** 登录按钮下方的次按钮文案。空则不显示，点击抛 demo */
+      demoText?: string
       /** 登录按钮下方的版权水印，空则不显示 */
       copyright?: string
     }>(),
@@ -89,6 +94,7 @@
       hint: '内部管理使用，不提供注册功能',
       booting: false,
       submitText: '立即登录',
+      demoText: '',
       copyright: '',
     },
   )
@@ -96,6 +102,7 @@
   const emit = defineEmits<{
     submit: [payload: { username: string; password: string }]
     policy: [type: 'user' | 'privacy']
+    demo: []
   }>()
 
   type PolicyType = 'user' | 'privacy'
@@ -253,6 +260,10 @@
 
   .lingyun-login__link {
     color: var(--lingyun-primary, #{$lingyun-primary});
+  }
+
+  .lingyun-login__demo {
+    margin-top: 12px;
   }
 
   .lingyun-login__copyright {

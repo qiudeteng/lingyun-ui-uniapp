@@ -99,6 +99,11 @@ $lingyun-ui-color:(
 	--lingyun-system-orange: #{$lingyun-system-orange};
 	--lingyun-system-yellow: #{$lingyun-system-yellow};
 	--lingyun-system-green: #{$lingyun-system-green};
+	--lingyun-section-tint-red: #{rgba($lingyun-system-red, 0.46)};
+	--lingyun-section-tint-orange: #{rgba($lingyun-system-orange, 0.46)};
+	--lingyun-section-tint-yellow: #{rgba($lingyun-system-yellow, 0.46)};
+	--lingyun-section-tint-green: #{rgba($lingyun-system-green, 0.46)};
+	--lingyun-section-tint-blue: #{rgba($lingyun-system-blue, 0.46)};
 	--lingyun-system-mint: #{$lingyun-system-mint};
 	--lingyun-system-teal: #{$lingyun-system-teal};
 	--lingyun-system-cyan: #{$lingyun-system-cyan};
@@ -178,6 +183,11 @@ $lingyun-ui-color:(
 	--lingyun-system-orange: #{$lingyun-system-orange-dark};
 	--lingyun-system-yellow: #{$lingyun-system-yellow-dark};
 	--lingyun-system-green: #{$lingyun-system-green-dark};
+	--lingyun-section-tint-red: #{rgba($lingyun-system-red-dark, 0.5)};
+	--lingyun-section-tint-orange: #{rgba($lingyun-system-orange-dark, 0.5)};
+	--lingyun-section-tint-yellow: #{rgba($lingyun-system-yellow-dark, 0.5)};
+	--lingyun-section-tint-green: #{rgba($lingyun-system-green-dark, 0.5)};
+	--lingyun-section-tint-blue: #{rgba($lingyun-system-blue-dark, 0.5)};
 	--lingyun-system-mint: #{$lingyun-system-mint-dark};
 	--lingyun-system-teal: #{$lingyun-system-teal-dark};
 	--lingyun-system-cyan: #{$lingyun-system-cyan-dark};
