@@ -77,7 +77,27 @@ const ICON_SMALL = 16
 const ICON_DEFAULT = 24
 const ICON_LARGE = 32
 
-/** 卡片背景只接受这五种系统色。 */
+/** 卡片圆角档，与 lingyun-image 的 radius 相同。不传保持原来的 14。 */
+const RADIUS_PRESET: Record<string, number> = {
+  none: 0,
+  sm: 4,
+  md: 8,
+  lg: 12,
+  xl: 16,
+  '2xl': 26,
+}
+const RADIUS_DEFAULT = 26
+
+function resolveSectionRadius(value: unknown, full: boolean): string {
+  if (full) return '0'
+  if (value === '' || value == null) return `${RADIUS_DEFAULT}px`
+  if (typeof value === 'number' && Number.isFinite(value) && value >= 0) return `${value}px`
+  const text = String(value).trim().toLowerCase()
+  if (Object.prototype.hasOwnProperty.call(RADIUS_PRESET, text)) return `${RADIUS_PRESET[text]}px`
+  const matched = /^(\d+(?:\.\d+)?)(px)?$/.exec(text)
+  if (matched) return `${Number(matched[1])}px`
+  return `${RADIUS_DEFAULT}px`
+}
 const SECTION_COLORS = ['green', 'blue', 'orange', 'yellow', 'red'] as const
 
 /**
@@ -95,6 +115,7 @@ const SECTION_COLORS = ['green', 'blue', 'orange', 'yellow', 'red'] as const
  * @property {String} icon 标题左侧图片地址
  * @property {String} iconSize 图标大小：空为 24，small 为 16，large 为 32
  * @property {String} color 卡片背景：green / blue / orange / yellow / red，走系统色
+ * @property {String|Number} radius 卡片圆角，同 lingyun-image：none / sm / md / lg / xl / 2xl 或像素。空为 2xl（26）
  * @property {String} cover / thumbnail
  * @property {String} margin / spacing
  * @property {String} padding / bodyPadding 内容区内边距（bodyPadding 优先）
@@ -201,7 +222,7 @@ export default defineComponent({
     },
     /**
      * 卡片背景色。只接受 green、blue、orange、yellow、red。
-     * 对应系统色，浅色 / 暗黑各用各的色值。空则保持原来的底。
+     * 设了颜色后用对应系统色实底，不再走玻璃。空则保持原来的玻璃底。
      */
     color: {
       type: String,
@@ -209,6 +230,11 @@ export default defineComponent({
       validator: (value: string) =>
         value === '' || (SECTION_COLORS as readonly string[]).indexOf(value) >= 0,
     },
+    /**
+     * 卡片圆角。与 lingyun-image 的 radius 相同：none / sm / md / lg / xl / 2xl，或像素。
+     * 空则 2xl（26）。通栏仍是直角。
+     */
+    radius: { type: [String, Number], default: '' },
   },
   computed: {
     resolvedSubtitle() {
@@ -244,17 +270,19 @@ export default defineComponent({
         'lingyun-section--last': this.isLast,
         'lingyun-section--shadow': this.isShadow,
         'lingyun-section--border': this.border,
-        'lingyun-section--glass': this.glass,
-        'lingyun-section--plain': !this.glass,
+        'lingyun-section--glass': this.glass && !this.resolvedColor,
+        'lingyun-section--plain': !this.glass && !this.resolvedColor,
+        'lingyun-section--solid': !!this.resolvedColor,
         [`lingyun-section--color-${this.resolvedColor}`]: !!this.resolvedColor,
       }
     },
     rootStyle() {
+      const borderRadius = resolveSectionRadius(this.radius, this.isFull)
       if (this.isFull) {
         /* 左右贴边；保留上间距，避免与上一块粘连 */
-        return { margin: '12px 0 0' }
+        return { margin: '12px 0 0', borderRadius }
       }
-      return { margin: this.margin }
+      return { margin: this.margin, borderRadius }
     },
     innerStyle() {
       return { padding: this.spacing }
@@ -279,7 +307,7 @@ export default defineComponent({
 @import '../../styles/variables.scss';
 
 /* 尺寸：1pt = 1px */
-$ly-section-radius: 14px;
+$ly-section-radius: 26px;
 
 .lingyun-section {
   box-sizing: border-box;
@@ -300,6 +328,14 @@ $ly-section-radius: 14px;
   background-color: var(--lingyun-bg-secondary, #{$lingyun-bg-secondary});
 }
 
+.lingyun-section--solid {
+  background-image: none;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .lingyun-section--color-green,
 .lingyun-section--color-blue,
 .lingyun-section--color-orange,
@@ -314,45 +350,30 @@ $ly-section-radius: 14px;
 }
 
 .lingyun-section--color-green {
-  background-image: linear-gradient(
-    var(--lingyun-section-tint-green, #{rgba($lingyun-system-green, 0.46)}),
-    var(--lingyun-section-tint-green, #{rgba($lingyun-system-green, 0.46)})
-  );
+  background-color: var(--lingyun-system-green, #{$lingyun-system-green});
 }
 
 .lingyun-section--color-blue {
-  background-image: linear-gradient(
-    var(--lingyun-section-tint-blue, #{rgba($lingyun-system-blue, 0.46)}),
-    var(--lingyun-section-tint-blue, #{rgba($lingyun-system-blue, 0.46)})
-  );
+  background-color: var(--lingyun-system-blue, #{$lingyun-system-blue});
 }
 
 .lingyun-section--color-orange {
-  background-image: linear-gradient(
-    var(--lingyun-section-tint-orange, #{rgba($lingyun-system-orange, 0.46)}),
-    var(--lingyun-section-tint-orange, #{rgba($lingyun-system-orange, 0.46)})
-  );
+  background-color: var(--lingyun-system-orange, #{$lingyun-system-orange});
 }
 
 .lingyun-section--color-yellow {
-  background-image: linear-gradient(
-    var(--lingyun-section-tint-yellow, #{rgba($lingyun-system-yellow, 0.46)}),
-    var(--lingyun-section-tint-yellow, #{rgba($lingyun-system-yellow, 0.46)})
-  );
+  background-color: var(--lingyun-system-yellow, #{$lingyun-system-yellow});
 }
 
 .lingyun-section--color-red {
-  background-image: linear-gradient(
-    var(--lingyun-section-tint-red, #{rgba($lingyun-system-red, 0.46)}),
-    var(--lingyun-section-tint-red, #{rgba($lingyun-system-red, 0.46)})
-  );
+  background-color: var(--lingyun-system-red, #{$lingyun-system-red});
 }
 
-.lingyun-section--border:not(.lingyun-section--glass) {
+.lingyun-section--border:not(.lingyun-section--glass):not(.lingyun-section--solid) {
   border: 1px solid var(--lingyun-separator, #{$lingyun-separator});
 }
 
-.lingyun-section--shadow:not(.lingyun-section--glass) {
+.lingyun-section--shadow:not(.lingyun-section--glass):not(.lingyun-section--solid) {
   box-shadow: var(--lingyun-glass-shadow, #{$lingyun-glass-shadow});
 }
 

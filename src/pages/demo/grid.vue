@@ -27,6 +27,21 @@
       </view>
 
       <view class="block">
+        <text class="block__title">图标 40px</text>
+        <lingyun-grid :column="4" :icon-size="40" @change="onChange">
+          <lingyun-grid-item
+            v-for="(item, index) in sized"
+            :key="item.text"
+            :index="index"
+            :icon="item.icon"
+            :icon-size="item.iconSize"
+            :text="item.text"
+            :color="item.color"
+          />
+        </lingyun-grid>
+      </view>
+
+      <view class="block">
         <text class="block__title">三列 · 分割线</text>
         <lingyun-grid :column="3" show-border @change="onChange">
           <lingyun-grid-item
@@ -59,16 +74,26 @@
     iconSrc?: string
     text: string
     color?: string
+    shape?: string
+    radius?: string | number
     link?: string
   }> = [
     { icon: 'image', text: '相册', color: '#0088ff', link: '/pages/demo/images' },
     {
       iconSrc: 'https://qiniu-web-assets.dcloud.net.cn/unidoc/zh/shuijiao.jpg',
       text: '图片',
+      shape: 'circle',
       link: '/pages/demo/icons',
     },
     { icon: 'star', text: '评价', color: '#ff8d28' },
     { icon: 'gear', text: '设置', color: '#8e8e93', link: '/pages/demo/icons' },
+  ]
+
+  const sized: Array<{ icon: string; text: string; color: string; iconSize?: number }> = [
+    { icon: 'shop', text: '店铺', color: '#0088ff' },
+    { icon: 'cart', text: '购物车', color: '#34c759', iconSize: 24 },
+    { icon: 'gift', text: '优惠', color: '#ff8d28' },
+    { icon: 'gear', text: '设置', color: '#8e8e93' },
   ]
 
   const bordered = [

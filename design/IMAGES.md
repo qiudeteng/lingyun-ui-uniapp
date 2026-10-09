@@ -52,9 +52,10 @@
 |----------|-----|
 | `none` | 0 |
 | `sm` | 4 |
-| `md` | 8（默认） |
+| `md` | 8 |
 | `lg` | 12 |
 | `xl` | 16 |
+| `2xl` | 26（默认） |
 | number | 自定义 |
 
 `square` / `circle` 时忽略 `radius`。
@@ -91,7 +92,7 @@
 | `shape` | `rounded` | `square` \| `rounded` \| `circle` |
 | `size` | — | 尺寸档 / 数字；与 width·height 二选一优先后两者 |
 | `width` / `height` | — | 显式宽高 |
-| `radius` | `md` | 仅 rounded |
+| `radius` | `2xl` | 仅 rounded。`2xl` 为 26px |
 | `mode` | `aspectFill` | 拉伸；可用别名 |
 | `lazy` / `lazyLoad` | `true` | 懒加载 |
 | `showLoading` | `true` | 加载中显示扫光占位 |

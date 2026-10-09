@@ -86,6 +86,7 @@ const RADIUS_PRESET: Record<string, number> = {
   md: 8,
   lg: 12,
   xl: 16,
+  '2xl': 26,
 }
 
 function toCssSize(v: string | number | null | undefined, fallback: string): string {
@@ -123,8 +124,8 @@ export default defineComponent({
     shape: { type: String, default: 'rounded' },
     /** @deprecated 请用 shape="circle" */
     circle: { type: Boolean, default: false },
-    /** 圆角幅度，仅 shape=rounded 生效；none/sm/md/lg/xl 或数字 px */
-    radius: { type: [String, Number] as PropType<string | number>, default: 'md' },
+    /** 圆角幅度，仅 shape=rounded 生效；none/sm/md/lg/xl/2xl 或数字 px。默认 2xl（26） */
+    radius: { type: [String, Number] as PropType<string | number>, default: '2xl' },
     errorSrc: { type: String, default: '' },
     errorText: { type: String, default: '加载失败' },
     showErrorPlaceholder: { type: Boolean, default: true },
@@ -182,14 +183,14 @@ export default defineComponent({
       if (this.isCircle || this.isSquare) return 0
       const r = this.radius
       if (typeof r === 'number' && Number.isFinite(r)) return Math.max(0, r)
-      const key = String(r || 'md').trim().toLowerCase()
+      const key = String(r || '2xl').trim().toLowerCase()
       if (Object.prototype.hasOwnProperty.call(RADIUS_PRESET, key)) {
         const preset = RADIUS_PRESET[key]
         if (preset != null) return preset
       }
       const n = Number(r)
       if (Number.isFinite(n)) return Math.max(0, n)
-      return RADIUS_PRESET.md
+      return RADIUS_PRESET['2xl']
     },
     boxWidth() {
       if (hasExplicitSize(this.width)) return toCssSize(this.width, '100%')

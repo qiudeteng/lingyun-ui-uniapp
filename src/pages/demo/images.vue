@@ -64,6 +64,10 @@
             <lingyun-image :src="photoSquare" shape="rounded" size="md" radius="xl" />
             <lingyun-text type="caption" align="center" block>xl</lingyun-text>
           </view>
+          <view class="cell">
+            <lingyun-image :src="photoSquare" shape="rounded" size="md" radius="2xl" />
+            <lingyun-text type="caption" align="center" block>2xl</lingyun-text>
+          </view>
         </view>
       </lingyun-section>
 
