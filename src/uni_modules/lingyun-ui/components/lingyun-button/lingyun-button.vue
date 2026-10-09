@@ -42,6 +42,10 @@
  */
 export default {
   name: 'LingyunButton',
+  options: {
+    // 去掉宿主，父级 flex 才能居中到按钮本身（否则小程序胶囊贴在宿主左侧）
+    virtualHost: true,
+  },
   emits: ['click'],
   props: {
     /** Sketch「Style」；不用原生属性名 style，避免与 CSS style 冲突 */

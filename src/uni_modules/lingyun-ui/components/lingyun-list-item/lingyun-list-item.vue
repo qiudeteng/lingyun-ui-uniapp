@@ -85,6 +85,7 @@
           </view>
           <view v-if="resolvedAccessory === 'toggle'" class="lingyun-list-item__toggle" @click.stop>
             <switch
+              class="lingyun-list-item__switch"
               :checked="!!switchChecked"
               :disabled="disabled"
               :color="switchColor"
@@ -543,8 +544,13 @@ $ly-row-pad-x: 16px;
     min-width: 0;
   }
 
-  :deep(uni-switch),
-  :deep(.uni-switch-wrapper) {
+  &__toggle {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+  }
+
+  &__switch {
     margin: 0;
     flex-shrink: 0;
   }

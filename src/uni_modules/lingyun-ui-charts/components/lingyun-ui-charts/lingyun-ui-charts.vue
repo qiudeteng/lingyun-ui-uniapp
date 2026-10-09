@@ -415,17 +415,28 @@ export default {
       }
       this.cid = id
     }
-    const systemInfo = uni.getSystemInfoSync()
-    if(systemInfo.platform === 'windows' || systemInfo.platform === 'mac'){
+    let platform = ''
+    let pixelRatio = 1
+    if (typeof uni.getDeviceInfo === 'function' && typeof uni.getWindowInfo === 'function') {
+      const deviceInfo = uni.getDeviceInfo()
+      const windowInfo = uni.getWindowInfo()
+      platform = deviceInfo.platform || ''
+      pixelRatio = windowInfo.pixelRatio || 1
+    } else {
+      const systemInfo = uni.getSystemInfoSync()
+      platform = systemInfo.platform
+      pixelRatio = systemInfo.pixelRatio
+    }
+    if(platform === 'windows' || platform === 'mac'){
       this.inWin = true;
     }
     // #ifdef MP-WEIXIN
     this.inWx = true;
-    if (this.canvas2d === false || systemInfo.platform === 'windows' || systemInfo.platform === 'mac') {
+    if (this.canvas2d === false || platform === 'windows' || platform === 'mac') {
       this.type2d = false;
     }else{
       this.type2d = true;
-      this.pixel = systemInfo.pixelRatio;
+      this.pixel = pixelRatio;
     }
     // #endif
     //非微信小程序端强制关闭canvas2d模式

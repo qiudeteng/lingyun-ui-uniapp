@@ -17,3 +17,13 @@
 .lingyun-app-page--page-scroll .lingyun-app-page__pad > div:first-child {
   min-height: 100vh;
 }
+
+// 门店胶囊包在 lingyun-menu 里。组件样式隔离打不到菜单根节点，宽度写在全局。
+.lingyun-page-nav__store-menu,
+.lingyun-page-nav__store-menu .lingyun-popover__trigger {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}

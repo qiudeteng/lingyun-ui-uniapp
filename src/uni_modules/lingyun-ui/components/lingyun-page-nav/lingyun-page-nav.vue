@@ -8,44 +8,73 @@
           <view class="lingyun-page-nav__window lingyun-page-nav__window--zoom" />
         </view>
         <view v-if="showProfile" class="lingyun-page-nav__profile">
-          <view v-if="showAvatar" class="lingyun-page-nav__avatar">
-            <slot name="avatar">
-              <image
-                v-if="profileAvatar && !profile.slotAvatar && !avatarFailed"
-                class="lingyun-page-nav__avatar-img"
-                :src="profileAvatar"
-                mode="aspectFill"
-                @error="onAvatarError"
-              />
-              <text v-else-if="!profile.slotAvatar" class="lingyun-page-nav__avatar-fallback">{{ avatarInitial }}</text>
-            </slot>
+          <view
+            v-if="showAvatar"
+            class="lingyun-page-nav__avatar"
+            :class="{ 'lingyun-page-nav__avatar--mark': showStorePicker }"
+          >
+            <image
+              v-if="profileAvatar && !useAvatarSlot && !avatarFailed"
+              class="lingyun-page-nav__avatar-img"
+              :style="avatarImgStyle"
+              :src="profileAvatar"
+              mode="aspectFill"
+              @error="onAvatarError"
+            />
+            <text v-else-if="!useAvatarSlot" class="lingyun-page-nav__avatar-fallback">{{ avatarInitial }}</text>
+            <slot name="avatar" />
             <!-- #ifdef H5 -->
-            <view v-if="profile.slotAvatar" id="ly-nav-slot-avatar" class="lingyun-page-nav__slot" />
+            <view v-if="useAvatarSlot" id="ly-nav-slot-avatar" class="lingyun-page-nav__slot" />
             <!-- #endif -->
           </view>
           <view class="lingyun-page-nav__meta">
-            <view v-if="showName" class="lingyun-page-nav__name">
-              <slot name="name">
-                <view v-if="profileName && !profile.slotName" class="lingyun-page-nav__name-text">
-                  <text class="lingyun-page-nav__name-label">{{ profileName }}</text>
-                </view>
-              </slot>
+            <view
+              v-if="showName"
+              class="lingyun-page-nav__name"
+              :class="{ 'lingyun-page-nav__name--title': showStorePicker }"
+            >
+              <view v-if="profileName && !useNameSlot" class="lingyun-page-nav__name-text">
+                <text class="lingyun-page-nav__name-label">{{ profileName }}</text>
+              </view>
+              <slot name="name" />
               <!-- #ifdef H5 -->
-              <view v-if="profile.slotName" id="ly-nav-slot-name" class="lingyun-page-nav__slot" />
+              <view v-if="useNameSlot" id="ly-nav-slot-name" class="lingyun-page-nav__slot" />
               <!-- #endif -->
             </view>
+            <view v-if="showStorePicker" class="lingyun-page-nav__store">
+              <lingyun-menu
+                class="lingyun-page-nav__store-menu"
+                :show="storeMenuOpen"
+                :actions="storeActions"
+                placement="bottom"
+                @update:show="onStoreMenuShow"
+                @select="onStoreSelect"
+              >
+                <template #trigger>
+                  <view class="lingyun-page-nav__store-pill" @click="onStorePill">
+                    <lingyun-icon type="staff" :size="16" color="#ffffff" />
+                    <view class="lingyun-page-nav__store-label">
+                      <text class="lingyun-page-nav__store-text">{{ storeLabel }}</text>
+                    </view>
+                    <view class="lingyun-page-nav__store-chevron">
+                      <lingyun-icon type="top" :size="8" color="#ffffff" />
+                      <lingyun-icon type="bottom" :size="8" color="#ffffff" />
+                    </view>
+                  </view>
+                </template>
+              </lingyun-menu>
+            </view>
             <view
-              v-if="showSubtitle"
+              v-else-if="showSubtitle"
               class="lingyun-page-nav__subtitle"
               :class="{ 'lingyun-page-nav__subtitle--hang': showName }"
             >
-              <slot name="subtitle">
-                <view v-if="profileSubtitle && !profile.slotSubtitle" class="lingyun-page-nav__subtitle-text">
-                  <text class="lingyun-page-nav__subtitle-label">{{ profileSubtitle }}</text>
-                </view>
-              </slot>
+              <view v-if="profileSubtitle && !useSubtitleSlot" class="lingyun-page-nav__subtitle-text">
+                <text class="lingyun-page-nav__subtitle-label">{{ profileSubtitle }}</text>
+              </view>
+              <slot name="subtitle" />
               <!-- #ifdef H5 -->
-              <view v-if="profile.slotSubtitle" id="ly-nav-slot-subtitle" class="lingyun-page-nav__slot" />
+              <view v-if="useSubtitleSlot" id="ly-nav-slot-subtitle" class="lingyun-page-nav__slot" />
               <!-- #endif -->
             </view>
           </view>
@@ -113,6 +142,7 @@
 import { defineComponent, getCurrentInstance, type PropType } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useThemeStore } from '@/stores/theme'
+import { useUserStore } from '@/stores/user'
 import LingyunIcon from '@/uni_modules/lingyun-ui/components/lingyun-icon/lingyun-icon.vue'
 import {
   getLingyunNavLayout,
@@ -170,6 +200,7 @@ export default defineComponent({
       navHome: LINGYUN_PAGE_NAV_HOME,
       navScrollTop: getLingyunPageNavScrollTop(),
       avatarFailed: false,
+      storeMenuOpen: false,
       _onHashChange: null as (() => void) | null,
       _expectPath: '',
       _routeSeen: '',
@@ -218,17 +249,62 @@ export default defineComponent({
     profileSubtitle(): string {
       if (this.subtitle) return this.subtitle
       if (this.profile.subtitle) return this.profile.subtitle
-      const customName = !!(this.name || this.profile.name || this.profile.slotName || this.$slots.name)
+      const customName = !!(this.name || this.profile.name || this.useNameSlot)
       return customName ? '' : LINGYUN_PAGE_NAV_SUBTITLE
     },
+    /**
+     * 小程序父级只要写了 slot="avatar"，子组件 $slots.avatar 就恒为真，
+     * 写在 slot 默认内容里的头像和名称不会渲染。是否改用插槽只看页面有没有真的传入。
+     */
+    useAvatarSlot(): boolean {
+      return !!this.profile.slotAvatar
+    },
+    useNameSlot(): boolean {
+      return !!this.profile.slotName
+    },
+    useSubtitleSlot(): boolean {
+      return !!this.profile.slotSubtitle
+    },
+    avatarImgStyle(): Record<string, string> {
+      const size = this.showStorePicker ? '52px' : '36px'
+      return { width: size, height: size }
+    },
+    showStorePicker(): boolean {
+      try {
+        const user = useUserStore()
+        return user.storeOptions.length > 0 || !!user.storeName
+      } catch {
+        return false
+      }
+    },
+    storeLabel(): string {
+      try {
+        return useUserStore().storeName || '请选择门店'
+      } catch {
+        return '请选择门店'
+      }
+    },
+    storeActions(): { key: string; label: string; selected: boolean }[] {
+      try {
+        const user = useUserStore()
+        const current = user.storeId
+        return user.storeOptions.map((item) => ({
+          key: String(item.store_id),
+          label: item.store_name,
+          selected: current != null && String(current) === String(item.store_id),
+        }))
+      } catch {
+        return []
+      }
+    },
     showAvatar(): boolean {
-      return !!(this.profileAvatar || this.$slots.avatar || this.profile.slotAvatar)
+      return !!(this.profileAvatar || this.useAvatarSlot)
     },
     showName(): boolean {
-      return !!(this.profileName || this.$slots.name || this.profile.slotName)
+      return !!(this.profileName || this.useNameSlot)
     },
     showSubtitle(): boolean {
-      return !!(this.profileSubtitle || this.$slots.subtitle || this.profile.slotSubtitle)
+      return !!(this.profileSubtitle || this.useSubtitleSlot)
     },
     showProfile(): boolean {
       return this.showAvatar || this.showName || this.showSubtitle
@@ -236,9 +312,7 @@ export default defineComponent({
     navBarStyle() {
       const h = this.barHeightPx || LINGYUN_TOOLBAR_BAR_DESIGN_PX
       return {
-        height: `${h}px`,
-        paddingTop: `${this.padTopPx}px`,
-        paddingBottom: `${this.padBottomPx}px`,
+        minHeight: `${h}px`,
       }
     },
   },
@@ -283,6 +357,22 @@ export default defineComponent({
   methods: {
     onAvatarError() {
       this.avatarFailed = true
+    },
+    onStoreMenuShow(open: boolean) {
+      this.storeMenuOpen = !!open
+    },
+    onStorePill() {
+      if (!this.storeActions.length) return
+      this.storeMenuOpen = !this.storeMenuOpen
+    },
+    onStoreSelect(payload: { key?: string }) {
+      const key = payload?.key
+      if (key == null || key === '') return
+      try {
+        useUserStore().selectStore(key)
+      } catch {
+        /* 门店状态尚未就绪 */
+      }
     },
     syncLayout() {
       const layout = getLingyunNavLayout(LINGYUN_TOOLBAR_BAR_DESIGN_PX)
@@ -410,6 +500,8 @@ export default defineComponent({
   align-items: center;
   box-sizing: border-box;
   gap: 12px;
+  padding-top: 8px;
+  padding-bottom: 8px;
 }
 
 .lingyun-page-nav__windows {
@@ -452,12 +544,19 @@ export default defineComponent({
 }
 
 .lingyun-page-nav__avatar {
+  position: relative;
   width: 36px;
   height: 36px;
   border-radius: 18px;
   overflow: hidden;
   flex-shrink: 0;
   background-color: var(--lingyun-fill-tertiary, #{$lingyun-fill-tertiary});
+}
+
+.lingyun-page-nav__avatar--mark {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
 }
 
 .lingyun-page-nav__avatar-img {
@@ -476,10 +575,16 @@ export default defineComponent({
   color: var(--lingyun-label, #{$lingyun-label});
 }
 
+.lingyun-page-nav__avatar--mark .lingyun-page-nav__avatar-fallback {
+  width: 52px;
+  height: 52px;
+  line-height: 52px;
+  font-size: 20px;
+}
+
 .lingyun-page-nav__meta {
   position: relative;
   flex: 1;
-  width: 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -506,6 +611,11 @@ export default defineComponent({
   justify-content: center;
 }
 
+.lingyun-page-nav__avatar--mark .lingyun-page-nav__slot {
+  width: 52px;
+  height: 52px;
+}
+
 .lingyun-page-nav__name-text,
 .lingyun-page-nav__subtitle-text {
   width: 100%;
@@ -516,17 +626,74 @@ export default defineComponent({
 }
 
 .lingyun-page-nav__name-label {
-  font-size: 22px;
+  font-size: 15px;
   font-weight: 600;
-  line-height: 28px;
+  line-height: 20px;
   color: var(--lingyun-label, #{$lingyun-label});
 }
 
+.lingyun-page-nav__name--title .lingyun-page-nav__name-label {
+  font-size: 17px;
+  line-height: 22px;
+}
+
+.lingyun-page-nav__store {
+  width: 100%;
+  min-width: 0;
+  margin-top: 6px;
+}
+
+.lingyun-page-nav__store-pill {
+  width: 100%;
+  max-width: 100%;
+  height: 32px;
+  padding: 0 10px 0 12px;
+  box-sizing: border-box;
+  border-radius: 16px;
+  background-color: #1c1c1e;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  overflow: hidden;
+}
+
+.lingyun-page-nav.theme-dark .lingyun-page-nav__store-pill {
+  background-color: #2c2c2e;
+}
+
+.lingyun-page-nav__store-label {
+  flex: 1;
+  min-width: 0;
+  height: 20px;
+  margin-left: 6px;
+  margin-right: 6px;
+  overflow: hidden;
+}
+
+.lingyun-page-nav__store-text {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 20px;
+  color: #ffffff;
+}
+
+.lingyun-page-nav__store-chevron {
+  width: 10px;
+  height: 16px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
 .lingyun-page-nav__subtitle--hang {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 100%;
+  margin-top: 2px;
 }
 
 .lingyun-page-nav__subtitle-label {
