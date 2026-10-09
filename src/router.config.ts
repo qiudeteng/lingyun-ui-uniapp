@@ -13,7 +13,7 @@ export const routes: RouteConfig[] = [
 	{
 		path: '/pages/login/login',
 		name: 'pagesLoginLogin',
-		meta: { title: '登录' }
+		meta: { title: '请登录' }
 	},
 	{
 		path: '/pages/login/user-agreement',

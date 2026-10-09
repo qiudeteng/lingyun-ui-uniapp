@@ -46,7 +46,7 @@
           class="lingyun-text-field__control"
           :class="controlClass"
           :type="nativeInputType"
-          :password="isPasswordMasked"
+          :password="nativePassword"
           :value="val"
           :placeholder="placeholder"
           placeholder-class="lingyun-text-field__ph"
@@ -224,6 +224,17 @@ export default {
     isPasswordMasked() {
       return this.isSecure && !this.showPassword
     },
+    /**
+     * 小程序继续用 password 属性遮罩。
+     * H5 若 type=password，Edge / Chromium 会在输入框里再画一只眼睛，和组件按钮重复。
+     */
+    nativePassword() {
+      let masked = this.isPasswordMasked
+      // #ifdef H5
+      masked = false
+      // #endif
+      return masked
+    },
     nativeInputType() {
       if (this.isSecure) return 'text'
       if (this.type === 'password' || this.type === 'textarea') return 'text'
@@ -311,6 +322,7 @@ export default {
         'lingyun-text-field__control--disabled': this.disabled,
         'lingyun-text-field__control--cell': this.isCell,
         'lingyun-text-field__control--cell-end': this.isCell && !this.cellStack && !this.isMultiline,
+        'lingyun-text-field__control--mask': this.isPasswordMasked,
       }
     },
     textareaHeightPx() {
@@ -646,10 +658,14 @@ $ly-tf-icon: 22px;
   box-sizing: border-box;
 }
 
-/* H5 密码框会再长出浏览器自己的眼睛（Edge / Chromium ::-ms-reveal），和组件按钮叠在一起 */
+/* H5 不用 type=password，用圆点遮罩，避免浏览器再画一只眼睛。 */
 /* #ifdef H5 */
-.lingyun-text-field__control .uni-input-input::-ms-reveal,
-.lingyun-text-field__control .uni-input-input::-ms-clear {
+.lingyun-text-field__control--mask :deep(.uni-input-input) {
+  -webkit-text-security: disc;
+}
+
+.lingyun-text-field__control :deep(.uni-input-input)::-ms-reveal,
+.lingyun-text-field__control :deep(.uni-input-input)::-ms-clear {
   display: none;
   width: 0;
   height: 0;

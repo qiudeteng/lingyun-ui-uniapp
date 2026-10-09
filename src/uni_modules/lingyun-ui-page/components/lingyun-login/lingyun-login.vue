@@ -2,12 +2,9 @@
   <lingyun-app-page title="登录" :show-back="false" :show-nav="false">
     <view class="lingyun-login">
       <view class="lingyun-login__hero">
-        <image
-          v-if="logo"
-          class="lingyun-login__logo"
-          :src="logo"
-          mode="aspectFill"
-        />
+        <view v-if="logo" class="lingyun-login__logo">
+          <lingyun-image :src="logo" size="md" radius="xl" />
+        </view>
         <text v-if="enterpriseName" class="lingyun-login__title">{{ enterpriseName }}</text>
         <text class="lingyun-login__hint">{{ hint }}</text>
       </view>
@@ -51,6 +48,7 @@
           :text="submitText"
           @click="onSubmit"
         />
+        <text v-if="copyright" class="lingyun-login__copyright">{{ copyright }}</text>
       </view>
     </view>
 
@@ -82,6 +80,8 @@
       /** 静默登录中，只显示转圈 */
       booting?: boolean
       submitText?: string
+      /** 登录按钮下方的版权水印，空则不显示 */
+      copyright?: string
     }>(),
     {
       logo: '',
@@ -89,6 +89,7 @@
       hint: '内部管理使用，不提供注册功能',
       booting: false,
       submitText: '立即登录',
+      copyright: '',
     },
   )
 
@@ -175,6 +176,15 @@
       var(--lingyun-bg-grouped-primary, #{$lingyun-bg-grouped-primary});
   }
 
+  /* iPad 竖屏等宽屏：登录块在顶栏以下的整屏里垂直居中。手机保持靠上。 */
+  @media (min-width: 700px) and (min-height: 700px) {
+    .lingyun-login {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+  }
+
   .lingyun-login__hero {
     display: flex;
     flex-direction: column;
@@ -183,11 +193,7 @@
   }
 
   .lingyun-login__logo {
-    width: 72px;
-    height: 72px;
-    border-radius: 16px;
     margin-bottom: 16px;
-    background-color: var(--lingyun-fill, #{$lingyun-fill});
   }
 
   .lingyun-login__title {
@@ -247,5 +253,14 @@
 
   .lingyun-login__link {
     color: var(--lingyun-primary, #{$lingyun-primary});
+  }
+
+  .lingyun-login__copyright {
+    display: block;
+    margin-top: 28px;
+    font-size: 11px;
+    line-height: 16px;
+    text-align: center;
+    color: var(--lingyun-label-tertiary, #{$lingyun-label-tertiary});
   }
 </style>
