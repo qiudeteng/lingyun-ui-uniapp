@@ -25,7 +25,7 @@
           <lingyun-image
             v-if="icon"
             class="lingyun-section__icon"
-            :class="{ 'lingyun-section__icon--small': iconSize === 'small' }"
+            :class="iconClass"
             :src="icon"
             :size="iconPx"
             shape="rounded"
@@ -266,6 +266,18 @@ export default defineComponent({
       if (this.iconSize === 'large') return ICON_LARGE
       return ICON_DEFAULT
     },
+    /**
+     * 只有主标题时，图标相对这一行垂直居中。
+     * 有副标题时，只有大图标相对主标题和副标题一起居中；小图标和默认图标仍只跟主标题。
+     */
+    iconClass(): Record<string, boolean> {
+      const large = this.iconSize === 'large'
+      return {
+        'lingyun-section__icon--small': this.iconSize === 'small',
+        'lingyun-section__icon--large': large,
+        'lingyun-section__icon--pair': large && !!this.resolvedSubtitle,
+      }
+    },
     resolvedColor(): string {
       const value = String(this.color || '').trim()
       return (SECTION_COLORS as readonly string[]).indexOf(value) >= 0 ? value : ''
@@ -462,12 +474,24 @@ $ly-section-radius: 26px;
 
 .lingyun-section__icon {
   flex-shrink: 0;
-  margin-top: 0;
+  /* 24px 相对主标题行高 20px 垂直居中 */
+  margin-top: -2px;
   margin-right: 6px;
 }
 
 .lingyun-section__icon--small {
+  /* 16px 相对主标题行高 20px */
   margin-top: 2px;
+}
+
+.lingyun-section__icon--large {
+  /* 32px 相对主标题行高 20px */
+  margin-top: -6px;
+}
+
+/* 大图标有副标题：相对主标题 20 + 间距 2 + 副标题 18 */
+.lingyun-section__icon--large.lingyun-section__icon--pair {
+  margin-top: 4px;
 }
 
 .lingyun-section__title {
