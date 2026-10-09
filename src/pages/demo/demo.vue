@@ -1,5 +1,5 @@
 <template>
-  <lingyun-app-page title="凌云UI" :show-back="false">
+  <lingyun-app-page title="凌云UI">
     <view class="page">
       <view class="hero">
         <text class="hero__title">欢迎来到 凌云UI</text>
