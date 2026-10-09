@@ -237,19 +237,19 @@ export default defineComponent({
     isPasswordMasked() {
       return this.isSecure && !this.showPassword
     },
-    /**
-     * 小程序继续用 password 属性遮罩。
-     * H5 若 type=password，Edge / Chromium 会在输入框里再画一只眼睛，和组件按钮重复。
-     */
+    /** 遮住时走原生密码框，系统不会切到中文输入法。点眼睛后改回文本，才能看见明文。 */
     nativePassword() {
-      let masked = this.isPasswordMasked
-      // #ifdef H5
-      masked = false
-      // #endif
-      return masked
+      return this.isPasswordMasked
     },
     nativeInputType() {
-      if (this.isSecure) return 'text'
+      if (this.isPasswordMasked) {
+        /* 微信 input 没有 type=password，用上面的 password 属性。H5 必须是 password，圆点样式挡不住中文输入法。 */
+        let kind = 'text'
+        // #ifdef H5
+        kind = 'password'
+        // #endif
+        return kind
+      }
       if (this.type === 'password' || this.type === 'textarea') return 'text'
       return this.type || 'text'
     },
@@ -335,7 +335,6 @@ export default defineComponent({
         'lingyun-text-field__control--disabled': this.disabled,
         'lingyun-text-field__control--cell': this.isCell,
         'lingyun-text-field__control--cell-end': this.isCell && !this.cellStack && !this.isMultiline,
-        'lingyun-text-field__control--mask': this.isPasswordMasked,
       }
     },
     textareaHeightPx() {
@@ -671,12 +670,8 @@ $ly-tf-icon: 22px;
   box-sizing: border-box;
 }
 
-/* H5 不用 type=password，用圆点遮罩，避免浏览器再画一只眼睛。 */
+/* 原生 password 会让 Edge 再画一只眼睛，收掉它，只留组件自己的显隐按钮。 */
 /* #ifdef H5 */
-.lingyun-text-field__control--mask :deep(.uni-input-input) {
-  -webkit-text-security: disc;
-}
-
 .lingyun-text-field__control :deep(.uni-input-input)::-ms-reveal,
 .lingyun-text-field__control :deep(.uni-input-input)::-ms-clear {
   display: none;
