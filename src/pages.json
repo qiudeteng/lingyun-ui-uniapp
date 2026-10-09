@@ -2,11 +2,8 @@
 	"pages": [
 		{
 			"path": "pages/index/index",
-			"meta": {
-				"requireAuth": true
-			},
 			"style": {
-				"navigationBarTitleText": "凌云UI",
+				"navigationBarTitleText": "首页",
 				"navigationStyle": "custom"
 			}
 		},
@@ -28,6 +25,13 @@
 			"path": "pages/login/privacy-policy",
 			"style": {
 				"navigationBarTitleText": "隐私政策",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/demo",
+			"style": {
+				"navigationBarTitleText": "凌云UI",
 				"navigationStyle": "custom"
 			}
 		},

@@ -1,27 +1,40 @@
 /**
  * 全局路由守卫（uni-router）
  *
- * 业务页在 pages.json 对应路由 meta.requireAuth = true（或守卫里按 path 判断）后才会强制登录。
- * Demo / 组件预览页默认不拦。
+ * 除 PUBLIC_PATHS 外，进入任何页面都要登录。
+ * 名单支持通配符：`*` 匹配剩余路径（含斜杠），例如 `/pages/demo/*`。
  */
 import type { Router } from '@meng-xi/uni-router'
 import { appConfig } from '@/config'
-import { routes } from '@/router.config'
 import { isLoggedIn } from '@/utils/auth'
 
 const PUBLIC_PATHS = [
-  '/pages/login/login'
+  '/pages/login/login',
+  '/pages/login/user-agreement',
+  '/pages/login/privacy-policy',
+  '/pages/demo/*',
 ]
 
 function normalizePath(path: string): string {
   if (!path) return ''
-  return path.startsWith('/') ? path : `/${path}`
+  const withSlash = path.startsWith('/') ? path : `/${path}`
+  return withSlash.split('?')[0].split('#')[0]
 }
 
-function routeRequiresAuth(path: string): boolean {
-  const normalized = normalizePath(path)
-  const route = routes.find((item) => item.path === normalized)
-  return !!(route?.meta as { requireAuth?: boolean } | undefined)?.requireAuth
+function escapeRegExp(value: string): string {
+  return value.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** `*` 匹配任意剩余字符，包含 `/`。没有 `*` 时整段相等。 */
+function matchPublicPath(path: string, pattern: string): boolean {
+  const source = normalizePath(pattern)
+  if (!source.includes('*')) return path === source
+  const body = source.split('*').map(escapeRegExp).join('.*')
+  return new RegExp(`^${body}$`).test(path)
+}
+
+function isPublicPath(path: string): boolean {
+  return PUBLIC_PATHS.some((pattern) => matchPublicPath(path, pattern))
 }
 
 /** 冷启动时页面栈可能还空，回退到启动路径。 */
@@ -40,8 +53,8 @@ export function readEntryPath(): string {
 /** 当前页需要登录且本地没有 token。供页面壳在首屏绘制前藏起内容和侧栏。 */
 export function pageRequiresLogin(path?: string): boolean {
   const normalized = normalizePath(path || readEntryPath())
-  if (!normalized || PUBLIC_PATHS.includes(normalized)) return false
-  return routeRequiresAuth(normalized) && !isLoggedIn()
+  if (!normalized || isPublicPath(normalized)) return false
+  return !isLoggedIn()
 }
 
 function rememberBackUrl(path: string): void {
