@@ -107,6 +107,7 @@ import {
   readLingyunResizeWidth,
 } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
 import { useThemeStore } from '@/stores/theme'
+import { pageRequiresLogin } from '@/router/guards'
 import { LINGYUN_PAGE_NAV_WIDTH, claimLingyunPageNavHeaderSlots, releaseLingyunPageNavHeaderSlots } from '@/router/pageNav'
 // #ifdef H5
 import { setLingyunH5PageNavAllowed } from '@/uni_modules/lingyun-ui/components/lingyun-page-nav/mountLingyunPageNav'
@@ -251,9 +252,14 @@ export default {
     },
     /** 宽屏需要为顶栏让出左侧。H5 的列在 body 上，这里只留宽度。 */
     navDocked() {
+      if (pageRequiresLogin()) return false
       if (!coerceTriFlag(this.showNav, true)) return false
       if (this.placement === 'sheet' || this.showGrabberEffective) return false
       return this.regular
+    },
+    /** 未登录的受保护页先藏起来，避免冷启动先画出首页和侧栏再跳登录 */
+    authHold() {
+      return pageRequiresLogin()
     },
     showPageNav() {
       // #ifdef H5
@@ -297,6 +303,7 @@ export default {
           'lingyun-app-page--sheet': this.placement === 'sheet' || this.showGrabberEffective,
           'lingyun-app-page--page-scroll': this.usePageScroll,
           'lingyun-app-page--nav': this.navDocked,
+          'lingyun-app-page--auth-hold': this.authHold,
         },
       ]
     },
@@ -567,6 +574,10 @@ export default {
 .lingyun-app-page--nav {
   padding-left: var(--lingyun-page-nav-width, 220px);
   box-sizing: border-box;
+}
+
+.lingyun-app-page--auth-hold {
+  visibility: hidden;
 }
 
 .lingyun-app-page__nav {
