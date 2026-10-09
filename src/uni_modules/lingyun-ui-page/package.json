@@ -9,8 +9,8 @@
 	"repository": "",
 	"engines": {
 		"HBuilderX": "^3.1.0",
-		"uni-app": "^3.1.0",
-		"uni-app-x": "^3.1.0"
+		"uni-app": "^5.31",
+		"uni-app-x": "^5.31"
 	},
 	"dcloudext": {
 		"type": "component-vue",
@@ -26,9 +26,9 @@
 			"qq": ""
 		},
 		"declaration": {
-			"ads": "",
-			"data": "",
-			"permissions": ""
+			"ads": "无",
+			"data": "无",
+			"permissions": "无"
 		},
 		"npmurl": "",
 		"darkmode": "√",
@@ -40,14 +40,14 @@
 		"encrypt": [],
 		"platforms": {
 			"cloud": {
-				"tcb": "-",
-				"aliyun": "-",
-				"alipay": "-"
+				"tcb": "x",
+				"aliyun": "x",
+				"alipay": "x"
 			},
 			"client": {
 				"uni-app": {
 					"vue": {
-						"vue2": "-",
+						"vue2": "√",
 						"vue3": "√"
 					},
 					"web": {
@@ -55,27 +55,27 @@
 						"chrome": "√"
 					},
 					"app": {
-						"vue": "-",
-						"nvue": "-",
-						"android": "-",
-						"ios": "-",
-						"harmony": "-"
+						"vue": "√",
+						"nvue": "√",
+						"android": "√",
+						"ios": "√",
+						"harmony": "√"
 					},
 					"mp": {
 						"weixin": "√",
-						"alipay": "-",
-						"toutiao": "-",
-						"baidu": "-",
-						"kuaishou": "-",
-						"jd": "-",
-						"harmony": "-",
-						"qq": "-",
-						"lark": "-",
-						"xhs": "-"
+						"alipay": "√",
+						"toutiao": "√",
+						"baidu": "√",
+						"kuaishou": "√",
+						"jd": "√",
+						"harmony": "√",
+						"qq": "√",
+						"lark": "√",
+						"xhs": "√"
 					},
 					"quickapp": {
-						"huawei": "-",
-						"union": "-"
+						"huawei": "√",
+						"union": "√"
 					}
 				},
 				"uni-app-x": {
