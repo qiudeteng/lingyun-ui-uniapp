@@ -24,6 +24,7 @@
 | `glass` | 卡片用玻璃底。设置了 `color` 后不再使用 | true |
 | `color` | `green` / `blue` / `orange` / `yellow` / `red`。系统色实底，标题为白色 | '' |
 | `radius` | 卡片圆角，同图片：`none` / `sm` / `md` / `lg` / `xl` / `2xl`，或像素。不传为 `2xl`（26） | '' |
+| `header-line` | 标题和内容之间显示横线。没有标题时不画 | false |
 | `padding / margin` | 内边距、外边距 | 见默认 |
 
 插槽里的 `lingyun-section-row` 是全局样式类，写在插槽节点上才能在小程序里生效。

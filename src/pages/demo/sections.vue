@@ -56,6 +56,10 @@
         <lingyun-grid background="transparent" :column="4" :items="shortcuts" @change="onGrid" />
       </lingyun-section>
 
+      <lingyun-section title="标题分隔线" header-line hint="headerLine">
+        <text class="body-text">标题和内容之间有一条横线。</text>
+      </lingyun-section>
+
       <lingyun-section title="Default（Glass）" hint="默认 Liquid Glass 表面">
         <text class="body-text">内容区默认无内边距；用全局工具类排版。</text>
       </lingyun-section>
