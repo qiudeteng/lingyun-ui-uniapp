@@ -14,7 +14,7 @@ export function createApp() {
   app.use(router)
   app.mixin({
     onShow() {
-      guardColdStart(router)
+      guardColdStart()
     },
   })
 

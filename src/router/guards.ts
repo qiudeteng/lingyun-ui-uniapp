@@ -6,12 +6,11 @@
  */
 import type { Router } from '@meng-xi/uni-router'
 import { appConfig } from '@/config'
+import { routes } from '@/router.config'
 import { isLoggedIn } from '@/utils/auth'
 
 const PUBLIC_PATHS = [
-  '/pages/login/login',
-  '/pages/login/user-agreement',
-  '/pages/login/privacy-policy',
+  '/pages/login/login'
 ]
 
 function normalizePath(path: string): string {
@@ -19,24 +18,50 @@ function normalizePath(path: string): string {
   return path.startsWith('/') ? path : `/${path}`
 }
 
+function routeRequiresAuth(path: string): boolean {
+  const normalized = normalizePath(path)
+  const route = routes.find((item) => item.path === normalized)
+  return !!(route?.meta as { requireAuth?: boolean } | undefined)?.requireAuth
+}
+
+/** 冷启动时页面栈可能还空，回退到启动路径。 */
+export function readEntryPath(): string {
+  let raw = ''
+  try {
+    const pages = getCurrentPages()
+    raw = pages.length ? String(pages[pages.length - 1].route || '') : ''
+    if (!raw) raw = String(uni.getLaunchOptionsSync()?.path || '')
+  } catch {
+    raw = ''
+  }
+  return normalizePath(raw.split('?')[0])
+}
+
+/** 当前页需要登录且本地没有 token。供页面壳在首屏绘制前藏起内容和侧栏。 */
+export function pageRequiresLogin(path?: string): boolean {
+  const normalized = normalizePath(path || readEntryPath())
+  if (!normalized || PUBLIC_PATHS.includes(normalized)) return false
+  return routeRequiresAuth(normalized) && !isLoggedIn()
+}
+
+function rememberBackUrl(path: string): void {
+  uni.setStorageSync('backurl', path.replace(/^\//, ''))
+}
+
 export function setupRouterGuards(router: Router): void {
   router.beforeEach((to) => {
     const path = normalizePath(String(to.path || ''))
-    if (PUBLIC_PATHS.includes(path)) return
-    const requireAuth = !!(to.meta as { requireAuth?: boolean } | undefined)?.requireAuth
-    if (requireAuth && !isLoggedIn()) {
-      uni.setStorageSync('backurl', path.replace(/^\//, ''))
-      return { path: appConfig.loginPath }
-    }
+    if (!pageRequiresLogin(path)) return
+    rememberBackUrl(path)
+    return { path: appConfig.loginPath }
   })
 }
 
 /**
  * 冷启动补跑登录检查。
  * 首屏由框架直接打开，不经过 beforeEach。
- * onLaunch 时页面栈可能还是空的，所以会短间隔重试到页面出现。
- * 用当前页路径 resolve 出 meta，再 reLaunch。不要走 guardRoute：
- * 它内部的 relaunch 会被拦截器收成一次未完成的导航，页面停在原地。
+ * onLaunch 时页面栈可能还是空的，所以会短间隔重试到能读到路径。
+ * 直接 reLaunch。不要走 guardRoute：它内部的跳转会被拦截器收成一次未完成的导航。
  */
 const COLD_START_RETRY_MS = 16
 const COLD_START_RETRY_MAX = 50
@@ -45,24 +70,20 @@ let coldStartChecked = false
 let coldStartTries = 0
 let coldStartTimer: ReturnType<typeof setTimeout> | null = null
 
-export function guardColdStart(router: Router): void {
+export function guardColdStart(): void {
   if (coldStartChecked) return
-  const pages = getCurrentPages()
-  if (!pages.length) {
+  const path = readEntryPath()
+  if (!path) {
     if (coldStartTries >= COLD_START_RETRY_MAX || coldStartTimer != null) return
     coldStartTries += 1
     coldStartTimer = setTimeout(() => {
       coldStartTimer = null
-      guardColdStart(router)
+      guardColdStart()
     }, COLD_START_RETRY_MS)
     return
   }
   coldStartChecked = true
-  const path = normalizePath(String(pages[pages.length - 1].route || ''))
-  if (!path || PUBLIC_PATHS.includes(path)) return
-  const resolved = router.resolve(path)
-  const requireAuth = !!(resolved.meta as { requireAuth?: boolean } | undefined)?.requireAuth
-  if (!requireAuth || isLoggedIn()) return
-  uni.setStorageSync('backurl', path.replace(/^\//, ''))
+  if (!pageRequiresLogin(path)) return
+  rememberBackUrl(path)
   uni.reLaunch({ url: appConfig.loginPath })
 }

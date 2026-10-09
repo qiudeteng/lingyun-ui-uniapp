@@ -646,6 +646,16 @@ $ly-tf-icon: 22px;
   box-sizing: border-box;
 }
 
+/* H5 密码框会再长出浏览器自己的眼睛（Edge / Chromium ::-ms-reveal），和组件按钮叠在一起 */
+/* #ifdef H5 */
+.lingyun-text-field__control .uni-input-input::-ms-reveal,
+.lingyun-text-field__control .uni-input-input::-ms-clear {
+  display: none;
+  width: 0;
+  height: 0;
+}
+/* #endif */
+
 .lingyun-text-field__control--cell {
   width: 100%;
   min-height: 36px;
