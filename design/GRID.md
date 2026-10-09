@@ -60,7 +60,7 @@
 | `background` | grid | 卡片背景。空为分组底，`transparent` 为透明 | `''` |
 | `iconSize` | grid / item / items | 图标边长，任意像素。格子或数据项再传则覆盖宫格 | 28 |
 | `shape` | grid / item / items | 图片图标的显示形式，同 `lingyun-image`：`square` / `rounded` / `circle`。原样传给图片 | `rounded` |
-| `radius` | grid / item / items | 图片图标的圆角，同 `lingyun-image`：`none` / `sm` / `md` / `lg` / `xl` / `2xl` 或像素。原样传给图片 | `sm` |
+| `radius` | grid / item / items | 图片图标的圆角，同 `lingyun-image`。不传则不传给图片，用图片默认 `2xl`（26） | — |
 | `items` | grid | 数组里有格子时按数据生成，不再用默认插槽。不传或空数组仍用插槽（微信未传的数组会变成 `[]`） | — |
 | `index` | item | 点击回传 | 0 |
 | `icon` / `iconSrc` / `text` / `color` / `info` | item | 默认快捷入口。`iconSrc` 或图片地址用 `lingyun-image` | — |

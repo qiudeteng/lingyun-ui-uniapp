@@ -114,6 +114,8 @@
 
 | 日期 | 说明 |
 |------|------|
+| 2026-10-09 | 凌云UI 1.0.10：宫格不传圆角时跟图片默认 `2xl`（26px） |
+| 2026-10-09 | 凌云UI 1.0.9：分组卡片着色为系统色实底；卡片与图片默认圆角 `2xl`（26px）；宫格图片图标可设 `shape` / `radius` |
 | 2026-10-09 | `lingyun-grid` 1.0.8：`iconSize` 按任意像素控制图标。专章 `GRID.md` |
 | 2026-10-09 | `lingyun-grid` 1.0.7：微信空 `items` 仍走插槽；去掉宿主并用 flex-basis 分列宽。专章 `GRID.md` |
 | 2026-09-22 | 新增 `lingyun-indexed-list`（索引列表 · 对齐 uni-indexed-list）；专章 `INDEXED_LIST.md` |
