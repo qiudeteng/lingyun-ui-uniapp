@@ -11,9 +11,9 @@
         class="lingyun-popover__root"
         :class="rootClass"
         :style="rootStyle"
-        @touchmove.stop.prevent
+        @touchmove.stop
       >
-        <view class="lingyun-popover__mask" @click="onMask" />
+        <view class="lingyun-popover__mask" @click="onMask" @touchmove.stop.prevent />
         <view class="lingyun-popover__lift" :style="liftStyle">
           <view v-if="showArrow" class="lingyun-popover__arrow" :style="arrowStyle">
             <view class="lingyun-popover__arrow-fill" />
@@ -34,9 +34,9 @@
         class="lingyun-popover__root"
         :class="rootClass"
         :style="rootStyle"
-        @touchmove.stop.prevent
+        @touchmove.stop
       >
-        <view class="lingyun-popover__mask" @click="onMask" />
+        <view class="lingyun-popover__mask" @click="onMask" @touchmove.stop.prevent />
         <view class="lingyun-popover__lift" :style="liftStyle">
           <view v-if="showArrow" class="lingyun-popover__arrow" :style="arrowStyle">
             <view class="lingyun-popover__arrow-fill" />

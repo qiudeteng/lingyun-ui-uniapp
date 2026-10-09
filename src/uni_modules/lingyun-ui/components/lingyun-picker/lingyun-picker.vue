@@ -971,11 +971,37 @@
   </view>
 </template>
 
-<script>
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
-import { LINGYUN_APP_PAGE_SCROLL_LOCK } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
+import {
+  LINGYUN_APP_PAGE_SCROLL_LOCK,
+  type LingyunAppPageScrollLock,
+} from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
+// 日格组件脚本仍是 JS，类型由运行时注册补上。
+// @ts-expect-error 无独立声明文件
 import LingyunPickerCalDay from '../lingyun-picker-cal-day/lingyun-picker-cal-day.vue'
-import { lunarDayText } from './lunar.js'
+import { lunarDayText } from './lunar'
+import {
+  compareYmd,
+  daysInMonth,
+  formatHour12,
+  pad2,
+  parseDateRange,
+  parseHm,
+  parseYm,
+  parseYmd,
+  parseYmdHm,
+  parseYOnly,
+  sameYmd,
+  shiftMonthYm,
+  toH24,
+  weekBoundsForDay,
+  ymdKey,
+  type CalCell,
+  type PickerMark,
+  type Ymd,
+} from './picker-date'
 
 /**
  * lingyun-picker
@@ -1008,146 +1034,32 @@ const YEAR_PAGE_SIZE = 12
 /** 天视图固定 6 行 × 7 列：月份切换时面板高度不跳 */
 const CAL_CELLS = 42
 
-function pad2(n) {
-  const v = Number(n) || 0
-  return v < 10 ? `0${v}` : String(v)
-}
+type PickerColumnItem = { label: string; value: number }
+type PickerChangeEvent = { detail?: { value?: Array<number | string> } }
+type PickerValue = string | number | string[]
 
-function daysInMonth(year, month) {
-  return new Date(year, month, 0).getDate()
-}
-
-/** 相邻月（delta = ±1），用于天视图补齐首尾空位 */
-function shiftMonthYm(y, m, delta) {
-  const idx = y * 12 + (m - 1) + delta
-  return { y: Math.floor(idx / 12), m: (idx % 12) + 1 }
-}
-
-function parseYmd(str) {
-  const m = String(str || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
-  if (!m) return null
-  return { y: Number(m[1]), m: Number(m[2]), d: Number(m[3]) }
-}
-
-function parseYm(str) {
-  const m = String(str || '').match(/^(\d{4})-(\d{1,2})$/)
-  if (!m) return null
-  return { y: Number(m[1]), m: Number(m[2]), d: 1 }
-}
-
-function parseYOnly(str) {
-  const m = String(str || '').match(/^(\d{4})$/)
-  if (!m) return null
-  return { y: Number(m[1]), m: 1, d: 1 }
-}
-
-function parseHm(str) {
-  const m = String(str || '').match(/(?:^|\s)(\d{1,2}):(\d{1,2})\s*$/)
-  if (!m) return null
-  return { h: Number(m[1]), mi: Number(m[2]) }
-}
-
-function parseYmdHm(str) {
-  const ymd = parseYmd(str)
-  const hm = parseHm(str)
-  if (!ymd) return null
-  return {
-    y: ymd.y,
-    m: ymd.m,
-    d: ymd.d,
-    h: hm ? hm.h : 0,
-    mi: hm ? hm.mi : 0,
-  }
-}
-
-function ymdKey(y, m, d) {
-  return `${y}-${pad2(m)}-${pad2(d)}`
-}
-
-function compareYmd(a, b) {
-  if (a.y !== b.y) return a.y - b.y
-  if (a.m !== b.m) return a.m - b.m
-  return a.d - b.d
-}
-
-/** 解析区间：数组 [start,end] 或字符串 `YYYY-MM-DD ~ YYYY-MM-DD` */
-function parseDateRange(val) {
-  if (val == null || val === '') return null
-  if (Array.isArray(val)) {
-    const a = parseYmd(val[0])
-    if (!a) return null
-    const b = parseYmd(val[1] != null && val[1] !== '' ? val[1] : val[0]) || a
-    return compareYmd(a, b) <= 0 ? { start: a, end: b } : { start: b, end: a }
-  }
-  const str = String(val).trim()
-  const parts = str.split(/\s*(?:~|～|—|–|,|→)\s*/)
-  if (parts.length >= 2) {
-    const a = parseYmd(parts[0])
-    const b = parseYmd(parts[1])
-    if (a && b) return compareYmd(a, b) <= 0 ? { start: a, end: b } : { start: b, end: a }
-  }
-  const single = parseYmd(str)
-  if (single) return { start: single, end: single }
-  return null
-}
-
-function sameYmd(a, b) {
-  if (!a || !b) return false
-  return a.y === b.y && a.m === b.m && a.d === b.d
-}
-
-/** 含某日的一周起止；weekStartsOn: 0=周日 … 6=周六（对齐日历表头） */
-function weekBoundsForDay(y, m, d, weekStartsOn = 0) {
-  const startOn = ((Number(weekStartsOn) % 7) + 7) % 7
-  const date = new Date(y, m - 1, d)
-  const dow = date.getDay()
-  const diff = (dow - startOn + 7) % 7
-  const startDate = new Date(y, m - 1, d - diff)
-  const endDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + 6)
-  return {
-    start: {
-      y: startDate.getFullYear(),
-      m: startDate.getMonth() + 1,
-      d: startDate.getDate(),
-    },
-    end: {
-      y: endDate.getFullYear(),
-      m: endDate.getMonth() + 1,
-      d: endDate.getDate(),
-    },
-  }
-}
-
-function formatHour12(h24) {
-  const h = ((Number(h24) % 24) + 24) % 24
-  const isPm = h >= 12
-  let h12 = h % 12
-  if (h12 === 0) h12 = 12
-  return { h12, isPm }
-}
-
-function toH24(h12, isPm) {
-  let h = Number(h12) || 12
-  if (h === 12) h = 0
-  return isPm ? h + 12 : h
-}
-
-export default {
+export default defineComponent({
   name: 'LingyunPicker',
   components: { LingyunPickerCalDay },
   emits: ['update:modelValue', 'update:value', 'change', 'cancel'],
   inject: {
     appPageScrollLock: {
       from: LINGYUN_APP_PAGE_SCROLL_LOCK,
-      default: null,
+      default: null as LingyunAppPageScrollLock | null,
     },
-    lingyunFormItem: { default: null },
+    lingyunFormItem: { default: null as object | null },
   },
   props: {
-    modelValue: { type: [String, Number, Array], default: undefined },
-    value: { type: [String, Number, Array], default: undefined },
+    modelValue: {
+      type: [String, Number, Array] as PropType<PickerValue | undefined>,
+      default: undefined,
+    },
+    value: {
+      type: [String, Number, Array] as PropType<PickerValue | undefined>,
+      default: undefined,
+    },
     mode: { type: String, default: 'selector' },
-    range: { type: Array, default: () => [] },
+    range: { type: Array as PropType<unknown[]>, default: () => [] },
     rangeKey: { type: String, default: '' },
     title: { type: String, default: '' },
     placeholder: { type: String, default: '请选择' },
@@ -1158,7 +1070,7 @@ export default {
     /** auto | calendar | wheels */
     pickerStyle: { type: String, default: 'auto' },
     hour12: { type: Boolean, default: false },
-    minuteInterval: { type: [Number, String], default: 1 },
+    minuteInterval: { type: [Number, String] as PropType<number | string>, default: 1 },
     /** 日历日格底部农历 */
     lunar: { type: Boolean, default: false },
     /**
@@ -1166,38 +1078,38 @@ export default {
      * { date: 'YYYY-MM-DD', badge?: string, dot?: true|'red'|'orange'|'green' }
      * badge：右上角小字；dot：底部圆点（true/默认=红）
      */
-    marks: { type: Array, default: () => [] },
+    marks: { type: Array as PropType<PickerMark[]>, default: () => [] },
     /**
      * week 模式周起始：0=周日（默认，对齐表头日一二…）… 6=周六
      */
-    weekStartsOn: { type: [Number, String], default: 0 },
+    weekStartsOn: { type: [Number, String] as PropType<number | string>, default: 0 },
     cancelText: { type: String, default: '取消' },
     confirmText: { type: String, default: '完成' },
-    zIndex: { type: [Number, String], default: 1200 },
+    zIndex: { type: [Number, String] as PropType<number | string>, default: 1200 },
     variant: { type: String, default: 'auto' },
   },
   data() {
     return {
       sheetMounted: false,
-      phase: '',
-      leaveTimer: null,
-      enterTimer: null,
-      draftIndexes: [0],
+      phase: '' as '' | 'enter' | 'open' | 'leave',
+      leaveTimer: null as ReturnType<typeof setTimeout> | null,
+      enterTimer: null as ReturnType<typeof setTimeout> | null,
+      draftIndexes: [0] as number[],
       draftY: 0,
       draftM: 1,
       draftD: 1,
       draftH: 0,
       draftMi: 0,
       /** daterange / week 草稿起止（ymd 对象） */
-      draftRangeStart: null,
-      draftRangeEnd: null,
+      draftRangeStart: null as Ymd | null,
+      draftRangeEnd: null as Ymd | null,
       viewY: 0,
       viewM: 1,
       viewYear: 0,
       viewDecadeStart: 0,
-      calMode: 'day',
+      calMode: 'day' as 'day' | 'month' | 'year',
       timeEditing: false,
-      timeDraftIndexes: [0, 0],
+      timeDraftIndexes: [0, 0] as number[],
       safeBottom: 0,
       windowWidth: 375,
       dragStartY: 0,
@@ -1209,12 +1121,12 @@ export default {
       calDy: 0,
       calTracking: false,
       calSwiped: false,
-      calOutCells: null,
-      calOutYear: null,
-      calOutDecade: null,
+      calOutCells: null as (CalCell | null)[] | null,
+      calOutYear: null as number | null,
+      calOutDecade: null as number | null,
       calSlideDir: 0,
-      calSlidePhase: 'idle',
-      calAnimTimer: null,
+      calSlidePhase: 'idle' as 'idle' | 'prepare' | 'animating',
+      calAnimTimer: null as ReturnType<typeof setTimeout> | null,
       _appScrollLocked: false,
       _scrollLocked: false,
       _prevBodyOverflow: '',
@@ -1302,8 +1214,8 @@ export default {
       if (!e) return `开始 ${ymdKey(s.y, s.m, s.d)} · 请选择结束日期`
       return `${ymdKey(s.y, s.m, s.d)} → ${ymdKey(e.y, e.m, e.d)}`
     },
-    marksMap() {
-      const map = Object.create(null)
+    marksMap(): Record<string, PickerMark> {
+      const map: Record<string, PickerMark> = Object.create(null)
       const list = Array.isArray(this.marks) ? this.marks : []
       for (let i = 0; i < list.length; i += 1) {
         const item = list[i]
@@ -1386,8 +1298,8 @@ export default {
       const w = Math.max(320, Number(this.windowWidth) || 375)
       return Math.max(INSET_MEDIUM, Math.round((w - PANEL_MAX_WIDTH) / 2))
     },
-    panelStyle() {
-      const style = {
+    panelStyle(): Record<string, string> {
+      const style: Record<string, string> = {
         left: `${this.sideInsetPx}px`,
         right: `${this.sideInsetPx}px`,
         bottom: `${INSET_MEDIUM}px`,
@@ -1420,17 +1332,20 @@ export default {
     maskClass() {
       return this.isDark ? 'lingyun-picker-sheet__mask--dark' : 'lingyun-picker-sheet__mask--light'
     },
-    dateBounds() {
+    dateBounds(): { start: Ymd; end: Ymd } {
       const now = new Date()
       const defStart = `${now.getFullYear() - 80}-01-01`
       const defEnd = `${now.getFullYear() + 20}-12-31`
       const s = parseYmd(this.start) || parseYmd(defStart)
       const e = parseYmd(this.end) || parseYmd(defEnd)
-      return { start: s, end: e }
+      return {
+        start: s || { y: now.getFullYear() - 80, m: 1, d: 1 },
+        end: e || { y: now.getFullYear() + 20, m: 12, d: 31 },
+      }
     },
     years() {
       const { start, end } = this.dateBounds
-      const list = []
+      const list: PickerColumnItem[] = []
       for (let y = start.y; y <= end.y; y += 1) {
         list.push({ label: `${y}年`, value: y })
       }
@@ -1524,8 +1439,8 @@ export default {
       }
       return `${pad2(this.draftH)}:${pad2(this.draftMi)}`
     },
-    timeHourColumn() {
-      const hours = []
+    timeHourColumn(): PickerColumnItem[] {
+      const hours: PickerColumnItem[] = []
       if (this.hour12) {
         for (let h = 1; h <= 12; h += 1) hours.push({ label: String(h), value: h })
       } else {
@@ -1533,8 +1448,8 @@ export default {
       }
       return hours
     },
-    timeMinuteColumn() {
-      const minutes = []
+    timeMinuteColumn(): PickerColumnItem[] {
+      const minutes: PickerColumnItem[] = []
       const step = this.minuteStep
       for (let m = 0; m < 60; m += step) {
         minutes.push({ label: pad2(m), value: m })
@@ -1548,7 +1463,7 @@ export default {
           list.map((item, index) => {
             let label = ''
             if (item != null && typeof item === 'object' && this.rangeKey) {
-              label = String(item[this.rangeKey] ?? '')
+              label = String((item as Record<string, unknown>)[this.rangeKey] ?? '')
             } else {
               label = item == null ? '' : String(item)
             }
@@ -1570,7 +1485,7 @@ export default {
       let monthTo = 12
       if (year === start.y) monthFrom = start.m
       if (year === end.y) monthTo = end.m
-      const months = []
+      const months: PickerColumnItem[] = []
       for (let m = monthFrom; m <= monthTo; m += 1) {
         months.push({ label: `${m}月`, value: m })
       }
@@ -1583,7 +1498,7 @@ export default {
       let dayTo = daysInMonth(year, month)
       if (year === start.y && month === start.m) dayFrom = start.d
       if (year === end.y && month === end.m) dayTo = Math.min(dayTo, end.d)
-      const days = []
+      const days: PickerColumnItem[] = []
       for (let d = dayFrom; d <= dayTo; d += 1) {
         days.push({ label: `${d}日`, value: d })
       }
@@ -1596,7 +1511,9 @@ export default {
         if (Number.isNaN(idx) || idx < 0 || !this.range || !this.range.length) return ''
         const item = this.range[idx]
         if (item == null) return ''
-        if (typeof item === 'object' && this.rangeKey) return String(item[this.rangeKey] ?? '')
+        if (typeof item === 'object' && this.rangeKey) {
+          return String((item as Record<string, unknown>)[this.rangeKey] ?? '')
+        }
         return String(item)
       }
       if (this.modeKey === 'time' && this.current != null && this.current !== '') {
@@ -1667,11 +1584,11 @@ export default {
      * 1 号之前与月末之后用**相邻月真实日期**补齐（`out: true`，灰色不可点），
      * 否则周高亮条会在月首 / 月尾断开。
      */
-    buildMonthCells(y, m) {
+    buildMonthCells(y: number, m: number): (CalCell | null)[] {
       if (!y || !m) return Array(CAL_CELLS).fill(null)
       const firstDow = new Date(y, m - 1, 1).getDay()
       const lead = (((firstDow - this.weekStartIndex) % 7) + 7) % 7
-      const cells = []
+      const cells: CalCell[] = []
       if (lead > 0) {
         const prev = shiftMonthYm(y, m, -1)
         const prevDim = daysInMonth(prev.y, prev.m)
@@ -1703,7 +1620,7 @@ export default {
       this.calTracking = false
       this.calMode = 'day'
     },
-    slideTrackStyle(hasOut) {
+    slideTrackStyle(hasOut: boolean): Record<string, string> {
       if (!hasOut || !this.calSlideDir) return {}
       const next = this.calSlideDir > 0
       if (this.calSlidePhase === 'prepare') {
@@ -1720,7 +1637,7 @@ export default {
       }
       return {}
     },
-    runCalSlide(afterPrepare) {
+    runCalSlide(afterPrepare?: () => void) {
       this.calSlidePhase = 'prepare'
       if (typeof afterPrepare === 'function') afterPrepare()
       this.$nextTick(() => {
@@ -1745,22 +1662,22 @@ export default {
         }
       })
     },
-    buildYearPage(pageStart) {
+    buildYearPage(pageStart: number): number[] {
       const { start } = this.dateBounds
       const from = Math.max(start.y, Number(pageStart) || start.y)
-      const list = []
+      const list: number[] = []
       for (let i = 0; i < YEAR_PAGE_SIZE; i += 1) {
         list.push(from + i)
       }
       return list
     },
-    decadeStartForYear(year) {
+    decadeStartForYear(year: number): number {
       const { start, end } = this.dateBounds
       const y = Math.min(end.y, Math.max(start.y, Number(year) || start.y))
       const offset = y - start.y
       return start.y + Math.floor(offset / YEAR_PAGE_SIZE) * YEAR_PAGE_SIZE
     },
-    yearPageItemsAt(pageStart) {
+    yearPageItemsAt(pageStart: number): number[] {
       return this.buildYearPage(pageStart)
     },
     syncSafe() {
@@ -1775,7 +1692,7 @@ export default {
         this.windowWidth = 375
       }
     },
-    snapMinute(mi) {
+    snapMinute(mi: number): number {
       const step = this.minuteStep
       const snapped = Math.round(mi / step) * step
       return Math.min(60 - step, Math.max(0, snapped))
@@ -1823,7 +1740,7 @@ export default {
       const di = Math.max(0, Math.min(dayTo - dayFrom, ymd.d - dayFrom))
       return [yi, mi, di]
     },
-    clampYmdToBounds(ymd) {
+    clampYmdToBounds(ymd: Ymd): Ymd {
       const { start, end } = this.dateBounds
       let y = Number(ymd.y) || start.y
       let m = Number(ymd.m) || 1
@@ -1843,7 +1760,7 @@ export default {
         h: now.getHours(),
         mi: this.snapMinute(now.getMinutes()),
       }
-      let parsed = null
+      let parsed: (Ymd & { h?: number; mi?: number }) | null = null
       if (this.modeKey === 'datetime') parsed = parseYmdHm(this.current)
       else if (this.modeKey === 'daterange' || this.modeKey === 'week') {
         const range = parseDateRange(this.current)
@@ -1914,7 +1831,7 @@ export default {
         ]
       }
     },
-    valueFromIndexes(indexes) {
+    valueFromIndexes(indexes: number[]): PickerValue {
       const cols = this.columns
       if (this.modeKey === 'selector') return indexes[0] || 0
       if (this.modeKey === 'time') {
@@ -1935,7 +1852,7 @@ export default {
       const d = (cols[2][indexes[2] || 0] && cols[2][indexes[2] || 0].value) || 1
       return `${y}-${pad2(m)}-${pad2(d)}`
     },
-    valueFromCalendar() {
+    valueFromCalendar(): PickerValue {
       if (this.isRangeSelect) {
         const s = this.draftRangeStart
         if (!s) {
@@ -1975,14 +1892,14 @@ export default {
         next.some((v, i) => v !== (this.draftIndexes[i] || 0)) || next.length !== this.draftIndexes.length
       if (changed) this.draftIndexes = next
     },
-    isDayDisabledAt(day, y, m) {
+    isDayDisabledAt(day: number, y: number, m: number): boolean {
       if (!day) return true
       const cur = { y, m, d: day }
       const { start, end } = this.dateBounds
       return compareYmd(cur, start) < 0 || compareYmd(cur, end) > 0
     },
     /** @param {{ y: number, m: number, d: number, out: boolean } | null} cell */
-    cellClass(cell) {
+    cellClass(cell: CalCell | null) {
       if (!cell) return { 'lingyun-picker-cal__cell--empty': true }
       const { y, m, d } = cell
       const today = d === this.todayYmd.d && y === this.todayYmd.y && m === this.todayYmd.m
@@ -2017,7 +1934,7 @@ export default {
         'lingyun-picker-cal__cell--outside': !!cell.out,
       }
     },
-    dayRangeFlags(day, y, m) {
+    dayRangeFlags(day: number, y: number, m: number) {
       if (!this.isRangeSelect || !day) {
         return { selected: false, rangeStart: false, rangeEnd: false, inRange: false }
       }
@@ -2038,7 +1955,7 @@ export default {
       }
     },
     /** @param {{ y: number, m: number, d: number, out: boolean } | null} cell */
-    dayDecor(cell) {
+    dayDecor(cell: CalCell | null) {
       if (!cell) {
         return {
           day: '',
@@ -2096,7 +2013,7 @@ export default {
       }
     },
     /** @param {{ y: number, m: number, d: number, out: boolean } | null} cell */
-    onSelectDay(cell) {
+    onSelectDay(cell: CalCell | null) {
       if (this.calSwiped || this.calSlidePhase !== 'idle') {
         this.calSwiped = false
         return
@@ -2136,7 +2053,7 @@ export default {
       this.draftM = cell.m
       this.draftD = day
     },
-    shiftMonth(delta) {
+    shiftMonth(delta: number) {
       if (this.calMode !== 'day') return
       if (this.calSlidePhase !== 'idle') return
       if (delta < 0 && !this.canPrevMonth) return
@@ -2190,7 +2107,7 @@ export default {
       this.calSwiped = false
       this.calTracking = false
     },
-    shiftYear(delta) {
+    shiftYear(delta: number) {
       if (this.calMode !== 'month') return
       if (this.calSlidePhase !== 'idle') return
       if (delta < 0 && !this.canPrevYear) return
@@ -2208,7 +2125,7 @@ export default {
         this.viewYear = next
       })
     },
-    shiftDecade(delta) {
+    shiftDecade(delta: number) {
       if (this.calMode !== 'year') return
       if (this.calSlidePhase !== 'idle') return
       if (delta < 0 && !this.canPrevDecade) return
@@ -2230,17 +2147,17 @@ export default {
         this.viewDecadeStart = next
       })
     },
-    monthLabel(m) {
+    monthLabel(m: number): string {
       return MONTH_SHORT[(m || 1) - 1] || `${m}月`
     },
-    isMonthDisabled(m, y) {
+    isMonthDisabled(m: number, y: number): boolean {
       const { start, end } = this.dateBounds
       if (y < start.y || y > end.y) return true
       if (y === start.y && m < start.m) return true
       if (y === end.y && m > end.m) return true
       return false
     },
-    monthCellClass(m, y) {
+    monthCellClass(m: number, y: number) {
       // 仅高亮「已选日期」所在年月；浏览其它年份时不跟着手动 viewM
       const selected = y === this.draftY && m === this.draftM
       return {
@@ -2248,17 +2165,17 @@ export default {
         'lingyun-picker-cal__month-cell--disabled': this.isMonthDisabled(m, y),
       }
     },
-    isYearDisabled(yr) {
+    isYearDisabled(yr: number): boolean {
       const { start, end } = this.dateBounds
       return yr < start.y || yr > end.y
     },
-    yearCellClass(yr) {
+    yearCellClass(yr: number) {
       return {
         'lingyun-picker-cal__month-cell--selected': yr === this.draftY,
         'lingyun-picker-cal__month-cell--disabled': this.isYearDisabled(yr),
       }
     },
-    onSelectMonth(m) {
+    onSelectMonth(m: number) {
       if (this.calSwiped || this.calSlidePhase !== 'idle') {
         this.calSwiped = false
         return
@@ -2277,7 +2194,7 @@ export default {
       this.calMode = 'day'
       this.resetCalSlideKeepMode()
     },
-    onSelectYear(yr) {
+    onSelectYear(yr: number) {
       if (this.calSwiped || this.calSlidePhase !== 'idle') {
         this.calSwiped = false
         return
@@ -2293,7 +2210,7 @@ export default {
       this.calMode = 'month'
       this.resetCalSlideKeepMode()
     },
-    onCalTouchStart(e) {
+    onCalTouchStart(e: TouchEvent) {
       const t = e.touches && e.touches[0]
       if (!t) return
       this.calStartX = t.clientX
@@ -2303,7 +2220,7 @@ export default {
       this.calTracking = true
       this.calSwiped = false
     },
-    onCalTouchMove(e) {
+    onCalTouchMove(e: TouchEvent) {
       if (!this.calTracking) return
       const t = e.touches && e.touches[0]
       if (!t) return
@@ -2329,12 +2246,12 @@ export default {
       this.timeEditing = !this.timeEditing
       if (this.timeEditing) this.syncTimeDraftIndexes()
     },
-    setAmPm(isPm) {
+    setAmPm(isPm: boolean) {
       const { h12 } = formatHour12(this.draftH)
       this.draftH = toH24(h12, isPm)
       this.syncTimeDraftIndexes()
     },
-    onTimePickChange(e) {
+    onTimePickChange(e: PickerChangeEvent) {
       const raw = (e && e.detail && e.detail.value) || []
       this.timeDraftIndexes = raw.map((n) => Number(n) || 0)
       const hItem = this.timeHourColumn[this.timeDraftIndexes[0] || 0]
@@ -2388,7 +2305,7 @@ export default {
         }
       })
     },
-    closeSheet(after) {
+    closeSheet(after?: () => void) {
       this.clearTimers()
       if (!this.sheetMounted) {
         this.unlockPageScroll()
@@ -2414,14 +2331,14 @@ export default {
     onPanelTouchMove() {
       /* stop 已在模板 */
     },
-    onChromeTouchStart(e) {
+    onChromeTouchStart(e: TouchEvent) {
       const t = e.touches && e.touches[0]
       if (!t) return
       this.dragStartY = t.clientY
       this.dragDy = 0
       this.dragging = true
     },
-    onChromeTouchMove(e) {
+    onChromeTouchMove(e: TouchEvent) {
       if (!this.dragging) return
       const t = e.touches && e.touches[0]
       if (!t) return
@@ -2437,7 +2354,7 @@ export default {
         this.onCancel()
       }
     },
-    onPickChange(e) {
+    onPickChange(e: PickerChangeEvent) {
       const raw = (e && e.detail && e.detail.value) || []
       this.draftIndexes = raw.map((n) => Number(n) || 0)
       if (this.modeKey === 'time' && this.hour12) {
@@ -2454,7 +2371,7 @@ export default {
       this.closeSheet()
     },
     onConfirm() {
-      let next
+      let next: PickerValue
       if (this.useCalendar) {
         next = this.valueFromCalendar()
       } else {
@@ -2468,7 +2385,7 @@ export default {
     },
     lockPageScroll() {
       try {
-        const lockApi = this.appPageScrollLock
+        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
         if (lockApi && typeof lockApi.lock === 'function' && !this._appScrollLocked) {
           lockApi.lock()
           this._appScrollLocked = true
@@ -2492,7 +2409,7 @@ export default {
     },
     unlockPageScroll() {
       try {
-        const lockApi = this.appPageScrollLock
+        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
         if (this._appScrollLocked && lockApi && typeof lockApi.unlock === 'function') {
           lockApi.unlock()
         }
@@ -2512,7 +2429,7 @@ export default {
       // #endif
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

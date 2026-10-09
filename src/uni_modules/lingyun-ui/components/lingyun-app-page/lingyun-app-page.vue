@@ -358,7 +358,13 @@ export default {
       const thresholds = []
       for (let i = 0; i <= steps; i += 1) thresholds.push(i / steps)
       try {
-        const observer = uni.createIntersectionObserver(this, { thresholds })
+        const options = { thresholds, nativeMode: true }
+        // 微信会对传入的组件实例枚举键，Vue 代理会告警。用小程序组件实例创建观察器。
+        const scope = this.$scope
+        const observer =
+          scope && typeof scope.createIntersectionObserver === 'function'
+            ? scope.createIntersectionObserver(options)
+            : uni.createIntersectionObserver(scope || this, options)
         observer.relativeToViewport().observe('.lingyun-app-page__sentinel', (res) => {
           const ratio = Number(res && res.intersectionRatio)
           if (!Number.isFinite(ratio)) return

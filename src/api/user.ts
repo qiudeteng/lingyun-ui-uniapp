@@ -12,6 +12,6 @@ export function fetchUserMenu() {
   return post('/core/User/menu', {}, false)
 }
 
-export function fetchUserAuthStores() {
-  return post('/enterprise/Store/getUserAuthStores', {}, false)
+export function fetchUserAuthStores(showLoading = false) {
+  return post<unknown[]>('/enterprise/Store/getUserAuthStores', {}, showLoading)
 }

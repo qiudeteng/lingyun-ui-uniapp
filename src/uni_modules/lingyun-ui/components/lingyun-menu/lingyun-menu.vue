@@ -72,47 +72,53 @@
   </lingyun-popover>
 </template>
 
-<script>
-import { normalizeMenuActions } from './normalizeMenuActions'
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+import {
+  normalizeMenuActions,
+  type MenuAction,
+  type MenuActionInput,
+  type MenuItem,
+} from './normalizeMenuActions'
 
 /**
  * lingyun-menu
  * @see design/MENUS.md
  */
-export default {
+export default defineComponent({
   name: 'LingyunMenu',
   emits: ['update:show', 'update:modelValue', 'select', 'close'],
   props: {
-    show: { type: Boolean, default: undefined },
-    modelValue: { type: Boolean, default: undefined },
-    actions: { type: Array, default: () => [] },
+    show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+    modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+    actions: { type: Array as PropType<MenuActionInput[]>, default: () => [] },
     placement: { type: String, default: 'bottom' },
     maskClosable: { type: Boolean, default: true },
-    zIndex: { type: [Number, String], default: 1100 },
+    zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
   },
   computed: {
     innerShow: {
-      get() {
+      get(): boolean {
         if (this.show !== undefined && this.show !== null) return !!this.show
         if (this.modelValue !== undefined && this.modelValue !== null) return !!this.modelValue
         return false
       },
-      set(val) {
+      set(val: boolean) {
         this.$emit('update:show', val)
         this.$emit('update:modelValue', val)
       },
     },
-    normalizedActions() {
+    normalizedActions(): MenuAction[] {
       return normalizeMenuActions(this.actions)
     },
   },
   methods: {
-    iconColor(action) {
+    iconColor(action: Pick<MenuItem, 'disabled' | 'role'>): string {
       if (action.disabled) return 'tertiary'
       if (action.role === 'destructive') return 'red'
       return 'label'
     },
-    rowClass(action) {
+    rowClass(action: MenuAction): string {
       if (action.kind === 'separator') return 'lingyun-menu__sep'
       if (action.kind === 'title') return 'lingyun-menu__heading'
       if (action.kind === 'controls') return 'lingyun-menu__controls'
@@ -125,7 +131,7 @@ export default {
         .filter(Boolean)
         .join(' ')
     },
-    controlClass(item) {
+    controlClass(item: MenuItem): string {
       return [
         item.disabled ? 'lingyun-menu__control--disabled' : '',
         item.role === 'destructive' ? 'lingyun-menu__control--destructive' : '',
@@ -133,19 +139,19 @@ export default {
         .filter(Boolean)
         .join(' ')
     },
-    hoverClass(action) {
+    hoverClass(action: MenuAction): string {
       if (action.kind !== 'item' || action.disabled) return ''
       return 'lingyun-menu__item--hover'
     },
-    emitSelect(action, index) {
+    emitSelect(action: MenuItem, index: number) {
       this.$emit('select', { action: action.raw || action, index, key: action.key })
       this.innerShow = false
     },
-    onRow(action, index) {
+    onRow(action: MenuAction, index: number) {
       if (action.kind !== 'item' || action.disabled) return
       this.emitSelect(action, index)
     },
-    onControl(item) {
+    onControl(item: MenuItem) {
       if (!item || item.disabled) return
       this.emitSelect(item, 0)
     },
@@ -153,7 +159,7 @@ export default {
       this.$emit('close')
     },
   },
-}
+})
 </script>
 
 <style lang="scss">

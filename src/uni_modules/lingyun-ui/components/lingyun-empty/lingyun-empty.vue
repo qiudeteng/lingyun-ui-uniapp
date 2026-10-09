@@ -206,6 +206,7 @@ export default {
   margin-top: 20px;
   max-width: 240px;
   align-self: center;
+  align-items: center;
 }
 
 .lingyun-empty__action--bottom {

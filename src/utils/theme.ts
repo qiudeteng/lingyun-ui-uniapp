@@ -36,13 +36,15 @@ function isPreference(value: unknown): value is ThemePreference {
 /** 读取系统当前外观（需 manifest 对应端 darkmode:true 才有可靠 theme 字段） */
 export function getSystemTheme(): ResolvedTheme {
   try {
-    const info = uni.getSystemInfoSync() as UniApp.GetSystemInfoResult & {
-      osTheme?: string
-      hostTheme?: string
-      theme?: string
+    if (typeof uni.getAppBaseInfo === 'function') {
+      const info = uni.getAppBaseInfo() as UniApp.GetAppBaseInfoResult & {
+        osTheme?: string
+        hostTheme?: string
+        theme?: string
+      }
+      const os = info.theme || info.osTheme || info.hostTheme
+      if (os === 'dark' || os === 'light') return os
     }
-    const os = info.theme || info.osTheme || info.hostTheme
-    if (os === 'dark' || os === 'light') return os
   } catch {
     /* ignore */
   }
