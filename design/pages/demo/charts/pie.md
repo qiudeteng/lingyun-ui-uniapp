@@ -6,4 +6,4 @@
 
 - 数据：`series: [{ data: [{ name, value }] }]`，不要写成类目轴
 - 规范：[`design/CHARTS.md`](../../../CHARTS.md)
-- 系列色：包内 `config-colors.js` · [`COLORS.md`](../../../COLORS.md)
+- 系列色：包内 `config-colors.ts` · [`COLORS.md`](../../../COLORS.md)

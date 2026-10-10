@@ -6,4 +6,4 @@
 
 - 数据：无 categories；`[Unix秒, y]` 且勿超过默认 Y `max: 80`；`xAxis.format: 'xAxisDemo2'`
 - 规范：[`design/CHARTS.md`](../../../CHARTS.md)
-- 系列色：包内 `config-colors.js` · [`COLORS.md`](../../../COLORS.md)
+- 系列色：包内 `config-colors.ts` · [`COLORS.md`](../../../COLORS.md)

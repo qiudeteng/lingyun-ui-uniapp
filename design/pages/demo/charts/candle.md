@@ -6,4 +6,4 @@
 
 - 数据：`data` 为 `[开盘, 收盘, 最低, 最高]`
 - 规范：[`design/CHARTS.md`](../../../CHARTS.md)
-- 系列色：包内 `config-colors.js` · [`COLORS.md`](../../../COLORS.md)
+- 系列色：包内 `config-colors.ts` · [`COLORS.md`](../../../COLORS.md)

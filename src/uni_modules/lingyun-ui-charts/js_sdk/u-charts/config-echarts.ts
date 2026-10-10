@@ -1,15 +1,15 @@
 /*
  * lingyun-ui-charts · ECharts 默认 option
- * 主题色：./config-colors.js
+ * 主题色：./config-colors.ts
  *
  * 引擎版权：uCharts® QIUN®秋云 https://www.ucharts.cn （Apache-2.0）
  */
 
-import { chartColor as color } from './config-colors.js'
+import { chartColor as color } from './config-colors'
 
 // 通用配置项
 
-const cfe = {
+const cfe: Record<string, any> = {
   //demotype为自定义图表类型
 	"type": ["pie", "ring", "rose", "funnel", "line", "column", "area", "radar", "gauge","candle","demotype"],
   //增加自定义图表类型，如果需要categories，请在这里加入您的图表类型例如最后的"demotype"
@@ -19,10 +19,10 @@ const cfe = {
 	"option": {},
   //下面是自定义format配置，因除H5端外的其他端无法通过props传递函数，只能通过此属性对应下标的方式来替换
   "formatter":{
-    "tooltipDemo1":function(res){
+    "tooltipDemo1":function(res: any){
       let result = ''
       for (let i in res) {
-      	if (i == 0) {
+      	if (i === '0') {
       		result += res[i].axisValueLabel + '年销售额'
       	}
       	let value = '--'
@@ -39,13 +39,13 @@ const cfe = {
       }
       return result;
     },
-    legendFormat:function(name){
+    legendFormat:function(name: string){
       return "自定义图例+"+name;
     },
-    yAxisFormatDemo:function (value, index) {
+    yAxisFormatDemo:function (value: any) {
       return value + '元';
     },
-    seriesFormatDemo:function(res){
+    seriesFormatDemo:function(res: any){
       return res.name + '年' + res.value + '元';
     }
   },

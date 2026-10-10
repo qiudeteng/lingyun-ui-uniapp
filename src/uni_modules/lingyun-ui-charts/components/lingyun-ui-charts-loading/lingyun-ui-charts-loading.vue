@@ -8,27 +8,24 @@
 	</view>
 </template>
 
-<script>
-	import Loading1 from "./loading1.vue";
-	import Loading2 from "./loading2.vue";
-	import Loading3 from "./loading3.vue";
-	import Loading4 from "./loading4.vue";
-	import Loading5 from "./loading5.vue";
-	export default {
-		components:{Loading1,Loading2,Loading3,Loading4,Loading5},
-		name: 'lingyun-ui-charts-loading',
-		props: {
-			loadingType: {
-				type: Number,
-				default: 2
-			},
-		},
-		data() {
-			return {
-				
-			};
-		},
-	}
+<script lang="ts">
+import { defineComponent } from 'vue'
+import Loading1 from './loading1.vue'
+import Loading2 from './loading2.vue'
+import Loading3 from './loading3.vue'
+import Loading4 from './loading4.vue'
+import Loading5 from './loading5.vue'
+
+export default defineComponent({
+  components: { Loading1, Loading2, Loading3, Loading4, Loading5 },
+  name: 'lingyun-ui-charts-loading',
+  props: {
+    loadingType: {
+      type: Number,
+      default: 2,
+    },
+  },
+})
 </script>
 
 <style>

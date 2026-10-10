@@ -9,4 +9,4 @@
 | 画布高度 | **280px**（`.chart-box`） |
 | canvas | `canvas2d` · `inScrollView` · `ontouch` 均为 true |
 | 数据 / 图种 | 见 [`design/CHARTS.md`](../../CHARTS.md) |
-| 系列色 | 扩展 `config-colors.js` |
+| 系列色 | 扩展 `config-colors.ts` |

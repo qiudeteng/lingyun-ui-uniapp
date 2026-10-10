@@ -2,7 +2,7 @@
  * lingyun-ui-charts 全局系列色
  * 对齐 design/COLORS.md · Sketch System Accents（默认 Light）
  *
- * 被 config-ucharts.js / config-echarts.js 引用为默认 color。
+ * 被 config-ucharts.ts / config-echarts.ts 引用为默认 color。
  * 单图覆盖：`:opts="{ color: chartColorDark }"` 或 `series[].color`。
  */
 

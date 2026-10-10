@@ -7,15 +7,12 @@
 	</view>
 </template>
 
-<script>
-	export default {
-		name: 'loading3',
-		data() {
-			return {
-				
-			};
-		}
-	}
+<script lang="ts">
+import { defineComponent } from 'vue'
+
+export default defineComponent({
+  name: 'loading3',
+})
 </script>
 
 <style scoped="true">

@@ -7,8 +7,8 @@
 ## 权威来源
 
 1. 使用手册 [`doc/charts/README.md`](../doc/charts/README.md) · 图种 [`doc/charts/`](../doc/charts/)
-2. 系列色 [`config-colors.js`](../src/uni_modules/lingyun-ui-charts/js_sdk/u-charts/config-colors.js) · [`COLORS.md`](./COLORS.md) System Accents
-3. 默认 option：`config-ucharts.js` / `config-echarts.js`
+2. 系列色 [`config-colors.ts`](../src/uni_modules/lingyun-ui-charts/js_sdk/u-charts/config-colors.ts) · [`COLORS.md`](./COLORS.md) System Accents
+3. 默认 option：`config-ucharts.ts` / `config-echarts.ts`
 4. [uCharts 指南](https://www.ucharts.cn/v2/#/guide/index)
 
 尺寸 **1pt = 1px**。禁止 `rpx`。
@@ -20,9 +20,10 @@
 | 项 | 约定 |
 |----|------|
 | 包 | `src/uni_modules/lingyun-ui-charts`（独立于凌云UI 单包） |
+| 版本 | 从 **1.0.1** 起按 `1.0.x` 递增，不跟 uCharts 的 `2.5.x-日期` |
 | 标签 | `<lingyun-ui-charts />`（easycom） |
 | 加载 / 错误 | `<lingyun-ui-charts-loading />` · `<lingyun-ui-charts-error />` |
-| 语言 | 扩展内保持 `.js`，不要改成 `.ts` |
+| 语言 | 组件、配置和 uCharts 引擎为 TypeScript。ECharts 压缩包、renderjs 保持 JavaScript |
 | Demo | `src/pages/demo/charts/<type>.vue` · 页壳 `chart-demo-block` |
 
 不要为 `uni_modules` 建 `design/` 镜像目录。视觉与数据约定以本章 + 包 readme 为准。
@@ -31,7 +32,7 @@
 
 ## 2. 系列色
 
-改色 **只动** `js_sdk/u-charts/config-colors.js`。`config-ucharts.js` / `config-echarts.js` 从这里取默认 `color`。禁止在业务 `src/config` 再备一份。
+改色 **只动** `js_sdk/u-charts/config-colors.ts`。`config-ucharts.ts` / `config-echarts.ts` 从这里取默认 `color`。禁止在业务 `src/config` 再备一份。
 
 顺序对齐 System Accents：**Blue → Green → Yellow → Red → Cyan → Mint → Orange → Purple → Pink**。
 
@@ -41,7 +42,7 @@
 | `chartColorDark` | Dark；暗黑页：`:opts="{ color: chartColorDark }"` |
 
 ```ts
-import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/u-charts/config-colors.js'
+import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/u-charts/config-colors'
 ```
 
 单系列覆盖：`series[].color`。不要自造非系统强调色。
@@ -90,14 +91,14 @@ import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/u-charts/
 // scatter：[x, y]；bubble：[x, y, size]
 ```
 
-默认 `tline` / `tarea` 的 Y 轴 `max` 是 **80**（写在 `config-ucharts.js`）。数据超出就会顶破画布；不够用时在 `opts.yAxis.data` 里改 `max`，或把数据收到范围内。
+默认 `tline` / `tarea` 的 Y 轴 `max` 是 **80**（写在 `config-ucharts.ts`）。数据超出就会顶破画布；不够用时在 `opts.yAxis.data` 里改 `max`，或把数据收到范围内。
 
 X 轴不要直接画时间戳。小程序不能把函数当 props 传递，用 formatter 名：
 
 ```ts
 opts: {
   padding: [15, 28, 0, 15], // 右侧给末点标签留空
-  xAxis: { format: 'xAxisDemo2' } // → HH:mm，见 config-ucharts.js formatter
+  xAxis: { format: 'xAxisDemo2' } // → HH:mm，见 config-ucharts.ts formatter
 }
 ```
 
@@ -154,7 +155,7 @@ opts: {
 |------|------|------|
 | `type` | — | 图种，见 §3 |
 | `chartData` | `{ categories, series }` | 数据；形状见 §3 |
-| `opts` | `{}` | 与 `config-ucharts.js` 对应 type 深合并 |
+| `opts` | `{}` | 与 `config-ucharts.ts` 对应 type 深合并 |
 | `canvasId` | `uchartsid` | 同页多图必须不同 |
 | `canvas2d` | `false` | **微信小程序建议 `true`** |
 | `inScrollView` | `false` | 页面在滚动容器内时 `true`（`lingyun-app-page` 内要开） |
@@ -207,7 +208,7 @@ opts: {
 ## 7. 自检
 
 - [ ] 数据形状与 `type` 一致（尤其 word 扁平、时间轴秒级时间戳）
-- [ ] 系列色来自 `config-colors.js`，未在业务侧另备一份
+- [ ] 系列色来自 `config-colors.ts`，未在业务侧另备一份
 - [ ] 画布容器有明确宽高；时间轴右侧未裁字、Y 轴未顶破
 - [ ] 微信：`canvas2d` + 滚动内 `inScrollView`；`pnpm dev:mp-weixin` 可编译
 - [ ] 未给图表套玻璃 mixin；尺寸为 `px`
