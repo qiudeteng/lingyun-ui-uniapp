@@ -74,6 +74,7 @@ const componentSidebar = [
   {
     text: '基础控件',
     children: [
+      { text: '布局', link: '/components/layout.html' },
       { text: '按钮', link: '/components/button.html' },
       { text: '图标', link: '/components/icon.html' },
       { text: '角标', link: '/components/badge.html' },

@@ -91,9 +91,9 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Mobile / PC' }
 	},
 	{
-		path: '/pages/demo/responsive',
-		name: 'pagesDemoResponsive',
-		meta: { title: 'Mobile / PC' }
+		path: '/pages/demo/layout',
+		name: 'pagesDemoLayout',
+		meta: { title: 'Layout' }
 	},
 	{
 		path: '/pages/demo/sheets',

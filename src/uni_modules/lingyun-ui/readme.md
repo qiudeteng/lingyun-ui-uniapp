@@ -1,6 +1,6 @@
 # 凌云UI
 
-凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.14**，变更见 [`changelog.md`](./changelog.md)。
+凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.15**，变更见 [`changelog.md`](./changelog.md)。
 
 📖 [使用手册](https://lingyun.xinyicanyin.com/)（组件用法、属性、示例；右侧手机框实时预览）
 
@@ -78,6 +78,17 @@ uni.hideLingyunHud()
 </lingyun-pc>
 ```
 
+## 布局
+
+24 分栏用 `lingyun-row` 和 `lingyun-col`，参数对齐 Element Plus Layout。说明见使用手册 [布局](../../../doc/components/layout.md)。
+
+```vue
+<lingyun-row :gutter="12">
+  <lingyun-col :span="16"><view>16</view></lingyun-col>
+  <lingyun-col :span="8"><view>8</view></lingyun-col>
+</lingyun-row>
+```
+
 ## 硬规则
 
 1. **所有 `lingyun-*` 组件只放在本包下**，路径固定为 `components/<组件名>/<组件名>.vue`。
@@ -95,7 +106,7 @@ uni.hideLingyunHud()
 
 ```
 lingyun-ui/
-├── package.json          # 1.0.14
+├── package.json          # 1.0.15
 ├── readme.md
 ├── changelog.md
 ├── index.ts              # app.use(lingyunUi)
@@ -105,6 +116,8 @@ lingyun-ui/
     ├── lingyun-app-page/ # 页面壳；宽屏时为左侧导航留位
     ├── lingyun-mobile/   # 窄屏才显示
     ├── lingyun-pc/       # 平板和电脑才显示
+    ├── lingyun-row/      # 24 分栏的行
+    ├── lingyun-col/      # 24 分栏的列
     ├── lingyun-page-nav/ # 宽屏目录。H5 挂载见 mountLingyunPageNav.ts
     ├── lingyun-toolbars/
     ├── lingyun-fab/
