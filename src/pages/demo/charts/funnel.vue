@@ -6,12 +6,17 @@
     type="funnel"
     :chart-data="chartData"
     :opts="opts"
+    extra-note="图例表"
+    :extra-chart-data="legendData"
+    :extra-opts="legendOpts"
   />
 </template>
 
 <script setup lang="ts">
-  import { chartDemoOpts, chartSamples } from './samples'
+  import { chartDemoOpts, chartLegendOpts, chartLegendSamples, chartSamples } from './samples'
 
   const chartData = chartSamples.funnel
   const opts = chartDemoOpts.funnel || {}
+  const legendData = chartLegendSamples.funnel
+  const legendOpts = chartLegendOpts.funnel || {}
 </script>
