@@ -230,16 +230,19 @@ export default defineComponent({
       /* #ifdef H5 */
       return window.requestAnimationFrame(fn)
       /* #endif */
+      /* #ifndef H5 */
       return setTimeout(() => fn(Date.now()), 16)
+      /* #endif */
     },
     cancelFrame(id?: number | null) {
       if (typeof id !== 'number') return
-      const frameId = id as number
+      const frameId = id
       /* #ifdef H5 */
       window.cancelAnimationFrame(frameId)
-      return
       /* #endif */
+      /* #ifndef H5 */
       clearTimeout(frameId)
+      /* #endif */
     },
     /** 窗口或轨道尺寸变化后，等布局结束再量选中块，避免量到 flex 还没分完的宽度 */
     scheduleThumbSync() {

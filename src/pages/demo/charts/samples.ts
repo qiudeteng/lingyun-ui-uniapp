@@ -407,8 +407,8 @@ export const chartLegendOpts: Partial<Record<keyof typeof chartSamples, Record<s
 	pie: sliceLegend,
 	ring: {
 		dataLabel: false,
-		title: { name: '1700', fontSize: 16, color: '#1c1c1e' },
-		subtitle: { name: '订单总数', fontSize: 12, color: '#5ac8fa' },
+		title: { name: '1700' },
+		subtitle: { name: '订单总数' },
 		legend: {
 			position: 'right',
 			float: 'center',

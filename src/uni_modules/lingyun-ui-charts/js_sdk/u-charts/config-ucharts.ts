@@ -111,14 +111,10 @@ const cfu: Record<string, any> = {
       "lineHeight": 25,
 		},
 		"title": {
-			"name": "收益率",
-			"fontSize": 15,
-			"color": "#666666"
+			"name": "70%"
 		},
 		"subtitle": {
-			"name": "70%",
-			"fontSize": 25,
-			"color": "#7cb5ec"
+			"name": "收益率"
 		},
 		"extra": {
 			"ring": {
@@ -127,7 +123,7 @@ const cfu: Record<string, any> = {
 				"activeRadius": 10,
 				"offsetAngle": 0,
 				"labelWidth": 15,
-				"border": true,
+				"border": false,
 				"borderWidth": 3,
 				"borderColor": "#FFFFFF"
 			},

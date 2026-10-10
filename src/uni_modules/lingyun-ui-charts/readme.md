@@ -1,6 +1,6 @@
 # 凌云UI Charts
 
-凌云UI 图表组件库。标签 `<lingyun-ui-charts />`。当前版本 **1.0.4**。
+凌云UI 图表组件库。标签 `<lingyun-ui-charts />`。当前版本 **1.0.5**。
 
 基于 uCharts / ECharts。
 

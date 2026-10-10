@@ -6,6 +6,8 @@
 
 没有 `categories`。扇区写在 `series[0].data`：`{ name, value }`。
 
+环心不铺白底，扇区之间默认不描边。`title` 是环心主数字，按内圆放大并加粗；`subtitle` 是下面一行小字。颜色跟主题：浅色黑字，暗黑白字，副标题用次级标签色。写了 `color` 才用指定色。需要扇区缝隙时设置 `extra.ring.border = true`。
+
 图例排成表时，列写在 `opts.legend.columns`，额外的格子跟在同一条扇区上。`name` 前仍是色点。某一格单独变色写成 `{ text, color }`。文字跟随主题：浅色黑色，暗黑白色，点掉隐藏后改为次级标签色。其它图种的字段该写在哪一层，见 [图表总览 · 图例](/charts/#图例)。
 
 ## 示例
@@ -38,8 +40,8 @@ const chartData = {
 
 const chartOpts = {
   dataLabel: false,
-  title: { name: '1700', fontSize: 16, color: '#1c1c1e' },
-  subtitle: { name: '订单总数', fontSize: 12, color: '#5ac8fa' },
+  title: { name: '1700' },
+  subtitle: { name: '订单总数' },
   legend: {
     position: 'right',
     lineHeight: 22,

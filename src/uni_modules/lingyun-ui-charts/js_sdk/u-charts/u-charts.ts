@@ -20,7 +20,7 @@
 'use strict';
 
 var config = {
-  version: 'v1.0.4',
+  version: 'v1.0.5',
   yAxisWidth: 15,
   xAxisHeight: 22,
   padding: [10, 10, 10, 10],
@@ -2284,7 +2284,70 @@ function ringCenterWidth(text, fontSize, context) {
   return measureText(text, fontSize, context);
 }
 
+function ringTextWidth(text, size, weight, context) {
+  var font = weight + ' ' + size + 'px sans-serif';
+  if (context && context.font !== undefined) context.font = font;
+  if (context && context.setFontSize) context.setFontSize(size);
+  if (context && context.font !== undefined) context.font = font;
+  if (context && context.measureText) return context.measureText(String(text)).width;
+  return measureText(text, size, context);
+}
+
+function drawRingCenterText(opts, context, center, innerRadius) {
+  var title = opts.title.name || '';
+  var subtitle = opts.subtitle.name || '';
+  if (!title && !subtitle) return;
+  var titleColor = opts.title.color || '#000000';
+  var subtitleColor = opts.subtitle.color || 'rgba(60, 60, 67, 0.6)';
+  var maxW = innerRadius * 1.5;
+  var titleSize = title ? innerRadius * 0.58 : 0;
+  var subtitleSize = subtitle ? innerRadius * 0.28 : 0;
+  var gap = title && subtitle ? innerRadius * 0.12 : 0;
+  var scale = 1;
+  if (title) {
+    var titleWidth = ringTextWidth(title, titleSize, '600', context);
+    if (titleWidth > maxW) scale = Math.min(scale, maxW / titleWidth);
+  }
+  if (subtitle) {
+    var subtitleWidth = ringTextWidth(subtitle, subtitleSize, '400', context);
+    if (subtitleWidth > maxW) scale = Math.min(scale, maxW / subtitleWidth);
+  }
+  var block = titleSize + subtitleSize + gap;
+  if (block > innerRadius * 1.5) scale = Math.min(scale, innerRadius * 1.5 / block);
+  titleSize *= scale;
+  subtitleSize *= scale;
+  gap *= scale;
+  var titleY = center.y - (subtitle ? (subtitleSize + gap) / 2 : 0) + (opts.title.offsetY || 0) * opts.pix;
+  var subtitleY = center.y + (title ? (titleSize + gap) / 2 : 0) + (opts.subtitle.offsetY || 0) * opts.pix;
+  var titleX = center.x + (opts.title.offsetX || 0) * opts.pix;
+  var subtitleX = center.x + (opts.subtitle.offsetX || 0) * opts.pix;
+  if (context.setTextAlign) context.setTextAlign('center');
+  if (context.setTextBaseline) context.setTextBaseline('middle');
+  if (title) {
+    context.beginPath();
+    context.setFontSize(titleSize);
+    if (context.font !== undefined) context.font = '600 ' + titleSize + 'px sans-serif';
+    context.setFillStyle(titleColor);
+    context.fillText(String(title), titleX, titleY);
+    context.closePath();
+  }
+  if (subtitle) {
+    context.beginPath();
+    context.setFontSize(subtitleSize);
+    if (context.font !== undefined) context.font = '400 ' + subtitleSize + 'px sans-serif';
+    context.setFillStyle(subtitleColor);
+    context.fillText(String(subtitle), subtitleX, subtitleY);
+    context.closePath();
+  }
+  if (context.setTextAlign) context.setTextAlign('left');
+  if (context.setTextBaseline) context.setTextBaseline('normal');
+}
+
 function drawRingTitle(opts, config, context, center, innerRadius) {
+  if (innerRadius > 0) {
+    drawRingCenterText(opts, context, center, innerRadius);
+    return;
+  }
   var titlefontSize = ringCenterFont(opts, opts.title.fontSize, config.titleFontSize);
   var subtitlefontSize = ringCenterFont(opts, opts.subtitle.fontSize, config.subtitleFontSize);
   var title = opts.title.name || '';
@@ -5165,12 +5228,28 @@ function drawPieDataPoints(series, opts, config, context) {
     if (typeof pieOption.ringWidth === 'number' && pieOption.ringWidth > 0) {
       innerPieWidth = Math.max(0, radius - pieOption.ringWidth * opts.pix);
     }
+    var userCenter = opts.extra && opts.extra.ring && opts.extra.ring.centerColor;
+    context.save();
     context.beginPath();
-    context.setFillStyle(pieOption.centerColor);
     context.moveTo(centerPosition.x, centerPosition.y);
     context.arc(centerPosition.x, centerPosition.y, innerPieWidth, 0, 2 * Math.PI);
     context.closePath();
-    context.fill();
+    if (userCenter) {
+      context.setFillStyle(userCenter);
+      context.fill();
+    } else {
+      var punched = false;
+      try {
+        context.globalCompositeOperation = 'destination-out';
+        punched = context.globalCompositeOperation === 'destination-out';
+      } catch (e) {
+        punched = false;
+      }
+      context.setFillStyle(punched ? '#000000' : (opts.background || '#FFFFFF'));
+      context.fill();
+      if (punched) context.globalCompositeOperation = 'source-over';
+    }
+    context.restore();
   }
   if (opts.dataLabel !== false && process === 1) {
     drawPieText(series, opts, config, context, radius, centerPosition);

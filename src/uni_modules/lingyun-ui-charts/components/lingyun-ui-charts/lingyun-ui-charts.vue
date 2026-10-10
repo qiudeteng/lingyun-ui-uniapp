@@ -889,6 +889,14 @@ export default defineComponent({
         legend.hiddenFontColor = dark ? chartLabelSecondaryColorDark : chartLabelSecondaryColor
       }
       option.legend = legend
+      if (this.type === 'ring') {
+        const userTitle = (this.opts && this.opts.title) || {}
+        const userSub = (this.opts && this.opts.subtitle) || {}
+        if (!option.title || typeof option.title !== 'object') option.title = {}
+        if (!option.subtitle || typeof option.subtitle !== 'object') option.subtitle = {}
+        if (!userTitle.color) option.title.color = dark ? chartLabelColorDark : chartLabelColor
+        if (!userSub.color) option.subtitle.color = dark ? chartLabelSecondaryColorDark : chartLabelSecondaryColor
+      }
     },
     _clearChart() {
       let cid = this.cid
