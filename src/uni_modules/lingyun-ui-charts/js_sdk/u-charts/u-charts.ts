@@ -959,6 +959,56 @@ function splitPoints(points,eachSeries) {
 }
 
 
+function legendColumnsOf(opts) {
+  var columns = opts.legend && opts.legend.columns;
+  if (!columns || !columns.length) return null;
+  return columns;
+}
+
+function legendCellOf(item, column) {
+  var raw = column.key === 'name'
+    ? (item.legendText != null && item.legendText !== '' ? item.legendText : item.name)
+    : item[column.key];
+  if (raw == null || raw === '') return { text: '', color: '' };
+  if (typeof raw === 'object') {
+    return { text: raw.text == null ? '' : String(raw.text), color: raw.color || '' };
+  }
+  return { text: String(raw), color: '' };
+}
+
+function legendColumnLayout(series, opts, fontSize, context) {
+  var columns = legendColumnsOf(opts);
+  if (!columns) return null;
+  var gap = (opts.legend.columnGap == null ? 8 : opts.legend.columnGap) * opts.pix;
+  var widths = [];
+  for (var c = 0; c < columns.length; c++) {
+    var col = columns[c];
+    if (col.width > 0) {
+      widths.push(col.width * opts.pix);
+    } else {
+      var max = 0;
+      for (var i = 0; i < series.length; i++) {
+        var text = legendCellOf(series[i], col).text;
+        var w = measureText(text || ' ', fontSize, context);
+        if (w > max) max = w;
+      }
+      widths.push(max);
+    }
+  }
+  var textWidth = 0;
+  for (var k = 0; k < widths.length; k++) {
+    textWidth += widths[k];
+    if (k < widths.length - 1) textWidth += gap;
+  }
+  return { columns: columns, widths: widths, gap: gap, textWidth: textWidth };
+}
+
+function legendItemWidth(item, layout, shapeWidth, shapeRight, itemGap, fontSize, context) {
+  if (layout) return shapeWidth + shapeRight + layout.textWidth + itemGap;
+  var legendText = item.legendText ? item.legendText : item.name;
+  return shapeWidth + shapeRight + measureText(legendText || 'undefined', fontSize, context) + itemGap;
+}
+
 function calLegendData(series, opts, config, chartData, context) {
   let legendData = {
     area: {
@@ -989,6 +1039,8 @@ function calLegendData(series, opts, config, chartData, context) {
   let shapeWidth = 15 * opts.pix;
   let shapeRight = 5 * opts.pix;
   let lineHeight = Math.max(opts.legend.lineHeight * opts.pix, fontSize);
+  let columnLayout = legendColumnLayout(series, opts, fontSize, context);
+  legendData.columnLayout = columnLayout;
   if (opts.legend.position == 'top' || opts.legend.position == 'bottom') {
     let legendList = [];
     let widthCount = 0;
@@ -996,8 +1048,7 @@ function calLegendData(series, opts, config, chartData, context) {
     let currentRow = [];
     for (let i = 0; i < series.length; i++) {
       let item = series[i];
-      const legendText = item.legendText ? item.legendText : item.name;
-      let itemWidth = shapeWidth + shapeRight + measureText(legendText || 'undefined', fontSize, context) + opts.legend.itemGap * opts.pix;
+      let itemWidth = legendItemWidth(item, columnLayout, shapeWidth, shapeRight, opts.legend.itemGap * opts.pix, fontSize, context);
       if (widthCount + itemWidth > opts.width - opts.area[1] - opts.area[3]) {
         legendList.push(currentRow);
         widthCountArr.push(widthCount - opts.legend.itemGap * opts.pix);
@@ -1063,7 +1114,7 @@ function calLegendData(series, opts, config, chartData, context) {
         let item = currentRow[i];
         let maxWidth = 0;
         for (let j = 0; j < item.length; j++) {
-          let itemWidth = shapeWidth + shapeRight + measureText(item[j].name || 'undefined', fontSize, context) + opts.legend.itemGap * opts.pix;
+          let itemWidth = legendItemWidth(item[j], columnLayout, shapeWidth, shapeRight, opts.legend.itemGap * opts.pix, fontSize, context);
           if (itemWidth > maxWidth) {
             maxWidth = itemWidth;
           }
@@ -2222,39 +2273,72 @@ function drawActivePoint(points, color, shape, context, opts, option, seriesInde
   context.stroke();
 }
 
-function drawRingTitle(opts, config, context, center) {
-  var titlefontSize = opts.title.fontSize || config.titleFontSize;
-  var subtitlefontSize = opts.subtitle.fontSize || config.subtitleFontSize;
+function ringCenterFont(opts, fontSize, configSize) {
+  return fontSize ? fontSize * opts.pix : configSize;
+}
+
+function ringCenterWidth(text, fontSize, context) {
+  if (context && context.font !== undefined) {
+    context.font = fontSize + 'px sans-serif';
+  }
+  return measureText(text, fontSize, context);
+}
+
+function drawRingTitle(opts, config, context, center, innerRadius) {
+  var titlefontSize = ringCenterFont(opts, opts.title.fontSize, config.titleFontSize);
+  var subtitlefontSize = ringCenterFont(opts, opts.subtitle.fontSize, config.subtitleFontSize);
   var title = opts.title.name || '';
   var subtitle = opts.subtitle.name || '';
   var titleFontColor = opts.title.color || opts.fontColor;
   var subtitleFontColor = opts.subtitle.color || opts.fontColor;
+  var margin = 5;
+  if (innerRadius > 0) {
+    var limit = innerRadius * 1.6;
+    var scale = 1;
+    if (title) {
+      var titleWidth = ringCenterWidth(String(title), titlefontSize, context);
+      if (titleWidth > limit) scale = Math.min(scale, limit / titleWidth);
+    }
+    if (subtitle) {
+      var subtitleWidth = ringCenterWidth(String(subtitle), subtitlefontSize, context);
+      if (subtitleWidth > limit) scale = Math.min(scale, limit / subtitleWidth);
+    }
+    var block = (title ? titlefontSize : 0) + (subtitle ? subtitlefontSize : 0) + (title && subtitle ? margin : 0);
+    if (block > limit) scale = Math.min(scale, limit / block);
+    titlefontSize *= scale;
+    subtitlefontSize *= scale;
+  }
   var titleHeight = title ? titlefontSize : 0;
   var subtitleHeight = subtitle ? subtitlefontSize : 0;
-  var margin = 5;
   if (subtitle) {
-    var textWidth = measureText(subtitle, subtitlefontSize * opts.pix, context);
+    var textWidth = ringCenterWidth(subtitle, subtitlefontSize, context);
     var startX = center.x - textWidth / 2 + (opts.subtitle.offsetX|| 0) * opts.pix ;
-    var startY = center.y + subtitlefontSize * opts.pix / 2 + (opts.subtitle.offsetY || 0) * opts.pix;
+    var startY = center.y + subtitlefontSize / 2 + (opts.subtitle.offsetY || 0) * opts.pix;
     if (title) {
-      startY += (titleHeight * opts.pix + margin) / 2;
+      startY += (titleHeight + margin) / 2;
     }
     context.beginPath();
-    context.setFontSize(subtitlefontSize * opts.pix);
+    context.setFontSize(subtitlefontSize);
+    if (context.font !== undefined) {
+      context.font = subtitlefontSize + 'px sans-serif';
+    }
     context.setFillStyle(subtitleFontColor);
     context.fillText(subtitle, startX, startY);
     context.closePath();
     context.stroke();
   }
   if (title) {
-    var _textWidth = measureText(title, titlefontSize * opts.pix, context);
+    var _textWidth = ringCenterWidth(title, titlefontSize, context);
     var _startX = center.x - _textWidth / 2 + (opts.title.offsetX || 0);
-    var _startY = center.y + titlefontSize * opts.pix / 2 + (opts.title.offsetY || 0) * opts.pix;
+    var _startY = center.y + titlefontSize / 2 + (opts.title.offsetY || 0) * opts.pix;
     if (subtitle) {
-      _startY -= (subtitleHeight * opts.pix + margin) / 2;
+      _startY -= (subtitleHeight + margin) / 2;
     }
     context.beginPath();
-    context.setFontSize(titlefontSize * opts.pix);
+    context.setFontSize(titlefontSize);
+    if (context.font !== undefined) {
+      context.font = titlefontSize + 'px sans-serif';
+    }
     context.setFillStyle(titleFontColor);
     context.fillText(title, _startX, _startY);
     context.closePath();
@@ -4963,21 +5047,43 @@ function drawLegend(series, opts, config, context, chartData) {
       context.stroke();
       startX += shapeWidth + shapeRight;
       let fontTrans = 0.5 * lineHeight + 0.5 * fontSize - 2;
-      const legendText = item.legendText ? item.legendText : item.name;
       context.beginPath();
       context.setFontSize(fontSize);
-      context.setFillStyle(item.show ? opts.legend.fontColor : opts.legend.hiddenColor);
-      context.fillText(legendText, startX, startY + fontTrans);
+      var columnLayout = legendData.columnLayout;
+      if (columnLayout) {
+        var rowX = startX;
+        for (var c = 0; c < columnLayout.columns.length; c++) {
+          var column = columnLayout.columns[c];
+          var cell = legendCellOf(item, column);
+          var textWidth = measureText(cell.text, fontSize, context);
+          var textX = column.align === 'right' ? rowX + columnLayout.widths[c] - textWidth : rowX;
+          context.setFillStyle(item.show ? (cell.color || column.color || opts.legend.fontColor) : opts.fontColor);
+          if (cell.text) context.fillText(cell.text, textX, startY + fontTrans);
+          rowX += columnLayout.widths[c] + columnLayout.gap;
+        }
+        if (opts.legend.position == 'top' || opts.legend.position == 'bottom') {
+          startX += columnLayout.textWidth + itemGap;
+          item.area[2] = startX;
+        } else {
+          item.area[2] = startX + columnLayout.textWidth + itemGap;
+          startX -= shapeWidth + shapeRight;
+          startY += lineHeight;
+        }
+      } else {
+        const legendText = item.legendText ? item.legendText : item.name;
+        context.setFillStyle(item.show ? opts.legend.fontColor : opts.fontColor);
+        context.fillText(legendText, startX, startY + fontTrans);
+        if (opts.legend.position == 'top' || opts.legend.position == 'bottom') {
+          startX += measureText(legendText, fontSize, context) + itemGap;
+          item.area[2] = startX;
+        } else {
+          item.area[2] = startX + measureText(legendText, fontSize, context) + itemGap;
+          startX -= shapeWidth + shapeRight;
+          startY += lineHeight;
+        }
+      }
       context.closePath();
       context.stroke();
-      if (opts.legend.position == 'top' || opts.legend.position == 'bottom') {
-        startX += measureText(legendText, fontSize, context) + itemGap;
-        item.area[2] = startX;
-      } else {
-        item.area[2] = startX + measureText(legendText, fontSize, context) + itemGap;;
-        startX -= shapeWidth + shapeRight;
-        startY += lineHeight;
-      }
     }
   });
 }
@@ -5070,7 +5176,7 @@ function drawPieDataPoints(series, opts, config, context) {
     drawPieText(series, opts, config, context, radius, centerPosition);
   }
   if (process === 1 && opts.type === 'ring') {
-    drawRingTitle(opts, config, context, centerPosition);
+    drawRingTitle(opts, config, context, centerPosition, innerPieWidth);
   }
   return {
     center: centerPosition,
@@ -7058,7 +7164,7 @@ var uCharts = function uCharts(opts) {
     itemGap: 10,
     fontSize: opts.fontSize,
     lineHeight: opts.fontSize,
-    fontColor: opts.fontColor,
+    fontColor: '#FFFFFF',
     formatter: {},
     hiddenColor: '#CECECE'
   }, opts.legend);

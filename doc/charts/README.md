@@ -1,6 +1,6 @@
 # lingyun-ui-charts
 
-图表。独立包 `lingyun-ui-charts`，当前版本 **1.0.2**。easycom 可用，不必 `import`。默认走 **uCharts**（微信 / H5 / App）；`echartsH5` / `echartsApp` 默认关。
+图表。独立包 `lingyun-ui-charts`，当前版本 **1.0.3**。easycom 可用，不必 `import`。默认走 **uCharts**（微信 / H5 / App）；`echartsH5` / `echartsApp` 默认关。
 
 容器必须有明确高度。放在 `lingyun-app-page` 滚动区内时打开 `canvas2d`、`inScrollView`、`ontouch`。同页多图的 `canvasId` 不能重复。
 

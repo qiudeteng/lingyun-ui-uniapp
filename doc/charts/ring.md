@@ -6,6 +6,8 @@
 
 没有 `categories`。扇区写在 `series[0].data`：`{ name, value }`。
 
+图例排成表时，列写在 `opts.legend.columns`，额外的格子跟在同一条数据上。`name` 前仍是色点。某一格单独变色写成 `{ text, color }`。
+
 ## 示例
 
 ```vue
@@ -27,15 +29,29 @@ const chartData = {
   series: [
     {
       data: [
-        { name: '已完成', value: 70 },
-        { name: '进行中', value: 20 },
-        { name: '未开始', value: 10 },
+        { name: '小程序下单', value: 51.2, count: 5, rate: '10%' },
+        { name: '电话预约', value: 31.8, count: 3, rate: '6%' },
       ],
     },
   ],
 }
 
-const chartOpts = {}
+const chartOpts = {
+  dataLabel: false,
+  title: { name: '1700', fontSize: 16, color: '#1c1c1e' },
+  subtitle: { name: '订单总数', fontSize: 12, color: '#5ac8fa' },
+  legend: {
+    position: 'right',
+    lineHeight: 22,
+    fontSize: 12,
+    columns: [
+      { key: 'name', width: 72 },
+      { key: 'value', width: 36, align: 'right' },
+      { key: 'count', width: 20, align: 'right' },
+      { key: 'rate', width: 32, align: 'right', color: '#86868b' },
+    ],
+  },
+}
 ```
 
 ```scss

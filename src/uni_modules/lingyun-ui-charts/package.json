@@ -1,7 +1,7 @@
 {
   "id": "lingyun-ui-charts",
   "displayName": "凌云UI Charts",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "凌云UI 图表组件（基于 uCharts / ECharts）。系列色见 js_sdk/u-charts/config-colors.ts。",
   "keywords": [
     "lingyun-ui",
