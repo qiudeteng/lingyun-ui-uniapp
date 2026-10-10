@@ -12,6 +12,7 @@ const DEMO: Record<string, string> = {
   'search-bar': '/pages/demo/search-bar',
   sidebar: '/pages/demo/sidebars',
   button: '/pages/demo/buttons',
+  layout: '/pages/demo/layout',
   icon: '/pages/demo/icons',
   badge: '/pages/demo/badges',
   'segmented-control': '/pages/demo/segmented-controls',

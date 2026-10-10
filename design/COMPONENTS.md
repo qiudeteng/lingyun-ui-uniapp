@@ -51,6 +51,7 @@
 | ✅ | `lingyun-indexed-list` | 索引列表（对齐 uni-indexed-list） | [`INDEXED_LIST.md`](./INDEXED_LIST.md) |
 | ✅ | `lingyun-app-page` | 页面壳（顶栏 + 滚动 + 主题 class；宽屏左侧导航，顶部可带头像 / 名称 / 副标题） | [`TOOLBARS.md`](./TOOLBARS.md) · [`SIDEBARS.md`](./SIDEBARS.md) §4 |
 | ✅ | `lingyun-mobile` / `lingyun-pc` | 窄屏与平板、电脑分开展示。宽度小于 690 / 达到 690 | demo [`responsive`](../src/pages/demo/responsive.vue) |
+| ✅ | `lingyun-row` / `lingyun-col` | 24 分栏。间隔、偏移、对齐、五档响应式 | demo [`layout`](../src/pages/demo/layout.vue) |
 | ✅ | `lingyun-section` | Demo / 区块布局容器 | demo [`sections`](../src/pages/demo/sections.vue) |
 | ✅ | `lingyun-feedback-host` | 命令式 Toast/HUD 宿主 | [`TOASTS.md`](./TOASTS.md) |
 | ✅ | `lingyun-ui-charts` | 图表（独立包 · uCharts / ECharts） | [`CHARTS.md`](./CHARTS.md) |
@@ -115,6 +116,7 @@
 
 | 日期 | 说明 |
 |------|------|
+| 2026-10-09 | 凌云UI 1.0.15：新增 `lingyun-row` / `lingyun-col`，24 分栏 |
 | 2026-10-09 | 凌云UI 1.0.14：新增 `lingyun-mobile` / `lingyun-pc`，按窗口宽度 690 分窄屏与平板、电脑 |
 | 2026-10-09 | 凌云UI 1.0.13：`lingyun-app-page` 可用 `showToolbar` 隐藏头部顶栏 |
 | 2026-10-09 | 凌云UI 1.0.12：`lingyun-app-page` 可用 `showToolbar` 隐藏头部顶栏 |

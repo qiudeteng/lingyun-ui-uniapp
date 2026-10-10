@@ -120,6 +120,13 @@
 			}
 		},
 		{
+			"path": "pages/demo/layout",
+			"style": {
+				"navigationBarTitleText": "Layout",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/sheets",
 			"style": {
 				"navigationBarTitleText": "Sheets",
