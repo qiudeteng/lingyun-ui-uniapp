@@ -3,14 +3,69 @@
     <view class="page">
       <view class="hero">
         <text class="hero__title">Avatars</text>
-        <text class="hero__desc">lingyun-avatar</text>
+        <text class="hero__desc">shape=形式 · size=尺寸 · radius=圆角幅度（仅 rounded）</text>
       </view>
 
-      <lingyun-section title="Sizes" is-last>
+      <lingyun-section title="显示尺寸 size（默认圆形）">
         <view class="row">
-          <lingyun-avatar text="S" size="sm" />
-          <lingyun-avatar text="MD" size="md" />
-          <lingyun-avatar text="LG User" size="lg" />
+          <view class="cell">
+            <lingyun-avatar text="S" size="sm" />
+            <text class="cap">sm</text>
+          </view>
+          <view class="cell">
+            <lingyun-avatar text="MD" size="md" />
+            <text class="cap">md</text>
+          </view>
+          <view class="cell">
+            <lingyun-avatar text="LG User" size="lg" />
+            <text class="cap">lg</text>
+          </view>
+        </view>
+      </lingyun-section>
+
+      <lingyun-section title="显示形式 shape（同 size=lg）">
+        <view class="row">
+          <view class="cell">
+            <lingyun-avatar text="方" size="lg" shape="square" />
+            <text class="cap">square</text>
+          </view>
+          <view class="cell">
+            <lingyun-avatar text="圆角" size="lg" shape="rounded" />
+            <text class="cap">rounded</text>
+          </view>
+          <view class="cell">
+            <lingyun-avatar text="圆" size="lg" shape="circle" />
+            <text class="cap">circle</text>
+          </view>
+        </view>
+      </lingyun-section>
+
+      <lingyun-section title="圆角幅度 radius（仅 rounded · 同 size=lg）" is-last>
+        <view class="row">
+          <view class="cell">
+            <lingyun-avatar text="A" size="lg" shape="rounded" radius="none" />
+            <text class="cap">none</text>
+          </view>
+          <view class="cell">
+            <lingyun-avatar text="A" size="lg" shape="rounded" radius="sm" />
+            <text class="cap">sm</text>
+          </view>
+          <view class="cell">
+            <lingyun-avatar text="A" size="lg" shape="rounded" radius="md" />
+            <text class="cap">md</text>
+          </view>
+          <view class="cell">
+            <lingyun-avatar text="A" size="lg" shape="rounded" radius="lg" />
+            <text class="cap">lg</text>
+          </view>
+          <view class="cell">
+            <lingyun-avatar text="A" size="lg" shape="rounded" radius="xl" />
+            <text class="cap">xl</text>
+          </view>
+          <view class="cell">
+            <lingyun-avatar text="A" size="lg" shape="rounded" radius="2xl" />
+            <text class="cap">2xl</text>
+          </view>
         </view>
       </lingyun-section>
     </view>
@@ -52,8 +107,21 @@
   .row {
     display: flex;
     flex-direction: row;
-    align-items: center;
+    flex-wrap: wrap;
+    align-items: flex-end;
     gap: 16px;
     padding: 8px 0;
+  }
+
+  .cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cap {
+    font-size: 12px;
+    color: var(--lingyun-label-secondary, #6a6a6a);
   }
 </style>
