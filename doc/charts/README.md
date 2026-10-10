@@ -1,6 +1,6 @@
 # lingyun-ui-charts
 
-图表。独立包 `lingyun-ui-charts`，当前版本 **1.0.3**。easycom 可用，不必 `import`。默认走 **uCharts**（微信 / H5 / App）；`echartsH5` / `echartsApp` 默认关。
+图表。独立包 `lingyun-ui-charts`，当前版本 **1.0.4**。easycom 可用，不必 `import`。默认走 **uCharts**（微信 / H5 / App）；`echartsH5` / `echartsApp` 默认关。
 
 容器必须有明确高度。放在 `lingyun-app-page` 滚动区内时打开 `canvas2d`、`inScrollView`、`ontouch`。同页多图的 `canvasId` 不能重复。
 
@@ -85,7 +85,7 @@ const chartOpts = { color: chartColorDark }
 
 不写 `legend.columns` 时，图例只显示色点和名称。要排成表，列写在 `opts.legend.columns`，格子写在对应的那一项上。`name` 前仍是色点。某一格单独变色写成 `{ text, color }`。点某一行可隐藏该项（`tapLegend`，默认开）。
 
-文字默认白色。点掉隐藏后，这一行改成图表文字色（`#666666`），色点改为浅灰。列上的 `color`、格子上的 `{ text, color }` 只在显示时生效。
+文字跟随主题，用 Labels 标准色：浅色 `#000000`，暗黑 `#ffffff`。点掉隐藏后，这一行改为次级标签色（浅色 `rgba(60, 60, 67, 0.6)`，暗黑 `rgba(235, 235, 245, 0.6)`），色点改为浅灰。列上的 `color`、格子上的 `{ text, color }` 只在显示时生效。
 
 | 字段 | 说明 |
 | --- | --- |
