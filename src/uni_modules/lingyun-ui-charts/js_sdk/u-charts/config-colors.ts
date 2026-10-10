@@ -19,6 +19,16 @@ export const chartColor = [
   '#ff2d55',
 ]
 
+/**
+ * 图例文字。对齐 design/COLORS.md Labels。
+ * 浅色 Primary `#000` / Secondary `rgba(60, 60, 67, 0.6)`
+ * 暗黑 Primary `#fff` / Secondary `rgba(235, 235, 245, 0.6)`
+ */
+export const chartLabelColor = '#000000'
+export const chartLabelColorDark = '#ffffff'
+export const chartLabelSecondaryColor = 'rgba(60, 60, 67, 0.6)'
+export const chartLabelSecondaryColorDark = 'rgba(235, 235, 245, 0.6)'
+
 /** Dark 对应色，暗黑页可 `:opts="{ color: chartColorDark }"` */
 export const chartColorDark = [
   '#0091ff',

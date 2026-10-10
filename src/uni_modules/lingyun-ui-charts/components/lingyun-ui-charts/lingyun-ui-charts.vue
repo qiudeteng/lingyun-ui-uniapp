@@ -146,8 +146,15 @@
 <script lang="ts">
 // 画布交互沿用 uCharts 组件结构。类型以 any 收口，避免改判断时带偏绘制。
 import { defineComponent } from 'vue'
+import { useThemeStore } from '@/stores/theme'
 import uCharts from '../../js_sdk/u-charts/u-charts'
 import cfu from '../../js_sdk/u-charts/config-ucharts'
+import {
+  chartLabelColor,
+  chartLabelColorDark,
+  chartLabelSecondaryColor,
+  chartLabelSecondaryColorDark,
+} from '../../js_sdk/u-charts/config-colors'
 // #ifdef APP-VUE || H5
 import cfe from '../../js_sdk/u-charts/config-echarts'
 // #endif
@@ -598,6 +605,10 @@ export default defineComponent({
         }, 200);
       }
     },
+    legendTheme() {
+      if (this.echarts === true || !this.drawData || !this.drawData.series) return
+      this.checkData(this.drawData)
+    },
     reload(val, oldval) {
       if (val === true) {
         this.showchart = false;
@@ -626,6 +637,9 @@ export default defineComponent({
     }
   },
   computed: {
+    legendTheme(): 'light' | 'dark' {
+      return useThemeStore().resolved
+    },
     optsProps() {
       return JSON.parse(JSON.stringify(this.opts));
     },
@@ -863,6 +877,19 @@ export default defineComponent({
         this.getCloudData();
       }
     },
+    applyLegendTheme(cid: string) {
+      const option = cfu.option[cid]
+      if (!option) return
+      const legend = option.legend && typeof option.legend === 'object' ? option.legend : {}
+      const dark = this.legendTheme === 'dark'
+      if (legend.fontColor == null || legend.fontColor === '') {
+        legend.fontColor = dark ? chartLabelColorDark : chartLabelColor
+      }
+      if (legend.hiddenFontColor == null || legend.hiddenFontColor === '') {
+        legend.hiddenFontColor = dark ? chartLabelSecondaryColorDark : chartLabelSecondaryColor
+      }
+      option.legend = legend
+    },
     _clearChart() {
       let cid = this.cid
       if (this.echarts !== true && cfu.option[cid] && cfu.option[cid].context) {
@@ -888,6 +915,7 @@ export default defineComponent({
             this.cWidth = data.width;
             this.cHeight = data.height;
             if(this.echarts !== true){
+              this.applyLegendTheme(cid)
               // 其它图种用白底给空心点/Y 轴遮挡；词云会铺满画布，默认透明才能透出卡片底，和其它图一致
               cfu.option[cid].background = (this.type === 'word' || this.background != 'rgba(0,0,0,0)')
                 ? this.background

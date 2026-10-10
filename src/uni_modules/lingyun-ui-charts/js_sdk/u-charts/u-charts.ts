@@ -20,7 +20,7 @@
 'use strict';
 
 var config = {
-  version: 'v2.5.0-20230101',
+  version: 'v1.0.4',
   yAxisWidth: 15,
   xAxisHeight: 22,
   padding: [10, 10, 10, 10],
@@ -5057,7 +5057,7 @@ function drawLegend(series, opts, config, context, chartData) {
           var cell = legendCellOf(item, column);
           var textWidth = measureText(cell.text, fontSize, context);
           var textX = column.align === 'right' ? rowX + columnLayout.widths[c] - textWidth : rowX;
-          context.setFillStyle(item.show ? (cell.color || column.color || opts.legend.fontColor) : opts.fontColor);
+          context.setFillStyle(item.show ? (cell.color || column.color || opts.legend.fontColor) : (opts.legend.hiddenFontColor || opts.fontColor));
           if (cell.text) context.fillText(cell.text, textX, startY + fontTrans);
           rowX += columnLayout.widths[c] + columnLayout.gap;
         }
@@ -5071,7 +5071,7 @@ function drawLegend(series, opts, config, context, chartData) {
         }
       } else {
         const legendText = item.legendText ? item.legendText : item.name;
-        context.setFillStyle(item.show ? opts.legend.fontColor : opts.fontColor);
+        context.setFillStyle(item.show ? opts.legend.fontColor : (opts.legend.hiddenFontColor || opts.fontColor));
         context.fillText(legendText, startX, startY + fontTrans);
         if (opts.legend.position == 'top' || opts.legend.position == 'bottom') {
           startX += measureText(legendText, fontSize, context) + itemGap;
@@ -7164,7 +7164,8 @@ var uCharts = function uCharts(opts) {
     itemGap: 10,
     fontSize: opts.fontSize,
     lineHeight: opts.fontSize,
-    fontColor: '#FFFFFF',
+    fontColor: '#000000',
+    hiddenFontColor: 'rgba(60, 60, 67, 0.6)',
     formatter: {},
     hiddenColor: '#CECECE'
   }, opts.legend);
