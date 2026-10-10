@@ -75,7 +75,7 @@ Liquid Glass 是 **控件与导航功能层** 的材质，不是整页皮肤。
 - **Text Field**：一律按 [`TEXTFIELDS.md`](./TEXTFIELDS.md) / [Sketch Text Field Light](https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02/f/39D95D27-DDDF-4750-8ECE-18FF32FEC086#Inspect) 实现独立表单字段（Fill Tertiary、圆角 26）；禁止整块 Liquid Glass 冒充输入框。
 - **Text**：一律按 [`TEXTS.md`](./TEXTS.md) / [HIG Typography](https://developer.apple.com/design/human-interface-guidelines/typography) 使用 Text Styles + Labels；禁止随意字号冒充系统字阶。
 - **Image**：一律按 [`IMAGES.md`](./IMAGES.md) 使用懒加载 / 失败占位 / 圆角圆形 / `mode` 拉伸；头像场景优先 `lingyun-avatar`。
-- **Charts**：一律按 [`CHARTS.md`](./CHARTS.md)；内容层 canvas，非玻璃；系列色走 System Accents（`config-colors.js`）。
+- **Charts**：一律按 [`CHARTS.md`](./CHARTS.md)；内容层 canvas，非玻璃；系列色走 System Accents（`config-colors.ts`）。
 - **Goods Nav**：一律按 [`GOODS_NAV.md`](./GOODS_NAV.md)；左侧图标胶囊走控件玻璃，右侧按钮用系统蓝，禁止红橙渐变实心条。
 - **Grid**：一律按 [`GRID.md`](./GRID.md)；分组卡片宫格，禁止灰表格线和每格独立玻璃。
 - **Indexed List**：一律按 [`INDEXED_LIST.md`](./INDEXED_LIST.md)；字母分组卡片加右侧索引，拖动气泡用控件玻璃。

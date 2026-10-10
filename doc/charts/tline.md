@@ -44,7 +44,7 @@ const chartData = {
 
 const chartOpts = {
   padding: [15, 28, 0, 15],
-  xAxis: { format: 'xAxisDemo2' }, // HH:mm，登记在 config-ucharts.js
+  xAxis: { format: 'xAxisDemo2' }, // HH:mm，登记在 config-ucharts.ts
 }
 ```
 

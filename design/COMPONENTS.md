@@ -128,7 +128,7 @@
 | 2026-09-22 | 新增 `lingyun-indexed-list`（索引列表 · 对齐 uni-indexed-list）；专章 `INDEXED_LIST.md` |
 | 2026-09-22 | 新增 `lingyun-grid`（宫格 · 对齐 uni-grid）；专章 `GRID.md` |
 | 2026-09-22 | 新增 `lingyun-goods-nav`（商品底栏 · 对齐 uni-goods-nav）；专章 `GOODS_NAV.md` |
-| 2026-09-21 | `lingyun-ui-charts` 移入已完成；专章 `CHARTS.md`；系列色在包内 `config-colors.js` |
+| 2026-09-21 | `lingyun-ui-charts` 移入已完成；专章 `CHARTS.md`；系列色在包内 `config-colors.ts` |
 | 2026-09-18 | 新增 `lingyun-sidebar`（悬浮玻璃侧栏）；专章 `SIDEBARS.md` |
 | 2026-09-18 | 新增 `lingyun-activity-view`（分享面板 · 半高 / 全高）；专章 `ACTIVITY_VIEWS.md` |
 | 2026-09-17 | 新增 `lingyun-image`（懒加载 / 失败占位 / 圆角圆形 / mode）；专章 `IMAGES.md` |

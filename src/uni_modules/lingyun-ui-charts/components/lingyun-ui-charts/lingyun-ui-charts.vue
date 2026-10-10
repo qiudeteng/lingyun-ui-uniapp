@@ -1,7 +1,7 @@
 <!--
  * lingyun-ui-charts 凌云UI 图表组件
  * 基于 uCharts / ECharts（Apache-2.0，QIUN® 秋云 https://www.ucharts.cn）
- * 系列色：js_sdk/u-charts/config-colors.js
+ * 系列色：js_sdk/u-charts/config-colors.ts
  -->
 <template>
   <view class="chartsview" :id="'ChartBoxId'+cid">
@@ -143,14 +143,16 @@
   </view>
 </template>
 
-<script>
-import uCharts from '../../js_sdk/u-charts/u-charts.js';
-import cfu from '../../js_sdk/u-charts/config-ucharts.js';
+<script lang="ts">
+// 画布交互沿用 uCharts 组件结构。类型以 any 收口，避免改判断时带偏绘制。
+import { defineComponent } from 'vue'
+import uCharts from '../../js_sdk/u-charts/u-charts'
+import cfu from '../../js_sdk/u-charts/config-ucharts'
 // #ifdef APP-VUE || H5
-import cfe from '../../js_sdk/u-charts/config-echarts.js';
+import cfe from '../../js_sdk/u-charts/config-echarts'
 // #endif
 
-function deepCloneAssign(origin = {}, ...args) {
+function deepCloneAssign(origin: Record<string, any> = {}, ...args: any[]): Record<string, any> {
   for (let i in args) {
     for (let key in args[i]) {
       if (args[i].hasOwnProperty(key)) {
@@ -161,7 +163,7 @@ function deepCloneAssign(origin = {}, ...args) {
   return origin;
 }
 
-function formatterAssign(args,formatter) {
+function formatterAssign(args: any, formatter: Record<string, any>) {
   for (let key in args) {
     if(args.hasOwnProperty(key) && args[key] !== null && typeof args[key] === 'object'){
       formatterAssign(args[key],formatter)
@@ -173,11 +175,11 @@ function formatterAssign(args,formatter) {
 }
 
 // 时间转换函数，为了匹配uniClinetDB读取出的时间与categories不同
-function getFormatDate(date) {
+function getFormatDate(date: Date) {
 	var seperator = "-";
 	var year = date.getFullYear();
-	var month = date.getMonth() + 1;
-	var strDate = date.getDate();
+	var month: string | number = date.getMonth() + 1;
+	var strDate: string | number = date.getDate();
 	if (month >= 1 && month <= 9) {
 			month = "0" + month;
 	}
@@ -188,7 +190,7 @@ function getFormatDate(date) {
 	return currentdate;
 }
 
-var lastMoveTime = null;
+var lastMoveTime: number | null = null;
 /**
  * 防抖
  *
@@ -205,19 +207,18 @@ var lastMoveTime = null;
  *   console.log(this.title);
  * }, 1000)
  */
-function debounce(fn, wait) {
-  let timer = false;
-  return function() {
-    clearTimeout(timer);
-    timer && clearTimeout(timer);
+function debounce(fn: (this: unknown, ...args: any[]) => void, wait: number) {
+  let timer: ReturnType<typeof setTimeout> | false = false;
+  return function (this: unknown, ...fnArgs: any[]) {
+    if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
       timer = false;
-      fn.apply(this, arguments); // 把参数传进去
+      fn.apply(this, fnArgs);
     }, wait);
   };
 }
 
-export default {
+export default defineComponent({
   name: 'lingyun-ui-charts',
   mixins: [uniCloud.mixinDatacom],
   props: {
@@ -377,7 +378,7 @@ export default {
       }
     }
   },
-  data() {
+  data(): any {
     return {
       cid: 'uchartsid',
       inWx: false,
@@ -448,7 +449,7 @@ export default {
     // #endif
     // #ifdef MP-ALIPAY
     this.inAli = true;
-    this.pixel = systemInfo.pixelRatio;
+    this.pixel = pixelRatio;
     // #endif
     // #ifdef MP-BAIDU
     this.inBd = true;
@@ -654,7 +655,7 @@ export default {
         this.mixinDatacomLoading = true;
       }
     },
-    localdataInit(resdata){
+    localdataInit(resdata: any){
       //替换enum类型为正确的描述
       if(this.groupEnum.length>0){
         for (let i = 0; i < resdata.length; i++) {
@@ -675,9 +676,9 @@ export default {
         }
       }
       let needCategories = false;
-      let tmpData = {categories:[], series:[]}
-      let tmpcategories = []
-      let tmpseries = [];
+      let tmpData: { categories: any[]; series: any[] } = {categories:[], series:[]}
+      let tmpcategories: any[] = []
+      let tmpseries: any[] = [];
       //拼接categories
       if(this.echarts === true){
         needCategories = cfe.categories.includes(this.type)
@@ -691,8 +692,8 @@ export default {
         }else{
           //如果是日期类型的数据，不管是本地数据还是云数据，都按起止日期自动拼接categories
           if(this.startDate && this.endDate){
-            let idate = new Date(this.startDate)
-            let edate = new Date(this.endDate)
+            let idate: any = new Date(this.startDate)
+            let edate: any = new Date(this.endDate)
             while (idate <= edate) {
             	tmpcategories.push(getFormatDate(idate))
             	idate = idate.setDate(idate.getDate() + 1)
@@ -700,8 +701,8 @@ export default {
             }
           //否则从结果中去重并拼接categories
           }else{
-            let tempckey = {};
-            resdata.map(function(item, index) {
+            let tempckey: Record<string, any> = {};
+            resdata.map(function(item: any, index: any) {
               if (item.text != undefined && !tempckey[item.text]) {
                 tmpcategories.push(item.text)
                 tempckey[item.text] = true
@@ -712,8 +713,8 @@ export default {
         tmpData.categories = tmpcategories
       }
       //拼接series
-      let tempskey = {};
-      resdata.map(function(item, index) {
+      let tempskey: Record<string, any> = {};
+      resdata.map(function(item: any, index: any) {
         if (item.group != undefined && !tempskey[item.group]) {
           tmpseries.push({ name: item.group, data: [] });
           tempskey[item.group] = true;
@@ -781,7 +782,7 @@ export default {
         this.beforeInit();
       }
     },
-    checkData(anyData) {
+    checkData(anyData: any) {
       let cid = this.cid
       //复位opts或eopts
       if(this.echarts === true){
@@ -822,13 +823,12 @@ export default {
       let lastDrawTime = this.lastDrawTime?this.lastDrawTime:currTime-3000;
       let duration = currTime - lastDrawTime;
       if (duration < 1000) return;
-      let chartdom = uni
-        .createSelectorQuery()
+      let chartdom = (uni.createSelectorQuery() as any)
         // #ifndef MP-ALIPAY
         .in(this)
         // #endif
         .select('#ChartBoxId'+this.cid)
-        .boundingClientRect(data => {
+        .boundingClientRect((data: any) => {
           this.showchart = true;
           if (data.width > 0 && data.height > 0) {
             if (data.width !== this.cWidth || data.height !== this.cHeight) {
@@ -844,17 +844,17 @@ export default {
       }
       this.mixinDatacomLoading = true;
       this.mixinDatacomGet()
-        .then(res => {
+        .then((res: any) => {
           this.mixinDatacomResData = res.result.data;
           this.localdataInit(this.mixinDatacomResData);
         })
-        .catch(err => {
+        .catch((err: any) => {
           this.mixinDatacomLoading = false;
           this.showchart = false;
           this.mixinDatacomErrorMessage = '请求错误：' + err;
         });
     },
-    onMixinDatacomPropsChange(needReset, changed) {
+    onMixinDatacomPropsChange(needReset: any, changed: any) {
       if (needReset == true && this.collection !== '') {
         this.showchart = false;
         this.mixinDatacomErrorMessage = null;
@@ -874,13 +874,12 @@ export default {
     },
     init() {
       let cid = this.cid
-      let chartdom = uni
-        .createSelectorQuery()
+      let chartdom = (uni.createSelectorQuery() as any)
         // #ifndef MP-ALIPAY
         .in(this)
         // #endif
         .select('#ChartBoxId'+cid)
-        .boundingClientRect(data => {
+        .boundingClientRect((data: any) => {
           if (data.width > 0 && data.height > 0) {
             this.mixinDatacomLoading = false;
             this.showchart = true;
@@ -931,11 +930,11 @@ export default {
               this.showchart = true;
               this.$nextTick(()=>{
                 if (this.type2d === true) {
-                  const query = uni.createSelectorQuery().in(this)
+                  const query = (uni.createSelectorQuery() as any).in(this)
                   query
                     .select('#' + cid)
                     .fields({ node: true, size: true })
-                    .exec(res => {
+                    .exec((res: any) => {
                       if (res[0]) {
                         const canvas = res[0].node;
                         const ctx = canvas.getContext('2d');
@@ -1020,11 +1019,11 @@ export default {
           }
         },this);
       }else{
-        const query = uni.createSelectorQuery().in(this)
+        const query = (uni.createSelectorQuery() as any).in(this)
         query
           .select('#' + this.cid)
           .fields({ node: true, size: true })
-          .exec(res => {
+          .exec((res: any) => {
             if (res[0]) {
               const canvas = res[0].node;
               this.emitMsg({name: 'getImage', params: {type:"getImage", base64: canvas.toDataURL('image/png')}});
@@ -1033,7 +1032,7 @@ export default {
       }
     },
     // #ifndef APP-VUE || H5
-    _newChart(cid) {
+    _newChart(cid: any) {
       if (this.mixinDatacomLoading == true) {
         return;
       }
@@ -1050,10 +1049,10 @@ export default {
         this.emitMsg({name: 'scrollRight', params: {type:"scrollRight", scrollRight: true, id: cid, opts: cfu.instance[cid].opts}});
       });
     },
-    _updataUChart(cid) {
+    _updataUChart(cid: any) {
       cfu.instance[cid].updateData(cfu.option[cid])
     },
-    _tooltipDefault(item, category, index, opts) {
+    _tooltipDefault(item: any, category: any, index: any, opts: any) {
       if (category) {
         let data = item.data
         if(typeof item.data === "object"){
@@ -1068,7 +1067,7 @@ export default {
         }
       }
     },
-    _showTooltip(e) {
+    _showTooltip(e: any) {
       let cid = this.cid
       let tc = cfu.option[cid].tooltipCustom
       if (tc && tc !== undefined && tc !== null) {
@@ -1080,7 +1079,7 @@ export default {
           index: tc.index,
           offset: offset,
           textList: tc.textList,
-          formatter: (item, category, index, opts) => {
+          formatter: (item: any, category: any, index: any, opts: any) => {
             if (typeof cfu.option[cid].tooltipFormat === 'string' && cfu.formatter[cfu.option[cid].tooltipFormat]) {
               return cfu.formatter[cfu.option[cid].tooltipFormat](item, category, index, opts);
             } else {
@@ -1090,7 +1089,7 @@ export default {
         });
       } else {
         cfu.instance[cid].showToolTip(e, {
-          formatter: (item, category, index, opts) => {
+          formatter: (item: any, category: any, index: any, opts: any) => {
             if (typeof cfu.option[cid].tooltipFormat === 'string' && cfu.formatter[cfu.option[cid].tooltipFormat]) {
               return cfu.formatter[cfu.option[cid].tooltipFormat](item, category, index, opts);
             } else {
@@ -1100,13 +1099,12 @@ export default {
         });
       }
     },
-    _tap(e,move) {
+    _tap(e: any, move?: any) {
       let cid = this.cid
       let currentIndex = null;
       let legendIndex = null;
       if (this.inScrollView === true || this.inAli) {
-        let chartdom = uni
-          .createSelectorQuery()
+        let chartdom = (uni.createSelectorQuery() as any)
           // #ifndef MP-ALIPAY
           .in(this)
           .select('#ChartBoxId'+cid)
@@ -1114,7 +1112,7 @@ export default {
           // #ifdef MP-ALIPAY
           .select('#'+this.cid)
           // #endif
-          .boundingClientRect(data => {
+          .boundingClientRect((data: any) => {
             e.changedTouches=[];
             if (this.inAli) {
               e.changedTouches.unshift({ x: e.detail.clientX - data.left, y: e.detail.clientY - data.top});
@@ -1158,7 +1156,7 @@ export default {
         }
       }
     },
-    _touchStart(e) {
+    _touchStart(e: any) {
       let cid = this.cid
       lastMoveTime=Date.now();
       if(cfu.option[cid].enableScroll === true && e.touches.length == 1){
@@ -1166,10 +1164,10 @@ export default {
       }
       this.emitMsg({name:'getTouchStart', params:{type:"touchStart", event:e.changedTouches[0], id:cid, opts: cfu.instance[cid].opts}});
     },
-    _touchMove(e) {
+    _touchMove(e: any) {
       let cid = this.cid
       let currMoveTime = Date.now();
-      let duration = currMoveTime - lastMoveTime;
+      let duration = currMoveTime - (lastMoveTime ?? 0);
       let touchMoveLimit = cfu.option[cid].touchMoveLimit || 24;
       if (duration < Math.floor(1000 / touchMoveLimit)) return;//每秒60帧
       lastMoveTime = currMoveTime;
@@ -1184,7 +1182,7 @@ export default {
       }
       this.emitMsg({name: 'getTouchMove', params: {type:"touchMove", event:e.changedTouches[0], id: cid, opts: cfu.instance[cid].opts}});
     },
-    _touchEnd(e) {
+    _touchEnd(e: any) {
       let cid = this.cid
       if(cfu.option[cid].enableScroll === true && e.touches.length == 0){
         cfu.instance[cid].scrollEnd(e);
@@ -1195,10 +1193,10 @@ export default {
       }
     },
     // #endif
-    _error(e) {
+    _error(e: any) {
       this.mixinDatacomErrorMessage = e.detail.errMsg;
     },
-    emitMsg(msg) {
+    emitMsg(msg: any) {
       this.$emit(msg.name, msg.params);
     },
     getRenderType() {
@@ -1211,14 +1209,14 @@ export default {
       return this
     }
   }
-};
+})
 </script>
 
 <!-- #ifdef APP-VUE || H5 -->
 <script module="rdcharts" lang="renderjs">
-import uChartsRD from '../../js_sdk/u-charts/u-charts.js';
-import cfu from '../../js_sdk/u-charts/config-ucharts.js';
-import cfe from '../../js_sdk/u-charts/config-echarts.js';
+import uChartsRD from '../../js_sdk/u-charts/u-charts';
+import cfu from '../../js_sdk/u-charts/config-ucharts';
+import cfe from '../../js_sdk/u-charts/config-echarts';
 
 var that = {};
 var rootdom = null;
@@ -1352,7 +1350,7 @@ export default {
       if(option.tooltip){
         option.tooltip.show = option.tooltipShow?true:false;
         option.tooltip.position = this.tooltipPosition()
-        //tooltipFormat方法，替换组件的tooltipFormat为config-echarts.js内对应的方法
+        //tooltipFormat方法，替换组件的tooltipFormat为config-echarts.ts内对应的方法
         if (typeof option.tooltipFormat === 'string' && cfe.formatter[option.tooltipFormat]) {
           option.tooltip.formatter = option.tooltip.formatter ? option.tooltip.formatter : cfe.formatter[option.tooltipFormat]
         }

@@ -6,4 +6,4 @@
 
 - 数据：categories + series；`opts.extra.radar.max` 须盖住数据
 - 规范：[`design/CHARTS.md`](../../../CHARTS.md)
-- 系列色：包内 `config-colors.js` · [`COLORS.md`](../../../COLORS.md)
+- 系列色：包内 `config-colors.ts` · [`COLORS.md`](../../../COLORS.md)

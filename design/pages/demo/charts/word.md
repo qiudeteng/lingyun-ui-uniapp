@@ -6,4 +6,4 @@
 
 - 数据：**扁平** `{ name, textSize }[]`，不要再包一层 `data`（否则空白）
 - 规范：[`design/CHARTS.md`](../../../CHARTS.md)
-- 系列色：包内 `config-colors.js` · [`COLORS.md`](../../../COLORS.md)
+- 系列色：包内 `config-colors.ts` · [`COLORS.md`](../../../COLORS.md)

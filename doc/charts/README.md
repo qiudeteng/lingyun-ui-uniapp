@@ -1,6 +1,6 @@
 # lingyun-ui-charts
 
-图表。独立包 `lingyun-ui-charts`，easycom 可用，不必 `import`。默认走 **uCharts**（微信 / H5 / App）；`echartsH5` / `echartsApp` 默认关。
+图表。独立包 `lingyun-ui-charts`，当前版本 **1.0.2**。easycom 可用，不必 `import`。默认走 **uCharts**（微信 / H5 / App）；`echartsH5` / `echartsApp` 默认关。
 
 容器必须有明确高度。放在 `lingyun-app-page` 滚动区内时打开 `canvas2d`、`inScrollView`、`ontouch`。同页多图的 `canvasId` 不能重复。
 
@@ -69,17 +69,17 @@ const chartOpts = {}
 
 ## 系列色
 
-改色只动 `js_sdk/u-charts/config-colors.js`。不要在业务 `src/config` 再备一份。
+改色只动 `js_sdk/u-charts/config-colors.ts`。不要在业务 `src/config` 再备一份。
 
 ```ts
-import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/u-charts/config-colors.js'
+import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/u-charts/config-colors'
 
 const chartOpts = { color: chartColorDark }
 ```
 
 也可 `series[i].color`。顺序 Blue → Green → Yellow → Red → Cyan → Mint → Orange → Purple → Pink。
 
-`opts` 与 `config-ucharts.js` 里同名 type 深合并，只写要覆盖的字段。新 formatter 加在 `config-ucharts.js` 的 `formatter`，组件上只传名字。
+`opts` 与 `config-ucharts.ts` 里同名 type 深合并，只写要覆盖的字段。新 formatter 加在 `config-ucharts.ts` 的 `formatter`，组件上只传名字。
 
 ## 属性
 

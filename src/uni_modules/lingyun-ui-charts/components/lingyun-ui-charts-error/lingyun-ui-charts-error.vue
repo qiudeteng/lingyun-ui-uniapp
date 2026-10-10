@@ -5,21 +5,18 @@
 	</view>
 </template>
 
-<script>
-	export default {
-		name: 'lingyun-ui-charts-error',
-		props: {
-			errorMessage: {
-				type: String,
-				default: null
-			},
-		},
-		data() {
-			return {
-				
-			};
-		},
-	}
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
+export default defineComponent({
+  name: 'lingyun-ui-charts-error',
+  props: {
+    errorMessage: {
+      type: String as PropType<string | null>,
+      default: null,
+    },
+  },
+})
 </script>
 
 <style>

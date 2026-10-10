@@ -1,3 +1,4 @@
+// @ts-nocheck
 /*
  * uCharts (R)
  * 高性能跨平台图表库，支持H5、APP、小程序（微信/支付宝/百度/头条/QQ/360/快手）、Vue、Taro等支持canvas的框架平台
@@ -7707,4 +7708,4 @@ uCharts.prototype.scrollEnd = function(e) {
   }
 };
 
-export default uCharts;
+export default uCharts as new (opts?: any) => any
