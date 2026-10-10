@@ -10,6 +10,7 @@ import { isLoggedIn } from '@/utils/auth'
 
 const PUBLIC_PATHS = [
   '/pages/login/login',
+  '/pages/index/index',
   '/pages/login/user-agreement',
   '/pages/login/privacy-policy',
   '/pages/demo/*',
