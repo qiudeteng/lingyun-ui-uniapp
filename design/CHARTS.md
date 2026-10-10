@@ -80,6 +80,21 @@ import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/u-charts/
 }
 ```
 
+右侧图例要排成表时，列写在 `opts.legend.columns`，格子写在同一条数据上。`name` 前仍是色点。不写 `columns` 时只显示名称。某一格要单独变色，写成 `{ text, color }`。
+
+```ts
+legend: {
+  position: 'right',
+  columns: [
+    { key: 'name', width: 72 },
+    { key: 'value', width: 36, align: 'right' },
+    { key: 'rate', width: 32, align: 'right', color: '#86868b' }
+  ]
+}
+// series[0].data
+{ name: '小程序下单', value: 51.2, rate: '10%' }
+```
+
 ### 3.3 时间轴（无 categories）
 
 `tline` · `tarea` · `scatter` · `bubble`

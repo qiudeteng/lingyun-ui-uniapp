@@ -154,6 +154,7 @@ import cfe from '../../js_sdk/u-charts/config-echarts'
 
 function deepCloneAssign(origin: Record<string, any> = {}, ...args: any[]): Record<string, any> {
   for (let i in args) {
+    if (args[i] == null) continue
     for (let key in args[i]) {
       if (args[i].hasOwnProperty(key)) {
         origin[key] = args[i][key] && typeof args[i][key] === 'object' ? deepCloneAssign(Array.isArray(args[i][key]) ? [] : {}, origin[key], args[i][key]) : args[i][key];
@@ -1223,6 +1224,7 @@ var rootdom = null;
 
 function rddeepCloneAssign(origin = {}, ...args) {
   for (let i in args) {
+    if (args[i] == null) continue
     for (let key in args[i]) {
       if (args[i].hasOwnProperty(key)) {
         origin[key] = args[i][key] && typeof args[i][key] === 'object' ? rddeepCloneAssign(Array.isArray(args[i][key]) ? [] : {}, origin[key], args[i][key]) : args[i][key];

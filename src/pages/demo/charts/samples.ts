@@ -57,9 +57,16 @@ export const chartSamples: Record<string, ChartSample> = {
 		series: [
 			{
 				data: [
-					{ name: '已完成', value: 70 },
-					{ name: '进行中', value: 20 },
-					{ name: '未开始', value: 10 }
+					{ name: '小程序下单', value: 51.2, count: 5, rate: '10%' },
+					{ name: '电话预约', value: 31.8, count: 3, rate: '6%' },
+					{ name: '到店下单', value: 22.4, count: 4, rate: '8%' },
+					{ name: '微信社群', value: 18.6, count: 2, rate: '4%' },
+					{ name: '美团外卖', value: 16.2, count: 6, rate: '12%' },
+					{ name: '饿了么', value: 12.5, count: 3, rate: '6%' },
+					{ name: '抖音团购', value: 9.4, count: 2, rate: '4%' },
+					{ name: '企业客户', value: 8.1, count: 1, rate: '2%' },
+					{ name: '业务员代下单', value: 7.2, count: 1, rate: { text: '2%', color: '#ff3b30' } },
+					{ name: '门店自提', value: 5.6, count: 2, rate: '4%' }
 				]
 			}
 		]
@@ -218,6 +225,23 @@ const timeAxisOpts = {
 }
 
 export const chartDemoOpts: Partial<Record<keyof typeof chartSamples, Record<string, unknown>>> = {
+	ring: {
+		dataLabel: false,
+		title: { name: '1700', fontSize: 16, color: '#1c1c1e' },
+		subtitle: { name: '订单总数', fontSize: 12, color: '#5ac8fa' },
+		legend: {
+			position: 'right',
+			float: 'center',
+			lineHeight: 22,
+			fontSize: 12,
+			columns: [
+				{ key: 'name', width: 72 },
+				{ key: 'value', width: 36, align: 'right' },
+				{ key: 'count', width: 20, align: 'right' },
+				{ key: 'rate', width: 32, align: 'right', color: '#86868b' }
+			]
+		}
+	},
 	radar: {
 		extra: {
 			radar: { max: 100, gridCount: 4 }
