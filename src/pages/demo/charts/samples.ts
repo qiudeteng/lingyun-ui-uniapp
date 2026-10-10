@@ -57,16 +57,9 @@ export const chartSamples: Record<string, ChartSample> = {
 		series: [
 			{
 				data: [
-					{ name: '小程序下单', value: 51.2, count: 5, rate: '10%' },
-					{ name: '电话预约', value: 31.8, count: 3, rate: '6%' },
-					{ name: '到店下单', value: 22.4, count: 4, rate: '8%' },
-					{ name: '微信社群', value: 18.6, count: 2, rate: '4%' },
-					{ name: '美团外卖', value: 16.2, count: 6, rate: '12%' },
-					{ name: '饿了么', value: 12.5, count: 3, rate: '6%' },
-					{ name: '抖音团购', value: 9.4, count: 2, rate: '4%' },
-					{ name: '企业客户', value: 8.1, count: 1, rate: '2%' },
-					{ name: '业务员代下单', value: 7.2, count: 1, rate: { text: '2%', color: '#ff3b30' } },
-					{ name: '门店自提', value: 5.6, count: 2, rate: '4%' }
+					{ name: '已完成', value: 70 },
+					{ name: '进行中', value: 20 },
+					{ name: '未开始', value: 10 }
 				]
 			}
 		]
@@ -225,23 +218,6 @@ const timeAxisOpts = {
 }
 
 export const chartDemoOpts: Partial<Record<keyof typeof chartSamples, Record<string, unknown>>> = {
-	ring: {
-		dataLabel: false,
-		title: { name: '1700', fontSize: 16, color: '#1c1c1e' },
-		subtitle: { name: '订单总数', fontSize: 12, color: '#5ac8fa' },
-		legend: {
-			position: 'right',
-			float: 'center',
-			lineHeight: 22,
-			fontSize: 12,
-			columns: [
-				{ key: 'name', width: 72 },
-				{ key: 'value', width: 36, align: 'right' },
-				{ key: 'count', width: 20, align: 'right' },
-				{ key: 'rate', width: 32, align: 'right', color: '#86868b' }
-			]
-		}
-	},
 	radar: {
 		extra: {
 			radar: { max: 100, gridCount: 4 }
@@ -259,6 +235,209 @@ export const chartDemoOpts: Partial<Record<keyof typeof chartSamples, Record<str
 	},
 	tline: timeAxisOpts,
 	tarea: timeAxisOpts
+}
+
+type LegendCell = string | { text: string; color: string }
+
+function sliceTable(
+	type: keyof typeof chartSamples,
+	meta: Array<{ count: number; rate: LegendCell }>,
+): ChartSample {
+	const data = (chartSamples[type].series[0].data as Array<{ name: string; value: number }>).map(
+		(item, index) => ({ ...item, ...meta[index] }),
+	)
+	return { series: [{ data }] }
+}
+
+function seriesTable(
+	type: keyof typeof chartSamples,
+	meta: Array<{ value: string; rate: LegendCell }>,
+): ChartSample {
+	return {
+		categories: chartSamples[type].categories,
+		series: chartSamples[type].series.map((item, index) => ({ ...item, ...meta[index] })),
+	}
+}
+
+const sliceLegend = {
+	dataLabel: false,
+	legend: {
+		position: 'right',
+		float: 'center',
+		lineHeight: 22,
+		fontSize: 12,
+		columns: [
+			{ key: 'name', width: 56 },
+			{ key: 'value', width: 36, align: 'right' },
+			{ key: 'count', width: 20, align: 'right' },
+			{ key: 'rate', width: 32, align: 'right', color: '#86868b' },
+		],
+	},
+}
+
+const seriesLegend = {
+	legend: {
+		position: 'right',
+		float: 'center',
+		lineHeight: 22,
+		fontSize: 12,
+		columns: [
+			{ key: 'name', width: 56 },
+			{ key: 'value', width: 40, align: 'right' },
+			{ key: 'rate', width: 36, align: 'right', color: '#86868b' },
+		],
+	},
+}
+
+export const chartLegendSamples: Partial<Record<keyof typeof chartSamples, ChartSample>> = {
+	column: seriesTable('column', [
+		{ value: '214', rate: '59%' },
+		{ value: '146', rate: '41%' },
+	]),
+	bar: seriesTable('bar', [
+		{ value: '145', rate: '52%' },
+		{ value: '135', rate: '48%' },
+	]),
+	line: seriesTable('line', [
+		{ value: '1017', rate: '82%' },
+		{ value: '175', rate: '18%' },
+	]),
+	area: seriesTable('area', [
+		{ value: '1150', rate: '74%' },
+		{ value: '365', rate: '26%' },
+	]),
+	pie: sliceTable('pie', [
+		{ count: 12, rate: '45%' },
+		{ count: 8, rate: '27%' },
+		{ count: 5, rate: '18%' },
+		{ count: 2, rate: '11%' },
+	]),
+	ring: {
+		series: [
+			{
+				data: [
+					{ name: '小程序下单', value: 51.2, count: 5, rate: '10%' },
+					{ name: '电话预约', value: 31.8, count: 3, rate: '6%' },
+					{ name: '到店下单', value: 22.4, count: 4, rate: '8%' },
+					{ name: '微信社群', value: 18.6, count: 2, rate: '4%' },
+					{ name: '美团外卖', value: 16.2, count: 6, rate: '12%' },
+					{ name: '饿了么', value: 12.5, count: 3, rate: '6%' },
+					{ name: '抖音团购', value: 9.4, count: 2, rate: '4%' },
+					{ name: '企业客户', value: 8.1, count: 1, rate: '2%' },
+					{ name: '业务员代下单', value: 7.2, count: 1, rate: { text: '2%', color: '#ff3b30' } },
+					{ name: '门店自提', value: 5.6, count: 2, rate: '4%' },
+				],
+			},
+		],
+	},
+	rose: sliceTable('rose', [
+		{ count: 8, rate: '40%' },
+		{ count: 5, rate: '24%' },
+		{ count: 3, rate: '16%' },
+		{ count: 3, rate: '14%' },
+		{ count: 1, rate: '6%' },
+	]),
+	funnel: sliceTable('funnel', [
+		{ count: 80, rate: '100%' },
+		{ count: 50, rate: '63%' },
+		{ count: 30, rate: '38%' },
+		{ count: 15, rate: '19%' },
+		{ count: 8, rate: '10%' },
+	]),
+	radar: seriesTable('radar', [
+		{ value: '385', rate: '54%' },
+		{ value: '360', rate: '46%' },
+	]),
+	mount: sliceTable('mount', [
+		{ count: 6, rate: '34%' },
+		{ count: 4, rate: '21%' },
+		{ count: 3, rate: '14%' },
+		{ count: 2, rate: '12%' },
+		{ count: 4, rate: '19%' },
+	]),
+	mix: seriesTable('mix', [
+		{ value: '214', rate: '50%' },
+		{ value: '210', rate: '50%' },
+	]),
+	scatter: seriesTable('scatter', [
+		{ value: '136', rate: '56%' },
+		{ value: '108', rate: '44%' },
+	]),
+	bubble: seriesTable('bubble', [{ value: '163', rate: '100%' }]),
+	candle: seriesTable('candle', [{ value: '2320', rate: '0.4%' }]),
+	tline: {
+		series: [
+			{
+				name: '温度',
+				value: '27.0',
+				rate: '58%',
+				data: tlinePoints.map((t, i) => [t, 18 + i * 1.5]),
+			},
+			{
+				name: '湿度',
+				value: '62',
+				rate: '42%',
+				data: tlinePoints.map((t, i) => [t, 70 - i * 2]),
+			},
+		],
+	},
+	tarea: {
+		series: [
+			{
+				name: '流量',
+				value: '462',
+				rate: '71%',
+				data: tlinePoints.map((t, i) => [t, 22 + i * 8]),
+			},
+			{
+				name: '访问',
+				value: '189',
+				rate: '29%',
+				data: tlinePoints.map((t, i) => [t, 12 + i * 3]),
+			},
+		],
+	},
+}
+
+export const chartLegendOpts: Partial<Record<keyof typeof chartSamples, Record<string, unknown>>> = {
+	column: seriesLegend,
+	bar: seriesLegend,
+	line: seriesLegend,
+	area: seriesLegend,
+	pie: sliceLegend,
+	ring: {
+		dataLabel: false,
+		title: { name: '1700', fontSize: 16, color: '#1c1c1e' },
+		subtitle: { name: '订单总数', fontSize: 12, color: '#5ac8fa' },
+		legend: {
+			position: 'right',
+			float: 'center',
+			lineHeight: 22,
+			fontSize: 12,
+			columns: [
+				{ key: 'name', width: 72 },
+				{ key: 'value', width: 36, align: 'right' },
+				{ key: 'count', width: 20, align: 'right' },
+				{ key: 'rate', width: 32, align: 'right', color: '#86868b' },
+			],
+		},
+	},
+	rose: sliceLegend,
+	funnel: sliceLegend,
+	radar: {
+		...seriesLegend,
+		extra: chartDemoOpts.radar?.extra,
+	},
+	mount: sliceLegend,
+	mix: seriesLegend,
+	scatter: seriesLegend,
+	bubble: seriesLegend,
+	candle: {
+		...seriesLegend,
+		extra: { candle: { average: { show: false } } },
+	},
+	tline: { ...timeAxisOpts, ...seriesLegend },
+	tarea: { ...timeAxisOpts, ...seriesLegend },
 }
 
 export const chartDemoMeta: Array<{

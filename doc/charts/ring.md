@@ -6,7 +6,7 @@
 
 没有 `categories`。扇区写在 `series[0].data`：`{ name, value }`。
 
-图例排成表时，列写在 `opts.legend.columns`，额外的格子跟在同一条数据上。`name` 前仍是色点。某一格单独变色写成 `{ text, color }`。
+图例排成表时，列写在 `opts.legend.columns`，额外的格子跟在同一条扇区上。`name` 前仍是色点。某一格单独变色写成 `{ text, color }`。文字默认白色，点掉隐藏后改为图表文字色。其它图种的字段该写在哪一层，见 [图表总览 · 图例](/charts/#图例)。
 
 ## 示例
 

@@ -5,13 +5,26 @@
         <text class="hero__title">{{ title }}</text>
         <text class="hero__desc">{{ desc }}</text>
       </view>
-      <lingyun-section :title="note" is-last>
+      <lingyun-section :title="note" :is-last="!extraChartData">
         <view class="chart-box">
           <lingyun-ui-charts
             :type="type"
             :canvasId="canvasId"
             :chartData="chartData"
             :opts="opts"
+            :canvas2d="true"
+            :inScrollView="true"
+            :ontouch="true"
+          />
+        </view>
+      </lingyun-section>
+      <lingyun-section v-if="extraChartData" :title="extraNote" is-last>
+        <view class="chart-box">
+          <lingyun-ui-charts
+            :type="type"
+            :canvasId="extraCanvasId"
+            :chartData="extraChartData"
+            :opts="extraOpts"
             :canvas2d="true"
             :inScrollView="true"
             :ontouch="true"
@@ -36,11 +49,18 @@
         series: unknown[]
       }
       opts?: Record<string, unknown>
+      extraNote?: string
+      extraChartData?: {
+        categories?: unknown
+        series: unknown[]
+      }
+      extraOpts?: Record<string, unknown>
     }>(),
-    { opts: () => ({}) },
+    { opts: () => ({}), extraNote: '图例表', extraOpts: () => ({}) },
   )
 
   const canvasId = computed(() => `lychart-${props.type}`)
+  const extraCanvasId = computed(() => `lychart-${props.type}-legend`)
 </script>
 
 <style lang="scss">

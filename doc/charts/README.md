@@ -81,6 +81,53 @@ const chartOpts = { color: chartColorDark }
 
 `opts` 与 `config-ucharts.ts` 里同名 type 深合并，只写要覆盖的字段。新 formatter 加在 `config-ucharts.ts` 的 `formatter`，组件上只传名字。
 
+## 图例
+
+不写 `legend.columns` 时，图例只显示色点和名称。要排成表，列写在 `opts.legend.columns`，格子写在对应的那一项上。`name` 前仍是色点。某一格单独变色写成 `{ text, color }`。点某一行可隐藏该项（`tapLegend`，默认开）。
+
+文字默认白色。点掉隐藏后，这一行改成图表文字色（`#666666`），色点改为浅灰。列上的 `color`、格子上的 `{ text, color }` 只在显示时生效。
+
+| 字段 | 说明 |
+| --- | --- |
+| `key` | 从该项上取的字段。`name` 用名称 |
+| `width` | 列宽，px。不写则按该列最长文字 |
+| `align` | `right` 时数字右对齐，默认靠左 |
+| `color` | 整列文字色。不写用图例默认色 |
+| `columnGap` | 列间距，px，默认 8。写在 `legend` 上，不写在列上 |
+
+| 图种 | 一行是什么 | 额外字段写在哪 |
+| --- | --- | --- |
+| `pie` `ring` `rose` `funnel` `mount` | 一个扇区 | `series[0].data` 的每一项 |
+| `column` `bar` `line` `area` `mix` `radar` `scatter` `bubble` `tline` `tarea` | 一条序列 | 和 `name`、`data` 同级，不要写进每个点 |
+| `candle` | 开了均线时每条均线一行；否则那一条 K 线 | 写在对应序列上 |
+
+`word`、`map`、`arcbar`、`gauge` 不画图例。ECharts（`echartsH5` / `echartsApp`）不走这套列。
+
+```ts
+const chartOpts = {
+  legend: {
+    position: 'right',
+    lineHeight: 22,
+    fontSize: 12,
+    columns: [
+      { key: 'name', width: 72 },
+      { key: 'value', width: 36, align: 'right' },
+      { key: 'count', width: 20, align: 'right' },
+      { key: 'rate', width: 32, align: 'right', color: '#86868b' },
+    ],
+  },
+}
+
+// 饼类：写在扇区上
+{ name: '小程序下单', value: 51.2, count: 5, rate: '10%' }
+{ name: '业务员代下单', value: 7.2, count: 1, rate: { text: '2%', color: '#ff3b30' } }
+
+// 柱状 / 折线等：写在 series 上
+{ name: '门店 A', data: [35, 36, 31], value: 102, rate: '48%' }
+```
+
+圆环图完整示例见 [圆环图](./ring.md)。
+
 ## 属性
 
 | 属性 | 说明 | 默认值 |

@@ -80,20 +80,7 @@ import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/u-charts/
 }
 ```
 
-右侧图例要排成表时，列写在 `opts.legend.columns`，格子写在同一条数据上。`name` 前仍是色点。不写 `columns` 时只显示名称。某一格要单独变色，写成 `{ text, color }`。
-
-```ts
-legend: {
-  position: 'right',
-  columns: [
-    { key: 'name', width: 72 },
-    { key: 'value', width: 36, align: 'right' },
-    { key: 'rate', width: 32, align: 'right', color: '#86868b' }
-  ]
-}
-// series[0].data
-{ name: '小程序下单', value: 51.2, rate: '10%' }
-```
+图例表见下文 **§3.6**。饼类的格子写在 `series[0].data` 的每一项上。
 
 ### 3.3 时间轴（无 categories）
 
@@ -138,6 +125,45 @@ opts: {
 |------|------|
 | `gauge` | `categories: [{ value: 0.2 }, { value: 0.8 }]`，`series: [{ name, data: 0.8 }]`（**0–1**，不是 0–100） |
 | `arcbar` | `series: [{ name, data: 0.8 }]`（0–1） |
+
+### 3.6 图例表
+
+不写 `legend.columns` 时只显示色点和名称。列写在 `opts.legend.columns`。`name` 前仍是色点。某一格单独变色写成 `{ text, color }`。
+
+文字默认白色。点掉隐藏后，这一行改为图表文字色 `#666666`，色点改为浅灰。列上的 `color`、格子上的 `{ text, color }` 只在显示时生效。
+
+| 字段 | 说明 |
+|------|------|
+| `key` | 从该项上取的字段。`name` 用名称 |
+| `width` | 列宽，px。不写则按该列最长文字 |
+| `align` | `right` 右对齐，默认靠左 |
+| `color` | 整列文字色 |
+| `columnGap` | 列间距，px，默认 8。写在 `legend` 上 |
+
+| 图种 | 一行 | 额外字段 |
+|------|------|----------|
+| `pie` `ring` `rose` `funnel` `mount` | 一个扇区 | `series[0].data` 的每一项 |
+| `column` `bar` `line` `area` `mix` `radar` `scatter` `bubble` `tline` `tarea` | 一条序列 | 与 `name`、`data` 同级 |
+| `candle` | 开了均线时每条均线；否则那一条 K 线 | 写在对应序列上 |
+
+`word`、`map`、`arcbar`、`gauge` 不画图例。ECharts 不走这套列。
+
+```ts
+legend: {
+  position: 'right',
+  lineHeight: 22,
+  fontSize: 12,
+  columns: [
+    { key: 'name', width: 72 },
+    { key: 'value', width: 36, align: 'right' },
+    { key: 'rate', width: 32, align: 'right', color: '#86868b' },
+  ],
+}
+// 饼类
+{ name: '小程序下单', value: 51.2, count: 5, rate: '10%' }
+// 柱状 / 折线
+{ name: '门店 A', data: [35, 36, 31], value: 102, rate: '48%' }
+```
 
 未做 demo：`map`、`demotype`。完整 option 仍以 [uCharts 指南](https://www.ucharts.cn/v2/#/guide/index) 为准。
 
