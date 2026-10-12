@@ -101,6 +101,7 @@ function resolveSectionRadius(value: unknown, full: boolean): string {
   return `${RADIUS_DEFAULT}px`
 }
 const SECTION_COLORS = ['green', 'blue', 'orange', 'yellow', 'red'] as const
+const SECTION_COLOR_GLASS = 'glass'
 
 /**
  * lingyun-section
@@ -116,7 +117,7 @@ const SECTION_COLORS = ['green', 'blue', 'orange', 'yellow', 'red'] as const
  * @property {String} title / subtitle（或 subTitle）/ hint / extra
  * @property {String} icon 标题左侧图片地址
  * @property {String} iconSize 图标大小：空为 24，small 为 16，large 为 32
- * @property {String} color 卡片背景：green / blue / orange / yellow / red，走系统色
+ * @property {String} color 卡片表面：空为不透明分组底；glass 为玻璃；green / blue / orange / yellow / red 为系统色实底
  * @property {String|Number} radius 卡片圆角，同 lingyun-image：none / sm / md / lg / xl / 2xl 或像素。空为 2xl（26）
  * @property {Boolean} headerLine 标题和内容之间是否显示横线，默认否
  * @property {String} cover / thumbnail
@@ -124,7 +125,7 @@ const SECTION_COLORS = ['green', 'blue', 'orange', 'yellow', 'red'] as const
  * @property {String} padding / bodyPadding 内容区内边距（bodyPadding 优先）
  * @property {String} headerPadding 标题区内边距（独立于 body）
  * @property {Boolean} isFull 通栏：仅去左右外边距与圆角、左右边线；标题/间距样式不变
- * @property {Boolean} isLast / isShadow / border / glass
+ * @property {Boolean} isLast / isShadow / border
  * @event click 点击分区，payload 为 section|cover|title|extra|content|actions
  */
 export default defineComponent({
@@ -212,26 +213,23 @@ export default defineComponent({
     },
     isShadow: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     border: {
       type: Boolean,
-      default: true,
-    },
-    /** Liquid Glass 材质（弱端自动降级） */
-    glass: {
-      type: Boolean,
-      default: true,
+      default: false,
     },
     /**
-     * 卡片背景色。只接受 green、blue、orange、yellow、red。
-     * 设了颜色后用对应系统色实底，不再走玻璃。空则保持原来的玻璃底。
+     * 卡片表面。空为不透明分组底，与 list 卡片同一档。
+     * glass 走玻璃。green、blue、orange、yellow、red 为系统色实底，标题改白字。
      */
     color: {
       type: String,
       default: '',
       validator: (value: string) =>
-        value === '' || (SECTION_COLORS as readonly string[]).indexOf(value) >= 0,
+        value === '' ||
+        value === SECTION_COLOR_GLASS ||
+        (SECTION_COLORS as readonly string[]).indexOf(value) >= 0,
     },
     /**
      * 卡片圆角。与 lingyun-image 的 radius 相同：none / sm / md / lg / xl / 2xl，或像素。
@@ -282,6 +280,9 @@ export default defineComponent({
       const value = String(this.color || '').trim()
       return (SECTION_COLORS as readonly string[]).indexOf(value) >= 0 ? value : ''
     },
+    isGlass(): boolean {
+      return String(this.color || '').trim() === SECTION_COLOR_GLASS
+    },
     resolvedBodyPadding() {
       return this.bodyPadding !== '' ? this.bodyPadding : this.padding
     },
@@ -291,8 +292,7 @@ export default defineComponent({
         'lingyun-section--last': this.isLast,
         'lingyun-section--shadow': this.isShadow,
         'lingyun-section--border': this.border,
-        'lingyun-section--glass': this.glass && !this.resolvedColor,
-        'lingyun-section--plain': !this.glass && !this.resolvedColor,
+        'lingyun-section--glass': this.isGlass,
         'lingyun-section--solid': !!this.resolvedColor,
         'lingyun-section--header-line': this.showHeaderLine,
         [`lingyun-section--color-${this.resolvedColor}`]: !!this.resolvedColor,
@@ -336,7 +336,8 @@ $ly-section-radius: 26px;
   border-radius: $ly-section-radius;
   /* 勿 overflow:hidden：会裁掉同层原生 textarea（Text Fields 多行空白） */
   overflow: visible;
-  background-color: var(--lingyun-bg-secondary, #{$lingyun-bg-secondary});
+  /* 与 lingyun-list 卡片同一档：分组次级底，浅色为不透明白 */
+  background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
   /* 宫格嵌在卡片里时去掉自己的圆角，圆角由这张卡片负责 */
   --lingyun-grid-radius: 0;
 }
@@ -344,10 +345,6 @@ $ly-section-radius: 26px;
 .lingyun-section--glass {
   @include lingyun-glass-surface;
   border-radius: $ly-section-radius;
-}
-
-.lingyun-section--plain {
-  background-color: var(--lingyun-bg-secondary, #{$lingyun-bg-secondary});
 }
 
 .lingyun-section--solid {

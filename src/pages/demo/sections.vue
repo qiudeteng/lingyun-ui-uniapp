@@ -58,6 +58,7 @@
         <text class="body-text">32px，相对主标题和副标题垂直居中。</text>
       </lingyun-section>
 
+      <lingyun-section title="玻璃" color="glass" hint="color=glass" />
       <lingyun-section title="绿色" color="green" />
       <lingyun-section title="蓝色" color="blue" />
       <lingyun-section title="橙色" color="orange" />
@@ -84,7 +85,7 @@
         <text class="body-text">标题和内容之间有一条横线。</text>
       </lingyun-section>
 
-      <lingyun-section title="Default（Glass）" hint="默认 Liquid Glass 表面">
+      <lingyun-section title="默认" hint="不传 color · 不透明分组底">
         <text class="body-text">内容区默认无内边距；用全局工具类排版。</text>
       </lingyun-section>
 
@@ -96,10 +97,6 @@
         @click="onSectionClick"
       >
         <text class="body-text">点标题 / Extra / 内容区会 toast 分区类型。</text>
-      </lingyun-section>
-
-      <lingyun-section title="Plain" :glass="false" hint="glass=false · 实底 + 描边阴影">
-        <text class="body-text">弱端或需要实色卡片时用 plain。</text>
       </lingyun-section>
 
       <lingyun-section title="Row / Stack / Matrix">

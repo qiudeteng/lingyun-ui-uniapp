@@ -5,9 +5,9 @@
 
 ## 覆盖用例
 
-- Default Glass
+- 默认不透明分组底
+- `color=glass` 玻璃
 - Title / Subtitle / Hint / Extra + click
-- Plain（`glass=false`）
 - 布局工具类：`lingyun-section-row` / `stack` / `matrix`
 - Cover 插槽
 - Actions 插槽
