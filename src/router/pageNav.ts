@@ -67,6 +67,7 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
     title: '列表与内容',
     items: [
       { title: 'Lists', url: '/pages/demo/lists', note: '分组列表', icon: 'list' },
+      { title: 'Tables', url: '/pages/demo/tables', note: '分组表格 · 固定列 · 分页', icon: 'list' },
       { title: 'Grid', url: '/pages/demo/grid', note: '宫格 · 快捷入口', icon: 'bars' },
       { title: 'Layout', url: '/pages/demo/layout', note: '24 分栏 · 间隔 · 偏移', icon: 'bars' },
       { title: 'Indexed List', url: '/pages/demo/indexed-list', note: '索引列表 · 字母跳转', icon: 'list' },

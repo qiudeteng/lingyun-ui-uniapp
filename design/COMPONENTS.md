@@ -23,6 +23,7 @@
 | ✅ | `lingyun-tabbars` | 底部标签栏 | [`TABBARS.md`](./TABBARS.md) |
 | ✅ | `lingyun-search-bar` | 搜索栏 | [`SEARCHBARS.md`](./SEARCHBARS.md) |
 | ✅ | `lingyun-list` / `lingyun-list-item` | 分组列表；附属含 toggle / stepper / slider | [`LISTS.md`](./LISTS.md) |
+| ✅ | `lingyun-table` | 分组表格；固定列、吸顶表头、排序、筛选、分页、多选 | [`TABLES.md`](./TABLES.md) |
 | ✅ | `lingyun-swipe-action` / `lingyun-swipe-action-item` | 列表左右滑菜单 | [`SWIPE_ACTIONS.md`](./SWIPE_ACTIONS.md) |
 | ✅ | `lingyun-alert` | 弹窗 | [`ALERTS.md`](./ALERTS.md) |
 | ✅ | `lingyun-activity-indicator` | 转圈加载 | [`ACTIVITY_INDICATORS.md`](./ACTIVITY_INDICATORS.md) |
@@ -116,6 +117,7 @@
 
 | 日期 | 说明 |
 |------|------|
+| 2026-10-13 | 凌云UI 1.0.18：新增 `lingyun-table`，分组卡片表格 |
 | 2026-10-12 | 凌云UI 1.0.17：分组卡片默认不透明底；玻璃改为 `color="glass"`；内嵌列表时 header 以下与列表卡片一致 |
 | 2026-10-10 | 凌云UI 1.0.16：头像支持 `shape` / `radius`，与图片同一套显示形式和圆角 |
 | 2026-10-09 | 凌云UI 1.0.15：新增 `lingyun-row` / `lingyun-col`，24 分栏 |

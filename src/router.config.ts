@@ -56,6 +56,11 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Lists' }
 	},
 	{
+		path: '/pages/demo/tables',
+		name: 'pagesDemoTables',
+		meta: { title: 'Tables' }
+	},
+	{
 		path: '/pages/demo/swipe-actions',
 		name: 'pagesDemoSwipeActions',
 		meta: { title: 'Swipe Actions' }

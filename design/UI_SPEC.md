@@ -78,6 +78,7 @@ Liquid Glass 是 **控件与导航功能层** 的材质，不是整页皮肤。
 - **Charts**：一律按 [`CHARTS.md`](./CHARTS.md)；内容层 canvas，非玻璃；系列色走 System Accents（`config-colors.ts`）。
 - **Goods Nav**：一律按 [`GOODS_NAV.md`](./GOODS_NAV.md)；左侧图标胶囊走控件玻璃，右侧按钮用系统蓝，禁止红橙渐变实心条。
 - **Grid**：一律按 [`GRID.md`](./GRID.md)；分组卡片宫格，禁止灰表格线和每格独立玻璃。
+- **Table**：一律按 [`TABLES.md`](./TABLES.md)；内容层分组卡片，单元格竖线用分割线，禁止灰网格和玻璃行。
 - **Indexed List**：一律按 [`INDEXED_LIST.md`](./INDEXED_LIST.md)；字母分组卡片加右侧索引，拖动气泡用控件玻璃。
 - 内容区保持清晰可读：可用浅底、卡片分区或 **标准材质**（轻 blur / 实色），但避免大面积「假玻璃」堆叠。
 

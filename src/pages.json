@@ -71,6 +71,13 @@
 			}
 		},
 		{
+			"path": "pages/demo/tables",
+			"style": {
+				"navigationBarTitleText": "Tables",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/swipe-actions",
 			"style": {
 				"navigationBarTitleText": "Swipe Actions",

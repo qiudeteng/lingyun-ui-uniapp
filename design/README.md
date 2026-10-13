@@ -15,6 +15,7 @@
 - **Tab Bars 专章** → **[`TABBARS.md`](./TABBARS.md)**（Sketch iOS 27 UI Kit Tab Bars）
 - **Search Bars 专章** → **[`SEARCHBARS.md`](./SEARCHBARS.md)**（Sketch Search Selected - Placeholder）
 - **Lists 专章** → **[`LISTS.md`](./LISTS.md)**（Sketch Lists · Grouped）
+- **Tables 专章** → **[`TABLES.md`](./TABLES.md)**（分组卡片表格）
 - **Swipe Actions 专章** → **[`SWIPE_ACTIONS.md`](./SWIPE_ACTIONS.md)**（Sketch Rows with Swipe Actions）
 - **Alerts 专章** → **[`ALERTS.md`](./ALERTS.md)**（Sketch Alerts/Light）
 - **Badges 专章** → **[`BADGES.md`](./BADGES.md)**（Sketch App Icons / Badge）

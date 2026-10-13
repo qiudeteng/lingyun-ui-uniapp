@@ -111,7 +111,7 @@ function vnodeName(type: unknown): string {
   return ''
 }
 
-/** 默认插槽里是否放了 lingyun-list（含包在 view 里的情况） */
+/** 默认插槽里是否放了 lingyun-list / lingyun-table（含包在 view 里的情况） */
 function vnodesHaveList(nodes: unknown): boolean {
   if (!nodes) return false
   const list = Array.isArray(nodes) ? nodes : [nodes]
@@ -119,7 +119,7 @@ function vnodesHaveList(nodes: unknown): boolean {
     if (!node || typeof node !== 'object') continue
     const vnode = node as { type?: unknown; children?: unknown }
     const name = vnodeName(vnode.type).toLowerCase().replace(/-/g, '')
-    if (name === 'lingyunlist') return true
+    if (name === 'lingyunlist' || name === 'lingyuntable') return true
     if (Array.isArray(vnode.children) && vnodesHaveList(vnode.children)) return true
   }
   return false
@@ -406,7 +406,7 @@ $ly-section-radius: 26px;
   border-radius: $ly-section-radius;
 }
 
-/* 内嵌列表：header 留在外面，下面整块交给 lingyun-list 卡片 */
+/* 内嵌列表或表格：header 留在外面，下面整块交给列表 / 表格卡片 */
 .lingyun-section--with-list:not(.lingyun-section--glass):not(.lingyun-section--solid) {
   background-color: transparent;
   border: 0;
