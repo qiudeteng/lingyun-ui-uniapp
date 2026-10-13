@@ -1,5 +1,5 @@
 <template>
-  <view class="lingyun-list" :class="rootClass">
+  <view class="lingyun-list" :class="[rootClass, inSectionClass]">
     <view v-if="showHeader" class="lingyun-list__header" :class="headerClass">
       <slot name="header">
         <text v-if="header" class="lingyun-list__header-title">{{ header }}</text>
@@ -47,6 +47,22 @@ import { defineComponent } from 'vue'
  * @property {Boolean} inset 左右 16pt inset（默认 true）
  * @event {Function} action 点击 headerAction
  */
+type SectionHost = {
+  $options?: { name?: string }
+  $parent?: SectionHost | null
+  color?: string
+}
+
+/** 插槽内容的父级是包住它的组件。内嵌进 section 时收掉页边 inset，卡片贴齐分组卡片。 */
+function findSectionHost(start: SectionHost | null): SectionHost | null {
+  let parent = start
+  while (parent) {
+    if (parent.$options && parent.$options.name === 'LingyunSection') return parent
+    parent = parent.$parent || null
+  }
+  return null
+}
+
 export default defineComponent({
   name: 'LingyunList',
   emits: ['action'],
@@ -76,8 +92,19 @@ export default defineComponent({
       default: true,
     },
   },
+  data() {
+    return {
+      inSection: false,
+      /** section 自己有色或玻璃时，列表不再叠第二张卡片 */
+      sectionPaintsCard: false,
+    }
+  },
   created() {
     ;(this as unknown as { firstChildAppend: boolean }).firstChildAppend = false
+    const section = findSectionHost(this.$parent as SectionHost | null)
+    if (!section) return
+    this.inSection = true
+    this.sectionPaintsCard = String(section.color || '').trim() !== ''
   },
   computed: {
     showHeader(): boolean {
@@ -109,6 +136,11 @@ export default defineComponent({
     headerClass(): string {
       return `lingyun-list__header--${this.resolvedHeaderType}`
     },
+    inSectionClass(): string {
+      return [this.inSection ? 'lingyun-list--in-section' : '', this.sectionPaintsCard ? 'lingyun-list--flat-card' : '']
+        .filter(Boolean)
+        .join(' ')
+    },
   },
   methods: {
     onAction() {
@@ -134,6 +166,17 @@ $ly-list-gap: 8px;
 
   &--inset {
     padding: 0 $ly-list-inset;
+  }
+
+  /* 放进 section：页边 16 交给分组卡片的外边距，行内边距仍是列表自己的 */
+  &--in-section#{&}--inset {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  &--flat-card &__card {
+    background-color: transparent;
+    border-radius: 0;
   }
 
   &__header {

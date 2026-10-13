@@ -1,7 +1,7 @@
 <template>
   <view
     class="lingyun-section"
-    :class="rootClass"
+    :class="[rootClass, { 'lingyun-section--with-list': withList() }]"
     :style="rootStyle"
     @click="onClick('section')"
   >
@@ -11,12 +11,12 @@
       </view>
     </slot>
 
-    <view class="lingyun-section__inner" :style="innerStyle">
+    <view class="lingyun-section__inner" :style="innerStyle()">
       <slot name="title">
         <view
           v-if="showHeader"
           class="lingyun-section__header"
-          :style="headerStyle"
+          :style="headerStyle()"
           @click.stop="onClick('title')"
         >
           <view v-if="thumbnail" class="lingyun-section__thumb">
@@ -54,15 +54,16 @@
         </view>
       </slot>
 
-      <view v-if="showHeaderLine" class="lingyun-section__rule" />
+      <view v-if="showHeaderLine" class="lingyun-section__rule" :style="ruleStyle()" />
 
-      <view class="lingyun-section__body" :style="bodyStyle" @click.stop="onClick('content')">
+      <view class="lingyun-section__body" :style="bodyStyle()" @click.stop="onClick('content')">
         <slot />
       </view>
 
       <view
         v-if="$slots.actions"
         class="lingyun-section__actions"
+        :style="actionsStyle()"
         @click.stop="onClick('actions')"
       >
         <slot name="actions" />
@@ -89,6 +90,40 @@ const RADIUS_PRESET: Record<string, number> = {
   '2xl': 26,
 }
 const RADIUS_DEFAULT = 26
+
+type BoxEdges = { top: string; right: string; bottom: string; left: string }
+
+function parseBox(value: string): BoxEdges {
+  const parts = value.trim().split(/\s+/).filter(Boolean)
+  const top = parts[0] || '0'
+  const right = parts[1] || top
+  const bottom = parts[2] || top
+  const left = parts[3] || right
+  return { top, right, bottom, left }
+}
+
+function vnodeName(type: unknown): string {
+  if (typeof type === 'string') return type
+  if (type && typeof type === 'object') {
+    const record = type as { name?: string; __name?: string }
+    return record.name || record.__name || ''
+  }
+  return ''
+}
+
+/** 默认插槽里是否放了 lingyun-list（含包在 view 里的情况） */
+function vnodesHaveList(nodes: unknown): boolean {
+  if (!nodes) return false
+  const list = Array.isArray(nodes) ? nodes : [nodes]
+  for (const node of list) {
+    if (!node || typeof node !== 'object') continue
+    const vnode = node as { type?: unknown; children?: unknown }
+    const name = vnodeName(vnode.type).toLowerCase().replace(/-/g, '')
+    if (name === 'lingyunlist') return true
+    if (Array.isArray(vnode.children) && vnodesHaveList(vnode.children)) return true
+  }
+  return false
+}
 
 function resolveSectionRadius(value: unknown, full: boolean): string {
   if (full) return '0'
@@ -122,7 +157,7 @@ const SECTION_COLOR_GLASS = 'glass'
  * @property {Boolean} headerLine 标题和内容之间是否显示横线，默认否
  * @property {String} cover / thumbnail
  * @property {String} margin / spacing
- * @property {String} padding / bodyPadding 内容区内边距（bodyPadding 优先）
+ * @property {String} padding / bodyPadding 内容区内边距（bodyPadding 优先）。内嵌列表时 body 自动为 0
  * @property {String} headerPadding 标题区内边距（独立于 body）
  * @property {Boolean} isFull 通栏：仅去左右外边距与圆角、左右边线；标题/间距样式不变
  * @property {Boolean} isLast / isShadow / border
@@ -306,18 +341,42 @@ export default defineComponent({
       }
       return { margin: this.margin, borderRadius }
     },
+  },
+  methods: {
+    /**
+     * 每次渲染都看插槽。放进 computed 不会跟着插槽更新。
+     */
+    withList(): boolean {
+      const slot = this.$slots.default
+      if (!slot) return false
+      return vnodesHaveList(slot())
+    },
     innerStyle() {
+      if (this.withList()) return {}
       return { padding: this.spacing }
     },
     headerStyle() {
-      if (!this.headerPadding) return undefined
-      return { padding: this.headerPadding }
+      if (this.headerPadding) return { padding: this.headerPadding }
+      if (!this.withList()) return undefined
+      const box = parseBox(this.spacing)
+      return { padding: `${box.top} ${box.right} 0 ${box.left}` }
+    },
+    ruleStyle() {
+      if (!this.withList()) return undefined
+      const box = parseBox(this.spacing)
+      return { marginLeft: box.left, marginRight: box.right }
     },
     bodyStyle() {
+      if (this.withList() && this.bodyPadding === '' && this.padding === '0') {
+        return { padding: '0' }
+      }
       return { padding: this.resolvedBodyPadding }
     },
-  },
-  methods: {
+    actionsStyle() {
+      if (!this.withList()) return undefined
+      const box = parseBox(this.spacing)
+      return { padding: `0 ${box.right} ${box.bottom} ${box.left}` }
+    },
     onClick(type: string) {
       this.$emit('click', type)
     },
@@ -345,6 +404,29 @@ $ly-section-radius: 26px;
 .lingyun-section--glass {
   @include lingyun-glass-surface;
   border-radius: $ly-section-radius;
+}
+
+/* 内嵌列表：header 留在外面，下面整块交给 lingyun-list 卡片 */
+.lingyun-section--with-list:not(.lingyun-section--glass):not(.lingyun-section--solid) {
+  background-color: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.lingyun-section--with-list .lingyun-list.lingyun-list--inset {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.lingyun-section--with-list.lingyun-section--glass,
+.lingyun-section--with-list.lingyun-section--solid {
+  overflow: hidden;
+}
+
+.lingyun-section--with-list.lingyun-section--glass .lingyun-list__card,
+.lingyun-section--with-list.lingyun-section--solid .lingyun-list__card {
+  background-color: transparent;
+  border-radius: 0;
 }
 
 .lingyun-section--solid {

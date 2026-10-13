@@ -6,6 +6,14 @@
         <text class="hero__desc">lingyun-section · 分组卡片 / 布局容器</text>
       </view>
 
+      <lingyun-section title="内嵌列表" hint="标题以下与列表卡片一致，body 无内边距">
+        <lingyun-list>
+          <lingyun-list-item title="通知" accessory="disclosure" />
+          <lingyun-list-item title="通用" detail="开" accessory="disclosure" />
+          <lingyun-list-item title="显示与亮度" note="自动" accessory="disclosure" />
+        </lingyun-list>
+      </lingyun-section>
+
       <lingyun-section
         title="小图标"
         subtitle="副标题和主标题左对齐"
