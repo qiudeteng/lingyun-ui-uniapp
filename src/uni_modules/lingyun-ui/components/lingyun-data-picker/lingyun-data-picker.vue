@@ -199,6 +199,7 @@
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
 import {
   LINGYUN_APP_PAGE_SCROLL_LOCK,
   type LingyunAppPageScrollLock,
@@ -330,6 +331,7 @@ function filterCascadeTree(tree: unknown, query: string, map?: DataPickerMap | n
 
 export default defineComponent({
   name: 'LingyunDataPicker',
+  mixins: [mpOverlayHoldMixin],
   emits: ['update:modelValue', 'update:value', 'change', 'cancel'],
   inject: {
     appPageScrollLock: {

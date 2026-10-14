@@ -302,6 +302,16 @@ Liquid Glass 是 **控件与导航功能层** 的材质，不是整页皮肤。
 
 另：浮层根自挂 `theme-*`；勿用跟系统 DarkMode 的原生 `picker` 冒充可主题化弹层（改 `picker-view` 自绘）。Cursor 规则：`.cursor/rules/overlay-portal.mdc`。
 
+#### H. 微信小程序：图表 canvas 盖住浮层
+
+`canvas`（含 `type="2d"`）是**原生层**，会盖过普通 `view` 浮层。`z-index`、`root-portal`、更高 `zIndex` **都压不住**。
+
+凌云约定：
+
+1. Sheet / Picker / Alert / Action Sheet / Popover / Toast / HUD / Sidebar / Activity View / Context Menu / Data Picker 打开时，经 `mp-overlay-gate` 占住引用计数。
+2. `lingyun-ui-charts` 收到后先截图，再给 canvas 设 `hidden`，用 `<image>` 占位；浮层卸下后恢复 canvas。
+3. 业务若自写 canvas / map / video，浮层打开时需同样隐藏或改截图，不要只靠提高浮层 `z-index`。
+
 ---
 
 ## 7. 无障碍
@@ -344,7 +354,7 @@ Liquid Glass 是 **控件与导航功能层** 的材质，不是整页皮肤。
 - [ ] Sheet 改动已对照 `SHEETS.md` / Sketch Sheets（底部 Modal、medium/large、Grabber、玻璃）
 - [ ] Action Sheet 改动已对照 `ACTIONSHEETS.md`（两组玻璃卡、Cancel、§6.2-A.1）
 - [ ] Text Field 改动已对照 `TEXTFIELDS.md` / Sketch Text Fields（Fill Tertiary、52 高、圆角 26）
-- [ ] Charts 改动已对照 `CHARTS.md`（数据形状、系列色、canvas 高度、mp canvas2d）
+- [ ] Charts 改动已对照 `CHARTS.md`（数据形状、系列色、canvas 高度、mp canvas2d；浮层打开时 canvas 不挡 Sheet/Picker）
 - [ ] Goods Nav 改动已对照 `GOODS_NAV.md`（玻璃图标胶囊 + 系统蓝按钮，非渐变实心条）
 - [ ] Grid 改动已对照 `GRID.md`（分组卡片、方形格、分割线不画成灰表格）
 - [ ] Indexed List 改动已对照 `INDEXED_LIST.md`（分组卡片、字母条、玻璃气泡）

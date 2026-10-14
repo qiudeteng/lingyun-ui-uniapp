@@ -41,6 +41,7 @@ alwaysApply: true
 8. **顶栏占位 / 惯性回顶**：占位选择器进全局样式；回顶用 settle 对齐 `scrollTop`，勿中途改玻璃逻辑（详见 `design/TOOLBARS.md`、`UI_SPEC` §6.2-F）。
 9. **浮层被 card 裁切**：H5 须 `Teleport`→`body`，mp 须 `root-portal`（`overlay-portal.mdc`）；勿把固定浮层留在 `overflow:hidden` 祖先内。
 10. **原生 picker 跟系统黑**：手动浅色无效 → 自绘 `picker-view` + 上列挂载（见 `lingyun-picker`）。
+11. **图表 canvas 盖住浮层**：原生层压过普通 view；靠 `mp-overlay-gate` + 图表截图/`hidden`，勿只抬浮层 `z-index`（`UI_SPEC` §6.2-H）。
 
 ## 自检（改样式 / 组件 / 页面时）
 

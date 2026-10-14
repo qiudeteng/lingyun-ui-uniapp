@@ -54,6 +54,7 @@
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
 
 /**
  * lingyun-popover
@@ -82,6 +83,7 @@ type AnchorBox = {
 
 export default defineComponent({
   name: 'LingyunPopover',
+  mixins: [mpOverlayHoldMixin],
   emits: ['update:show', 'update:modelValue', 'close'],
   props: {
     show: { type: Boolean as PropType<boolean | undefined>, default: undefined },

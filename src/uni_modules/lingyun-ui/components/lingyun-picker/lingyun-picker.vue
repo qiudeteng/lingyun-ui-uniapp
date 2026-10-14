@@ -1110,6 +1110,7 @@
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
 import {
   LINGYUN_APP_PAGE_SCROLL_LOCK,
   type LingyunAppPageScrollLock,
@@ -1174,6 +1175,7 @@ type PickerValue = string | number | string[]
 
 export default defineComponent({
   name: 'LingyunPicker',
+  mixins: [mpOverlayHoldMixin],
   components: { LingyunPickerCalDay },
   emits: ['update:modelValue', 'update:value', 'change', 'cancel'],
   inject: {

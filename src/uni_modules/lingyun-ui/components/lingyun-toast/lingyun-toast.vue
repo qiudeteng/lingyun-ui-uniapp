@@ -18,6 +18,7 @@
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
 
 /**
  * lingyun-toast
@@ -31,6 +32,7 @@ type ToastPhase = '' | 'enter' | 'open' | 'leave'
 
 export default defineComponent({
   name: 'LingyunToast',
+  mixins: [mpOverlayHoldMixin],
   emits: ['update:show', 'update:modelValue', 'close'],
   props: {
     show: { type: Boolean as PropType<boolean | undefined>, default: undefined },

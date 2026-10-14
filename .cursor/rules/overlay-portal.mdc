@@ -16,6 +16,7 @@ alwaysApply: true
 3. **主题**：浮层根节点自挂 `theme-light` / `theme-dark`（`useThemeStore().rootClass`），勿依赖页面祖先（styleIsolation）。
 4. **原生组件慎用**：如微信原生 `picker` 跟**系统** DarkMode，跟不上手动浅色 → 自绘 `picker-view` + 上列挂载。
 5. 玻璃面板仍按 `design/UI_SPEC.md` **§6.2-A.1**；不对玻璃节点写 `opacity` 显隐。
+6. **微信 canvas 会盖住浮层**：`z-index` / `root-portal` 无效。浮层须挂 `mpOverlayHoldMixin`（或手动 `mp-overlay-gate`）；`lingyun-ui-charts` 会截图并 `hidden` canvas。见 `UI_SPEC` §6.2-H。
 
 ## 参考实现
 
@@ -46,4 +47,4 @@ alwaysApply: true
 <!-- #endif -->
 ```
 
-自检：H5 在 section/card 内打开浮层须盖满视口；mp 与浅色/暗黑主题一致。
+自检：H5 在 section/card 内打开浮层须盖满视口；mp 与浅色/暗黑主题一致；有图表的页打开浮层时 canvas 不得穿透。

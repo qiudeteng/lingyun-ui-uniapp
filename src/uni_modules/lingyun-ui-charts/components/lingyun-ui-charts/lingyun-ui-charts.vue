@@ -86,6 +86,19 @@
     <!-- #endif -->
     <!-- 其他小程序通过vue渲染图表 -->
     <!-- #ifdef MP-WEIXIN || MP-BAIDU || MP-QQ || MP-TOUTIAO || MP-KUAISHOU || MP-LARK || MP-JD || MP-360 -->
+    <!-- 浮层打开时用截图占位并 hidden canvas，避免微信原生层盖住 Sheet / Picker -->
+    <image
+      v-if="mpOverlayCover && mpOverlayShot"
+      class="chartsview__shot"
+      :src="mpOverlayShot"
+      :style="{ width: cWidth + 'px', height: cHeight + 'px', background: background }"
+      mode="scaleToFill"
+    />
+    <view
+      v-else-if="mpOverlayCover"
+      class="chartsview__shot chartsview__shot--empty"
+      :style="{ width: cWidth + 'px', height: cHeight + 'px', background: background }"
+    />
     <block v-if="type2d">
       <view v-if="ontouch" @tap="_tap">
         <canvas
@@ -94,11 +107,11 @@
           :style="{ width: cWidth + 'px', height: cHeight + 'px', background: background }"
           type="2d"
           :disable-scroll="disScroll"
+          :hidden="mpOverlayCover || !showchart"
           @touchstart="_touchStart"
           @touchmove="_touchMove"
           @touchend="_touchEnd"
           @error="_error"
-          v-show="showchart"
         />
       </view>
       <view v-if="!ontouch" @tap="_tap">
@@ -108,8 +121,8 @@
           :style="{ width: cWidth + 'px', height: cHeight + 'px', background: background }"
           type="2d"
           :disable-scroll="disScroll"
+          :hidden="mpOverlayCover || !showchart"
           @error="_error"
-          v-show="showchart"
         />
       </view>
     </block>
@@ -123,6 +136,7 @@
           @touchmove="_touchMove"
           @touchend="_touchEnd"
           :disable-scroll="disScroll"
+          :hidden="mpOverlayCover"
           @error="_error"
           v-if="showchart"
         />
@@ -133,6 +147,7 @@
           :canvasId="cid"
           :style="{ width: cWidth + 'px', height: cHeight + 'px', background: background }"
           :disable-scroll="disScroll"
+          :hidden="mpOverlayCover"
           @tap="_tap"
           @error="_error"
           v-if="showchart"
@@ -147,6 +162,10 @@
 // 画布交互沿用 uCharts 组件结构。类型以 any 收口，避免改判断时带偏绘制。
 import { defineComponent } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import {
+  isLingyunMpOverlayOpen,
+  onLingyunMpOverlayChange,
+} from '@/uni_modules/lingyun-ui/utils/mp-overlay-gate'
 import uCharts from '../../js_sdk/u-charts/u-charts'
 import cfu from '../../js_sdk/u-charts/config-ucharts'
 import {
@@ -411,6 +430,14 @@ export default defineComponent({
       echartsOpts: {},
       drawData:{},
       lastDrawTime:null,
+      /** 微信：浮层打开时 hidden canvas，截图占位 */
+      mpOverlayCover: false,
+      mpOverlayShot: '',
+      /** 绘制完成后的最近一帧，浮层打开时可立刻盖住，避免截图前穿透 */
+      mpLastShot: '',
+      _unsubMpOverlay: null as null | (() => void),
+      _mpOverlayToken: 0,
+      _mpLastShotTimer: 0,
     };
   },
   created(){
@@ -492,6 +519,12 @@ export default defineComponent({
     this.$nextTick(()=>{
       this.beforeInit();
     })
+    // #ifdef MP-WEIXIN
+    this._unsubMpOverlay = onLingyunMpOverlayChange((open) => {
+      this.onMpOverlayGate(open)
+    })
+    if (isLingyunMpOverlayOpen()) this.onMpOverlayGate(true)
+    // #endif
     // #ifndef MP-ALIPAY || MP-BAIDU || MP-TOUTIAO || APP-VUE
     const time = this.inH5 ? 500 : 200;
     const _this = this;
@@ -514,6 +547,19 @@ export default defineComponent({
     // #endif
   },
   destroyed(){
+    // #ifdef MP-WEIXIN
+    if (this._unsubMpOverlay) {
+      this._unsubMpOverlay()
+      this._unsubMpOverlay = null
+    }
+    if (this._mpLastShotTimer) {
+      clearTimeout(this._mpLastShotTimer)
+      this._mpLastShotTimer = 0
+    }
+    this.mpOverlayCover = false
+    this.mpOverlayShot = ''
+    this.mpLastShot = ''
+    // #endif
     if(this.echarts === true){
       delete cfe.option[this.cid]
       delete cfe.instance[this.cid]
@@ -651,6 +697,109 @@ export default defineComponent({
     },
   },
   methods: {
+    onMpOverlayGate(open: boolean) {
+      // #ifndef MP-WEIXIN
+      return
+      // #endif
+      // #ifdef MP-WEIXIN
+      if (!open) {
+        this._mpOverlayToken += 1
+        this.mpOverlayCover = false
+        this.mpOverlayShot = ''
+        return
+      }
+      if (this.mpOverlayCover) return
+      const token = ++this._mpOverlayToken
+      // 有缓存：立刻 hidden + 截图占位，无穿透窗口
+      if (this.mpLastShot) {
+        this.mpOverlayShot = this.mpLastShot
+        this.mpOverlayCover = true
+        return
+      }
+      // 无缓存：先截再藏；超时仍 hidden，宁可空白也不穿透
+      const forceTimer = setTimeout(() => {
+        if (token !== this._mpOverlayToken) return
+        if (!isLingyunMpOverlayOpen()) return
+        this.mpOverlayCover = true
+      }, 80) as unknown as number
+      this.captureMpOverlayShot().then((shot: string) => {
+        clearTimeout(forceTimer)
+        if (token !== this._mpOverlayToken) return
+        if (!isLingyunMpOverlayOpen()) return
+        if (shot) {
+          this.mpLastShot = shot
+          this.mpOverlayShot = shot
+        }
+        this.mpOverlayCover = true
+      })
+      // #endif
+    },
+    scheduleMpLastShot() {
+      // #ifndef MP-WEIXIN
+      return
+      // #endif
+      // #ifdef MP-WEIXIN
+      if (this.mpOverlayCover) return
+      if (this._mpLastShotTimer) clearTimeout(this._mpLastShotTimer)
+      this._mpLastShotTimer = setTimeout(() => {
+        this._mpLastShotTimer = 0
+        if (this.mpOverlayCover || !this.showchart) return
+        this.captureMpOverlayShot().then((shot: string) => {
+          if (shot && !this.mpOverlayCover) this.mpLastShot = shot
+        })
+      }, 280) as unknown as number
+      // #endif
+    },
+    captureMpOverlayShot(): Promise<string> {
+      return new Promise((resolve) => {
+        let done = false
+        const finish = (value: string) => {
+          if (done) return
+          done = true
+          resolve(value)
+        }
+        setTimeout(() => finish(''), 220)
+        if (!this.showchart || this.cWidth < 2 || this.cHeight < 2) {
+          finish('')
+          return
+        }
+        if (this.type2d) {
+          const query = (uni.createSelectorQuery() as any).in(this)
+          query
+            .select('#' + this.cid)
+            .fields({ node: true, size: true })
+            .exec((res: any) => {
+              const canvas = res && res[0] && res[0].node
+              if (!canvas) {
+                finish('')
+                return
+              }
+              uni.canvasToTempFilePath({
+                canvas,
+                success: (file: { tempFilePath?: string }) => finish(file.tempFilePath || ''),
+                fail: () => {
+                  try {
+                    const dataUrl =
+                      typeof canvas.toDataURL === 'function' ? canvas.toDataURL('image/png') : ''
+                    finish(dataUrl || '')
+                  } catch {
+                    finish('')
+                  }
+                },
+              } as any)
+            })
+          return
+        }
+        uni.canvasToTempFilePath(
+          {
+            canvasId: this.cid,
+            success: (file: { tempFilePath?: string }) => finish(file.tempFilePath || ''),
+            fail: () => finish(''),
+          },
+          this as any,
+        )
+      })
+    },
     beforeInit(){
       this.mixinDatacomErrorMessage = null;
       if (typeof this.chartData === 'object' && this.chartData != null && this.chartData.series !== undefined && this.chartData.series.length > 0) {
@@ -1077,6 +1226,7 @@ export default defineComponent({
       cfu.instance[cid] = new uCharts(cfu.option[cid]);
       cfu.instance[cid].addEventListener('renderComplete', () => {
         this.emitMsg({name: 'complete', params: {type:"complete", complete: true, id: cid, opts: cfu.instance[cid].opts}});
+        this.scheduleMpLastShot()
         cfu.instance[cid].delEventListener('renderComplete')
       });
       cfu.instance[cid].addEventListener('scrollLeft', () => {
@@ -1088,6 +1238,7 @@ export default defineComponent({
     },
     _updataUChart(cid: any) {
       cfu.instance[cid].updateData(cfu.option[cid])
+      this.scheduleMpLastShot()
     },
     _tooltipDefault(item: any, category: any, index: any, opts: any) {
       if (category) {
@@ -1652,5 +1803,11 @@ export default {
   flex: 1;
   justify-content: center;
   align-items: center;
+  position: relative;
+}
+
+.chartsview__shot {
+  display: block;
+  flex-shrink: 0;
 }
 </style>

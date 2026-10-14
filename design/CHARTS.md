@@ -216,6 +216,10 @@ legend: {
 - 容器必须有宽高；高度建议 **280px**（与 demo 一致）。
 - 时间轴 `boundaryGap: justify` 时末点贴边，右侧 padding 至少约 **28**，避免标签裁切。
 
+### 5.1 微信：浮层不要被 canvas 穿透
+
+微信里 canvas 是原生层，会盖住 Sheet / Picker 等普通浮层（见 `UI_SPEC` §6.2-H）。`lingyun-ui-charts` 已监听 `mp-overlay-gate`：浮层打开时截图 + `hidden` canvas。业务页请用凌云浮层组件；自写 canvas 时需自行避让。
+
 ---
 
 ## 6. Demo 页
@@ -252,4 +256,5 @@ legend: {
 - [ ] 系列色来自 `config-colors.ts`，未在业务侧另备一份
 - [ ] 画布容器有明确宽高；时间轴右侧未裁字、Y 轴未顶破
 - [ ] 微信：`canvas2d` + 滚动内 `inScrollView`；`pnpm dev:mp-weixin` 可编译
+- [ ] 微信：打开 Sheet / Picker 时图表不穿透浮层
 - [ ] 未给图表套玻璃 mixin；尺寸为 `px`

@@ -117,6 +117,7 @@
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
 import {
   LINGYUN_APP_PAGE_SCROLL_LOCK,
   type LingyunAppPageScrollLock,
@@ -166,6 +167,7 @@ const RADIUS = 34
 
 export default defineComponent({
   name: 'LingyunSidebar',
+  mixins: [mpOverlayHoldMixin],
   emits: ['update:show', 'update:modelValue', 'update:current', 'select', 'close'],
   inject: {
     appPageScrollLock: {

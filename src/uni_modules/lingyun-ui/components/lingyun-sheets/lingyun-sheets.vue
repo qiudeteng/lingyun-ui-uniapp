@@ -147,6 +147,7 @@
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
 import { getLingyunToolbarStackPx, LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
 import {
   LINGYUN_APP_PAGE_SCROLL_LOCK,
@@ -187,6 +188,7 @@ const RADIUS_REGULAR = 32
 
 export default defineComponent({
   name: 'LingyunSheets',
+  mixins: [mpOverlayHoldMixin],
   emits: ['update:show', 'update:modelValue', 'close', 'update:detent', 'trailing'],
   inject: {
     appPageScrollLock: {

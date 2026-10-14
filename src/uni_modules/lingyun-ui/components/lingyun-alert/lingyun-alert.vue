@@ -65,6 +65,7 @@
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
 
 /**
  * lingyun-alert
@@ -121,6 +122,7 @@ type KeyboardHeightHandler = (result: UniNamespace.OnKeyboardHeightChangeResult)
 
 export default defineComponent({
   name: 'LingyunAlert',
+  mixins: [mpOverlayHoldMixin],
   emits: [
     'update:show',
     'update:modelValue',

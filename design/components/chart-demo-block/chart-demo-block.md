@@ -8,5 +8,6 @@
 |----|------|
 | 画布高度 | **280px**（`.chart-box`） |
 | canvas | `canvas2d` · `inScrollView` · `ontouch` 均为 true |
+| 浮层避让 | 页内带 `lingyun-picker`，用于验收微信下 canvas 不穿透弹层 |
 | 数据 / 图种 | 见 [`design/CHARTS.md`](../../CHARTS.md) |
 | 系列色 | 扩展 `config-colors.ts` |

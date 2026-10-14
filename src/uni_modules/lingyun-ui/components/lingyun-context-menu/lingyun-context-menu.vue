@@ -159,6 +159,7 @@
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
 import {
   normalizeMenuActions,
   type MenuAction,
@@ -176,6 +177,7 @@ const QUERY_TIMEOUT_MS = 180
 
 export default defineComponent({
   name: 'LingyunContextMenu',
+  mixins: [mpOverlayHoldMixin],
   emits: ['select', 'open', 'close'],
   props: {
     actions: { type: Array as PropType<MenuActionInput[]>, default: () => [] as MenuActionInput[] },

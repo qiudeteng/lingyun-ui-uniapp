@@ -5,6 +5,9 @@
         <text class="hero__title">{{ title }}</text>
         <text class="hero__desc">{{ desc }}</text>
       </view>
+      <lingyun-section title="浮层避让" hint="微信：打开选择器时图表不得穿透面板">
+        <lingyun-picker v-model="storeValue" title="选择门店" :range="storeRange" />
+      </lingyun-section>
       <lingyun-section :title="note" :is-last="!extraChartData">
         <view class="chart-box">
           <lingyun-ui-charts
@@ -36,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, ref } from 'vue'
 
   const props = withDefaults(
     defineProps<{
@@ -61,6 +64,8 @@
 
   const canvasId = computed(() => `lychart-${props.type}`)
   const extraCanvasId = computed(() => `lychart-${props.type}-legend`)
+  const storeRange = ['东莞店', '禅城店', '天河店']
+  const storeValue = ref(0)
 </script>
 
 <style lang="scss">
