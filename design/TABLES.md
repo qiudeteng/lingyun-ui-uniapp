@@ -11,7 +11,7 @@
 - 行和中间列只渲染可视区域，上下左右各多留一段，避免滚动时露白。左右固定列保持常驻。
 - `border` 只加分割线色的竖线。`stripe` 用 Fill Quaternary 隔行。按压时白行用 Fill Tertiary，灰行用 Fill，避免和条纹同色。固定列和中间列是分开画的，按下时按行主键一起高亮。
 - 默认在组件内筛选、排序、分页。`remote` 时不处理数据，查询变化抛 `query-change`（页码、每页条数、筛选、排序）。外部异步拉完后回填 `data`、`total`，请求中把 `loading` 设为真。
-- 放进 `lingyun-section` 时，标题留在卡片外，表格贴边，和内嵌列表同一规则。
+- 放进 `lingyun-section` 时，标题留在卡片外，表格贴边：section 去掉 body 内边距与外壳 `spacing`，和内嵌 `lingyun-list` 同一规则。玻璃 / 实色 section 里表格不再叠第二张底。
 
 ## 能力
 

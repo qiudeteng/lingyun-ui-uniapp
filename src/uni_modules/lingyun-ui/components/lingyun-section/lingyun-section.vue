@@ -177,7 +177,7 @@ const SECTION_COLOR_GLASS = 'glass'
  * @property {Boolean} headerLine 标题和内容之间是否显示横线，默认否
  * @property {String} cover / thumbnail
  * @property {String} margin / spacing
- * @property {String} padding / bodyPadding 内容区内边距（bodyPadding 优先）。内嵌列表时 body 自动为 0
+ * @property {String} padding / bodyPadding 内容区内边距（bodyPadding 优先）。内嵌列表或表格时 body 自动为 0，外壳 spacing 也让出
  * @property {String} headerPadding 标题区内边距（独立于 body）
  * @property {Boolean} isFull 通栏：仅去左右外边距与圆角、左右边线；标题/间距样式不变
  * @property {Boolean} isLast / isShadow / border
@@ -188,7 +188,7 @@ export default defineComponent({
   emits: ['click'],
   data() {
     return {
-      /** 小程序插槽不是函数，列表/表格挂上后回写，用来去掉内容区内边距 */
+      /** 小程序插槽不是函数，列表 / 表格挂上后回写，用来去掉 body 与外壳 spacing */
       embeddedListCount: 0,
     }
   },
@@ -473,7 +473,9 @@ $ly-section-radius: 26px;
 }
 
 .lingyun-section--with-list.lingyun-section--glass .lingyun-list__card,
-.lingyun-section--with-list.lingyun-section--solid .lingyun-list__card {
+.lingyun-section--with-list.lingyun-section--solid .lingyun-list__card,
+.lingyun-section--with-list.lingyun-section--glass .lingyun-table,
+.lingyun-section--with-list.lingyun-section--solid .lingyun-table {
   background-color: transparent;
   border-radius: 0;
 }

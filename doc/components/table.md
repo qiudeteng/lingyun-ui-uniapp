@@ -25,6 +25,14 @@
 
 `height` 不传时，表格占满外层高度；外层没有高度时占满页面。表体在这块区域里滚动。传入像素时只固定表体。行和中间列只画可视区域。
 
+放进 `lingyun-section` 时与内嵌列表同一规则：标题留在卡片外，表格贴边，section 的 body 与外壳 spacing 自动让出。
+
+```vue
+<lingyun-section title="订单" hint="标题在外，表格贴边">
+  <lingyun-table :columns="columns" :data="rows" row-key="id" stripe border :height="240" />
+</lingyun-section>
+```
+
 ## 列
 
 | 字段 | 说明 |

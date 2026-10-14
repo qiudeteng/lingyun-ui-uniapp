@@ -14,7 +14,7 @@
 
 | 区域 | px | 说明 |
 |------|----|------|
-| 卡片圆角 | 26 | 与分组列表同一档。放进 `lingyun-section` 时为 0，圆角由卡片负责 |
+| 卡片圆角 | 26 | 与分组列表同一档。放进 `lingyun-section` 时为 0，圆角由卡片负责；宫格宜 `background="transparent"`，body 无内边距，外壳 spacing 仍保留（与列表 / 表格「整块贴边」不同） |
 | 卡片底 | Grouped Secondary | 浅白 / 暗黑 `#1c1c1e`。`background` 可改，`transparent` 为透明 |
 | 方形格 | 宽 = 高 | `padding-top: 100%`，不靠 JS 量宽 |
 | 非方形 | 最小高 88 | 图标 + 文案 |

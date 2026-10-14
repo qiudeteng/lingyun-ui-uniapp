@@ -14,6 +14,17 @@
         </lingyun-list>
       </lingyun-section>
 
+      <lingyun-section title="内嵌表格" hint="与列表同一规则：标题在外，表格贴边，body 无内边距">
+        <lingyun-table
+          :columns="tableColumns"
+          :data="tableRows"
+          row-key="id"
+          stripe
+          border
+          :height="208"
+        />
+      </lingyun-section>
+
       <lingyun-section
         title="小图标"
         subtitle="副标题和主标题左对齐"
@@ -179,11 +190,27 @@
 </template>
 
 <script setup lang="ts">
+  import type { LingyunTableColumn, LingyunTableRow } from '@/uni_modules/lingyun-ui/components/lingyun-table/lingyun-table.vue'
+
   const shortcuts = [
     { icon: 'shop', text: '店铺', color: '#0088ff', link: '/pages/demo/grid' },
     { icon: 'cart', text: '购物车', color: '#34c759', info: 2 },
     { icon: 'gift', text: '优惠', color: '#ff8d28' },
     { icon: 'gear', text: '设置', color: '#8e8e93', link: '/pages/demo/icons' },
+  ]
+
+  const tableColumns: LingyunTableColumn[] = [
+    { key: 'name', title: '菜品', width: 120, fixed: 'left' },
+    { key: 'category', title: '分类', width: 88 },
+    { key: 'price', title: '单价', width: 72, align: 'right' },
+    { key: 'note', title: '备注', width: 140 },
+  ]
+
+  const tableRows: LingyunTableRow[] = [
+    { id: '1', name: '宫保鸡丁', category: '热菜', price: 28, note: '少辣' },
+    { id: '2', name: '凉拌黄瓜', category: '凉菜', price: 12, note: '常规' },
+    { id: '3', name: '酸梅汤', category: '饮品', price: 8, note: '去冰' },
+    { id: '4', name: '红烧肉', category: '热菜', price: 38, note: '常规' },
   ]
 
   function toast(title: string): void {

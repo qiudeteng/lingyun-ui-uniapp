@@ -990,13 +990,11 @@ export default defineComponent({
   created() {
     this.syncRowWindow(0)
     this.syncColWindow(0)
+    this.scrollbarHandle = this.detectScrollbarHandle()
     const section = findSectionMarkHost(this.$parent)
     if (!section) return
     ;(this as unknown as { embeddedSection?: SectionMarkHost }).embeddedSection = section
     section.markEmbeddedList?.(true)
-  },
-  created() {
-    this.scrollbarHandle = this.detectScrollbarHandle()
   },
   mounted() {
     if (this.remote) this.emitQuery()

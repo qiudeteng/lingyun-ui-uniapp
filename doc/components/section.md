@@ -26,6 +26,8 @@
 | `header-line` | 标题和内容之间显示横线。没有标题时不画 | false |
 | `padding / margin` | 内边距、外边距 | 见默认 |
 
-默认插槽里放 `lingyun-list` 时，header 仍是分组标题，下面整块是列表卡片：body 自动没有内边距，圆角、底色和行样式与单独使用列表一致。
+默认插槽里放 `lingyun-list` 或 `lingyun-table` 时，header 仍是分组标题，下面整块交给列表 / 表格卡片：body 自动没有内边距，外壳 `spacing` 也让出，圆角、底色与单独使用时一致。
+
+放 `lingyun-grid` 时 body 同样没有内边距；宫格用透明底，圆角由 section 负责（`--lingyun-grid-radius: 0`），外壳 `spacing` 保留。
 
 插槽里的 `lingyun-section-row` 是全局样式类，写在插槽节点上才能在小程序里生效。
