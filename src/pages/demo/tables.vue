@@ -6,7 +6,7 @@
         <text class="hero__desc">lingyun-table · 分组卡片表格</text>
       </view>
 
-      <lingyun-section title="自适应高度" hint="本地筛选、排序和分页。表体跟着行数长高。">
+      <lingyun-section title="页面高度" hint="不传 height。外层没有高度时跟页面一样高，表体在里面滚动。">
         <lingyun-table
           :columns="columns"
           :data="rows"
@@ -31,7 +31,8 @@
         <text class="picked">已选 {{ selected.length }} 行</text>
       </lingyun-section>
 
-      <lingyun-section title="服务端分页" hint="remote。筛选和翻页只发 query-change，约半秒后回填当前页。">
+      <lingyun-section title="外层高度" hint="外层 320px。表格跟上外层，不把外层撑开。筛选和翻页走服务端。">
+        <view class="table-frame">
         <lingyun-table
           remote
           :loading="serverLoading"
@@ -54,6 +55,7 @@
             <text v-else class="cell-text">{{ value }}</text>
           </template>
         </lingyun-table>
+        </view>
         <text class="picked">已返回第 {{ serverPage }} 页，共 {{ serverTotal }} 条</text>
       </lingyun-section>
 
@@ -66,8 +68,36 @@
         </lingyun-table>
       </lingyun-section>
 
-      <lingyun-section title="空数据" hint="筛选或数据为空时的空态" is-last>
-        <lingyun-table :columns="columns" :data="[]" empty-text="没有订单" />
+      <lingyun-section title="序号列" hint="标题栏：图标、标题、刷新、选列、导出 Excel，右侧还能放自定义按钮。">
+        <view class="table-frame">
+          <lingyun-table
+            title="菜品"
+            icon="list"
+            show-refresh
+            column-picker
+            export-excel
+            :columns="indexColumns"
+            :data="rows"
+            row-key="id"
+            stripe
+            border
+            :page-size="5"
+            v-model:page="indexPage"
+            @refresh="onTableRefresh"
+          >
+            <template #tools>
+              <view class="table-tool" @click="onCustomTool">
+                <lingyun-icon type="compose" :size="18" color="secondary" />
+              </view>
+            </template>
+          </lingyun-table>
+        </view>
+      </lingyun-section>
+
+      <lingyun-section title="空数据" hint="外层 200px，空态留在这块高度里" is-last>
+        <view class="table-frame table-frame--empty">
+          <lingyun-table :columns="columns" :data="[]" empty-text="没有订单" />
+        </view>
       </lingyun-section>
     </view>
   </lingyun-app-page>
@@ -112,6 +142,15 @@
     { key: 'action', title: '操作', width: 72, fixed: 'right', align: 'center' },
   ]
 
+  const indexColumns: LingyunTableColumn[] = [
+    { key: 'no', title: '序号', type: 'index', width: 64, align: 'center', fixed: 'left' },
+    { key: 'name', title: '菜品', width: 140, sortable: true },
+    { key: 'category', title: '分类', width: 96 },
+    { key: 'count', title: '数量', width: 80, align: 'right', sortable: true },
+    { key: 'price', title: '单价', width: 88, align: 'right' },
+    { key: 'note', title: '备注', width: 180 },
+  ]
+
   const menu = ['宫保鸡丁', '清蒸鲈鱼', '凉拌黄瓜', '酸梅汤', '红烧肉', '拍黄瓜', '柠檬茶', '鱼香肉丝', '白灼虾', '杨枝甘露', '麻婆豆腐', '冰粉']
   const categories = ['热菜', '热菜', '凉菜', '饮品']
 
@@ -127,6 +166,7 @@
   }))
 
   const page = ref(1)
+  const indexPage = ref(1)
   const selected = ref<string[]>([])
   const serverPage = ref(1)
   const serverRows = ref<LingyunTableRow[]>([])
@@ -166,6 +206,14 @@
 
   function onRow(row: LingyunTableRow): void {
     uni.showToast({ title: String(row.name || ''), icon: 'none' })
+  }
+
+  function onTableRefresh(): void {
+    uni.showToast({ title: '已刷新', icon: 'none' })
+  }
+
+  function onCustomTool(): void {
+    uni.showToast({ title: '自定义', icon: 'none' })
   }
 </script>
 
@@ -213,6 +261,24 @@
     font-size: 15px;
     line-height: 20px;
     color: var(--lingyun-link, #0088ff);
+  }
+
+  .table-frame {
+    height: 320px;
+  }
+
+  .table-frame--empty {
+    height: 200px;
+  }
+
+  .table-tool {
+    width: 32px;
+    height: 32px;
+    margin-left: 4px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .picked {

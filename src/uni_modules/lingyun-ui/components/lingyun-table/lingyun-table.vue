@@ -1,5 +1,65 @@
 <template>
-  <view class="lingyun-table" :class="rootClass">
+  <view class="lingyun-table" :class="rootClass" :style="fillStyle">
+    <view v-if="showToolbar()" class="lingyun-table__toolbar">
+      <view class="lingyun-table__toolbar-main">
+        <lingyun-icon v-if="icon" :type="icon" :size="22" color="label" />
+        <text v-if="title" class="lingyun-table__toolbar-title" :class="{ 'lingyun-table__toolbar-title--gap': !!icon }">{{ title }}</text>
+      </view>
+      <view class="lingyun-table__toolbar-tools">
+        <view
+          v-if="showRefresh"
+          class="lingyun-table__tool"
+          hover-class="lingyun-table__tool--hover"
+          :hover-stay-time="70"
+          @click="onRefresh"
+        >
+          <lingyun-icon type="reload" :size="18" color="secondary" />
+        </view>
+        <lingyun-popover
+          v-if="columnPicker"
+          v-model="columnPickerOpen"
+          placement="bottom"
+          :width="220"
+          arrow-align="trailing"
+        >
+          <template #trigger="{ toggle }">
+            <view
+              class="lingyun-table__tool"
+              hover-class="lingyun-table__tool--hover"
+              :hover-stay-time="70"
+              @click.stop="toggle"
+            >
+              <lingyun-icon type="list" :size="18" color="secondary" />
+            </view>
+          </template>
+          <scroll-view scroll-y class="lingyun-table__pick-scroll" :style="pickerScrollStyle">
+            <view
+              v-for="col in columns"
+              :key="col.key"
+              class="lingyun-table__pick"
+              hover-class="lingyun-table__pick--hover"
+              :hover-stay-time="70"
+              @click.stop="toggleColumn(col.key)"
+            >
+              <view class="lingyun-table__check" :class="{ 'lingyun-table__check--on': columnShown(col.key) }">
+                <lingyun-icon v-if="columnShown(col.key)" type="checkmarkempty" :size="14" color="#ffffff" />
+              </view>
+              <text class="lingyun-table__pick-text">{{ col.title }}</text>
+            </view>
+          </scroll-view>
+        </lingyun-popover>
+        <view
+          v-if="exportExcel"
+          class="lingyun-table__tool"
+          hover-class="lingyun-table__tool--hover"
+          :hover-stay-time="70"
+          @click="onExportExcel"
+        >
+          <lingyun-icon type="download" :size="18" color="secondary" />
+        </view>
+        <slot name="tools" />
+      </view>
+    </view>
     <view class="lingyun-table__head">
       <view v-if="leftWidth" class="lingyun-table__side" :style="sideStyle(leftWidth)">
         <view class="lingyun-table__row lingyun-table__row--head">
@@ -45,8 +105,9 @@
         @scroll="onHeadScroll"
       >
         <view class="lingyun-table__row lingyun-table__row--head" :style="centerRowStyle">
+          <view v-if="colPadLeft" class="lingyun-table__col-pad" :style="colPadLeftStyle" />
           <view
-            v-for="col in centerColumns"
+            v-for="col in visibleCenterColumns"
             :key="col.key"
             class="lingyun-table__cell"
             :style="cellStyle(col)"
@@ -66,6 +127,7 @@
               <text class="lingyun-table__filter-mark">▾</text>
             </view>
           </view>
+          <view v-if="colPadRight" class="lingyun-table__col-pad" :style="colPadRightStyle" />
         </view>
       </scroll-view>
 
@@ -115,15 +177,14 @@
       </view>
     </view>
 
-    <view v-if="!pageRows.length && !loading" class="lingyun-table__empty">
-      <slot name="empty">
-        <lingyun-empty variant="plain" :title="emptyText" />
-      </slot>
-    </view>
-
-    <view v-else class="lingyun-table__body" :style="bodyBoxStyle">
+    <view class="lingyun-table__body" :style="bodyBoxStyle">
+      <view v-if="!pageRows.length && !loading" class="lingyun-table__empty">
+        <slot name="empty">
+          <lingyun-empty variant="plain" :title="emptyText" />
+        </slot>
+      </view>
       <scroll-view
-        v-if="leftWidth && fixed"
+        v-if="pageRows.length && leftWidth"
         class="lingyun-table__y"
         scroll-y
         :style="sideScrollStyle(leftWidth)"
@@ -131,98 +192,80 @@
         :show-scrollbar="false"
         @scroll="onLeftScroll"
       >
-        <view
-          v-for="(row, index) in pageRows"
-          :key="keyOf(row)"
-          class="lingyun-table__row"
-          :class="rowClass(index, row)"
-          @touchstart="onRowPress(row)"
-          @touchend="onRowRelease"
-          @touchcancel="onRowRelease"
-          @mousedown="onRowPress(row)"
-          @mouseup="onRowRelease"
-          @mouseleave="onRowRelease"
-          @click="onRowClick(row)"
-        >
-          <view v-if="selection" class="lingyun-table__cell lingyun-table__cell--check" @click.stop="toggleRow(row)">
-            <view class="lingyun-table__check" :class="{ 'lingyun-table__check--on': isSelected(row) }">
-              <lingyun-icon v-if="isSelected(row)" type="checkmarkempty" :size="14" color="#ffffff" />
+        <view class="lingyun-table__track" :style="rowTrackStyle">
+          <view v-if="rowPadTop" class="lingyun-table__row-pad" :style="rowPadTopStyle" />
+          <view
+            v-for="item in visibleRows"
+            :key="item.index"
+            class="lingyun-table__row"
+            :class="rowClass(item.index, item.row)"
+            @touchstart="onRowPress(item.row)"
+            @touchend="onRowRelease"
+            @touchcancel="onRowRelease"
+            @mousedown="onRowPress(item.row)"
+            @mouseup="onRowRelease"
+            @mouseleave="onRowRelease"
+            @click="onRowClick(item.row)"
+          >
+            <view v-if="selection" class="lingyun-table__cell lingyun-table__cell--check" @click.stop="toggleRow(item.row)">
+              <view class="lingyun-table__check" :class="{ 'lingyun-table__check--on': isSelected(item.row) }">
+                <lingyun-icon v-if="isSelected(item.row)" type="checkmarkempty" :size="14" color="#ffffff" />
+              </view>
+            </view>
+            <view v-for="col in leftColumns" :key="col.key" class="lingyun-table__cell" :style="cellStyle(col)">
+              <view class="lingyun-table__value">
+                <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
+                  <text class="lingyun-table__text">{{ cellText(item.row, col, item.index) }}</text>
+                </slot>
+              </view>
             </view>
           </view>
-          <view v-for="col in leftColumns" :key="col.key" class="lingyun-table__cell" :style="cellStyle(col)">
-            <view class="lingyun-table__value">
-              <slot name="cell" :row="row" :column="col" :value="cellValue(row, col)">
-                <text class="lingyun-table__text">{{ cellText(row, col) }}</text>
-              </slot>
-            </view>
-          </view>
+          <view v-if="rowPadBottom" class="lingyun-table__row-pad" :style="rowPadBottomStyle" />
         </view>
       </scroll-view>
-      <view v-else-if="leftWidth" class="lingyun-table__side" :style="sideStyle(leftWidth)">
-        <view
-          v-for="(row, index) in pageRows"
-          :key="keyOf(row)"
-          class="lingyun-table__row"
-          :class="rowClass(index, row)"
-          @touchstart="onRowPress(row)"
-          @touchend="onRowRelease"
-          @touchcancel="onRowRelease"
-          @mousedown="onRowPress(row)"
-          @mouseup="onRowRelease"
-          @mouseleave="onRowRelease"
-          @click="onRowClick(row)"
-        >
-          <view v-if="selection" class="lingyun-table__cell lingyun-table__cell--check" @click.stop="toggleRow(row)">
-            <view class="lingyun-table__check" :class="{ 'lingyun-table__check--on': isSelected(row) }">
-              <lingyun-icon v-if="isSelected(row)" type="checkmarkempty" :size="14" color="#ffffff" />
-            </view>
-          </view>
-          <view v-for="col in leftColumns" :key="col.key" class="lingyun-table__cell" :style="cellStyle(col)">
-            <view class="lingyun-table__value">
-              <slot name="cell" :row="row" :column="col" :value="cellValue(row, col)">
-                <text class="lingyun-table__text">{{ cellText(row, col) }}</text>
-              </slot>
-            </view>
-          </view>
-        </view>
-      </view>
 
       <scroll-view
+        v-if="pageRows.length"
         class="lingyun-table__x lingyun-table__x--body"
         scroll-x
-        :scroll-y="fixed"
+        scroll-y
         :style="bodyScrollStyle"
         :scroll-left="bodyLeft"
         :scroll-top="bodyTop"
         @scroll="onBodyScroll"
       >
-        <view :style="centerRowStyle">
+        <view class="lingyun-table__track" :style="centerTrackStyle">
+          <view v-if="rowPadTop" class="lingyun-table__row-pad" :style="rowPadTopStyle" />
           <view
-            v-for="(row, index) in pageRows"
-            :key="keyOf(row)"
+            v-for="item in visibleRows"
+            :key="item.index"
             class="lingyun-table__row"
-            :class="rowClass(index, row)"
-            @touchstart="onRowPress(row)"
+            :style="centerRowStyle"
+            :class="rowClass(item.index, item.row)"
+            @touchstart="onRowPress(item.row)"
             @touchend="onRowRelease"
             @touchcancel="onRowRelease"
-            @mousedown="onRowPress(row)"
+            @mousedown="onRowPress(item.row)"
             @mouseup="onRowRelease"
             @mouseleave="onRowRelease"
-            @click="onRowClick(row)"
+            @click="onRowClick(item.row)"
           >
-            <view v-for="col in centerColumns" :key="col.key" class="lingyun-table__cell" :style="cellStyle(col)">
+            <view v-if="colPadLeft" class="lingyun-table__col-pad" :style="colPadLeftStyle" />
+            <view v-for="col in visibleCenterColumns" :key="col.key" class="lingyun-table__cell" :style="cellStyle(col)">
               <view class="lingyun-table__value">
-                <slot name="cell" :row="row" :column="col" :value="cellValue(row, col)">
-                  <text class="lingyun-table__text">{{ cellText(row, col) }}</text>
+                <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
+                  <text class="lingyun-table__text">{{ cellText(item.row, col, item.index) }}</text>
                 </slot>
               </view>
             </view>
+            <view v-if="colPadRight" class="lingyun-table__col-pad" :style="colPadRightStyle" />
           </view>
+          <view v-if="rowPadBottom" class="lingyun-table__row-pad" :style="rowPadBottomStyle" />
         </view>
       </scroll-view>
 
       <scroll-view
-        v-if="rightWidth && fixed"
+        v-if="pageRows.length && rightWidth"
         class="lingyun-table__y lingyun-table__y--right"
         scroll-y
         :style="sideScrollStyle(rightWidth)"
@@ -230,51 +273,32 @@
         :show-scrollbar="false"
         @scroll="onRightScroll"
       >
-        <view
-          v-for="(row, index) in pageRows"
-          :key="keyOf(row)"
-          class="lingyun-table__row"
-          :class="rowClass(index, row)"
-          @touchstart="onRowPress(row)"
-          @touchend="onRowRelease"
-          @touchcancel="onRowRelease"
-          @mousedown="onRowPress(row)"
-          @mouseup="onRowRelease"
-          @mouseleave="onRowRelease"
-          @click="onRowClick(row)"
-        >
-          <view v-for="col in rightColumns" :key="col.key" class="lingyun-table__cell" :style="cellStyle(col)">
-            <view class="lingyun-table__value">
-              <slot name="cell" :row="row" :column="col" :value="cellValue(row, col)">
-                <text class="lingyun-table__text">{{ cellText(row, col) }}</text>
-              </slot>
+        <view class="lingyun-table__track" :style="rowTrackStyle">
+          <view v-if="rowPadTop" class="lingyun-table__row-pad" :style="rowPadTopStyle" />
+          <view
+            v-for="item in visibleRows"
+            :key="item.index"
+            class="lingyun-table__row"
+            :class="rowClass(item.index, item.row)"
+            @touchstart="onRowPress(item.row)"
+            @touchend="onRowRelease"
+            @touchcancel="onRowRelease"
+            @mousedown="onRowPress(item.row)"
+            @mouseup="onRowRelease"
+            @mouseleave="onRowRelease"
+            @click="onRowClick(item.row)"
+          >
+            <view v-for="col in rightColumns" :key="col.key" class="lingyun-table__cell" :style="cellStyle(col)">
+              <view class="lingyun-table__value">
+                <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
+                  <text class="lingyun-table__text">{{ cellText(item.row, col, item.index) }}</text>
+                </slot>
+              </view>
             </view>
           </view>
+          <view v-if="rowPadBottom" class="lingyun-table__row-pad" :style="rowPadBottomStyle" />
         </view>
       </scroll-view>
-      <view v-else-if="rightWidth" class="lingyun-table__side lingyun-table__side--right" :style="sideStyle(rightWidth)">
-        <view
-          v-for="(row, index) in pageRows"
-          :key="keyOf(row)"
-          class="lingyun-table__row"
-          :class="rowClass(index, row)"
-          @touchstart="onRowPress(row)"
-          @touchend="onRowRelease"
-          @touchcancel="onRowRelease"
-          @mousedown="onRowPress(row)"
-          @mouseup="onRowRelease"
-          @mouseleave="onRowRelease"
-          @click="onRowClick(row)"
-        >
-          <view v-for="col in rightColumns" :key="col.key" class="lingyun-table__cell" :style="cellStyle(col)">
-            <view class="lingyun-table__value">
-              <slot name="cell" :row="row" :column="col" :value="cellValue(row, col)">
-                <text class="lingyun-table__text">{{ cellText(row, col) }}</text>
-              </slot>
-            </view>
-          </view>
-        </view>
-      </view>
       <view v-if="loading" class="lingyun-table__loading">
         <lingyun-activity-indicator size="small" />
       </view>
@@ -309,6 +333,8 @@ import { defineComponent, type PropType } from 'vue'
 const ROW_H = 52
 const CHECK_W = 48
 const COL_W = 120
+const ROW_OVERSCAN = 8
+const COL_OVERSCAN = COL_W * 2
 
 export type LingyunTableAlign = 'left' | 'center' | 'right'
 export type LingyunTableSortOrder = 'asc' | 'desc' | ''
@@ -325,6 +351,8 @@ export interface LingyunTableColumn {
   align?: LingyunTableAlign
   /** true 与 left 都固定在左侧 */
   fixed?: 'left' | 'right' | boolean
+  /** index 时显示当前顺序的序号，不读行数据 */
+  type?: 'index'
   sortable?: boolean
   filters?: LingyunTableFilterOption[]
   formatter?: (value: unknown, row: LingyunTableRow) => string
@@ -370,6 +398,20 @@ function parseHeight(value: unknown): number {
   return Number.isFinite(n) && n > 0 ? n : 0
 }
 
+function escapeXml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function excelCell(text: string, numeric: boolean): string {
+  const type = numeric ? 'Number' : 'String'
+  return `<Cell><Data ss:Type="${type}">${escapeXml(text)}</Data></Cell>`
+}
+
+function sanitizeFileName(value: string): string {
+  const name = value.replace(/[\\/:*?"<>|]/g, '_').trim()
+  return name || '表格'
+}
+
 function compareValue(a: unknown, b: unknown): number {
   const aEmpty = a == null || a === ''
   const bEmpty = b == null || b === ''
@@ -395,13 +437,16 @@ export default defineComponent({
     'update:selectedKeys',
     'update:page',
     'query-change',
+    'refresh',
+    'export',
   ],
   props: {
     columns: { type: Array as PropType<LingyunTableColumn[]>, default: () => [] },
     data: { type: Array as PropType<LingyunTableRow[]>, default: () => [] },
     rowKey: { type: String, default: 'id' },
     /**
-     * 表体高度。空则跟着行数撑开；传入后表体上下滚动，表头保持在滚动区外面。
+     * 表体高度。传入像素时表体固定为这个高度。
+     * 不传时表格占满外层：外层有高度就用外层高度，否则用页面高度。表体在这块区域里滚动。
      */
     height: { type: [Number, String], default: '' },
     stripe: { type: Boolean, default: false },
@@ -421,6 +466,16 @@ export default defineComponent({
     remote: { type: Boolean, default: false },
     /** remote 请求进行中。空数据时占住表体并转圈，有数据时盖在当前页上 */
     loading: { type: Boolean, default: false },
+    /** 标题栏标题。和 icon、工具按钮、tools 插槽任一有值就显示标题栏 */
+    title: { type: String, default: '' },
+    /** 标题栏图标，取 lingyun-icon 的 type */
+    icon: { type: String, default: '' },
+    /** 标题栏右侧刷新 */
+    showRefresh: { type: Boolean, default: false },
+    /** 标题栏右侧选择列 */
+    columnPicker: { type: Boolean, default: false },
+    /** 标题栏右侧导出 Excel */
+    exportExcel: { type: Boolean, default: false },
     emptyText: { type: String, default: '暂无数据' },
   },
   data() {
@@ -442,6 +497,19 @@ export default defineComponent({
       pressTimer: 0,
       pressLeft: 0,
       pressTop: 0,
+      viewportBodyPx: 0,
+      viewportCenterPx: 0,
+      fillHeightPx: 0,
+      fillMode: '' as '' | 'page' | 'parent',
+      rowStart: 0,
+      rowEnd: 0,
+      colStart: 0,
+      colEnd: 0,
+      colPadLeft: 0,
+      colPadRight: 0,
+      hiddenKeys: [] as string[],
+      columnPickerOpen: false,
+      onResize: null as (() => void) | null,
     }
   },
   computed: {
@@ -449,23 +517,74 @@ export default defineComponent({
       return [
         this.stripe ? 'lingyun-table--stripe' : '',
         this.border ? 'lingyun-table--border' : '',
-        this.fixed ? 'lingyun-table--fixed' : '',
+        this.fixed ? 'lingyun-table--fixed' : 'lingyun-table--fill',
       ].filter(Boolean)
     },
     fixed(): boolean {
       return parseHeight(this.height) > 0
     },
+    fillStyle(): Record<string, string> {
+      if (this.fixed || this.fillHeightPx <= 0) return {}
+      return { height: `${this.fillHeightPx}px` }
+    },
+    pickerScrollStyle(): Record<string, string> {
+      const count = (this.columns || []).length
+      const height = Math.min(280, Math.max(44, count * 44))
+      return { height: `${height}px` }
+    },
     bodyHeightPx(): number {
       if (this.fixed) return parseHeight(this.height)
-      if (!this.pageRows.length) return this.loading ? 160 : ROW_H
+      return this.viewportBodyPx
+    },
+    contentHeightPx(): number {
       return this.pageRows.length * ROW_H
     },
+    rowPadTop(): number {
+      return this.rowStart * ROW_H
+    },
+    rowPadBottom(): number {
+      return Math.max(0, this.pageRows.length - this.rowEnd) * ROW_H
+    },
+    rowPadTopStyle(): Record<string, string> {
+      return { height: `${this.rowPadTop}px` }
+    },
+    rowPadBottomStyle(): Record<string, string> {
+      return { height: `${this.rowPadBottom}px` }
+    },
+    rowTrackStyle(): Record<string, string> {
+      return { height: `${this.contentHeightPx}px` }
+    },
+    centerTrackStyle(): Record<string, string> {
+      return { width: `${this.centerWidth}px`, height: `${this.contentHeightPx}px` }
+    },
+    colPadLeftStyle(): Record<string, string> {
+      return { width: `${this.colPadLeft}px` }
+    },
+    colPadRightStyle(): Record<string, string> {
+      return { width: `${this.colPadRight}px` }
+    },
+    visibleRows(): Array<{ row: LingyunTableRow; index: number }> {
+      const rows = this.pageRows
+      const end = Math.min(this.rowEnd, rows.length)
+      const items: Array<{ row: LingyunTableRow; index: number }> = []
+      for (let i = this.rowStart; i < end; i += 1) items.push({ row: rows[i], index: i })
+      return items
+    },
+    visibleCenterColumns(): ResolvedColumn[] {
+      const cols = this.centerColumns
+      const end = Math.min(this.colEnd, cols.length)
+      if (this.colStart <= 0 && end >= cols.length) return cols
+      return cols.slice(this.colStart, end)
+    },
     resolvedColumns(): ResolvedColumn[] {
-      return (this.columns || []).map((col) => ({
-        ...col,
-        widthPx: columnWidth(col.width),
-        side: columnSide(col.fixed),
-      }))
+      const hidden = this.hiddenKeys
+      return (this.columns || [])
+        .filter((col) => hidden.indexOf(col.key) < 0)
+        .map((col) => ({
+          ...col,
+          widthPx: columnWidth(col.type === 'index' ? (col.width ?? 64) : col.width),
+          side: columnSide(col.fixed),
+        }))
     },
     leftColumns(): ResolvedColumn[] {
       return this.resolvedColumns.filter((col) => col.side === 'left')
@@ -491,10 +610,13 @@ export default defineComponent({
       return { width: `${this.centerWidth}px` }
     },
     bodyBoxStyle(): Record<string, string> {
-      return { height: `${this.bodyHeightPx}px` }
+      if (this.bodyHeightPx > 0) return { height: `${this.bodyHeightPx}px` }
+      if (this.fixed) return { height: '0px' }
+      return { flex: '1', height: '0', minHeight: '0' }
     },
     bodyScrollStyle(): Record<string, string> {
-      return { height: `${this.bodyHeightPx}px` }
+      if (this.bodyHeightPx > 0) return { height: `${this.bodyHeightPx}px` }
+      return { height: '100%' }
     },
     filteredRows(): LingyunTableRow[] {
       const rows = this.data || []
@@ -576,20 +698,174 @@ export default defineComponent({
         this.innerSelected = (value || []).map((item) => String(item))
       },
     },
+    pageRows() {
+      this.syncRowWindow(this.bodyTop)
+    },
+    centerColumns() {
+      this.syncColWindow(this.bodyLeft)
+    },
+  },
+  created() {
+    this.syncRowWindow(0)
+    this.syncColWindow(0)
   },
   mounted() {
     if (this.remote) this.emitQuery()
+    this.measureViewport()
+    this.onResize = () => {
+      if (!this.fixed && this.fillMode === 'page') {
+        const info = uni.getWindowInfo()
+        const pageH = info && info.windowHeight ? Math.round(info.windowHeight) : 0
+        if (pageH > 0) this.fillHeightPx = pageH
+      }
+      if (!this.fixed && this.fillMode === 'parent') {
+        const parentH = this.parentBoxHeight()
+        if (parentH >= 80) this.fillHeightPx = parentH
+      }
+      this.measureViewport()
+    }
+    uni.onWindowResize(this.onResize)
   },
   beforeUnmount() {
     if (this.syncTimer) clearTimeout(this.syncTimer)
     if (this.pressTimer) clearTimeout(this.pressTimer)
+    if (this.onResize) uni.offWindowResize(this.onResize)
   },
   methods: {
     sideStyle(width: number): Record<string, string> {
       return { width: `${width}px` }
     },
     sideScrollStyle(width: number): Record<string, string> {
-      return { width: `${width}px`, height: `${this.bodyHeightPx}px` }
+      const height = this.bodyHeightPx > 0 ? `${this.bodyHeightPx}px` : '100%'
+      return { width: `${width}px`, height }
+    },
+    guessCenterWidth(): number {
+      const info = uni.getWindowInfo()
+      const width = info && info.windowWidth ? info.windowWidth : 375
+      return Math.max(COL_W, width - this.leftWidth - this.rightWidth)
+    },
+    syncRowWindow(top: number) {
+      const total = this.pageRows.length
+      const view = this.bodyHeightPx > 0 ? this.bodyHeightPx : ROW_H * 12
+      let start = Math.floor(top / ROW_H) - ROW_OVERSCAN
+      if (start < 0) start = 0
+      let end = Math.ceil((top + view) / ROW_H) + ROW_OVERSCAN
+      if (end > total) end = total
+      if (start > end) start = end
+      if (this.rowStart !== start) this.rowStart = start
+      if (this.rowEnd !== end) this.rowEnd = end
+    },
+    syncColWindow(left: number) {
+      const cols = this.centerColumns
+      const view = this.viewportCenterPx > 0 ? this.viewportCenterPx : this.guessCenterWidth()
+      const startX = Math.max(0, left - COL_OVERSCAN)
+      const endX = left + view + COL_OVERSCAN
+      let x = 0
+      let start = 0
+      let end = 0
+      let padLeft = 0
+      let padRight = 0
+      let started = false
+      for (let i = 0; i < cols.length; i += 1) {
+        const width = cols[i].widthPx
+        const right = x + width
+        if (right <= startX) {
+          padLeft += width
+          start = i + 1
+        } else if (x >= endX) {
+          padRight += width
+        } else {
+          started = true
+          end = i + 1
+        }
+        x = right
+      }
+      if (!started) {
+        start = 0
+        end = cols.length
+        padLeft = 0
+        padRight = 0
+      }
+      if (this.colStart !== start) this.colStart = start
+      if (this.colEnd !== end) this.colEnd = end
+      if (this.colPadLeft !== padLeft) this.colPadLeft = padLeft
+      if (this.colPadRight !== padRight) this.colPadRight = padRight
+    },
+    parentBoxHeight(): number {
+      const el = this.$el as HTMLElement | undefined
+      const parent = el && el.style ? el.parentElement : null
+      if (!el || !parent || typeof parent.clientHeight !== 'number') return 0
+      const prevPos = el.style.position
+      const prevH = el.style.height
+      el.style.position = 'absolute'
+      el.style.height = '0px'
+      const parentH = parent.clientHeight
+      let siblingH = 0
+      const children = parent.children
+      for (let i = 0; i < children.length; i += 1) {
+        const child = children[i] as HTMLElement
+        if (child === el) continue
+        siblingH += child.offsetHeight || 0
+      }
+      el.style.position = prevPos
+      el.style.height = prevH
+      if (parentH >= 80 && parentH - siblingH >= 40) return Math.round(parentH)
+      return 0
+    },
+    measureViewport() {
+      const query = uni.createSelectorQuery().in(this as never)
+      query.select('.lingyun-table').boundingClientRect()
+      query.select('.lingyun-table__body').boundingClientRect()
+      query.select('.lingyun-table__x--body').boundingClientRect()
+      query.exec((rects) => {
+        const list = (rects || []) as Array<{ height?: number; width?: number } | null>
+        this.applyViewport(list[0], list[1], list[2])
+      })
+    },
+    applyViewport(
+      table: { height?: number } | null,
+      body: { height?: number } | null,
+      center: { width?: number } | null,
+    ) {
+      if (center && center.width && center.width > 1) {
+        const width = Math.round(center.width)
+        if (this.viewportCenterPx !== width) this.viewportCenterPx = width
+      }
+      this.syncColWindow(this.bodyLeft)
+      if (this.fixed) {
+        this.syncRowWindow(this.bodyTop)
+        return
+      }
+      const bodyH = body && body.height ? Math.round(body.height) : 0
+      const tableH = table && table.height ? Math.round(table.height) : 0
+      if ((this.fillMode === 'page' || this.fillMode === 'parent') && this.fillHeightPx > 0) {
+        const chrome = Math.max(44, tableH - bodyH)
+        const filled = this.fillMode === 'parent' ? bodyH >= 48 : tableH >= this.fillHeightPx - 16 && bodyH >= 48
+        const next = filled ? bodyH : Math.max(48, this.fillHeightPx - chrome)
+        if (this.viewportBodyPx !== next) this.viewportBodyPx = next
+        this.syncRowWindow(this.bodyTop)
+        return
+      }
+      const parentH = this.parentBoxHeight()
+      if (parentH >= 80 && bodyH >= 48) {
+        this.fillMode = 'parent'
+        if (this.viewportBodyPx !== bodyH) this.viewportBodyPx = bodyH
+        this.syncRowWindow(this.bodyTop)
+        return
+      }
+      if (parentH >= 80) {
+        this.fillMode = 'parent'
+        if (this.fillHeightPx !== parentH) this.fillHeightPx = parentH
+        this.$nextTick(() => this.measureViewport())
+        return
+      }
+      const info = uni.getWindowInfo()
+      const pageH = info && info.windowHeight ? Math.round(info.windowHeight) : 0
+      if (pageH > 0 && (this.fillMode !== 'page' || this.fillHeightPx !== pageH)) {
+        this.fillMode = 'page'
+        this.fillHeightPx = pageH
+        this.$nextTick(() => this.measureViewport())
+      }
     },
     cellStyle(col: ResolvedColumn): Record<string, string> {
       const align = col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'
@@ -600,6 +876,7 @@ export default defineComponent({
       return {
         'lingyun-table__row--alt': this.stripe && index % 2 === 1,
         'lingyun-table__row--hover': !!key && this.pressedKey === key,
+        'lingyun-table__row--last': index === this.pageRows.length - 1 && this.contentHeightPx < this.bodyHeightPx,
       }
     },
     onRowPress(row: LingyunTableRow) {
@@ -650,14 +927,106 @@ export default defineComponent({
       if (value == null || value === '') return ''
       return String(value)
     },
-    cellValue(row: LingyunTableRow, col: ResolvedColumn): unknown {
+    cellValue(row: LingyunTableRow, col: ResolvedColumn, index = 0): unknown {
+      if (col.type === 'index') return this.rowNo(index)
       return row[col.key]
     },
-    cellText(row: LingyunTableRow, col: ResolvedColumn): string {
+    cellText(row: LingyunTableRow, col: ResolvedColumn, index = 0): string {
+      if (col.type === 'index') return String(this.rowNo(index))
       const value = row[col.key]
       if (col.formatter) return col.formatter(value, row)
       if (value == null) return ''
       return String(value)
+    },
+    rowNo(index: number): number {
+      const size = this.pageSize > 0 ? this.pageSize : 0
+      const base = size > 0 ? (this.currentPage - 1) * size : 0
+      return base + index + 1
+    },
+    showToolbar(): boolean {
+      return !!(this.title || this.icon || this.showRefresh || this.columnPicker || this.exportExcel || this.$slots.tools)
+    },
+    columnShown(key: string): boolean {
+      return this.hiddenKeys.indexOf(key) < 0
+    },
+    toggleColumn(key: string) {
+      if (this.columnShown(key)) {
+        const visible = (this.columns || []).filter((col) => this.columnShown(col.key))
+        if (visible.length <= 1) return
+        this.hiddenKeys = this.hiddenKeys.concat(key)
+        if (this.openFilterKey === key) this.openFilterKey = ''
+        return
+      }
+      this.hiddenKeys = this.hiddenKeys.filter((item) => item !== key)
+    },
+    onRefresh() {
+      this.$emit('refresh', this.queryPayload())
+    },
+    onExportExcel() {
+      const filename = sanitizeFileName(this.title || '表格')
+      this.saveExcel(this.buildExcelXml(), filename)
+      this.$emit('export', { filename: `${filename}.xls` })
+    },
+    buildExcelXml(): string {
+      const cols = this.resolvedColumns
+      const rows = this.sortedRows
+      const head = cols.map((col) => excelCell(col.title || col.key, false)).join('')
+      const body = rows
+        .map((row, index) => {
+          const cells = cols.map((col) => {
+            if (col.type === 'index') return excelCell(String(index + 1), true)
+            const value = row[col.key]
+            const text = col.formatter ? col.formatter(value, row) : value == null ? '' : String(value)
+            const numeric = typeof value === 'number' && Number.isFinite(value) && !col.formatter
+            return excelCell(text, numeric)
+          })
+          return `<Row>${cells.join('')}</Row>`
+        })
+        .join('')
+      const sheet = sanitizeFileName(this.title || 'Sheet1').slice(0, 31)
+      return `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Worksheet ss:Name="${escapeXml(sheet)}"><Table><Row>${head}</Row>${body}</Table></Worksheet>
+</Workbook>`
+    },
+    saveExcel(xml: string, filename: string) {
+      const file = `${filename}.xls`
+      // #ifdef H5
+      const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = file
+      link.click()
+      URL.revokeObjectURL(url)
+      // #endif
+      // #ifndef H5
+      const fs = uni.getFileSystemManager()
+      const root = (uni as unknown as { env?: { USER_DATA_PATH?: string } }).env?.USER_DATA_PATH || ''
+      if (!root) {
+        uni.showToast({ title: '当前端不能保存文件', icon: 'none' })
+        return
+      }
+      fs.writeFile({
+        filePath: `${root}/${file}`,
+        data: xml,
+        encoding: 'utf8',
+        success: () => {
+          uni.openDocument({
+            filePath: `${root}/${file}`,
+            fileType: 'xls',
+            showMenu: true,
+            fail: () => {
+              uni.showToast({ title: '已保存，无法打开', icon: 'none' })
+            },
+          })
+        },
+        fail: () => {
+          uni.showToast({ title: '导出失败', icon: 'none' })
+        },
+      })
+      // #endif
     },
     isSelected(row: LingyunTableRow): boolean {
       const key = this.keyOf(row)
@@ -759,6 +1128,8 @@ export default defineComponent({
       const left = event.detail?.scrollLeft || 0
       const top = event.detail?.scrollTop || 0
       this.clearPressIfScrolled(left, top)
+      this.syncRowWindow(top)
+      this.syncColWindow(left)
       this.bodyLeft = left
       this.bodyTop = top
       if (this.syncSource === 'head' || this.syncSource === 'left' || this.syncSource === 'right') return
@@ -769,6 +1140,7 @@ export default defineComponent({
     },
     onHeadScroll(event: ScrollEvent) {
       const left = event.detail?.scrollLeft || 0
+      this.syncColWindow(left)
       this.headLeft = left
       if (this.syncSource === 'body') return
       this.bodyLeft = left
@@ -777,6 +1149,7 @@ export default defineComponent({
     onLeftScroll(event: ScrollEvent) {
       const top = event.detail?.scrollTop || 0
       this.clearPressIfScrolled(this.bodyLeft, top)
+      this.syncRowWindow(top)
       this.leftTop = top
       if (this.syncSource === 'body' || this.syncSource === 'right') return
       this.bodyTop = top
@@ -786,6 +1159,7 @@ export default defineComponent({
     onRightScroll(event: ScrollEvent) {
       const top = event.detail?.scrollTop || 0
       this.clearPressIfScrolled(this.bodyLeft, top)
+      this.syncRowWindow(top)
       this.rightTop = top
       if (this.syncSource === 'body' || this.syncSource === 'left') return
       this.bodyTop = top
@@ -809,6 +1183,108 @@ $ly-table-radius: 26px;
   border-radius: $ly-table-radius;
   background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
   box-sizing: border-box;
+}
+
+.lingyun-table--fill {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.lingyun-table--fill .lingyun-table__toolbar,
+.lingyun-table--fill .lingyun-table__head,
+.lingyun-table--fill .lingyun-table__filters,
+.lingyun-table--fill .lingyun-table__pager {
+  flex-shrink: 0;
+}
+
+.lingyun-table--fill .lingyun-table__body {
+  flex: 1;
+  min-height: 0;
+}
+
+.lingyun-table__track {
+  display: flex;
+  flex-direction: column;
+}
+
+.lingyun-table__toolbar {
+  height: 52px;
+  padding: 0 8px 0 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border-bottom: 1px solid var(--lingyun-separator, #{$lingyun-separator});
+}
+
+.lingyun-table__toolbar-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.lingyun-table__toolbar-title {
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 600;
+  color: var(--lingyun-label, #{$lingyun-label});
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.lingyun-table__toolbar-title--gap {
+  margin-left: 8px;
+}
+
+.lingyun-table__toolbar-tools {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.lingyun-table__tool {
+  width: 32px;
+  height: 32px;
+  margin-left: 4px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lingyun-table__tool--hover,
+.lingyun-table__pick--hover {
+  background-color: var(--lingyun-fill-tertiary, #{$lingyun-fill-tertiary});
+}
+
+.lingyun-table__pick {
+  height: 44px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.lingyun-table__pick-text {
+  flex: 1;
+  min-width: 0;
+  margin-left: 10px;
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--lingyun-label, #{$lingyun-label});
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.lingyun-table__row-pad,
+.lingyun-table__col-pad {
+  flex-shrink: 0;
 }
 
 .lingyun-table__head,
@@ -838,16 +1314,15 @@ $ly-table-radius: 26px;
 
 .lingyun-table__side {
   flex-shrink: 0;
+  box-sizing: border-box;
   background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
   z-index: 2;
-}
-
-.lingyun-table__side {
-  box-shadow: 1px 0 0 var(--lingyun-separator, #{$lingyun-separator});
+  border-right: 1px solid var(--lingyun-separator, #{$lingyun-separator});
 }
 
 .lingyun-table__side--right {
-  box-shadow: -1px 0 0 var(--lingyun-separator, #{$lingyun-separator});
+  border-right-width: 0;
+  border-left: 1px solid var(--lingyun-separator, #{$lingyun-separator});
 }
 
 .lingyun-table__x {
@@ -863,13 +1338,15 @@ $ly-table-radius: 26px;
 
 .lingyun-table__y {
   flex-shrink: 0;
+  box-sizing: border-box;
   background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
   z-index: 2;
-  box-shadow: 1px 0 0 var(--lingyun-separator, #{$lingyun-separator});
+  border-right: 1px solid var(--lingyun-separator, #{$lingyun-separator});
 }
 
 .lingyun-table__y--right {
-  box-shadow: -1px 0 0 var(--lingyun-separator, #{$lingyun-separator});
+  border-right-width: 0;
+  border-left: 1px solid var(--lingyun-separator, #{$lingyun-separator});
 }
 
 .lingyun-table__row {
@@ -883,6 +1360,10 @@ $ly-table-radius: 26px;
 
 .lingyun-table__row--head {
   height: $ly-table-head;
+  border-bottom: 1px solid var(--lingyun-separator, #{$lingyun-separator});
+}
+
+.lingyun-table__row--last {
   border-bottom: 1px solid var(--lingyun-separator, #{$lingyun-separator});
 }
 
@@ -918,6 +1399,12 @@ $ly-table-radius: 26px;
 
 .lingyun-table--border .lingyun-table__cell {
   border-right: 1px solid var(--lingyun-separator, #{$lingyun-separator});
+}
+
+/* 固定列外沿已有 1px 阴影。再画单元格右边线会叠成两像素。最右列贴着表格外缘，不再画右边线 */
+.lingyun-table--border .lingyun-table__side .lingyun-table__cell:last-child,
+.lingyun-table--border .lingyun-table__y .lingyun-table__cell:last-child {
+  border-right-width: 0;
 }
 
 .lingyun-table__head-hit {
@@ -1043,7 +1530,14 @@ $ly-table-radius: 26px;
 }
 
 .lingyun-table__empty {
+  flex: 1;
+  height: 100%;
+  min-height: 120px;
   padding: 12px 0 8px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .lingyun-table__pager {
