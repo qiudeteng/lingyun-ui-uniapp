@@ -241,6 +241,8 @@
         class="lingyun-table__y"
         scroll-y
         enable-flex
+        enhanced
+        :bounces="false"
         :style="sideScrollStyle(leftWidth)"
         :scroll-top="leftTop"
         :show-scrollbar="false"
@@ -376,6 +378,8 @@
         class="lingyun-table__y lingyun-table__y--right"
         scroll-y
         enable-flex
+        enhanced
+        :bounces="false"
         :style="sideScrollStyle(rightWidth)"
         :scroll-top="rightTop"
         :show-scrollbar="false"
@@ -411,12 +415,15 @@
           <view v-if="rowPadBottom" class="lingyun-table__row-pad" :style="rowPadBottomStyle" />
         </view>
       </scroll-view>
-      <!-- #ifdef H5 -->
       <view
         v-if="hBarNeeded"
         class="lingyun-table__hbar"
         :style="hBarStyle"
         @mousedown.stop.prevent="onHBarStart"
+        @touchstart.stop.prevent="onHBarStart"
+        @touchmove.stop.prevent="onHBarMove"
+        @touchend.stop="onHBarEnd"
+        @touchcancel.stop="onHBarEnd"
       >
         <view class="lingyun-table__hbar-thumb" :style="hThumbStyle" />
       </view>
@@ -425,10 +432,13 @@
         class="lingyun-table__vbar"
         :style="vBarStyle"
         @mousedown.stop.prevent="onVBarStart"
+        @touchstart.stop.prevent="onVBarStart"
+        @touchmove.stop.prevent="onVBarMove"
+        @touchend.stop="onVBarEnd"
+        @touchcancel.stop="onVBarEnd"
       >
         <view class="lingyun-table__vbar-thumb" :style="vThumbStyle" />
       </view>
-      <!-- #endif -->
       <view v-if="loading" class="lingyun-table__loading">
         <lingyun-activity-indicator size="small" />
       </view>
@@ -683,6 +693,7 @@ export default defineComponent({
       glideAt: 0,
       gliding: false,
       pageHoldTop: -1,
+      pageHoldTimer: 0,
     }
   },
   computed: {
@@ -1005,6 +1016,7 @@ export default defineComponent({
     if (this.syncTimer) clearTimeout(this.syncTimer)
     if (this.pressTimer) clearTimeout(this.pressTimer)
     if (this.hBarTimer) clearTimeout(this.hBarTimer)
+    if (this.pageHoldTimer) clearTimeout(this.pageHoldTimer)
     this.stopGlide()
     if (this.onResize) uni.offWindowResize(this.onResize)
   },
@@ -1492,16 +1504,16 @@ export default defineComponent({
       return this.nativePointer(event).y
     },
     onHBarStart(event: unknown) {
-      // #ifdef H5
       const point = this.nativePointer(event)
       point.preventDefault?.()
-      const bar = this.findBarEl(point.target, 'lingyun-table__hbar')
       const track = this.hBarTrackPx
       const view = this.centerViewPx
       const content = Math.max(this.centerWidth, view)
       const max = Math.max(0, content - view)
       const thumb = Math.max(40, Math.round((track * view) / content))
       const travel = Math.max(1, track - thumb)
+      // #ifdef H5
+      const bar = this.findBarEl(point.target, 'lingyun-table__hbar')
       if (bar && max > 0) {
         const rect = bar.getBoundingClientRect()
         const x = point.x - rect.left
@@ -1511,9 +1523,11 @@ export default defineComponent({
           this.scrollCenterTo(ratio * max)
         }
       }
+      // #endif
       this.hDragging = true
       this.hDragX = point.x
       this.hDragLeft = this.bodyLeft
+      // #ifdef H5
       if (typeof document === 'undefined') return
       this.detachHBarDrag()
       const move = (e: MouseEvent) => this.onHBarMove(e)
@@ -1549,16 +1563,16 @@ export default defineComponent({
       this.hDragUp = null
     },
     onVBarStart(event: unknown) {
-      // #ifdef H5
       const point = this.nativePointer(event)
       point.preventDefault?.()
-      const bar = this.findBarEl(point.target, 'lingyun-table__vbar')
       const track = this.vBarTrackPx
       const view = this.bodyHeightPx
       const content = Math.max(this.contentHeightPx, view)
       const max = Math.max(0, content - view)
       const thumb = Math.max(40, Math.round((track * view) / content))
       const travel = Math.max(1, track - thumb)
+      // #ifdef H5
+      const bar = this.findBarEl(point.target, 'lingyun-table__vbar')
       if (bar && max > 0) {
         const rect = bar.getBoundingClientRect()
         const y = point.y - rect.top
@@ -1568,9 +1582,11 @@ export default defineComponent({
           this.scrollBodyTo(ratio * max)
         }
       }
+      // #endif
       this.vDragging = true
       this.vDragY = point.y
       this.vDragTop = this.bodyTop
+      // #ifdef H5
       if (typeof document === 'undefined') return
       this.detachVBarDrag()
       const move = (e: MouseEvent) => this.onVBarMove(e)
@@ -1795,34 +1811,43 @@ export default defineComponent({
       if (Math.abs(dx) > Math.abs(dy)) {
         const before = this.bodyLeft
         const max = Math.max(0, this.centerWidth - this.centerViewPx)
-        this.scrollCenterTo(Math.min(max, Math.max(0, before + dx)))
+        const next = Math.min(max, Math.max(0, before + dx))
+        if (Math.abs(next - before) < 0.5) {
+          // 横滚到头：把剩余滚动量交给页面，不再回拉页面位置
+          this.chainPageWheel(dy || dx)
+          return
+        }
+        this.scrollCenterTo(next)
         this.revealHBar(true)
-        if (Math.abs(this.bodyLeft - before) < 0.5) this.chainPageWheel(dy || dx)
-        else this.holdPageScroll()
         return
       }
       const before = this.bodyTop
-      this.scrollBodyTo(before + dy)
-      if (Math.abs(this.bodyTop - before) < 0.5) this.chainPageWheel(dy)
-      else this.holdPageScroll()
+      const maxY = Math.max(0, this.contentHeightPx - this.bodyHeightPx)
+      const nextY = Math.min(maxY, Math.max(0, before + dy))
+      if (Math.abs(nextY - before) < 0.5) {
+        // 竖滚到顶/底：只链到页面，避免 hold 与 chain 互相抢造成抖动
+        this.chainPageWheel(dy)
+        return
+      }
+      this.scrollBodyTo(nextY)
       // #endif
-    },
-    holdPageScroll() {
-      if (this.pageHoldTop < 0) return
-      const top = this.pageHoldTop
-      setTimeout(() => {
-        uni.pageScrollTo({ scrollTop: top, duration: 0 })
-      }, 0)
     },
     chainPageWheel(delta: number) {
       if (!delta) return
-      const base = this.pageHoldTop
+      if (this.pageHoldTimer) {
+        clearTimeout(this.pageHoldTimer)
+        this.pageHoldTimer = 0
+      }
+      // 以当前真实页滚为准累加，避免陈旧 pageHoldTop 把页面拽回去
       uni.createSelectorQuery().selectViewport().scrollOffset((res) => {
         const top = res && typeof res.scrollTop === 'number' ? res.scrollTop : 0
-        const from = base >= 0 ? base : top
-        const next = Math.max(0, from + delta)
+        const next = Math.max(0, top + delta)
         this.pageHoldTop = next
-        if (Math.abs(next - top) > 1) uni.pageScrollTo({ scrollTop: next, duration: 0 })
+        if (Math.abs(next - top) <= 0.5) return
+        this.pageHoldTimer = setTimeout(() => {
+          this.pageHoldTimer = 0
+          uni.pageScrollTo({ scrollTop: next, duration: 0 })
+        }, 0) as unknown as number
       }).exec()
     },
     onBodyScroll(event: ScrollEvent) {
