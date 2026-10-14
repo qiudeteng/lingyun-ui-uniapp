@@ -418,6 +418,7 @@
       <view
         v-if="hBarNeeded"
         class="lingyun-table__hbar"
+        :class="{ 'lingyun-table__hbar--indicator': !scrollbarHandle }"
         :style="hBarStyle"
         @mousedown.stop.prevent="onHBarStart"
         @touchstart.stop.prevent="onHBarStart"
@@ -430,6 +431,7 @@
       <view
         v-if="vBarNeeded"
         class="lingyun-table__vbar"
+        :class="{ 'lingyun-table__vbar--indicator': !scrollbarHandle }"
         :style="vBarStyle"
         @mousedown.stop.prevent="onVBarStart"
         @touchstart.stop.prevent="onVBarStart"
@@ -694,6 +696,8 @@ export default defineComponent({
       gliding: false,
       pageHoldTop: -1,
       pageHoldTimer: 0,
+      /** PC / H5 用可拖句柄；手机小程序只用细指示条 */
+      scrollbarHandle: true,
     }
   },
   computed: {
@@ -837,7 +841,7 @@ export default defineComponent({
       return Math.max(0, this.centerViewPx)
     },
     vBarTrackPx(): number {
-      const gutter = this.hBarNeeded ? 20 : 0
+      const gutter = this.hBarNeeded ? (this.scrollbarHandle ? 20 : 6) : 0
       return Math.max(0, this.bodyHeightPx - gutter)
     },
     hBarStyle(): Record<string, string> {
@@ -991,6 +995,9 @@ export default defineComponent({
     ;(this as unknown as { embeddedSection?: SectionMarkHost }).embeddedSection = section
     section.markEmbeddedList?.(true)
   },
+  created() {
+    this.scrollbarHandle = this.detectScrollbarHandle()
+  },
   mounted() {
     if (this.remote) this.emitQuery()
     this.measureViewport()
@@ -1021,6 +1028,28 @@ export default defineComponent({
     if (this.onResize) uni.offWindowResize(this.onResize)
   },
   methods: {
+    detectScrollbarHandle(): boolean {
+      // #ifdef H5
+      return true
+      // #endif
+      // #ifdef MP-WEIXIN
+      try {
+        const device =
+          typeof uni.getDeviceInfo === 'function'
+            ? (uni.getDeviceInfo() as { deviceType?: string; platform?: string })
+            : null
+        if (device && device.deviceType === 'pc') return true
+        const platform =
+          (device && device.platform) ||
+          (typeof uni.getSystemInfoSync === 'function' ? uni.getSystemInfoSync().platform : '') ||
+          ''
+        return platform === 'windows' || platform === 'mac'
+      } catch {
+        return false
+      }
+      // #endif
+      return true
+    },
     sideStyle(width: number): Record<string, string> {
       return { width: `${width}px` }
     },
@@ -1504,6 +1533,7 @@ export default defineComponent({
       return this.nativePointer(event).y
     },
     onHBarStart(event: unknown) {
+      if (!this.scrollbarHandle) return
       const point = this.nativePointer(event)
       point.preventDefault?.()
       const track = this.hBarTrackPx
@@ -1542,7 +1572,7 @@ export default defineComponent({
       // #endif
     },
     onHBarMove(event: unknown) {
-      if (!this.hDragging) return
+      if (!this.scrollbarHandle || !this.hDragging) return
       const track = this.hBarTrackPx
       const view = this.centerViewPx
       const content = Math.max(this.centerWidth, view)
@@ -1563,6 +1593,7 @@ export default defineComponent({
       this.hDragUp = null
     },
     onVBarStart(event: unknown) {
+      if (!this.scrollbarHandle) return
       const point = this.nativePointer(event)
       point.preventDefault?.()
       const track = this.vBarTrackPx
@@ -1601,7 +1632,7 @@ export default defineComponent({
       // #endif
     },
     onVBarMove(event: unknown) {
-      if (!this.vDragging) return
+      if (!this.scrollbarHandle || !this.vDragging) return
       const track = this.vBarTrackPx
       const view = this.bodyHeightPx
       const content = Math.max(this.contentHeightPx, view)
@@ -2087,6 +2118,31 @@ $ly-table-radius: 26px;
 
 .lingyun-table__vbar-thumb {
   width: 10px;
+}
+
+/* 手机小程序：细指示条，只表示位置，不拦截手势 */
+.lingyun-table__hbar--indicator {
+  height: 6px;
+  padding: 2px 0;
+  pointer-events: none;
+  cursor: default;
+}
+
+.lingyun-table__vbar--indicator {
+  width: 6px;
+  padding: 0 2px;
+  pointer-events: none;
+  cursor: default;
+}
+
+.lingyun-table__hbar--indicator .lingyun-table__hbar-thumb {
+  height: 2px;
+  background-color: rgba(60, 60, 67, 0.35);
+}
+
+.lingyun-table__vbar--indicator .lingyun-table__vbar-thumb {
+  width: 2px;
+  background-color: rgba(60, 60, 67, 0.35);
 }
 
 .lingyun-table__loading {
