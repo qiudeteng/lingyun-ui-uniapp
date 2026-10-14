@@ -60,7 +60,13 @@
         <slot name="tools" />
       </view>
     </view>
-    <view class="lingyun-table__head">
+    <view
+      class="lingyun-table__head"
+      @mousewheel.stop="onTableWheel"
+      @wheel.stop="onTableWheel"
+      @mouseenter="onTablePointerEnter"
+      @pointerenter="onTablePointerEnter"
+    >
       <view v-if="leftWidth" class="lingyun-table__side" :style="sideStyle(leftWidth)">
         <view class="lingyun-table__row lingyun-table__row--head">
           <view
@@ -97,39 +103,79 @@
         </view>
       </view>
 
-      <scroll-view
-        class="lingyun-table__x lingyun-table__x--head"
-        scroll-x
-        :scroll-left="headLeft"
-        :show-scrollbar="false"
-        @scroll="onHeadScroll"
-      >
-        <view class="lingyun-table__row lingyun-table__row--head" :style="centerRowStyle">
-          <view v-if="colPadLeft" class="lingyun-table__col-pad" :style="colPadLeftStyle" />
-          <view
-            v-for="col in visibleCenterColumns"
-            :key="col.key"
-            class="lingyun-table__cell"
-            :style="cellStyle(col)"
-          >
-            <view class="lingyun-table__head-hit" @click="onSort(col)">
-              <text class="lingyun-table__head-text">{{ col.title }}</text>
-              <text v-if="col.sortable" class="lingyun-table__sort" :class="sortClass(col)">{{
-                sortMark(col)
-              }}</text>
-            </view>
+      <view class="lingyun-table__clip" :style="centerClipStyle('head')">
+        <!-- #ifdef MP-WEIXIN -->
+        <view
+          class="lingyun-table__x lingyun-table__x--head lingyun-table__x--mp"
+          @touchstart="onCenterTouchStart"
+          @touchmove.stop="onCenterTouchMove"
+          @touchend="onCenterTouchEnd"
+          @touchcancel="onCenterTouchEnd"
+        >
+          <view class="lingyun-table__row lingyun-table__row--head" :style="mpHeadRowStyle">
+            <view v-if="colPadLeft" class="lingyun-table__col-pad" :style="colPadLeftStyle" />
             <view
-              v-if="col.filters && col.filters.length"
-              class="lingyun-table__filter"
-              :class="{ 'lingyun-table__filter--on': filterOn(col) }"
-              @click.stop="toggleFilter(col)"
+              v-for="col in visibleCenterColumns"
+              :key="col.key"
+              class="lingyun-table__cell"
+              :style="cellStyle(col)"
             >
-              <text class="lingyun-table__filter-mark">▾</text>
+              <view class="lingyun-table__head-hit" @click="onSort(col)">
+                <text class="lingyun-table__head-text">{{ col.title }}</text>
+                <text v-if="col.sortable" class="lingyun-table__sort" :class="sortClass(col)">{{
+                  sortMark(col)
+                }}</text>
+              </view>
+              <view
+                v-if="col.filters && col.filters.length"
+                class="lingyun-table__filter"
+                :class="{ 'lingyun-table__filter--on': filterOn(col) }"
+                @click.stop="toggleFilter(col)"
+              >
+                <text class="lingyun-table__filter-mark">▾</text>
+              </view>
             </view>
+            <view v-if="colPadRight" class="lingyun-table__col-pad" :style="colPadRightStyle" />
           </view>
-          <view v-if="colPadRight" class="lingyun-table__col-pad" :style="colPadRightStyle" />
         </view>
-      </scroll-view>
+        <!-- #endif -->
+        <!-- #ifndef MP-WEIXIN -->
+        <scroll-view
+          class="lingyun-table__x lingyun-table__x--head"
+          scroll-x
+          enable-flex
+          :scroll-left="headLeft"
+          :show-scrollbar="false"
+          @scroll="onHeadScroll"
+        >
+          <view class="lingyun-table__row lingyun-table__row--head" :style="centerRowStyle">
+            <view v-if="colPadLeft" class="lingyun-table__col-pad" :style="colPadLeftStyle" />
+            <view
+              v-for="col in visibleCenterColumns"
+              :key="col.key"
+              class="lingyun-table__cell"
+              :style="cellStyle(col)"
+            >
+              <view class="lingyun-table__head-hit" @click="onSort(col)">
+                <text class="lingyun-table__head-text">{{ col.title }}</text>
+                <text v-if="col.sortable" class="lingyun-table__sort" :class="sortClass(col)">{{
+                  sortMark(col)
+                }}</text>
+              </view>
+              <view
+                v-if="col.filters && col.filters.length"
+                class="lingyun-table__filter"
+                :class="{ 'lingyun-table__filter--on': filterOn(col) }"
+                @click.stop="toggleFilter(col)"
+              >
+                <text class="lingyun-table__filter-mark">▾</text>
+              </view>
+            </view>
+            <view v-if="colPadRight" class="lingyun-table__col-pad" :style="colPadRightStyle" />
+          </view>
+        </scroll-view>
+        <!-- #endif -->
+      </view>
 
       <view v-if="rightWidth" class="lingyun-table__side lingyun-table__side--right" :style="sideStyle(rightWidth)">
         <view class="lingyun-table__row lingyun-table__row--head">
@@ -177,7 +223,14 @@
       </view>
     </view>
 
-    <view class="lingyun-table__body" :style="bodyBoxStyle">
+    <view
+      class="lingyun-table__body"
+      :style="bodyBoxStyle"
+      @mousewheel.stop="onTableWheel"
+      @wheel.stop="onTableWheel"
+      @mouseenter="onTablePointerEnter"
+      @pointerenter="onTablePointerEnter"
+    >
       <view v-if="!pageRows.length && !loading" class="lingyun-table__empty">
         <slot name="empty">
           <lingyun-empty variant="plain" :title="emptyText" />
@@ -187,10 +240,13 @@
         v-if="pageRows.length && leftWidth"
         class="lingyun-table__y"
         scroll-y
+        enable-flex
         :style="sideScrollStyle(leftWidth)"
         :scroll-top="leftTop"
         :show-scrollbar="false"
         @scroll="onLeftScroll"
+        @mousewheel.stop="onTableWheel"
+        @wheel.stop="onTableWheel"
       >
         <view class="lingyun-table__track" :style="rowTrackStyle">
           <view v-if="rowPadTop" class="lingyun-table__row-pad" :style="rowPadTopStyle" />
@@ -226,56 +282,106 @@
         </view>
       </scroll-view>
 
-      <scroll-view
-        v-if="pageRows.length"
-        class="lingyun-table__x lingyun-table__x--body"
-        scroll-x
-        scroll-y
-        :style="bodyScrollStyle"
-        :scroll-left="bodyLeft"
-        :scroll-top="bodyTop"
-        @scroll="onBodyScroll"
-      >
-        <view class="lingyun-table__track" :style="centerTrackStyle">
-          <view v-if="rowPadTop" class="lingyun-table__row-pad" :style="rowPadTopStyle" />
-          <view
-            v-for="item in visibleRows"
-            :key="item.index"
-            class="lingyun-table__row"
-            :style="centerRowStyle"
-            :class="rowClass(item.index, item.row)"
-            @touchstart="onRowPress(item.row)"
-            @touchend="onRowRelease"
-            @touchcancel="onRowRelease"
-            @mousedown="onRowPress(item.row)"
-            @mouseup="onRowRelease"
-            @mouseleave="onRowRelease"
-            @click="onRowClick(item.row)"
-          >
-            <view v-if="colPadLeft" class="lingyun-table__col-pad" :style="colPadLeftStyle" />
-            <template v-for="(col, colIndex) in centerSlotColumns" :key="col ? col.key : 'pad-' + colIndex">
-              <view v-if="col" class="lingyun-table__cell" :style="cellStyle(col)">
-                <view class="lingyun-table__value">
-                  <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
-                    <text class="lingyun-table__text">{{ cellText(item.row, col, item.index) }}</text>
-                  </slot>
+      <view v-if="pageRows.length" class="lingyun-table__clip" :style="centerClipStyle('body')">
+        <!-- #ifdef MP-WEIXIN -->
+        <view
+          class="lingyun-table__x lingyun-table__x--body lingyun-table__x--mp"
+          @touchstart="onCenterTouchStart"
+          @touchmove.stop="onCenterTouchMove"
+          @touchend="onCenterTouchEnd"
+          @touchcancel="onCenterTouchEnd"
+          @mousewheel.stop="onTableWheel"
+          @wheel.stop="onTableWheel"
+        >
+          <view class="lingyun-table__track" :style="mpBodyTrackStyle">
+            <view v-if="rowPadTop" class="lingyun-table__row-pad" :style="rowPadTopStyle" />
+            <view
+              v-for="item in visibleRows"
+              :key="item.index"
+              class="lingyun-table__row"
+              :style="centerRowStyle"
+              :class="rowClass(item.index, item.row)"
+              @touchstart="onRowPress(item.row)"
+              @touchend="onRowRelease"
+              @touchcancel="onRowRelease"
+              @mousedown="onRowPress(item.row)"
+              @mouseup="onRowRelease"
+              @mouseleave="onRowRelease"
+              @click="onRowClick(item.row)"
+            >
+              <view v-if="colPadLeft" class="lingyun-table__col-pad" :style="colPadLeftStyle" />
+              <template v-for="(col, colIndex) in centerSlotColumns" :key="col ? col.key : 'pad-' + colIndex">
+                <view v-if="col" class="lingyun-table__cell" :style="cellStyle(col)">
+                  <view class="lingyun-table__value">
+                    <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
+                      <text class="lingyun-table__text">{{ cellText(item.row, col, item.index) }}</text>
+                    </slot>
+                  </view>
                 </view>
-              </view>
-            </template>
-            <view v-if="colPadRight" class="lingyun-table__col-pad" :style="colPadRightStyle" />
+              </template>
+              <view v-if="colPadRight" class="lingyun-table__col-pad" :style="colPadRightStyle" />
+            </view>
+            <view v-if="rowPadBottom" class="lingyun-table__row-pad" :style="rowPadBottomStyle" />
           </view>
-          <view v-if="rowPadBottom" class="lingyun-table__row-pad" :style="rowPadBottomStyle" />
         </view>
-      </scroll-view>
+        <!-- #endif -->
+        <!-- #ifndef MP-WEIXIN -->
+        <scroll-view
+          class="lingyun-table__x lingyun-table__x--body"
+          scroll-x
+          scroll-y
+          enable-flex
+          :style="bodyScrollStyle"
+          :scroll-left="bodyLeft"
+          :scroll-top="bodyTop"
+          :show-scrollbar="false"
+          @scroll="onBodyScroll"
+        >
+          <view class="lingyun-table__track" :style="centerTrackStyle">
+            <view v-if="rowPadTop" class="lingyun-table__row-pad" :style="rowPadTopStyle" />
+            <view
+              v-for="item in visibleRows"
+              :key="item.index"
+              class="lingyun-table__row"
+              :style="centerRowStyle"
+              :class="rowClass(item.index, item.row)"
+              @touchstart="onRowPress(item.row)"
+              @touchend="onRowRelease"
+              @touchcancel="onRowRelease"
+              @mousedown="onRowPress(item.row)"
+              @mouseup="onRowRelease"
+              @mouseleave="onRowRelease"
+              @click="onRowClick(item.row)"
+            >
+              <view v-if="colPadLeft" class="lingyun-table__col-pad" :style="colPadLeftStyle" />
+              <template v-for="(col, colIndex) in centerSlotColumns" :key="col ? col.key : 'pad-' + colIndex">
+                <view v-if="col" class="lingyun-table__cell" :style="cellStyle(col)">
+                  <view class="lingyun-table__value">
+                    <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
+                      <text class="lingyun-table__text">{{ cellText(item.row, col, item.index) }}</text>
+                    </slot>
+                  </view>
+                </view>
+              </template>
+              <view v-if="colPadRight" class="lingyun-table__col-pad" :style="colPadRightStyle" />
+            </view>
+            <view v-if="rowPadBottom" class="lingyun-table__row-pad" :style="rowPadBottomStyle" />
+          </view>
+        </scroll-view>
+        <!-- #endif -->
+      </view>
 
       <scroll-view
         v-if="pageRows.length && rightWidth"
         class="lingyun-table__y lingyun-table__y--right"
         scroll-y
+        enable-flex
         :style="sideScrollStyle(rightWidth)"
         :scroll-top="rightTop"
         :show-scrollbar="false"
         @scroll="onRightScroll"
+        @mousewheel.stop="onTableWheel"
+        @wheel.stop="onTableWheel"
       >
         <view class="lingyun-table__track" :style="rowTrackStyle">
           <view v-if="rowPadTop" class="lingyun-table__row-pad" :style="rowPadTopStyle" />
@@ -305,18 +411,24 @@
           <view v-if="rowPadBottom" class="lingyun-table__row-pad" :style="rowPadBottomStyle" />
         </view>
       </scroll-view>
+      <!-- #ifdef H5 -->
       <view
         v-if="hBarNeeded"
         class="lingyun-table__hbar"
-        :class="{ 'lingyun-table__hbar--on': hBarShow }"
         :style="hBarStyle"
-        @touchstart.stop="onHBarStart"
-        @touchmove.stop.prevent="onHBarMove"
-        @touchend.stop="onHBarEnd"
-        @mousedown.stop="onHBarStart"
+        @mousedown.stop.prevent="onHBarStart"
       >
         <view class="lingyun-table__hbar-thumb" :style="hThumbStyle" />
       </view>
+      <view
+        v-if="vBarNeeded"
+        class="lingyun-table__vbar"
+        :style="vBarStyle"
+        @mousedown.stop.prevent="onVBarStart"
+      >
+        <view class="lingyun-table__vbar-thumb" :style="vThumbStyle" />
+      </view>
+      <!-- #endif -->
       <view v-if="loading" class="lingyun-table__loading">
         <lingyun-activity-indicator size="small" />
       </view>
@@ -462,6 +574,9 @@ function findSectionMarkHost(start: unknown): SectionMarkHost | null {
 
 export default defineComponent({
   name: 'LingyunTable',
+  options: {
+    virtualHost: true,
+  },
   emits: [
     'row-click',
     'sort-change',
@@ -542,16 +657,32 @@ export default defineComponent({
       colPadLeft: 0,
       colPadRight: 0,
       centerClientPx: 0,
-      hBarShow: false,
       hBarTimer: 0,
       hDragging: false,
       hDragX: 0,
       hDragLeft: 0,
+      vDragging: false,
+      vDragY: 0,
+      vDragTop: 0,
+      vDragMove: null as ((event: MouseEvent) => void) | null,
+      vDragUp: null as (() => void) | null,
       hiddenKeys: [] as string[],
       columnPickerOpen: false,
       onResize: null as (() => void) | null,
       hDragMove: null as ((event: MouseEvent) => void) | null,
       hDragUp: null as (() => void) | null,
+      centerTouchX: 0,
+      centerTouchY: 0,
+      centerTouchLeft: 0,
+      centerTouchTop: 0,
+      centerTouchAxis: '' as '' | 'x' | 'y',
+      centerMoved: false,
+      glideSamples: [] as Array<{ x: number; y: number; t: number }>,
+      glideTimer: 0,
+      glideV: 0,
+      glideAt: 0,
+      gliding: false,
+      pageHoldTop: -1,
     }
   },
   computed: {
@@ -665,6 +796,20 @@ export default defineComponent({
     centerRowStyle(): Record<string, string> {
       return { width: `${this.centerWidth}px` }
     },
+    mpHeadRowStyle(): Record<string, string> {
+      return {
+        width: `${this.centerWidth}px`,
+        transform: `translate3d(${-this.headLeft}px, 0, 0)`,
+      }
+    },
+    mpBodyTrackStyle(): Record<string, string> {
+      const y = this.rowPadTop - this.bodyTop
+      return {
+        width: `${this.centerWidth}px`,
+        height: `${this.contentHeightPx}px`,
+        transform: `translate3d(${-this.bodyLeft}px, ${y}px, 0)`,
+      }
+    },
     centerViewPx(): number {
       if (this.centerClientPx > 0) return this.centerClientPx
       return this.viewportCenterPx
@@ -673,20 +818,47 @@ export default defineComponent({
       const view = this.centerViewPx
       return view > 0 && this.centerWidth > view + 1
     },
+    vBarNeeded(): boolean {
+      return this.bodyHeightPx > 0 && this.contentHeightPx > this.bodyHeightPx + 1
+    },
+    hBarTrackPx(): number {
+      // 竖条在整表最右侧，横条只铺中间区，不再给竖条让位
+      return Math.max(0, this.centerViewPx)
+    },
+    vBarTrackPx(): number {
+      const gutter = this.hBarNeeded ? 20 : 0
+      return Math.max(0, this.bodyHeightPx - gutter)
+    },
     hBarStyle(): Record<string, string> {
       return {
         left: `${this.leftWidth}px`,
-        width: `${this.centerViewPx}px`,
+        width: `${this.hBarTrackPx}px`,
+      }
+    },
+    vBarStyle(): Record<string, string> {
+      return {
+        top: '0',
+        right: '0',
+        height: `${this.vBarTrackPx}px`,
       }
     },
     hThumbStyle(): Record<string, string> {
-      const view = this.centerViewPx
-      const content = Math.max(this.centerWidth, view)
-      const max = Math.max(0, content - view)
-      const thumb = Math.max(28, Math.round((view * view) / content))
-      const travel = Math.max(1, view - thumb)
+      const track = this.hBarTrackPx
+      const content = Math.max(this.centerWidth, this.centerViewPx)
+      const max = Math.max(0, content - this.centerViewPx)
+      const thumb = Math.max(40, Math.round((track * this.centerViewPx) / content))
+      const travel = Math.max(1, track - thumb)
       const x = max <= 0 ? 0 : Math.round((this.bodyLeft / max) * travel)
       return { width: `${thumb}px`, transform: `translateX(${x}px)` }
+    },
+    vThumbStyle(): Record<string, string> {
+      const track = this.vBarTrackPx
+      const content = Math.max(this.contentHeightPx, this.bodyHeightPx)
+      const max = Math.max(0, content - this.bodyHeightPx)
+      const thumb = Math.max(40, Math.round((track * this.bodyHeightPx) / content))
+      const travel = Math.max(1, track - thumb)
+      const y = max <= 0 ? 0 : Math.round((this.bodyTop / max) * travel)
+      return { height: `${thumb}px`, transform: `translateY(${y}px)` }
     },
     bodyBoxStyle(): Record<string, string> {
       if (this.fixed && this.bodyHeightPx > 0) return { height: `${this.bodyHeightPx}px` }
@@ -829,9 +1001,11 @@ export default defineComponent({
     const section = (this as unknown as { embeddedSection?: SectionMarkHost }).embeddedSection
     section?.markEmbeddedList?.(false)
     this.detachHBarDrag()
+    this.detachVBarDrag()
     if (this.syncTimer) clearTimeout(this.syncTimer)
     if (this.pressTimer) clearTimeout(this.pressTimer)
     if (this.hBarTimer) clearTimeout(this.hBarTimer)
+    this.stopGlide()
     if (this.onResize) uni.offWindowResize(this.onResize)
   },
   methods: {
@@ -930,11 +1104,15 @@ export default defineComponent({
       })
     },
     applyViewport(
-      table: { height?: number } | null,
+      table: { height?: number; width?: number } | null,
       body: { height?: number } | null,
       center: { width?: number } | null,
     ) {
-      if (center && center.width && center.width > 1) {
+      const tableW = table && table.width ? Math.round(table.width) : 0
+      if (tableW > 1) {
+        const pane = Math.max(1, tableW - this.leftWidth - this.rightWidth)
+        if (this.viewportCenterPx !== pane) this.viewportCenterPx = pane
+      } else if (center && center.width && center.width > 1) {
         const width = Math.round(center.width)
         if (this.viewportCenterPx !== width) this.viewportCenterPx = width
       }
@@ -948,9 +1126,8 @@ export default defineComponent({
       const bodyH = body && body.height ? Math.round(body.height) : 0
       const tableH = table && table.height ? Math.round(table.height) : 0
       if ((this.fillMode === 'page' || this.fillMode === 'parent') && this.fillHeightPx > 0) {
-        const chrome = Math.max(44, tableH - bodyH)
-        const filled = this.fillMode === 'parent' ? bodyH >= 48 : tableH >= this.fillHeightPx - 16 && bodyH >= 48
-        const next = filled ? bodyH : Math.max(48, this.fillHeightPx - chrome)
+        const room = Math.max(48, this.fillHeightPx - this.chromeHeight())
+        const next = bodyH >= 48 && bodyH <= room + 8 ? bodyH : room
         if (this.viewportBodyPx !== next) this.viewportBodyPx = next
         this.syncRowWindow(this.bodyTop)
         return
@@ -968,6 +1145,16 @@ export default defineComponent({
         this.$nextTick(() => this.measureViewport())
         return
       }
+      const contentH = this.intrinsicHeight()
+      if (tableH >= 80 && Math.abs(tableH - contentH) > 12) {
+        this.fillMode = 'parent'
+        if (this.fillHeightPx !== tableH) this.fillHeightPx = tableH
+        const room = Math.max(48, tableH - this.chromeHeight())
+        const next = bodyH >= 48 && bodyH <= room + 8 ? bodyH : room
+        if (this.viewportBodyPx !== next) this.viewportBodyPx = next
+        this.syncRowWindow(this.bodyTop)
+        return
+      }
       const info = uni.getWindowInfo()
       const pageH = info && info.windowHeight ? Math.round(info.windowHeight) : 0
       if (pageH > 0 && (this.fillMode !== 'page' || this.fillHeightPx !== pageH)) {
@@ -975,6 +1162,24 @@ export default defineComponent({
         this.fillHeightPx = pageH
         this.$nextTick(() => this.measureViewport())
       }
+    },
+    centerClipStyle(part: 'head' | 'body'): Record<string, string> {
+      const style: Record<string, string> = {}
+      if (this.viewportCenterPx > 0) style.width = `${this.viewportCenterPx}px`
+      if (part === 'head') style.height = '44px'
+      else if (this.bodyHeightPx > 0) style.height = `${this.bodyHeightPx}px`
+      return style
+    },
+    chromeHeight(): number {
+      let height = 44
+      if (this.showToolbar()) height += 52
+      if (this.openColumn) height += 40
+      if (this.showPager) height += 48
+      return height
+    },
+    intrinsicHeight(): number {
+      const rows = this.pageRows.length
+      return this.chromeHeight() + (rows > 0 ? rows * 52 : 120)
     },
     cellStyle(col: ResolvedColumn): Record<string, string> {
       const align = col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'
@@ -1223,6 +1428,7 @@ export default defineComponent({
       this.emitQuery()
     },
     onRowClick(row: LingyunTableRow) {
+      if (this.centerMoved) return
       this.$emit('row-click', row)
     },
     armSync(source: string) {
@@ -1241,34 +1447,73 @@ export default defineComponent({
       if (!scroller || !scroller.clientWidth) return 0
       return scroller.clientWidth
     },
-    revealHBar(show: boolean) {
-      if (!show || !this.hBarNeeded) return
-      this.hBarShow = true
-      if (this.hDragging) return
-      this.scheduleHideHBar()
+    revealHBar(_show?: boolean) {
+      // H5 悬浮条常显，这里只用来刷新中间可视宽度
+      // #ifdef H5
+      const client = this.readCenterClient()
+      if (client > 0 && this.centerClientPx !== client) this.centerClientPx = client
+      // #endif
     },
-    scheduleHideHBar() {
-      if (this.hBarTimer) clearTimeout(this.hBarTimer)
-      this.hBarTimer = setTimeout(() => {
-        if (!this.hDragging) this.hBarShow = false
-        this.hBarTimer = 0
-      }, 700) as unknown as number
-    },
-    pointerX(event: { touches?: Array<{ clientX?: number; pageX?: number }>; clientX?: number; pageX?: number }): number {
-      const touch = event.touches && event.touches[0]
-      if (touch) return touch.clientX || touch.pageX || 0
-      return event.clientX || event.pageX || 0
-    },
-    onHBarStart(event: { touches?: Array<{ clientX?: number; pageX?: number }>; clientX?: number; pageX?: number }) {
-      this.hDragging = true
-      this.hDragX = this.pointerX(event)
-      this.hDragLeft = this.bodyLeft
-      this.hBarShow = true
-      if (this.hBarTimer) {
-        clearTimeout(this.hBarTimer)
-        this.hBarTimer = 0
+    nativePointer(event: unknown): { x: number; y: number; target: Element | null; preventDefault?: () => void } {
+      const raw = event as {
+        $event?: MouseEvent & { touches?: TouchList; changedTouches?: TouchList }
+        touches?: TouchList
+        changedTouches?: TouchList
+        clientX?: number
+        clientY?: number
+        pageX?: number
+        pageY?: number
+        target?: EventTarget | null
+        currentTarget?: EventTarget | null
+        preventDefault?: () => void
       }
-      if (event.touches && event.touches.length) return
+      const native = raw?.$event || raw
+      const touch =
+        (native.touches && native.touches[0]) ||
+        (native.changedTouches && native.changedTouches[0]) ||
+        null
+      const x = Number((touch && (touch.clientX || touch.pageX)) || native.clientX || native.pageX || 0)
+      const y = Number((touch && (touch.clientY || touch.pageY)) || native.clientY || native.pageY || 0)
+      const target = (native.currentTarget || native.target || null) as Element | null
+      return { x, y, target, preventDefault: native.preventDefault?.bind(native) }
+    },
+    findBarEl(start: Element | null, className: string): HTMLElement | null {
+      let node: Element | null = start
+      while (node) {
+        if (node instanceof HTMLElement && node.classList.contains(className)) return node
+        node = node.parentElement
+      }
+      return null
+    },
+    pointerX(event: unknown): number {
+      return this.nativePointer(event).x
+    },
+    pointerY(event: unknown): number {
+      return this.nativePointer(event).y
+    },
+    onHBarStart(event: unknown) {
+      // #ifdef H5
+      const point = this.nativePointer(event)
+      point.preventDefault?.()
+      const bar = this.findBarEl(point.target, 'lingyun-table__hbar')
+      const track = this.hBarTrackPx
+      const view = this.centerViewPx
+      const content = Math.max(this.centerWidth, view)
+      const max = Math.max(0, content - view)
+      const thumb = Math.max(40, Math.round((track * view) / content))
+      const travel = Math.max(1, track - thumb)
+      if (bar && max > 0) {
+        const rect = bar.getBoundingClientRect()
+        const x = point.x - rect.left
+        const thumbLeft = (this.bodyLeft / max) * travel
+        if (x < thumbLeft || x > thumbLeft + thumb) {
+          const ratio = Math.min(1, Math.max(0, (x - thumb / 2) / travel))
+          this.scrollCenterTo(ratio * max)
+        }
+      }
+      this.hDragging = true
+      this.hDragX = point.x
+      this.hDragLeft = this.bodyLeft
       if (typeof document === 'undefined') return
       this.detachHBarDrag()
       const move = (e: MouseEvent) => this.onHBarMove(e)
@@ -1280,21 +1525,21 @@ export default defineComponent({
       this.hDragUp = up
       document.addEventListener('mousemove', move)
       document.addEventListener('mouseup', up)
+      // #endif
     },
-    onHBarMove(event: { touches?: Array<{ clientX?: number; pageX?: number }>; clientX?: number; pageX?: number }) {
+    onHBarMove(event: unknown) {
       if (!this.hDragging) return
+      const track = this.hBarTrackPx
       const view = this.centerViewPx
       const content = Math.max(this.centerWidth, view)
       const max = Math.max(0, content - view)
-      const thumb = Math.max(28, (view * view) / content)
-      const travel = Math.max(1, view - thumb)
+      const thumb = Math.max(40, (track * view) / content)
+      const travel = Math.max(1, track - thumb)
       const next = this.hDragLeft + (this.pointerX(event) - this.hDragX) * (max / travel)
       this.scrollCenterTo(Math.min(max, Math.max(0, next)))
     },
     onHBarEnd() {
-      if (!this.hDragging) return
       this.hDragging = false
-      this.scheduleHideHBar()
     },
     detachHBarDrag() {
       if (typeof document === 'undefined') return
@@ -1303,11 +1548,282 @@ export default defineComponent({
       this.hDragMove = null
       this.hDragUp = null
     },
+    onVBarStart(event: unknown) {
+      // #ifdef H5
+      const point = this.nativePointer(event)
+      point.preventDefault?.()
+      const bar = this.findBarEl(point.target, 'lingyun-table__vbar')
+      const track = this.vBarTrackPx
+      const view = this.bodyHeightPx
+      const content = Math.max(this.contentHeightPx, view)
+      const max = Math.max(0, content - view)
+      const thumb = Math.max(40, Math.round((track * view) / content))
+      const travel = Math.max(1, track - thumb)
+      if (bar && max > 0) {
+        const rect = bar.getBoundingClientRect()
+        const y = point.y - rect.top
+        const thumbTop = (this.bodyTop / max) * travel
+        if (y < thumbTop || y > thumbTop + thumb) {
+          const ratio = Math.min(1, Math.max(0, (y - thumb / 2) / travel))
+          this.scrollBodyTo(ratio * max)
+        }
+      }
+      this.vDragging = true
+      this.vDragY = point.y
+      this.vDragTop = this.bodyTop
+      if (typeof document === 'undefined') return
+      this.detachVBarDrag()
+      const move = (e: MouseEvent) => this.onVBarMove(e)
+      const up = () => {
+        this.detachVBarDrag()
+        this.onVBarEnd()
+      }
+      this.vDragMove = move
+      this.vDragUp = up
+      document.addEventListener('mousemove', move)
+      document.addEventListener('mouseup', up)
+      // #endif
+    },
+    onVBarMove(event: unknown) {
+      if (!this.vDragging) return
+      const track = this.vBarTrackPx
+      const view = this.bodyHeightPx
+      const content = Math.max(this.contentHeightPx, view)
+      const max = Math.max(0, content - view)
+      const thumb = Math.max(40, (track * view) / content)
+      const travel = Math.max(1, track - thumb)
+      const next = this.vDragTop + (this.pointerY(event) - this.vDragY) * (max / travel)
+      this.scrollBodyTo(Math.min(max, Math.max(0, next)))
+    },
+    onVBarEnd() {
+      this.vDragging = false
+    },
+    detachVBarDrag() {
+      if (typeof document === 'undefined') return
+      if (this.vDragMove) document.removeEventListener('mousemove', this.vDragMove)
+      if (this.vDragUp) document.removeEventListener('mouseup', this.vDragUp)
+      this.vDragMove = null
+      this.vDragUp = null
+    },
     scrollCenterTo(left: number) {
       this.syncColWindow(left)
       this.bodyLeft = left
       this.headLeft = left
       this.armSync('body')
+    },
+    onCenterTouchStart(event: { touches?: Array<{ clientX?: number; pageX?: number; clientY?: number; pageY?: number }>; timeStamp?: number }) {
+      const touch = event.touches && event.touches[0]
+      if (!touch) return
+      this.stopGlide()
+      this.glideSamples = []
+      this.centerTouchX = touch.clientX || touch.pageX || 0
+      this.centerTouchY = touch.clientY || touch.pageY || 0
+      this.centerTouchLeft = this.bodyLeft
+      this.centerTouchTop = this.bodyTop
+      this.centerTouchAxis = ''
+      this.noteGlideSample(event)
+    },
+    onCenterTouchMove(event: { touches?: Array<{ clientX?: number; pageX?: number; clientY?: number; pageY?: number }>; timeStamp?: number }) {
+      const touch = event.touches && event.touches[0]
+      if (!touch) return
+      const x = touch.clientX || touch.pageX || 0
+      const y = touch.clientY || touch.pageY || 0
+      const dx = x - this.centerTouchX
+      const dy = y - this.centerTouchY
+      if (!this.centerTouchAxis) {
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return
+        this.centerTouchAxis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'
+        this.centerMoved = true
+      }
+      this.noteGlideSample(event)
+      if (this.centerTouchAxis === 'x') {
+        const view = this.centerViewPx
+        const max = Math.max(0, this.centerWidth - view)
+        const left = Math.min(max, Math.max(0, this.centerTouchLeft - dx))
+        this.scrollCenterTo(left)
+        this.revealHBar(true)
+        return
+      }
+      this.scrollBodyTo(this.centerTouchTop - dy)
+    },
+    onCenterTouchEnd(event?: { changedTouches?: Array<{ clientX?: number; pageX?: number; clientY?: number; pageY?: number }>; timeStamp?: number }) {
+      if (event && event.changedTouches && event.changedTouches.length) {
+        this.noteGlideSample({ touches: event.changedTouches, timeStamp: event.timeStamp })
+      }
+      const moved = this.centerMoved
+      const axis = this.centerTouchAxis
+      const speed = axis ? this.releaseGlideSpeed(axis) : 0
+      if (axis && Math.abs(speed) >= 0.08) {
+        this.gliding = true
+        this.centerTouchAxis = ''
+        this.startGlide(axis, speed)
+      } else {
+        this.centerTouchAxis = ''
+        this.gliding = false
+      }
+      if (!moved) return
+      setTimeout(() => {
+        this.centerMoved = false
+      }, 80)
+    },
+    noteGlideSample(event: { touches?: Array<{ clientX?: number; pageX?: number; clientY?: number; pageY?: number }>; timeStamp?: number }) {
+      const touch = event.touches && event.touches[0]
+      if (!touch) return
+      const t = event.timeStamp || Date.now()
+      const sample = {
+        x: touch.clientX || touch.pageX || 0,
+        y: touch.clientY || touch.pageY || 0,
+        t,
+      }
+      const list = this.glideSamples
+      list.push(sample)
+      const keep = t - 100
+      while (list.length > 1 && list[0].t < keep) list.shift()
+    },
+    releaseGlideSpeed(axis: 'x' | 'y'): number {
+      const list = this.glideSamples
+      if (list.length < 2) return 0
+      const last = list[list.length - 1]
+      let first = last
+      for (let i = list.length - 1; i >= 0; i -= 1) {
+        if (last.t - list[i].t > 90) break
+        first = list[i]
+      }
+      const dt = last.t - first.t
+      if (dt < 16) return 0
+      const vx = (last.x - first.x) / dt
+      const vy = (last.y - first.y) / dt
+      return axis === 'x' ? -vx : -vy
+    },
+    scrollBodyTo(top: number) {
+      const max = Math.max(0, this.contentHeightPx - this.bodyHeightPx)
+      const next = Math.min(max, Math.max(0, top))
+      this.bodyTop = next
+      this.leftTop = next
+      this.rightTop = next
+      this.syncRowWindow(next)
+      this.armSync('body')
+    },
+    stopGlide() {
+      if (this.glideTimer) {
+        clearTimeout(this.glideTimer)
+        this.glideTimer = 0
+      }
+      this.gliding = false
+      this.glideV = 0
+    },
+    startGlide(axis: 'x' | 'y', speed: number) {
+      this.stopGlide()
+      this.gliding = true
+      this.glideV = Math.max(-2.8, Math.min(2.8, speed))
+      this.glideAt = Date.now()
+      const step = () => {
+        if (!this.gliding) return
+        const now = Date.now()
+        const dt = Math.min(34, Math.max(1, now - this.glideAt))
+        this.glideAt = now
+        this.glideV *= Math.exp(-dt / 320)
+        const delta = this.glideV * dt
+        if (axis === 'x') {
+          const before = this.bodyLeft
+          const max = Math.max(0, this.centerWidth - this.centerViewPx)
+          const next = Math.min(max, Math.max(0, before + delta))
+          this.scrollCenterTo(next)
+          this.revealHBar(true)
+          if (Math.abs(next - before) < 0.5 || Math.abs(this.glideV) < 0.02) {
+            this.stopGlide()
+            return
+          }
+        } else {
+          const before = this.bodyTop
+          const max = Math.max(0, this.contentHeightPx - this.bodyHeightPx)
+          const next = Math.min(max, Math.max(0, before + delta))
+          this.scrollBodyTo(next)
+          if (Math.abs(next - before) < 0.5 || Math.abs(this.glideV) < 0.02) {
+            this.stopGlide()
+            return
+          }
+        }
+        this.glideTimer = setTimeout(step, 16) as unknown as number
+      }
+      this.glideTimer = setTimeout(step, 16) as unknown as number
+    },
+    onTablePointerEnter() {
+      // #ifndef MP-WEIXIN
+      return
+      // #endif
+      // #ifdef MP-WEIXIN
+      uni.createSelectorQuery().selectViewport().scrollOffset((res) => {
+        const top = res && typeof res.scrollTop === 'number' ? res.scrollTop : 0
+        this.pageHoldTop = top
+      }).exec()
+      // #endif
+    },
+    onTableWheel(event: {
+      deltaX?: number
+      deltaY?: number
+      shiftKey?: boolean
+      detail?: { deltaX?: number; deltaY?: number; wheelDelta?: number; wheelDeltaY?: number; shiftKey?: boolean }
+      preventDefault?: () => void
+      stopPropagation?: () => void
+    }) {
+      // #ifndef MP-WEIXIN
+      return
+      // #endif
+      // #ifdef MP-WEIXIN
+      if (event.preventDefault) event.preventDefault()
+      if (event.stopPropagation) event.stopPropagation()
+      this.stopGlide()
+      const detail = event.detail || {}
+      let dx = detail.deltaX || event.deltaX || 0
+      let dy = detail.deltaY || event.deltaY || 0
+      if (!dx && !dy) {
+        const legacy = detail.wheelDeltaY || detail.wheelDelta || 0
+        if (legacy) dy = -legacy
+      }
+      const scale = (value: number) => {
+        if (!value) return 0
+        return Math.abs(value) < 10 ? Math.sign(value) * 48 : value
+      }
+      dx = scale(dx)
+      dy = scale(dy)
+      const shift = !!(event.shiftKey || detail.shiftKey)
+      if (shift && Math.abs(dy) >= Math.abs(dx)) {
+        dx = dy
+        dy = 0
+      }
+      if (Math.abs(dx) > Math.abs(dy)) {
+        const before = this.bodyLeft
+        const max = Math.max(0, this.centerWidth - this.centerViewPx)
+        this.scrollCenterTo(Math.min(max, Math.max(0, before + dx)))
+        this.revealHBar(true)
+        if (Math.abs(this.bodyLeft - before) < 0.5) this.chainPageWheel(dy || dx)
+        else this.holdPageScroll()
+        return
+      }
+      const before = this.bodyTop
+      this.scrollBodyTo(before + dy)
+      if (Math.abs(this.bodyTop - before) < 0.5) this.chainPageWheel(dy)
+      else this.holdPageScroll()
+      // #endif
+    },
+    holdPageScroll() {
+      if (this.pageHoldTop < 0) return
+      const top = this.pageHoldTop
+      setTimeout(() => {
+        uni.pageScrollTo({ scrollTop: top, duration: 0 })
+      }, 0)
+    },
+    chainPageWheel(delta: number) {
+      if (!delta) return
+      const base = this.pageHoldTop
+      uni.createSelectorQuery().selectViewport().scrollOffset((res) => {
+        const top = res && typeof res.scrollTop === 'number' ? res.scrollTop : 0
+        const from = base >= 0 ? base : top
+        const next = Math.max(0, from + delta)
+        this.pageHoldTop = next
+        if (Math.abs(next - top) > 1) uni.pageScrollTo({ scrollTop: next, duration: 0 })
+      }).exec()
     },
     onBodyScroll(event: ScrollEvent) {
       const left = event.detail?.scrollLeft || 0
@@ -1338,6 +1854,7 @@ export default defineComponent({
       this.armSync('head')
     },
     onLeftScroll(event: ScrollEvent) {
+      if (this.centerTouchAxis || this.gliding) return
       const top = event.detail?.scrollTop || 0
       this.clearPressIfScrolled(this.bodyLeft, top)
       this.syncRowWindow(top)
@@ -1348,6 +1865,7 @@ export default defineComponent({
       this.armSync('left')
     },
     onRightScroll(event: ScrollEvent) {
+      if (this.centerTouchAxis || this.gliding) return
       const top = event.detail?.scrollTop || 0
       this.clearPressIfScrolled(this.bodyLeft, top)
       this.syncRowWindow(top)
@@ -1491,39 +2009,59 @@ $ly-table-radius: 26px;
   overflow: hidden;
 }
 
-/* 原生滚动条不占位。横向位置用悬浮条，竖向已经不显示，不再留槽 */
+/* 原生滚动条不占位。H5 横向只留悬浮拖动条，竖向也不留槽，滚到底才能和固定列对齐 */
 /* #ifdef H5 */
-.lingyun-table__x--body .uni-scroll-view {
+.lingyun-table__x--body :deep(.uni-scroll-view),
+.lingyun-table__y :deep(.uni-scroll-view),
+.lingyun-table__y--right :deep(.uni-scroll-view) {
   scrollbar-width: none;
 }
 
-.lingyun-table__x--body .uni-scroll-view::-webkit-scrollbar {
+.lingyun-table__x--body :deep(.uni-scroll-view)::-webkit-scrollbar,
+.lingyun-table__y :deep(.uni-scroll-view)::-webkit-scrollbar,
+.lingyun-table__y--right :deep(.uni-scroll-view)::-webkit-scrollbar {
   width: 0;
   height: 0;
   display: none;
 }
 /* #endif */
 
-.lingyun-table__hbar {
+.lingyun-table__hbar,
+.lingyun-table__vbar {
   position: absolute;
-  z-index: 4;
-  bottom: 2px;
-  height: 14px;
+  z-index: 20;
   box-sizing: border-box;
-  opacity: 0;
+  pointer-events: auto;
+  background-color: transparent;
+}
+
+.lingyun-table__hbar {
+  bottom: 0;
+  height: 20px;
+  padding: 5px 2px;
+  cursor: pointer;
+}
+
+.lingyun-table__vbar {
+  top: 0;
+  width: 20px;
+  padding: 2px 5px;
+  cursor: pointer;
+}
+
+.lingyun-table__hbar-thumb,
+.lingyun-table__vbar-thumb {
+  border-radius: 999px;
+  background-color: rgba(60, 60, 67, 0.48);
   pointer-events: none;
 }
 
-.lingyun-table__hbar--on {
-  opacity: 1;
-  pointer-events: auto;
+.lingyun-table__hbar-thumb {
+  height: 10px;
 }
 
-.lingyun-table__hbar-thumb {
-  height: 4px;
-  margin-top: 5px;
-  border-radius: 999px;
-  background-color: var(--lingyun-label-tertiary, #{$lingyun-label-tertiary});
+.lingyun-table__vbar-thumb {
+  width: 10px;
 }
 
 .lingyun-table__loading {
@@ -1540,10 +2078,11 @@ $ly-table-radius: 26px;
 }
 
 .lingyun-table__side {
+  position: relative;
+  z-index: 4;
   flex-shrink: 0;
   box-sizing: border-box;
   background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
-  z-index: 2;
   border-right: 1px solid var(--lingyun-separator, #{$lingyun-separator});
 }
 
@@ -1559,15 +2098,34 @@ $ly-table-radius: 26px;
   white-space: nowrap;
 }
 
+.lingyun-table__clip {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.lingyun-table__clip .lingyun-table__x {
+  width: 100%;
+  flex: none;
+}
+
+.lingyun-table__x--mp {
+  height: 100%;
+  overflow: hidden;
+}
+
 .lingyun-table__x--head {
   height: $ly-table-head;
 }
 
 .lingyun-table__y {
+  position: relative;
+  z-index: 4;
   flex-shrink: 0;
   box-sizing: border-box;
   background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
-  z-index: 2;
   border-right: 1px solid var(--lingyun-separator, #{$lingyun-separator});
 }
 
