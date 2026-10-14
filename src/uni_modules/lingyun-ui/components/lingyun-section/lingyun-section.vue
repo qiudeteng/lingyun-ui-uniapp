@@ -22,18 +22,22 @@
           <view v-if="thumbnail" class="lingyun-section__thumb">
             <image class="lingyun-section__thumb-image" :src="thumbnail" mode="aspectFit" />
           </view>
-          <lingyun-image
+          <view
             v-if="icon"
             class="lingyun-section__icon"
             :class="iconClass"
-            :src="icon"
-            :size="iconPx"
-            shape="rounded"
-            radius="sm"
-            mode="aspectFill"
-            :lazy="false"
-            :show-error-placeholder="false"
-          />
+            :style="iconBoxStyle"
+          >
+            <lingyun-image
+              :src="icon"
+              :size="iconPx"
+              shape="rounded"
+              radius="sm"
+              mode="aspectFill"
+              :lazy="false"
+              :show-error-placeholder="false"
+            />
+          </view>
           <view class="lingyun-section__heading">
             <text v-if="title" class="lingyun-section__title">{{ title }}</text>
             <text v-if="resolvedSubtitle" class="lingyun-section__subtitle">{{
@@ -125,6 +129,22 @@ function vnodesHaveList(nodes: unknown): boolean {
   return false
 }
 
+function toPx(value: string): number | null {
+  const matched = /^(\d+(?:\.\d+)?)px$/.exec(value.trim())
+  if (!matched) return null
+  return Number(matched[1])
+}
+
+/** 左右 margin 从 100% 里扣掉，避免白底比页面宽 */
+function insetWidth(margin: string): string {
+  const box = parseBox(margin)
+  const left = toPx(box.left)
+  const right = toPx(box.right)
+  if (left == null || right == null) return ''
+  const sum = left + right
+  return sum > 0 ? `calc(100% - ${sum}px)` : '100%'
+}
+
 function resolveSectionRadius(value: unknown, full: boolean): string {
   if (full) return '0'
   if (value === '' || value == null) return `${RADIUS_DEFAULT}px`
@@ -166,6 +186,12 @@ const SECTION_COLOR_GLASS = 'glass'
 export default defineComponent({
   name: 'LingyunSection',
   emits: ['click'],
+  data() {
+    return {
+      /** 小程序插槽不是函数，列表/表格挂上后回写，用来去掉内容区内边距 */
+      embeddedListCount: 0,
+    }
+  },
   props: {
     title: {
       type: String,
@@ -311,6 +337,11 @@ export default defineComponent({
         'lingyun-section__icon--pair': large && !!this.resolvedSubtitle,
       }
     },
+    /** 图标盒写在真实 view 上。尺寸若只写在 lingyun-image 内部，微信宿主宽度会变成 0。 */
+    iconBoxStyle(): Record<string, string> {
+      const px = `${this.iconPx}px`
+      return { width: px, height: px }
+    },
     resolvedColor(): string {
       const value = String(this.color || '').trim()
       return (SECTION_COLORS as readonly string[]).indexOf(value) >= 0 ? value : ''
@@ -335,21 +366,32 @@ export default defineComponent({
     },
     rootStyle() {
       const borderRadius = resolveSectionRadius(this.radius, this.isFull)
-      if (this.isFull) {
-        /* 左右贴边；保留上间距，避免与上一块粘连 */
-        return { margin: '12px 0 0', borderRadius }
-      }
-      return { margin: this.margin, borderRadius }
+      const margin = this.isFull ? '12px 0 0' : this.margin
+      const style: Record<string, string> = { margin, borderRadius }
+      /* 微信里块级宽度不含 margin，白底会比页面宽出左右外边距 */
+      const width = insetWidth(margin)
+      if (width) style.width = width
+      return style
     },
   },
   methods: {
     /**
-     * 每次渲染都看插槽。放进 computed 不会跟着插槽更新。
+     * 小程序里 $slots.default 是 true，不能当函数调用，否则整段渲染中断，白底宽度也会错。
+     * H5 仍在渲染时看 vnode；小程序由列表/表格挂载后回写 embeddedListCount。
      */
+    markEmbeddedList(active: boolean) {
+      const next = this.embeddedListCount + (active ? 1 : -1)
+      this.embeddedListCount = next > 0 ? next : 0
+    },
     withList(): boolean {
-      const slot = this.$slots.default
-      if (!slot) return false
-      return vnodesHaveList(slot())
+      if (this.embeddedListCount > 0) return true
+      const slot = this.$slots.default as unknown
+      if (typeof slot !== 'function') return false
+      try {
+        return vnodesHaveList((slot as () => unknown)())
+      } catch {
+        return false
+      }
     },
     innerStyle() {
       if (this.withList()) return {}
@@ -389,6 +431,13 @@ export default defineComponent({
 
 /* 尺寸：1pt = 1px */
 $ly-section-radius: 26px;
+
+/* 微信宿主默认 inline。撑成整行后，里面的 margin 才按页面宽度回缩 */
+:host {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
 
 .lingyun-section {
   box-sizing: border-box;

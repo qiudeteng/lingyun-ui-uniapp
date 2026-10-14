@@ -25,6 +25,7 @@ alwaysApply: true
    - 微信内容行高度：`胶囊 height + (胶囊 top - statusBarHeight) * 2`（`getMenuButtonBoundingClientRect`）。
    - 不要用 `env(safe-area-inset-top)` 代替状态栏。
 7. **残留产物**：重命名/删除组件后清理或重建 `dist/dev/mp-weixin`，避免微信工具仍编译旧路径（如已删除的 `app-page`）。
+8. **改完必须清编译缓存**：`src/` 的改动经 `pnpm dev:mp-weixin` 写进 `dist/dev/mp-weixin` 之后，调用微信开发者工具 MCP `debug_clear_cache`，`action` 用 `cleanCompileCache`，`project` 用工具里导入的目录 `D:\projects\lingyun-ui\dist\dev\mp-weixin`（不是仓库根目录）。不清缓存时，工具会沿用旧编译结果，下次编译报错，只能人手点清缓存。不要用 `cleanAll`、`clearAuth`、`cleanStorageCache`，那些会清掉登录态和本地存储。
 
 ## 注意事项（踩坑复盘）
 
@@ -48,4 +49,4 @@ alwaysApply: true
 - [ ] 透底玻璃未误用 `lingyun-glass-regular` fallback
 - [ ] 插槽布局类不依赖组件隔离样式
 - [ ] 浮层已 Teleport / root-portal，且自挂 `theme-*`
-- [ ] `pnpm dev:mp-weixin` 可编译；微信开发者工具无 WXSS/WXML 报错；**半透明/主题以真机为准**
+- [ ] `pnpm dev:mp-weixin` 可编译；已对 `dist/dev/mp-weixin` 调用 `debug_clear_cache`（`cleanCompileCache`）；微信开发者工具无 WXSS/WXML 报错；**半透明/主题以真机为准**

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { post } from '@/utils/request'
+import { bindLoginKick } from '@/utils/login-kick'
 import {
   clearToken,
   getToken,
@@ -145,6 +146,11 @@ export const useAuthStore = defineStore('auth', () => {
       uni.reLaunch({ url: appConfig.loginPath })
     }
   }
+
+  bindLoginKick(() => {
+    if (isLogin.value) logout()
+    else uni.reLaunch({ url: appConfig.loginPath })
+  })
 
   return {
     token,

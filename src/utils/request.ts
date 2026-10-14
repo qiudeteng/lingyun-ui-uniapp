@@ -5,6 +5,7 @@
 import { appConfig } from '@/config'
 import { AppError } from './app-error'
 import { formatToken, getToken } from './auth'
+import { runLoginKick } from './login-kick'
 import { getSign } from './sign'
 import { phpDecompress } from './zip'
 
@@ -49,23 +50,14 @@ function kickToLogin(): void {
   if (loggingOut) return
   loggingOut = true
   rememberBackUrl()
-  import('@/stores/auth')
-    .then(({ useAuthStore }) => {
-      const authStore = useAuthStore()
-      if (authStore.isLogin) {
-        authStore.logout()
-      } else {
-        uni.reLaunch({ url: appConfig.loginPath })
-      }
-    })
-    .catch(() => {
-      uni.reLaunch({ url: appConfig.loginPath })
-    })
-    .finally(() => {
-      setTimeout(() => {
-        loggingOut = false
-      }, 800)
-    })
+  try {
+    if (!runLoginKick()) uni.reLaunch({ url: appConfig.loginPath })
+  } catch {
+    uni.reLaunch({ url: appConfig.loginPath })
+  }
+  setTimeout(() => {
+    loggingOut = false
+  }, 800)
 }
 
 function buildSignedBody(payload: Record<string, unknown> | undefined): {

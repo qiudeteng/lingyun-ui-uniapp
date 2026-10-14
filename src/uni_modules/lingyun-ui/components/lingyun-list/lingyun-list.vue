@@ -51,6 +51,7 @@ type SectionHost = {
   $options?: { name?: string }
   $parent?: SectionHost | null
   color?: string
+  markEmbeddedList?: (active: boolean) => void
 }
 
 /** 插槽内容的父级是包住它的组件。内嵌进 section 时收掉页边 inset，卡片贴齐分组卡片。 */
@@ -105,6 +106,12 @@ export default defineComponent({
     if (!section) return
     this.inSection = true
     this.sectionPaintsCard = String(section.color || '').trim() !== ''
+    ;(this as unknown as { embeddedSection?: SectionHost }).embeddedSection = section
+    section.markEmbeddedList?.(true)
+  },
+  beforeUnmount() {
+    const section = (this as unknown as { embeddedSection?: SectionHost }).embeddedSection
+    section?.markEmbeddedList?.(false)
   },
   computed: {
     showHeader(): boolean {

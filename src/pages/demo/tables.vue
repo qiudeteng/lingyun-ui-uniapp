@@ -6,30 +6,6 @@
         <text class="hero__desc">lingyun-table · 分组卡片表格</text>
       </view>
 
-      <lingyun-section title="页面高度" hint="不传 height。外层没有高度时跟页面一样高，表体在里面滚动。">
-        <lingyun-table
-          :columns="columns"
-          :data="rows"
-          row-key="id"
-          stripe
-          border
-          selection
-          :page-size="5"
-          v-model:page="page"
-          v-model:selected-keys="selected"
-          @row-click="onRow"
-        >
-          <template #cell="{ row, column, value }">
-            <lingyun-tag
-              v-if="column.key === 'status'"
-              :text="String(value)"
-              :color="value === '售罄' ? 'red' : 'green'"
-            />
-            <text v-else class="cell-text">{{ value }}</text>
-          </template>
-        </lingyun-table>
-        <text class="picked">已选 {{ selected.length }} 行</text>
-      </lingyun-section>
 
       <lingyun-section title="外层高度" hint="外层 320px。表格跟上外层，不把外层撑开。筛选和翻页走服务端。">
         <view class="table-frame">
@@ -62,7 +38,13 @@
       <lingyun-section title="固定高度" hint="height=240，表体上下滚，表头不动。菜品固定在左，操作固定在右。">
         <lingyun-table :columns="scrollColumns" :data="rows" row-key="id" :height="240" stripe border @row-click="onRow">
           <template #cell="{ column, value, row }">
-            <text v-if="column.key === 'action'" class="cell-link" @click.stop="onRow(row)">详情</text>
+            <text
+              v-if="column.key === 'action'"
+              class="cell-link"
+              @touchstart.stop
+              @mousedown.stop
+              @click.stop="onDetail(row)"
+            >详情</text>
             <text v-else class="cell-text">{{ value }}</text>
           </template>
         </lingyun-table>
@@ -206,6 +188,10 @@
 
   function onRow(row: LingyunTableRow): void {
     uni.showToast({ title: String(row.name || ''), icon: 'none' })
+  }
+
+  function onDetail(row: LingyunTableRow): void {
+    uni.showToast({ title: `详情 ${String(row.name || '')}`, icon: 'none' })
   }
 
   function onTableRefresh(): void {

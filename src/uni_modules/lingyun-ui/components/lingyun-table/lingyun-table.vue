@@ -212,13 +212,15 @@
                 <lingyun-icon v-if="isSelected(item.row)" type="checkmarkempty" :size="14" color="#ffffff" />
               </view>
             </view>
-            <view v-for="col in leftColumns" :key="col.key" class="lingyun-table__cell" :style="cellStyle(col)">
-              <view class="lingyun-table__value">
-                <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
-                  <text class="lingyun-table__text">{{ cellText(item.row, col, item.index) }}</text>
-                </slot>
+            <template v-for="col in leftColumns" :key="col.key">
+              <view class="lingyun-table__cell" :style="cellStyle(col)">
+                <view class="lingyun-table__value">
+                  <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
+                    <text class="lingyun-table__text">{{ cellText(item.row, col, item.index) }}</text>
+                  </slot>
+                </view>
               </view>
-            </view>
+            </template>
           </view>
           <view v-if="rowPadBottom" class="lingyun-table__row-pad" :style="rowPadBottomStyle" />
         </view>
@@ -251,13 +253,15 @@
             @click="onRowClick(item.row)"
           >
             <view v-if="colPadLeft" class="lingyun-table__col-pad" :style="colPadLeftStyle" />
-            <view v-for="col in visibleCenterColumns" :key="col.key" class="lingyun-table__cell" :style="cellStyle(col)">
-              <view class="lingyun-table__value">
-                <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
-                  <text class="lingyun-table__text">{{ cellText(item.row, col, item.index) }}</text>
-                </slot>
+            <template v-for="(col, colIndex) in centerSlotColumns" :key="col ? col.key : 'pad-' + colIndex">
+              <view v-if="col" class="lingyun-table__cell" :style="cellStyle(col)">
+                <view class="lingyun-table__value">
+                  <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
+                    <text class="lingyun-table__text">{{ cellText(item.row, col, item.index) }}</text>
+                  </slot>
+                </view>
               </view>
-            </view>
+            </template>
             <view v-if="colPadRight" class="lingyun-table__col-pad" :style="colPadRightStyle" />
           </view>
           <view v-if="rowPadBottom" class="lingyun-table__row-pad" :style="rowPadBottomStyle" />
@@ -288,17 +292,31 @@
             @mouseleave="onRowRelease"
             @click="onRowClick(item.row)"
           >
-            <view v-for="col in rightColumns" :key="col.key" class="lingyun-table__cell" :style="cellStyle(col)">
-              <view class="lingyun-table__value">
-                <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
-                  <text class="lingyun-table__text">{{ cellText(item.row, col, item.index) }}</text>
-                </slot>
+            <template v-for="(col, colIndex) in rightSlotColumns" :key="col ? col.key : 'pad-' + colIndex">
+              <view v-if="col" class="lingyun-table__cell" :style="cellStyle(col)">
+                <view class="lingyun-table__value">
+                  <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
+                    <text class="lingyun-table__text">{{ cellText(item.row, col, item.index) }}</text>
+                  </slot>
+                </view>
               </view>
-            </view>
+            </template>
           </view>
           <view v-if="rowPadBottom" class="lingyun-table__row-pad" :style="rowPadBottomStyle" />
         </view>
       </scroll-view>
+      <view
+        v-if="hBarNeeded"
+        class="lingyun-table__hbar"
+        :class="{ 'lingyun-table__hbar--on': hBarShow }"
+        :style="hBarStyle"
+        @touchstart.stop="onHBarStart"
+        @touchmove.stop.prevent="onHBarMove"
+        @touchend.stop="onHBarEnd"
+        @mousedown.stop="onHBarStart"
+      >
+        <view class="lingyun-table__hbar-thumb" :style="hThumbStyle" />
+      </view>
       <view v-if="loading" class="lingyun-table__loading">
         <lingyun-activity-indicator size="small" />
       </view>
@@ -426,6 +444,22 @@ function compareValue(a: unknown, b: unknown): number {
   return String(a).localeCompare(String(b), 'zh')
 }
 
+type SectionMarkHost = {
+  $options?: { name?: string }
+  $parent?: SectionMarkHost | null
+  markEmbeddedList?: (active: boolean) => void
+}
+
+/** 小程序上看不到插槽 vnode，表格自己告诉外层 section。 */
+function findSectionMarkHost(start: unknown): SectionMarkHost | null {
+  let parent = start as SectionMarkHost | null
+  while (parent) {
+    if (parent.$options && parent.$options.name === 'LingyunSection') return parent
+    parent = parent.$parent || null
+  }
+  return null
+}
+
 export default defineComponent({
   name: 'LingyunTable',
   emits: [
@@ -507,9 +541,17 @@ export default defineComponent({
       colEnd: 0,
       colPadLeft: 0,
       colPadRight: 0,
+      centerClientPx: 0,
+      hBarShow: false,
+      hBarTimer: 0,
+      hDragging: false,
+      hDragX: 0,
+      hDragLeft: 0,
       hiddenKeys: [] as string[],
       columnPickerOpen: false,
       onResize: null as (() => void) | null,
+      hDragMove: null as ((event: MouseEvent) => void) | null,
+      hDragUp: null as (() => void) | null,
     }
   },
   computed: {
@@ -576,6 +618,20 @@ export default defineComponent({
       if (this.colStart <= 0 && end >= cols.length) return cols
       return cols.slice(this.colStart, end)
     },
+    /** 小程序把作用域插槽编成 cell-行号-列号。左中右三块各自从 0 编号会撞成 cell-0-0，这里用空位把列号错开 */
+    centerSlotColumns(): Array<ResolvedColumn | null> {
+      const cols: Array<ResolvedColumn | null> = []
+      for (let i = 0; i < this.leftColumns.length; i += 1) cols.push(null)
+      this.visibleCenterColumns.forEach((col) => cols.push(col))
+      return cols
+    },
+    rightSlotColumns(): Array<ResolvedColumn | null> {
+      const pad = this.leftColumns.length + this.centerColumns.length
+      const cols: Array<ResolvedColumn | null> = []
+      for (let i = 0; i < pad; i += 1) cols.push(null)
+      this.rightColumns.forEach((col) => cols.push(col))
+      return cols
+    },
     resolvedColumns(): ResolvedColumn[] {
       const hidden = this.hiddenKeys
       return (this.columns || [])
@@ -609,13 +665,40 @@ export default defineComponent({
     centerRowStyle(): Record<string, string> {
       return { width: `${this.centerWidth}px` }
     },
+    centerViewPx(): number {
+      if (this.centerClientPx > 0) return this.centerClientPx
+      return this.viewportCenterPx
+    },
+    hBarNeeded(): boolean {
+      const view = this.centerViewPx
+      return view > 0 && this.centerWidth > view + 1
+    },
+    hBarStyle(): Record<string, string> {
+      return {
+        left: `${this.leftWidth}px`,
+        width: `${this.centerViewPx}px`,
+      }
+    },
+    hThumbStyle(): Record<string, string> {
+      const view = this.centerViewPx
+      const content = Math.max(this.centerWidth, view)
+      const max = Math.max(0, content - view)
+      const thumb = Math.max(28, Math.round((view * view) / content))
+      const travel = Math.max(1, view - thumb)
+      const x = max <= 0 ? 0 : Math.round((this.bodyLeft / max) * travel)
+      return { width: `${thumb}px`, transform: `translateX(${x}px)` }
+    },
     bodyBoxStyle(): Record<string, string> {
-      if (this.bodyHeightPx > 0) return { height: `${this.bodyHeightPx}px` }
+      if (this.fixed && this.bodyHeightPx > 0) return { height: `${this.bodyHeightPx}px` }
       if (this.fixed) return { height: '0px' }
       return { flex: '1', height: '0', minHeight: '0' }
     },
     bodyScrollStyle(): Record<string, string> {
+      if (this.fixed && this.bodyHeightPx > 0) return { height: `${this.bodyHeightPx}px` }
+      // 小程序 scroll-view 要用明确像素。H5 用 100%，跟着表体，给分页留出位置
+      // #ifdef MP-WEIXIN
       if (this.bodyHeightPx > 0) return { height: `${this.bodyHeightPx}px` }
+      // #endif
       return { height: '100%' }
     },
     filteredRows(): LingyunTableRow[] {
@@ -704,10 +787,26 @@ export default defineComponent({
     centerColumns() {
       this.syncColWindow(this.bodyLeft)
     },
+    loading() {
+      this.$nextTick(() => this.measureViewport())
+    },
+    total() {
+      this.$nextTick(() => this.measureViewport())
+    },
+    pageSize() {
+      this.$nextTick(() => this.measureViewport())
+    },
+    openFilterKey() {
+      this.$nextTick(() => this.measureViewport())
+    },
   },
   created() {
     this.syncRowWindow(0)
     this.syncColWindow(0)
+    const section = findSectionMarkHost(this.$parent)
+    if (!section) return
+    ;(this as unknown as { embeddedSection?: SectionMarkHost }).embeddedSection = section
+    section.markEmbeddedList?.(true)
   },
   mounted() {
     if (this.remote) this.emitQuery()
@@ -727,8 +826,12 @@ export default defineComponent({
     uni.onWindowResize(this.onResize)
   },
   beforeUnmount() {
+    const section = (this as unknown as { embeddedSection?: SectionMarkHost }).embeddedSection
+    section?.markEmbeddedList?.(false)
+    this.detachHBarDrag()
     if (this.syncTimer) clearTimeout(this.syncTimer)
     if (this.pressTimer) clearTimeout(this.pressTimer)
+    if (this.hBarTimer) clearTimeout(this.hBarTimer)
     if (this.onResize) uni.offWindowResize(this.onResize)
   },
   methods: {
@@ -736,7 +839,11 @@ export default defineComponent({
       return { width: `${width}px` }
     },
     sideScrollStyle(width: number): Record<string, string> {
-      const height = this.bodyHeightPx > 0 ? `${this.bodyHeightPx}px` : '100%'
+      let height = '100%'
+      if (this.fixed && this.bodyHeightPx > 0) height = `${this.bodyHeightPx}px`
+      // #ifdef MP-WEIXIN
+      if (!this.fixed && this.bodyHeightPx > 0) height = `${this.bodyHeightPx}px`
+      // #endif
       return { width: `${width}px`, height }
     },
     guessCenterWidth(): number {
@@ -831,6 +938,8 @@ export default defineComponent({
         const width = Math.round(center.width)
         if (this.viewportCenterPx !== width) this.viewportCenterPx = width
       }
+      const client = this.readCenterClient()
+      if (client > 0 && this.centerClientPx !== client) this.centerClientPx = client
       this.syncColWindow(this.bodyLeft)
       if (this.fixed) {
         this.syncRowWindow(this.bodyTop)
@@ -1124,14 +1233,94 @@ export default defineComponent({
         this.syncTimer = 0
       }, 80) as unknown as number
     },
+    readCenterClient(): number {
+      const el = this.$el as HTMLElement | undefined
+      if (!el || typeof el.querySelectorAll !== 'function') return 0
+      const nodes = el.querySelectorAll('.lingyun-table__x--body .uni-scroll-view')
+      const scroller = nodes[nodes.length - 1] as HTMLElement | undefined
+      if (!scroller || !scroller.clientWidth) return 0
+      return scroller.clientWidth
+    },
+    revealHBar(show: boolean) {
+      if (!show || !this.hBarNeeded) return
+      this.hBarShow = true
+      if (this.hDragging) return
+      this.scheduleHideHBar()
+    },
+    scheduleHideHBar() {
+      if (this.hBarTimer) clearTimeout(this.hBarTimer)
+      this.hBarTimer = setTimeout(() => {
+        if (!this.hDragging) this.hBarShow = false
+        this.hBarTimer = 0
+      }, 700) as unknown as number
+    },
+    pointerX(event: { touches?: Array<{ clientX?: number; pageX?: number }>; clientX?: number; pageX?: number }): number {
+      const touch = event.touches && event.touches[0]
+      if (touch) return touch.clientX || touch.pageX || 0
+      return event.clientX || event.pageX || 0
+    },
+    onHBarStart(event: { touches?: Array<{ clientX?: number; pageX?: number }>; clientX?: number; pageX?: number }) {
+      this.hDragging = true
+      this.hDragX = this.pointerX(event)
+      this.hDragLeft = this.bodyLeft
+      this.hBarShow = true
+      if (this.hBarTimer) {
+        clearTimeout(this.hBarTimer)
+        this.hBarTimer = 0
+      }
+      if (event.touches && event.touches.length) return
+      if (typeof document === 'undefined') return
+      this.detachHBarDrag()
+      const move = (e: MouseEvent) => this.onHBarMove(e)
+      const up = () => {
+        this.detachHBarDrag()
+        this.onHBarEnd()
+      }
+      this.hDragMove = move
+      this.hDragUp = up
+      document.addEventListener('mousemove', move)
+      document.addEventListener('mouseup', up)
+    },
+    onHBarMove(event: { touches?: Array<{ clientX?: number; pageX?: number }>; clientX?: number; pageX?: number }) {
+      if (!this.hDragging) return
+      const view = this.centerViewPx
+      const content = Math.max(this.centerWidth, view)
+      const max = Math.max(0, content - view)
+      const thumb = Math.max(28, (view * view) / content)
+      const travel = Math.max(1, view - thumb)
+      const next = this.hDragLeft + (this.pointerX(event) - this.hDragX) * (max / travel)
+      this.scrollCenterTo(Math.min(max, Math.max(0, next)))
+    },
+    onHBarEnd() {
+      if (!this.hDragging) return
+      this.hDragging = false
+      this.scheduleHideHBar()
+    },
+    detachHBarDrag() {
+      if (typeof document === 'undefined') return
+      if (this.hDragMove) document.removeEventListener('mousemove', this.hDragMove)
+      if (this.hDragUp) document.removeEventListener('mouseup', this.hDragUp)
+      this.hDragMove = null
+      this.hDragUp = null
+    },
+    scrollCenterTo(left: number) {
+      this.syncColWindow(left)
+      this.bodyLeft = left
+      this.headLeft = left
+      this.armSync('body')
+    },
     onBodyScroll(event: ScrollEvent) {
       const left = event.detail?.scrollLeft || 0
       const top = event.detail?.scrollTop || 0
+      const leftChanged = Math.abs(left - this.bodyLeft) > 0.5
       this.clearPressIfScrolled(left, top)
       this.syncRowWindow(top)
       this.syncColWindow(left)
+      const client = this.readCenterClient()
+      if (client > 0 && this.centerClientPx !== client) this.centerClientPx = client
       this.bodyLeft = left
       this.bodyTop = top
+      this.revealHBar(leftChanged)
       if (this.syncSource === 'head' || this.syncSource === 'left' || this.syncSource === 'right') return
       this.headLeft = left
       this.leftTop = top
@@ -1140,8 +1329,10 @@ export default defineComponent({
     },
     onHeadScroll(event: ScrollEvent) {
       const left = event.detail?.scrollLeft || 0
+      const changed = Math.abs(left - this.headLeft) > 0.5
       this.syncColWindow(left)
       this.headLeft = left
+      this.revealHBar(changed)
       if (this.syncSource === 'body') return
       this.bodyLeft = left
       this.armSync('head')
@@ -1297,6 +1488,42 @@ $ly-table-radius: 26px;
 
 .lingyun-table__body {
   position: relative;
+  overflow: hidden;
+}
+
+/* 原生滚动条不占位。横向位置用悬浮条，竖向已经不显示，不再留槽 */
+/* #ifdef H5 */
+.lingyun-table__x--body .uni-scroll-view {
+  scrollbar-width: none;
+}
+
+.lingyun-table__x--body .uni-scroll-view::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+/* #endif */
+
+.lingyun-table__hbar {
+  position: absolute;
+  z-index: 4;
+  bottom: 2px;
+  height: 14px;
+  box-sizing: border-box;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lingyun-table__hbar--on {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.lingyun-table__hbar-thumb {
+  height: 4px;
+  margin-top: 5px;
+  border-radius: 999px;
+  background-color: var(--lingyun-label-tertiary, #{$lingyun-label-tertiary});
 }
 
 .lingyun-table__loading {
