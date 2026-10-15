@@ -4,16 +4,25 @@ import { slimsearchPlugin } from '@vuepress/plugin-slimsearch'
 import { defaultTheme } from '@vuepress/theme-default'
 import { defineUserConfig, type Plugin } from 'vuepress'
 
-/** 手册里的 {{ lingyunVersion }} 在编译时换成组件包版本，不在文档里手写。 */
-const lingyunVersion = JSON.parse(
-  readFileSync(new URL('../../src/uni_modules/lingyun-ui/package.json', import.meta.url), 'utf8'),
-).version as string
+import { injectChangelogs, readLingyunPackageVersions } from './plugins/injectChangelogs'
 
+const versions = readLingyunPackageVersions()
+const lingyunVersion = versions.ui || (
+  JSON.parse(
+    readFileSync(new URL('../../src/uni_modules/lingyun-ui/package.json', import.meta.url), 'utf8'),
+  ).version as string
+)
+
+/** 手册里的版本占位在编译时换成各包 package.json，不在文档里手写。 */
 const lingyunVersionPlugin: Plugin = {
   name: 'lingyun-version',
   extendsMarkdown: (md) => {
     md.core.ruler.before('normalize', 'lingyun-version', (state) => {
-      state.src = state.src.replaceAll('{{ lingyunVersion }}', lingyunVersion)
+      state.src = state.src
+        .replaceAll('{{ lingyunVersion }}', lingyunVersion)
+        .replaceAll('{{ uiVersion }}', versions.ui || lingyunVersion)
+        .replaceAll('{{ chartsVersion }}', versions.charts || '')
+        .replaceAll('{{ pageVersion }}', versions.page || '')
     })
   },
 }
@@ -25,6 +34,37 @@ const guideSidebar = [
       { text: '接入', link: '/guide/start.html' },
       { text: '屏幕', link: '/guide/screen.html' },
       { text: '反馈', link: '/guide/feedback.html' },
+    ],
+  },
+]
+
+const changelogSidebar = [
+  {
+    text: '更新记录',
+    children: [
+      { text: '总览', link: '/changelog/' },
+      {
+        text: versions.ui ? `组件 ${versions.ui}` : '组件',
+        link: '/changelog/ui.html',
+      },
+      {
+        text: versions.charts ? `图表 ${versions.charts}` : '图表',
+        link: '/changelog/charts.html',
+      },
+      {
+        text: versions.page ? `页面 ${versions.page}` : '页面',
+        link: '/changelog/page.html',
+      },
+    ],
+  },
+]
+
+const pageSidebar = [
+  {
+    text: '标准页面',
+    children: [
+      { text: '页面扩展', link: '/page/' },
+      { text: '登录', link: '/page/login.html' },
     ],
   },
 ]
@@ -162,15 +202,37 @@ export default defineUserConfig({
       { text: '接入', link: '/guide/start.html', activeMatch: '^/guide/' },
       { text: '组件', link: '/components/app-page.html', activeMatch: '^/components/' },
       { text: '图表', link: '/charts/', activeMatch: '^/charts/' },
+      { text: '页面', link: '/page/', activeMatch: '^/page/' },
+      {
+        text: '更新记录',
+        children: [
+          { text: '总览', link: '/changelog/' },
+          {
+            text: versions.ui ? `组件 ${versions.ui}` : '组件',
+            link: '/changelog/ui.html',
+          },
+          {
+            text: versions.charts ? `图表 ${versions.charts}` : '图表',
+            link: '/changelog/charts.html',
+          },
+          {
+            text: versions.page ? `页面包 ${versions.page}` : '页面包',
+            link: '/changelog/page.html',
+          },
+        ],
+      },
     ],
     sidebar: {
       '/guide/': guideSidebar,
       '/charts/': chartSidebar,
       '/components/': componentSidebar,
+      '/page/': pageSidebar,
+      '/changelog/': changelogSidebar,
     },
   }),
   plugins: [
     lingyunVersionPlugin,
+    injectChangelogs(),
     slimsearchPlugin({
       indexContent: true,
     }),

@@ -5,9 +5,6 @@
         <text class="hero__title">{{ title }}</text>
         <text class="hero__desc">{{ desc }}</text>
       </view>
-      <lingyun-section title="浮层避让" hint="微信：打开选择器时图表不得穿透面板">
-        <lingyun-picker v-model="storeValue" title="选择门店" :range="storeRange" />
-      </lingyun-section>
       <lingyun-section :title="note" :is-last="!extraChartData">
         <view class="chart-box">
           <lingyun-ui-charts
@@ -22,12 +19,12 @@
         </view>
       </lingyun-section>
       <lingyun-section v-if="extraChartData" :title="extraNote" is-last>
-        <view class="chart-box">
+        <view class="chart-box" :class="{ 'chart-box--legend-bottom': legendAtBottom }">
           <lingyun-ui-charts
             :type="type"
             :canvasId="extraCanvasId"
             :chartData="extraChartData"
-            :opts="extraOpts"
+            :opts="resolvedExtraOpts"
             :canvas2d="true"
             :inScrollView="true"
             :ontouch="true"
@@ -39,7 +36,10 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
+  import { computed, onMounted, onUnmounted, ref } from 'vue'
+
+  /** 窄屏（手机）图例改到底部，避免右侧挤占绘图区 */
+  const PHONE_MAX_WIDTH = 600
 
   const props = withDefaults(
     defineProps<{
@@ -62,10 +62,51 @@
     { opts: () => ({}), extraNote: '图例表', extraOpts: () => ({}) },
   )
 
+  const windowWidth = ref(375)
+
+  function readWindowWidth(override?: number) {
+    if (typeof override === 'number' && override > 0) {
+      windowWidth.value = override
+      return
+    }
+    try {
+      const win =
+        typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
+      windowWidth.value = Number(win.windowWidth) || 375
+    } catch {
+      windowWidth.value = 375
+    }
+  }
+
+  function onWindowResize(res: { size?: { windowWidth?: number }; windowWidth?: number }) {
+    const fromSize = Number(res?.size?.windowWidth)
+    const direct = Number(res?.windowWidth)
+    readWindowWidth(fromSize > 0 ? fromSize : direct)
+  }
+
+  onMounted(() => {
+    readWindowWidth()
+    uni.onWindowResize?.(onWindowResize)
+  })
+
+  onUnmounted(() => {
+    uni.offWindowResize?.(onWindowResize)
+  })
+
+  const legendAtBottom = computed(() => windowWidth.value < PHONE_MAX_WIDTH)
+
+  const resolvedExtraOpts = computed(() => {
+    const base = { ...(props.extraOpts || {}) }
+    const legend = {
+      ...((base.legend as Record<string, unknown>) || {}),
+      position: legendAtBottom.value ? 'bottom' : 'right',
+      float: 'center',
+    }
+    return { ...base, legend }
+  })
+
   const canvasId = computed(() => `lychart-${props.type}`)
   const extraCanvasId = computed(() => `lychart-${props.type}-legend`)
-  const storeRange = ['东莞店', '禅城店', '天河店']
-  const storeValue = ref(0)
 </script>
 
 <style lang="scss">
@@ -100,5 +141,9 @@
   .chart-box {
     width: 100%;
     height: 280px;
+  }
+
+  .chart-box--legend-bottom {
+    height: 320px;
   }
 </style>

@@ -62,6 +62,7 @@ const DEMO: Record<string, string> = {
   grid: '/pages/demo/grid',
   'indexed-list': '/pages/demo/indexed-list',
   charts: '/pages/demo/charts/column',
+  login: '/pages/login/login',
 }
 
 /** 这些文档默认用宽屏视口，才能看到左侧导航 */
@@ -94,6 +95,9 @@ const demoPath = computed(() => {
   }
   if (path.startsWith('/charts/') && slug.value && slug.value !== 'index') {
     return `/pages/demo/charts/${slug.value}`
+  }
+  if (path === '/page' || path === '/page/index') {
+    return '/pages/login/login'
   }
   return DEMO[slug.value] || ''
 })

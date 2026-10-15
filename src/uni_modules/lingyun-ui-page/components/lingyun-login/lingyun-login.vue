@@ -1,5 +1,5 @@
 <template>
-  <lingyun-app-page title="登录" :show-back="false" :show-nav="false">
+  <lingyun-app-page :show-toolbar="false" :show-back="false" :show-nav="false">
     <view class="lingyun-login">
       <view class="lingyun-login__hero">
         <view v-if="logo" class="lingyun-login__logo">

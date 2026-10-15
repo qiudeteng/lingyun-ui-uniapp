@@ -1,10 +1,11 @@
 # 凌云UI 使用手册
 
 <!-- 版本在手册编译时从 lingyun-ui/package.json 读入 -->
-当前组件库版本 **{{ lingyunVersion }}**。
+当前组件库版本 **{{ lingyunVersion }}**（图表 **{{ chartsVersion }}** · 页面 **{{ pageVersion }}**）。
 
 📦 [仓库](https://github.com/qiudeteng/lingyun-ui-uniapp)
 🐛 欢迎反馈：使用中遇到问题或有建议，请在 [仓库 Issues](https://github.com/qiudeteng/lingyun-ui-uniapp/issues) 提交，也欢迎 PR 共同完善。
+📋 [更新记录](./changelog/)：组件 / 图表 / 页面三个扩展包的 changelog。
 
 这是组件的**用法**说明：怎么写、有哪些属性和示例。尺寸、玻璃材质和设计稿对照在仓库 `design/` 里，不在这本手册里重复。
 
@@ -16,6 +17,13 @@
 - [接入](./guide/start.md)
 - [屏幕](./guide/screen.md)
 - [反馈：Toast 与 HUD](./guide/feedback.md)
+
+## 标准页面
+
+独立包 `lingyun-ui-page`。路由仍在 `src/pages`，界面用标准页标签。
+
+- [页面扩展](./page/README.md)
+- [登录](./page/login.md)
 
 ## 图表
 

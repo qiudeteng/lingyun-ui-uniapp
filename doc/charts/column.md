@@ -31,8 +31,21 @@ const chartData = {
   ],
 }
 
-const chartOpts = {}
+const chartOpts = {
+  extra: {
+    column: {
+      type: 'group',
+      // 同组柱间距、类目组左右留白（组与组之间的间隔）
+      seriesGap: 3,
+      categoryGap: 6,
+      // 顶部圆角 [左上, 右上, 右下, 左下]
+      barBorderRadius: [6, 6, 0, 0],
+    },
+  },
+}
 ```
+
+默认已带组间距与顶部圆角。要改疏密或圆角，覆盖 `opts.extra.column` 即可。
 
 ```scss
 .chart-box {

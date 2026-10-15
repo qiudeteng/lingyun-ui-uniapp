@@ -95,6 +95,8 @@ const chartOpts = { color: chartColorDark }
 | `color` | 整列文字色。不写用图例默认色 |
 | `columnGap` | 列间距，px，默认 8。写在 `legend` 上，不写在列上 |
 
+`position` 为 `top` / `bottom` 且写了 `columns` 时：一行一项，图例区与绘图区同宽，多余宽度加在 `name` 列。
+
 | 图种 | 一行是什么 | 额外字段写在哪 |
 | --- | --- | --- |
 | `pie` `ring` `rose` `funnel` `mount` | 一个扇区 | `series[0].data` 的每一项 |

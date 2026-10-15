@@ -66,6 +66,7 @@ import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/u-charts/
 
 | type | 额外约定 |
 |------|----------|
+| `column` | 默认 `extra.column`：`categoryGap` 拉开各组、`seriesGap` 同组柱距、`barBorderRadius: [6,6,0,0]` 顶部圆角 |
 | `radar` | `opts.extra.radar.max` 要盖住数据（demo 用 100） |
 | `mix` | 每条 `series[i].type` 为 `column` / `line` / `area` 等 |
 | `candle` | `data` 为 `[开盘, 收盘, 最低, 最高]` |
@@ -139,6 +140,8 @@ opts: {
 | `align` | `right` 右对齐，默认靠左 |
 | `color` | 整列文字色 |
 | `columnGap` | 列间距，px，默认 8。写在 `legend` 上 |
+
+`position` 为 `top` / `bottom` 且写了 `columns` 时：一行一项，图例区与绘图区同宽，多余宽度加在 `name` 列。
 
 | 图种 | 一行 | 额外字段 |
 |------|------|----------|

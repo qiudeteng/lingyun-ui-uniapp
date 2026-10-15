@@ -66,6 +66,10 @@ setLingyunPageNavProfile({
 
 某一页要换成自己的头像、名称或副标题时，用 `nav-avatar`、`nav-name`、`nav-subtitle`。插槽盖过上面的默认图片和文字。`:nav-sections` 只覆盖当前页的微信内嵌列，H5 侧栏读不到它。
 
+## 标准页面
+
+登录等可复用整页在独立包 `lingyun-ui-page`，见 [页面扩展](../page/README.md)。路由仍写在 `pages.json`，页面里只挂标签并处理提交、跳转。
+
 ## 屏幕
 
 当前窗口档、操作系统、折叠状态和硬件类型见 [屏幕](./screen.md)。

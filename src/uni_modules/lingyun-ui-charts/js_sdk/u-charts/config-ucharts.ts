@@ -314,7 +314,10 @@ const cfu: Record<string, any> = {
 		"extra": {
 			"column": {
 				"type": "group",
-				"width": 30,
+				"width": 28,
+				"seriesGap": 3,
+				"categoryGap": 6,
+				"barBorderRadius": [6, 6, 0, 0],
 				"activeBgColor": "#000000",
 				"activeBgOpacity": 0.08
 			},

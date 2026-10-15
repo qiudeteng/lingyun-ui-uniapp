@@ -2,24 +2,12 @@
   import { onLaunch, onShow, onThemeChange } from '@dcloudio/uni-app'
   import { refreshLingyunScreen } from '@/uni_modules/lingyun-ui/utils/screen'
   import { useThemeStore } from '@/stores/theme'
-  import { useAppStore } from '@/stores/app'
-  import { useAuthStore } from '@/stores/auth'
-  import { useUserStore } from '@/stores/user'
-  import { guardColdStart } from '@/router/guards'
 
   const themeStore = useThemeStore()
 
   onLaunch(() => {
     refreshLingyunScreen()
     themeStore.init()
-    guardColdStart()
-    const appStore = useAppStore()
-    const authStore = useAuthStore()
-    const userStore = useUserStore()
-    appStore.getEnterprise()
-    if (authStore.isLogin) {
-      userStore.refreshData()
-    }
   })
 
   /* 每次进前台再刷一次窗体色（小程序页栈切换后可能丢） */

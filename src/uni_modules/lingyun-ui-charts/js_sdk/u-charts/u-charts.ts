@@ -976,13 +976,15 @@ function legendCellOf(item, column) {
   return { text: String(raw), color: '' };
 }
 
-function legendColumnLayout(series, opts, fontSize, context) {
+function legendColumnLayout(series, opts, fontSize, context, stretchTextWidth?: number) {
   var columns = legendColumnsOf(opts);
   if (!columns) return null;
   var gap = (opts.legend.columnGap == null ? 8 : opts.legend.columnGap) * opts.pix;
   var widths = [];
+  var flexIdx = 0;
   for (var c = 0; c < columns.length; c++) {
     var col = columns[c];
+    if (col.key === 'name') flexIdx = c;
     if (col.width > 0) {
       widths.push(col.width * opts.pix);
     } else {
@@ -999,6 +1001,12 @@ function legendColumnLayout(series, opts, fontSize, context) {
   for (var k = 0; k < widths.length; k++) {
     textWidth += widths[k];
     if (k < widths.length - 1) textWidth += gap;
+  }
+  // 上下布局拉满宽度时，多余/不足空间加在 name 列（或首列）
+  if (typeof stretchTextWidth === 'number' && stretchTextWidth > 0 && stretchTextWidth !== textWidth) {
+    var next = widths[flexIdx] + (stretchTextWidth - textWidth);
+    widths[flexIdx] = next < 0 ? 0 : next;
+    textWidth = stretchTextWidth;
   }
   return { columns: columns, widths: widths, gap: gap, textWidth: textWidth };
 }
@@ -1043,45 +1051,67 @@ function calLegendData(series, opts, config, chartData, context) {
   legendData.columnLayout = columnLayout;
   if (opts.legend.position == 'top' || opts.legend.position == 'bottom') {
     let legendList = [];
-    let widthCount = 0;
     let widthCountArr = [];
-    let currentRow = [];
-    for (let i = 0; i < series.length; i++) {
-      let item = series[i];
-      let itemWidth = legendItemWidth(item, columnLayout, shapeWidth, shapeRight, opts.legend.itemGap * opts.pix, fontSize, context);
-      if (widthCount + itemWidth > opts.width - opts.area[1] - opts.area[3]) {
-        legendList.push(currentRow);
-        widthCountArr.push(widthCount - opts.legend.itemGap * opts.pix);
-        widthCount = itemWidth;
-        currentRow = [item];
-      } else {
-        widthCount += itemWidth;
-        currentRow.push(item);
+    // 图例表：上下布局时一行一项，宽度与绘图区对齐
+    if (columnLayout && series.length) {
+      let avail = opts.width - opts.area[1] - opts.area[3];
+      let contentW = Math.max(0, avail - 2 * padding);
+      let targetText = Math.max(0, contentW - shapeWidth - shapeRight);
+      columnLayout = legendColumnLayout(series, opts, fontSize, context, targetText);
+      legendData.columnLayout = columnLayout;
+      let rowContentW = shapeWidth + shapeRight + columnLayout.textWidth;
+      for (let i = 0; i < series.length; i++) {
+        legendList.push([series[i]]);
+        widthCountArr.push(rowContentW);
       }
-    }
-    if (currentRow.length) {
-      legendList.push(currentRow);
-      widthCountArr.push(widthCount - opts.legend.itemGap * opts.pix);
       legendData.widthArr = widthCountArr;
-      let legendWidth = Math.max.apply(null, widthCountArr);
-      switch (opts.legend.float) {
-        case 'left':
-          legendData.area.start.x = opts.area[3];
-          legendData.area.end.x = opts.area[3] + legendWidth + 2 * padding;
-          break;
-        case 'right':
-          legendData.area.start.x = opts.width - opts.area[1] - legendWidth - 2 * padding;
-          legendData.area.end.x = opts.width - opts.area[1];
-          break;
-        default:
-          legendData.area.start.x = (opts.width - legendWidth) / 2 - padding;
-          legendData.area.end.x = (opts.width + legendWidth) / 2 + padding;
-      }
-      legendData.area.width = legendWidth + 2 * padding;
-      legendData.area.wholeWidth = legendWidth + 2 * padding;
+      legendData.area.start.x = opts.area[3];
+      legendData.area.end.x = opts.width - opts.area[1];
+      legendData.area.width = avail;
+      legendData.area.wholeWidth = avail;
       legendData.area.height = legendList.length * lineHeight + 2 * padding;
       legendData.area.wholeHeight = legendList.length * lineHeight + 2 * padding + 2 * margin;
       legendData.points = legendList;
+    } else {
+      let widthCount = 0;
+      let currentRow = [];
+      for (let i = 0; i < series.length; i++) {
+        let item = series[i];
+        let itemWidth = legendItemWidth(item, columnLayout, shapeWidth, shapeRight, opts.legend.itemGap * opts.pix, fontSize, context);
+        if (widthCount + itemWidth > opts.width - opts.area[1] - opts.area[3]) {
+          legendList.push(currentRow);
+          widthCountArr.push(widthCount - opts.legend.itemGap * opts.pix);
+          widthCount = itemWidth;
+          currentRow = [item];
+        } else {
+          widthCount += itemWidth;
+          currentRow.push(item);
+        }
+      }
+      if (currentRow.length) {
+        legendList.push(currentRow);
+        widthCountArr.push(widthCount - opts.legend.itemGap * opts.pix);
+        legendData.widthArr = widthCountArr;
+        let legendWidth = Math.max.apply(null, widthCountArr);
+        switch (opts.legend.float) {
+          case 'left':
+            legendData.area.start.x = opts.area[3];
+            legendData.area.end.x = opts.area[3] + legendWidth + 2 * padding;
+            break;
+          case 'right':
+            legendData.area.start.x = opts.width - opts.area[1] - legendWidth - 2 * padding;
+            legendData.area.end.x = opts.width - opts.area[1];
+            break;
+          default:
+            legendData.area.start.x = (opts.width - legendWidth) / 2 - padding;
+            legendData.area.end.x = (opts.width + legendWidth) / 2 + padding;
+        }
+        legendData.area.width = legendWidth + 2 * padding;
+        legendData.area.wholeWidth = legendWidth + 2 * padding;
+        legendData.area.height = legendList.length * lineHeight + 2 * padding;
+        legendData.area.wholeHeight = legendList.length * lineHeight + 2 * padding + 2 * margin;
+        legendData.points = legendList;
+      }
     }
   } else {
     let len = series.length;
