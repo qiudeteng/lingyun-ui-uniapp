@@ -97,6 +97,8 @@
 
     <!-- 命令式 Toast/HUD：须在页面树内（mp-weixin 的 App.vue 模板不会盖到页面上） -->
     <lingyun-feedback-host />
+    <!-- demo 页悬浮主题开关：非 demo 路由自己不显示 -->
+    <demo-theme-switch />
   </view>
 </template>
 
@@ -118,6 +120,7 @@ import {
   readLingyunResizeWidth,
 } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
 import { useThemeStore } from '@/stores/theme'
+import DemoThemeSwitch from '@/components/demo-theme-switch/demo-theme-switch.vue'
 import { pageRequiresLogin } from '@/router/guards'
 import {
   LINGYUN_PAGE_NAV_HOME,
@@ -160,6 +163,7 @@ type MpComponentScope = {
 
 export default defineComponent({
   name: 'LingyunAppPage',
+  components: { DemoThemeSwitch },
   emits: ['back', 'close', 'trailing', 'scroll'],
   props: {
     title: { type: String, default: '' },
