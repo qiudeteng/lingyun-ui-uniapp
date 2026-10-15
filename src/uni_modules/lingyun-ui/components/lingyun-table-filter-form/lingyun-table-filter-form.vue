@@ -167,7 +167,7 @@ interface ShownOption {
 
 /**
  * lingyun-table-filter-form
- * @description 表格列的排序与筛选表单（草稿）。由 lingyun-table-filter 放进 Sheet 或弹出菜单；
+ * @description 表格列的排序与筛选表单（草稿）。由 lingyun-table-filter 放进 Sheet 或 Popover；
  * submitSeq 加一时提交，校验通过才抛 confirm。
  * @see design/TABLES.md
  */
@@ -179,7 +179,7 @@ export default defineComponent({
     resetKey: { type: String, default: '' },
     /** 加一即提交 */
     submitSeq: { type: Number, default: 0 },
-    /** 弹出菜单里用，行高和间距收紧 */
+    /** 宽屏 Popover 里用，行高和间距收紧 */
     compact: { type: Boolean, default: false },
     /** 为空时只显示排序 */
     type: { type: String as PropType<LingyunTableFilterType | ''>, default: '' },
@@ -583,7 +583,7 @@ export default defineComponent({
   color: var(--lingyun-label-secondary, #{$lingyun-label-secondary});
 }
 
-/* 宽屏弹出菜单：行高 44、字号 15，块间距收紧 */
+/* 宽屏 Popover：行高 44、字号 15，块间距收紧 */
 .lingyun-table-filter-form--compact .lingyun-table-filter-form__block {
   margin-bottom: 14px;
 }

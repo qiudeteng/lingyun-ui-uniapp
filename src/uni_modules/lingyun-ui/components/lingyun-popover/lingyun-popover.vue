@@ -74,7 +74,9 @@ const GAP = 8
 const ARROW_W = 22
 const ARROW_H = 14
 const TIP_GAP = 4
-const ARROW_INSET = 22
+/* 面板圆角（glass surface / menu），箭头底边不能压到圆弧上 */
+const PANEL_RADIUS = 16
+const PANEL_RADIUS_MENU = 32
 const PANEL_MIN_W = 160
 const PANEL_MAX_W = 280
 const QUERY_TIMEOUT_MS = 600
@@ -160,6 +162,7 @@ export default defineComponent({
         this.phase ? `lingyun-popover--${this.phase}` : '',
         `lingyun-popover--place-${this.resolvedPlace}`,
         this.variant === 'menu' ? 'lingyun-popover--menu' : '',
+        this.showArrow ? 'lingyun-popover--arrow' : '',
       ]
         .filter(Boolean)
         .join(' ')
@@ -169,11 +172,12 @@ export default defineComponent({
     },
     arrowStyle() {
       const o = `${this.arrowOffset}px`
-      const overlap = `${-(ARROW_H - 1)}px`
-      if (this.resolvedPlace === 'top') return { left: o, bottom: overlap }
-      if (this.resolvedPlace === 'left') return { top: o, right: overlap }
-      if (this.resolvedPlace === 'right') return { top: o, left: overlap }
-      return { left: o, top: overlap }
+      /* 压进面板 1px，斜边描边接上面板描边；fill 在底边截掉 1px，不与面板底色叠加 */
+      const edge = `${-(ARROW_H - 1)}px`
+      if (this.resolvedPlace === 'top') return { left: o, bottom: edge }
+      if (this.resolvedPlace === 'left') return { top: o, right: edge }
+      if (this.resolvedPlace === 'right') return { top: o, left: edge }
+      return { left: o, top: edge }
     },
     liftStyle() {
       /* 对齐 Alert：缩放在 lift，勿对玻璃 panel 做 opacity */
@@ -188,6 +192,7 @@ export default defineComponent({
         top: `${this.panelTop}px`,
         left: `${this.panelLeft}px`,
         width: `${this.panelWidth}px`,
+        '--ax': `${this.arrowOffset}px`,
         transform: `scale(${scale})`,
         transformOrigin:
           place === 'top'
@@ -447,15 +452,20 @@ export default defineComponent({
       return Math.round(Math.min(PANEL_MAX_W, Math.max(PANEL_MIN_W, Math.min(basis, cap))))
     },
     /** 箭头在面板上的理想位置（沿边距离）；面板据此相对锚点偏移，箭头始终指向锚点 */
+    /** 箭头尖离面板边缘的最小距离：圆角 + 半个箭头宽 */
+    arrowInset(): number {
+      return (this.variant === 'menu' ? PANEL_RADIUS_MENU : PANEL_RADIUS) + ARROW_W / 2
+    },
     alignTip(span: number): number {
       const align = String(this.arrowAlign || 'auto').toLowerCase()
-      if (align === 'leading' || align === 'start') return Math.min(ARROW_INSET, span / 2)
-      if (align === 'trailing' || align === 'end') return Math.max(span / 2, span - ARROW_INSET)
+      const inset = this.arrowInset()
+      if (align === 'leading' || align === 'start') return Math.min(inset, span / 2)
+      if (align === 'trailing' || align === 'end') return Math.max(span / 2, span - inset)
       return span / 2
     },
     resolveArrowOffset(anchorCenter: number, span: number): number {
       let center = anchorCenter
-      const min = Math.min(ARROW_INSET, span / 2)
+      const min = Math.min(this.arrowInset(), span / 2)
       const max = Math.max(min, span - min)
       center = Math.max(min, Math.min(center, max))
       return Math.round(center - ARROW_W / 2)
@@ -575,9 +585,10 @@ export default defineComponent({
 }
 
 /*
- * 箭头 = 面板的延伸：fill 与面板同底色、同模糊，clip-path 裁成三角；stroke 是斜边上 1px 的 V 形，
- * 颜色同面板 hairline。箭头底边压进面板 1px，盖住那一段面板描边，两者连成一体。
- * 边框三角不能用：backdrop-filter 作用在整个矩形上。
+ * 箭头 = 面板的延伸：fill 与面板同底色，clip-path 裁成三角；stroke 是斜边上 1px 的 V 形，
+ * 颜色同面板 hairline。箭头压进面板 1px：stroke 画满，两端正好落在面板描边那一行上连成一线；
+ * fill 在底边截掉 1px，不与面板底色叠加出亮线。面板描边在箭头处由 mask 挖空（见文末）。
+ * fill 不加 backdrop-filter：它只能模糊自身 22×14 的小框，边缘采样发虚，在与面板交界处会出一条暗线。
  */
 $popover-panel-bg: rgba(255, 255, 255, 0.72);
 $popover-hairline: rgba(255, 255, 255, 0.45);
@@ -607,8 +618,6 @@ $popover-hairline-dark: rgba(166, 166, 166, 0.45);
 
 .lingyun-popover__arrow-fill {
   background-color: $popover-panel-bg;
-  backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
-  -webkit-backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
 }
 
 .lingyun-popover__arrow-stroke {
@@ -625,8 +634,8 @@ $popover-hairline-dark: rgba(166, 166, 166, 0.45);
 
 /* 尖朝上（面板在下） */
 .lingyun-popover--place-bottom .lingyun-popover__arrow-fill {
-  -webkit-clip-path: polygon(50% 0, 100% 100%, 0 100%);
-  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  -webkit-clip-path: polygon(50% 0, 21.21px 13px, 0.79px 13px);
+  clip-path: polygon(50% 0, 21.21px 13px, 0.79px 13px);
 }
 
 .lingyun-popover--place-bottom .lingyun-popover__arrow-stroke {
@@ -636,8 +645,8 @@ $popover-hairline-dark: rgba(166, 166, 166, 0.45);
 
 /* 尖朝下（面板在上） */
 .lingyun-popover--place-top .lingyun-popover__arrow-fill {
-  -webkit-clip-path: polygon(0 0, 100% 0, 50% 100%);
-  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  -webkit-clip-path: polygon(0.79px 1px, 21.21px 1px, 50% 100%);
+  clip-path: polygon(0.79px 1px, 21.21px 1px, 50% 100%);
 }
 
 .lingyun-popover--place-top .lingyun-popover__arrow-stroke {
@@ -647,8 +656,8 @@ $popover-hairline-dark: rgba(166, 166, 166, 0.45);
 
 /* 尖朝左（面板在右） */
 .lingyun-popover--place-right .lingyun-popover__arrow-fill {
-  -webkit-clip-path: polygon(0 50%, 100% 0, 100% 100%);
-  clip-path: polygon(0 50%, 100% 0, 100% 100%);
+  -webkit-clip-path: polygon(0 50%, 13px 0.79px, 13px 21.21px);
+  clip-path: polygon(0 50%, 13px 0.79px, 13px 21.21px);
 }
 
 .lingyun-popover--place-right .lingyun-popover__arrow-stroke {
@@ -658,8 +667,8 @@ $popover-hairline-dark: rgba(166, 166, 166, 0.45);
 
 /* 尖朝右（面板在左） */
 .lingyun-popover--place-left .lingyun-popover__arrow-fill {
-  -webkit-clip-path: polygon(100% 50%, 0 0, 0 100%);
-  clip-path: polygon(100% 50%, 0 0, 0 100%);
+  -webkit-clip-path: polygon(100% 50%, 1px 0.79px, 1px 21.21px);
+  clip-path: polygon(100% 50%, 1px 0.79px, 1px 21.21px);
 }
 
 .lingyun-popover--place-left .lingyun-popover__arrow-stroke {
@@ -690,5 +699,76 @@ $popover-hairline-dark: rgba(166, 166, 166, 0.45);
   border: #{$lingyun-glass-hairline-dark};
   background-color: #{$lingyun-glass-overlay-bg-dark};
   box-shadow: #{$lingyun-glass-highlight-dark}, #{$lingyun-glass-shadow-dark};
+}
+
+/*
+ * 有箭头时：面板描边与内高光挪到 ::before，用 mask 在箭头处挖空（--ax 为箭头在面板上的偏移）。
+ * 挖空只到斜边描边内侧（两端各留 1.27px），面板描边伸进箭头脚下，被斜边盖住接成一条线；
+ * 半透明箭头盖不住描边，不挖会在箭头底边留一条线。面板自身不留边框，::before 贴着面板盒子画描边，
+ * 与箭头同一坐标系（边框宽度在非整数倍屏上会被取整，用负 inset 补会错位）。
+ */
+.lingyun-popover__root.lingyun-popover--arrow .lingyun-popover__panel {
+  position: relative;
+  border-width: 0;
+  box-shadow: var(--lingyun-glass-shadow, #{$lingyun-glass-shadow});
+}
+
+.lingyun-popover__root.theme-dark.lingyun-popover--arrow .lingyun-popover__panel {
+  box-shadow: #{$lingyun-glass-shadow-dark};
+}
+
+.lingyun-popover--arrow .lingyun-popover__panel::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  border: var(--lingyun-glass-hairline, #{$lingyun-glass-hairline});
+  border-radius: inherit;
+  box-shadow: var(--lingyun-glass-highlight, #{$lingyun-glass-highlight});
+  pointer-events: none;
+}
+
+.lingyun-popover__root.theme-dark.lingyun-popover--arrow .lingyun-popover__panel::before {
+  border: #{$lingyun-glass-hairline-dark};
+  box-shadow: #{$lingyun-glass-highlight-dark};
+}
+
+.lingyun-popover--arrow.lingyun-popover--place-bottom .lingyun-popover__panel::before {
+  -webkit-mask:
+    linear-gradient(to right, #000 calc(var(--ax) + 1.27px), transparent calc(var(--ax) + 1.27px), transparent calc(var(--ax) + 20.73px), #000 calc(var(--ax) + 20.73px)) 0 0 / 100% 3px no-repeat,
+    linear-gradient(#000, #000) 0 3px / 100% calc(100% - 3px) no-repeat;
+  mask:
+    linear-gradient(to right, #000 calc(var(--ax) + 1.27px), transparent calc(var(--ax) + 1.27px), transparent calc(var(--ax) + 20.73px), #000 calc(var(--ax) + 20.73px)) 0 0 / 100% 3px no-repeat,
+    linear-gradient(#000, #000) 0 3px / 100% calc(100% - 3px) no-repeat;
+}
+
+.lingyun-popover--arrow.lingyun-popover--place-top .lingyun-popover__panel::before {
+  -webkit-mask:
+    linear-gradient(to right, #000 calc(var(--ax) + 1.27px), transparent calc(var(--ax) + 1.27px), transparent calc(var(--ax) + 20.73px), #000 calc(var(--ax) + 20.73px)) 0 100% / 100% 3px no-repeat,
+    linear-gradient(#000, #000) 0 0 / 100% calc(100% - 3px) no-repeat;
+  mask:
+    linear-gradient(to right, #000 calc(var(--ax) + 1.27px), transparent calc(var(--ax) + 1.27px), transparent calc(var(--ax) + 20.73px), #000 calc(var(--ax) + 20.73px)) 0 100% / 100% 3px no-repeat,
+    linear-gradient(#000, #000) 0 0 / 100% calc(100% - 3px) no-repeat;
+}
+
+.lingyun-popover--arrow.lingyun-popover--place-right .lingyun-popover__panel::before {
+  -webkit-mask:
+    linear-gradient(to bottom, #000 calc(var(--ax) + 1.27px), transparent calc(var(--ax) + 1.27px), transparent calc(var(--ax) + 20.73px), #000 calc(var(--ax) + 20.73px)) 0 0 / 3px 100% no-repeat,
+    linear-gradient(#000, #000) 3px 0 / calc(100% - 3px) 100% no-repeat;
+  mask:
+    linear-gradient(to bottom, #000 calc(var(--ax) + 1.27px), transparent calc(var(--ax) + 1.27px), transparent calc(var(--ax) + 20.73px), #000 calc(var(--ax) + 20.73px)) 0 0 / 3px 100% no-repeat,
+    linear-gradient(#000, #000) 3px 0 / calc(100% - 3px) 100% no-repeat;
+}
+
+.lingyun-popover--arrow.lingyun-popover--place-left .lingyun-popover__panel::before {
+  -webkit-mask:
+    linear-gradient(to bottom, #000 calc(var(--ax) + 1.27px), transparent calc(var(--ax) + 1.27px), transparent calc(var(--ax) + 20.73px), #000 calc(var(--ax) + 20.73px)) 100% 0 / 3px 100% no-repeat,
+    linear-gradient(#000, #000) 0 0 / calc(100% - 3px) 100% no-repeat;
+  mask:
+    linear-gradient(to bottom, #000 calc(var(--ax) + 1.27px), transparent calc(var(--ax) + 1.27px), transparent calc(var(--ax) + 20.73px), #000 calc(var(--ax) + 20.73px)) 100% 0 / 3px 100% no-repeat,
+    linear-gradient(#000, #000) 0 0 / calc(100% - 3px) 100% no-repeat;
 }
 </style>

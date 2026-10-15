@@ -1134,7 +1134,7 @@ export default defineComponent({
       filterSheetOpen: false,
       /** 打开面板时算好的选项快照 */
       sheetOptions: [] as LingyunTableFilterOption[],
-      /** 宽屏菜单指向的筛选图标或标签 */
+      /** 宽屏 Popover 箭头指向的筛选图标或标签 */
       filterAnchor: null as LingyunTableFilterAnchor | null,
       filterOpenSeq: 0,
       filterUid: Math.random().toString(36).slice(2, 8),
@@ -2348,7 +2348,7 @@ export default defineComponent({
         this.filterSheetOpen = true
       })
     },
-    /** 宽屏菜单的锚点：点了哪个就指向哪个；测不到退回表头 */
+    /** 宽屏 Popover 的锚点：点了哪个就指向哪个；测不到退回表头 */
     queryFilterAnchor(key: string, from: 'h' | 'c'): Promise<LingyunTableFilterAnchor | null> {
       return new Promise((resolve) => {
         let settled = false

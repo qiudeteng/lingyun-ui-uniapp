@@ -2,7 +2,7 @@
 
 import { LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH } from '../lingyun-toolbars/getLingyunNavSafeInset'
 
-/** 窄屏用 Sheet，宽屏（与 Sheet 的 iPad 卡片同一分界）用贴着筛选图标弹出的菜单 */
+/** 窄屏用 Sheet，宽屏（与 Sheet 的 iPad 卡片同一分界）用箭头指向筛选图标的 Popover */
 export function isWideFilterLayout(): boolean {
   try {
     const info = uni.getWindowInfo()
@@ -12,7 +12,7 @@ export function isWideFilterLayout(): boolean {
   }
 }
 
-/** 视口坐标的矩形，给弹出菜单定位 */
+/** 视口坐标的矩形，给 Popover 定位 */
 export interface LingyunTableFilterAnchor {
   left: number
   top: number

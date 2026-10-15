@@ -123,7 +123,7 @@ lingyun-ui/
     ├── lingyun-fab/
     ├── lingyun-goods-nav/
     ├── lingyun-table/    # 小程序滚动同步见 table-sync.wxs；筛选类型与匹配见 table-filter.ts
-    ├── lingyun-table-filter/ # 表格列的排序与筛选面板（窄屏 Sheet / 宽屏弹出菜单），由 lingyun-table 内部打开
+    ├── lingyun-table-filter/ # 表格列的排序与筛选面板（窄屏 Sheet / 宽屏 Popover），由 lingyun-table 内部打开
     ├── lingyun-table-filter-form/ # 筛选面板的表单内容，由 lingyun-table-filter 使用
     ├── lingyun-grid/
     ├── lingyun-grid-item/
