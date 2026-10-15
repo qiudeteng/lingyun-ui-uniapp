@@ -60,16 +60,12 @@
         <slot name="tools" />
       </view>
     </view>
-    <view
-      v-if="activeFilters.length"
-      class="lingyun-table__filters"
-      @wheel="onChipsWheel"
-      @mousedown="onChipsMouseDown"
-    >
+    <view v-if="activeFilters.length" class="lingyun-table__filters">
       <scroll-view class="lingyun-table__filters-scroll" scroll-x enable-flex :show-scrollbar="false">
         <view class="lingyun-table__filters-track">
           <view
             v-for="item in activeFilters"
+            :id="filterDomId('c', item.key)"
             :key="item.key"
             class="lingyun-table__chip"
             hover-class="lingyun-table__chip--hover"
@@ -125,7 +121,7 @@
                 <view class="lingyun-table__sort-down"><lingyun-icon type="down" :size="sortIconSize" :color="sortColor(col, 'desc')" /></view>
               </view>
             </view>
-            <view v-if="filterTypeOf(col)" class="lingyun-table__filter" @click.stop="openFilter(col.key)">
+            <view v-if="filterTypeOf(col)" :id="filterDomId('h', col.key)" class="lingyun-table__filter" @click.stop="openFilter(col.key)">
               <lingyun-icon
                 :type="filterOn(col.key) ? 'tune-filled' : 'tune'"
                 :size="filterIconSize"
@@ -160,7 +156,7 @@
                   <view class="lingyun-table__sort-down"><lingyun-icon type="down" :size="sortIconSize" :color="sortColor(col, 'desc')" /></view>
                 </view>
               </view>
-              <view v-if="filterTypeOf(col)" class="lingyun-table__filter" @click.stop="openFilter(col.key)">
+              <view v-if="filterTypeOf(col)" :id="filterDomId('h', col.key)" class="lingyun-table__filter" @click.stop="openFilter(col.key)">
                 <lingyun-icon
                   :type="filterOn(col.key) ? 'tune-filled' : 'tune'"
                   :size="filterIconSize"
@@ -196,7 +192,7 @@
                   <view class="lingyun-table__sort-down"><lingyun-icon type="down" :size="sortIconSize" :color="sortColor(col, 'desc')" /></view>
                 </view>
               </view>
-              <view v-if="filterTypeOf(col)" class="lingyun-table__filter" @click.stop="openFilter(col.key)">
+              <view v-if="filterTypeOf(col)" :id="filterDomId('h', col.key)" class="lingyun-table__filter" @click.stop="openFilter(col.key)">
                 <lingyun-icon
                   :type="filterOn(col.key) ? 'tune-filled' : 'tune'"
                   :size="filterIconSize"
@@ -225,7 +221,7 @@
                 <view class="lingyun-table__sort-down"><lingyun-icon type="down" :size="sortIconSize" :color="sortColor(col, 'desc')" /></view>
               </view>
             </view>
-            <view v-if="filterTypeOf(col)" class="lingyun-table__filter" @click.stop="openFilter(col.key)">
+            <view v-if="filterTypeOf(col)" :id="filterDomId('h', col.key)" class="lingyun-table__filter" @click.stop="openFilter(col.key)">
               <lingyun-icon
                 :type="filterOn(col.key) ? 'tune-filled' : 'tune'"
                 :size="filterIconSize"
@@ -625,6 +621,7 @@
       :condition="sheetColumn ? conditionMap[sheetColumn.key] || null : null"
       :sortable="!!(sheetColumn && sheetColumn.sortable)"
       :sort-order="sheetColumn && sortKey === sheetColumn.key ? sortOrder : ''"
+      :anchor="filterAnchor"
       @update:show="onFilterSheetShow"
       @confirm="onFilterConfirm"
     />
@@ -635,7 +632,9 @@
 import { defineComponent, type PropType } from 'vue'
 import {
   filterConditionLabel,
+  isWideFilterLayout,
   makeFilterTest,
+  type LingyunTableFilterAnchor,
   type LingyunTableFilterCondition,
   type LingyunTableFilterOption,
   type LingyunTableFilterResult,
@@ -1097,6 +1096,10 @@ export default defineComponent({
       filterSheetOpen: false,
       /** 打开面板时算好的选项快照 */
       sheetOptions: [] as LingyunTableFilterOption[],
+      /** 宽屏菜单指向的筛选图标或标签 */
+      filterAnchor: null as LingyunTableFilterAnchor | null,
+      filterOpenSeq: 0,
+      filterUid: Math.random().toString(36).slice(2, 8),
       headLeft: 0,
       bodyLeft: 0,
       bodyTop: 0,
@@ -1124,6 +1127,7 @@ export default defineComponent({
       /** 电脑上用鼠标拖过筛选标签栏，松手那次点击不算点标签 */
       chipsDragged: false,
       chipsDragStop: null as (() => void) | null,
+      chipsUnbind: null as (() => void) | null,
       hBarTimer: 0,
       hDragging: false,
       hDragX: 0,
@@ -1675,6 +1679,7 @@ export default defineComponent({
   mounted() {
     if (this.remote) this.emitQuery()
     this.measureViewport()
+    this.bindChipsPointer()
     this.onResize = () => {
       if (!this.fixed && this.fillMode === 'page') {
         const info = uni.getWindowInfo()
@@ -1695,6 +1700,7 @@ export default defineComponent({
     this.detachHBarDrag()
     this.detachVBarDrag()
     if (this.chipsDragStop) this.chipsDragStop()
+    if (this.chipsUnbind) this.chipsUnbind()
     if (this.syncTimer) clearTimeout(this.syncTimer)
     if (this.pressTimer) clearTimeout(this.pressTimer)
     if (this.hBarTimer) clearTimeout(this.hBarTimer)
@@ -2245,13 +2251,53 @@ export default defineComponent({
         count: countOf(token),
       }))
     },
-    openFilter(key: string) {
+    filterDomId(kind: 'h' | 'c', key: string): string {
+      return `lyf-${this.filterUid}-${kind}-${String(key).replace(/[^\w-]/g, '_')}`
+    },
+    openFilter(key: string, from: 'h' | 'c' = 'h') {
       const col = this.columnByKey[key]
       if (!col) return
       this.cancelPress()
       this.filterSheetKey = key
       this.sheetOptions = columnFilterType(col) === 'select' ? this.buildFilterOptions(col) : []
-      this.filterSheetOpen = true
+      if (!isWideFilterLayout()) {
+        this.filterAnchor = null
+        this.filterSheetOpen = true
+        return
+      }
+      const seq = ++this.filterOpenSeq
+      this.queryFilterAnchor(key, from).then((rect) => {
+        if (seq !== this.filterOpenSeq) return
+        this.filterAnchor = rect
+        this.filterSheetOpen = true
+      })
+    },
+    /** 宽屏菜单的锚点：点了哪个就指向哪个；测不到退回表头 */
+    queryFilterAnchor(key: string, from: 'h' | 'c'): Promise<LingyunTableFilterAnchor | null> {
+      return new Promise((resolve) => {
+        let settled = false
+        const finish = (rect: LingyunTableFilterAnchor | null) => {
+          if (settled) return
+          settled = true
+          resolve(rect)
+        }
+        const timer = setTimeout(() => finish(null), 200)
+        const usable = (r: any): LingyunTableFilterAnchor | null =>
+          r && r.width > 0 && r.height > 0 ? { left: r.left, top: r.top, width: r.width, height: r.height } : null
+        try {
+          const q = uni.createSelectorQuery().in(this)
+          q.select(`#${this.filterDomId(from, key)}`).boundingClientRect()
+          q.select('.lingyun-table__head').boundingClientRect()
+          q.exec((res) => {
+            clearTimeout(timer)
+            const list = Array.isArray(res) ? res : []
+            finish(usable(list[0]) || usable(list[1]))
+          })
+        } catch {
+          clearTimeout(timer)
+          finish(null)
+        }
+      })
     },
     onFilterSheetShow(open: boolean) {
       this.filterSheetOpen = open
@@ -2317,27 +2363,44 @@ export default defineComponent({
       this.emitQuery()
     },
     onChipTap(key: string) {
-      if (!this.chipsDragged) this.openFilter(key)
+      if (!this.chipsDragged) this.openFilter(key, 'c')
     },
     onChipClear(key: string) {
       if (!this.chipsDragged) this.clearColumnFilter(key)
     },
-    /** H5：标签栏里真正带横向滚动的节点（uni scroll-view 内层） */
-    chipsScroller(host: EventTarget | null): HTMLElement | null {
+    /**
+     * H5：事件落在筛选标签栏里时，返回其中真正横向可滚的节点（uni scroll-view 内层）。
+     * uni 包装过的模板事件拿不到 DOM，所以挂原生监听，从 target 往上找。
+     */
+    chipsScroller(target: EventTarget | null): HTMLElement | null {
       // #ifdef H5
-      const el = host as HTMLElement | null
-      if (!el || typeof el.querySelectorAll !== 'function') return null
-      const list = el.querySelectorAll<HTMLElement>('.uni-scroll-view')
+      const el = target as HTMLElement | null
+      const bar = el && typeof el.closest === 'function' ? el.closest<HTMLElement>('.lingyun-table__filters') : null
+      if (!bar) return null
+      const list = bar.querySelectorAll<HTMLElement>('.uni-scroll-view')
       for (let i = 0; i < list.length; i += 1) {
         if (list[i].scrollWidth > list[i].clientWidth + 1) return list[i]
       }
       // #endif
       return null
     },
+    bindChipsPointer() {
+      // #ifdef H5
+      const root = this.$el as HTMLElement | null
+      if (!root || typeof root.addEventListener !== 'function') return
+      const wheel = (e: WheelEvent) => this.onChipsWheel(e)
+      const down = (e: MouseEvent) => this.onChipsMouseDown(e)
+      root.addEventListener('wheel', wheel, { passive: false })
+      root.addEventListener('mousedown', down)
+      this.chipsUnbind = () => {
+        root.removeEventListener('wheel', wheel)
+        root.removeEventListener('mousedown', down)
+      }
+      // #endif
+    },
     /** 电脑上滚轮只有竖向，竖向滚轮也拿来横滚；滚到头时放给页面 */
-    onChipsWheel(raw: unknown) {
-      const e = raw as WheelEvent
-      const box = this.chipsScroller(e.currentTarget)
+    onChipsWheel(e: WheelEvent) {
+      const box = this.chipsScroller(e.target)
       if (!box) return
       const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
       const before = box.scrollLeft
@@ -2345,11 +2408,10 @@ export default defineComponent({
       if (box.scrollLeft !== before) e.preventDefault()
     },
     /** 电脑上鼠标按住拖动横滚。手机走 scroll-view 原生滑动 */
-    onChipsMouseDown(raw: unknown) {
+    onChipsMouseDown(e: MouseEvent) {
       // #ifdef H5
-      const e = raw as MouseEvent
       if (e.button !== 0) return
-      const box = this.chipsScroller(e.currentTarget)
+      const box = this.chipsScroller(e.target)
       if (!box) return
       if (this.chipsDragStop) this.chipsDragStop()
       this.chipsDragged = false

@@ -1,5 +1,25 @@
 /** lingyun-table 与 lingyun-table-filter 共用的筛选类型、条件匹配和文案 */
 
+import { LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH } from '../lingyun-toolbars/getLingyunNavSafeInset'
+
+/** 窄屏用 Sheet，宽屏（与 Sheet 的 iPad 卡片同一分界）用贴着筛选图标弹出的菜单 */
+export function isWideFilterLayout(): boolean {
+  try {
+    const info = uni.getWindowInfo()
+    return (info && info.windowWidth ? info.windowWidth : 375) >= LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH
+  } catch {
+    return false
+  }
+}
+
+/** 视口坐标的矩形，给弹出菜单定位 */
+export interface LingyunTableFilterAnchor {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
 export type LingyunTableFilterType = 'select' | 'number' | 'text' | 'date'
 
 export type LingyunTableFilterOp =

@@ -100,6 +100,13 @@ export default defineComponent({
     zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
     /** menu：Sketch Menus 面板（圆角 32、内边距 10），给 lingyun-menu 用 */
     variant: { type: String, default: '' },
+    /**
+     * 锚点矩形（视口坐标 { left, top, width, height }）。传了就指向它，不再测 trigger 插槽；
+     * 用于触发点不在本组件里的场景（如表格表头的筛选图标）。
+     */
+    anchor: { type: Object as PropType<AnchorBox | null>, default: null },
+    /** 面板预估高度，用于判断下方放不下时翻到上方。0 用默认值 */
+    estimateHeight: { type: Number, default: 0 },
   },
   data() {
     return {
@@ -211,6 +218,11 @@ export default defineComponent({
       this.setVisible(false)
     },
     queryTrigger(): Promise<{ rect: AnchorBox | null; viewport: AnchorBox | null }> {
+      if (this.anchor) {
+        const info = uni.getWindowInfo()
+        const viewport = { width: info.windowWidth, height: info.windowHeight }
+        return Promise.resolve({ rect: this.anchor, viewport })
+      }
       return new Promise((resolve) => {
         let settled = false
         const finish = (rect: AnchorBox | null, viewport: AnchorBox | null) => {
@@ -327,7 +339,7 @@ export default defineComponent({
       // 先测锚点 → 无过渡落到 enter（略上方）→ 再开过渡落到 open（从上往下）
       this.queryTrigger().then(({ rect, viewport }) => {
         if (!this.visible) return
-        this.applyAnchor(rect, EST_PANEL_H, viewport)
+        this.applyAnchor(rect, this.estimateHeight > 0 ? this.estimateHeight : EST_PANEL_H, viewport)
         this.noTrans = true
         this.phase = 'enter'
         this.mounted = true

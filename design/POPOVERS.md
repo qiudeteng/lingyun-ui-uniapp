@@ -22,6 +22,8 @@
 | `arrowAlign` | `auto` | auto / leading / middle / trailing |
 | `maskClosable` | `true` | 点遮罩关闭 |
 | `zIndex` | `1100` | 层级 |
+| `anchor` | `null` | 视口坐标矩形 `{ left, top, width, height }`。传了就指向它，不测 `trigger` 插槽；触发点不在本组件里时用（如表格表头的筛选图标） |
+| `estimateHeight` | `0` | 面板预估高度（px），用来判断下方放不下时翻到上方。0 用默认值 |
 
 事件：`close`
 
