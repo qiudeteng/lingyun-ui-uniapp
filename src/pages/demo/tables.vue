@@ -50,6 +50,21 @@
         </lingyun-table>
       </lingyun-section>
 
+      <lingyun-section title="大数据" hint="2000 行、9 列，勾选和序号固定在左，状态固定在右。可多选、排序，快速上下甩动看固定列是否跟手。">
+        <lingyun-table
+          :columns="bigColumns"
+          :data="bigRows"
+          row-key="id"
+          :height="360"
+          stripe
+          border
+          selection
+          v-model:selected-keys="bigSelected"
+          @row-click="onRow"
+        />
+        <text class="picked">已选 {{ bigSelected.length }} 行</text>
+      </lingyun-section>
+
       <lingyun-section title="序号列" hint="标题栏：图标、标题、刷新、选列、导出 Excel，右侧还能放自定义按钮。">
         <view class="table-frame">
           <lingyun-table
@@ -205,6 +220,34 @@
     note: index % 2 === 0 ? '少辣' : '常规',
     action: '详情',
   }))
+
+  const bigColumns: LingyunTableColumn[] = [
+    { key: 'no', title: '序号', type: 'index', width: 64, align: 'center', fixed: 'left' },
+    { key: 'name', title: '菜品', width: 112, sortable: true },
+    { key: 'category', title: '分类', width: 80 },
+    { key: 'count', title: '数量', width: 80, align: 'right', sortable: true },
+    { key: 'price', title: '单价', width: 88, align: 'right', sortable: true },
+    { key: 'shop', title: '门店', width: 120 },
+    { key: 'date', title: '日期', width: 120, sortable: true },
+    { key: 'note', title: '备注', width: 160 },
+    { key: 'status', title: '状态', width: 80, align: 'center', fixed: 'right' },
+  ]
+
+  const shops = ['朝阳店', '海淀店', '西湖店', '天河店', '南山店']
+
+  const bigRows: LingyunTableRow[] = Array.from({ length: 2000 }, (_, index) => ({
+    id: `b${index + 1}`,
+    name: `${menu[index % menu.length]} ${index + 1}`,
+    category: categories[index % categories.length],
+    count: (index * 7) % 50,
+    price: 8 + ((index * 13) % 120),
+    shop: shops[index % shops.length],
+    date: `2026-${String((index % 12) + 1).padStart(2, '0')}-${String((index % 28) + 1).padStart(2, '0')}`,
+    note: index % 3 === 0 ? '少辣' : '常规',
+    status: index % 5 === 4 ? '售罄' : '在售',
+  }))
+
+  const bigSelected = ref<string[]>([])
 
   const footerData: LingyunTableRow[] = [
     { name: '合计', count: '18', price: '282' },

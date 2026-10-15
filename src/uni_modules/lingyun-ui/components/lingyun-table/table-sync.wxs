@@ -1,0 +1,230 @@
+/**
+ * 小程序表格滚动：在渲染层同一帧移动表头、表尾、左中右三块表体和滚动条。
+ * 逻辑层只在跨过一个行块 / 列块、或手势与惯性结束时收到位置，用来换虚拟窗口。
+ *
+ * 节点约定（class）：
+ * - ly-sync-hx  只横移：中间表头行、中间表尾行
+ * - ly-sync-y   只竖移：左右固定列表体
+ * - ly-sync-xy  横竖都移：中间表体
+ * - ly-sync-hthumb / ly-sync-vthumb  滚动条拇指
+ *
+ * prop 由逻辑层下发：seq 变化表示逻辑层要求跳到 left / top（滚轮、拖滚动条、翻页）。
+ */
+var MAX_V = 2.8
+var DECAY = 320
+var AXIS_LOCK = 6
+
+function clamp(v, min, max) {
+	if (v < min) return min
+	if (v > max) return max
+	return v
+}
+
+function now() {
+	return getDate().getTime()
+}
+
+function collect(owner, st) {
+	st.hx = owner.selectAllComponents('.ly-sync-hx')
+	st.y = owner.selectAllComponents('.ly-sync-y')
+	st.xy = owner.selectAllComponents('.ly-sync-xy')
+	st.hthumb = owner.selectComponent('.ly-sync-hthumb')
+	st.vthumb = owner.selectComponent('.ly-sync-vthumb')
+}
+
+function setAll(list, value) {
+	if (!list) return
+	for (var i = 0; i < list.length; i++) {
+		list[i].setStyle({ transform: value, '-webkit-transform': value })
+	}
+}
+
+function apply(st) {
+	var x = st.left
+	var y = st.top
+	setAll(st.hx, 'translate3d(' + -x + 'px,0,0)')
+	setAll(st.y, 'translate3d(0,' + -y + 'px,0)')
+	setAll(st.xy, 'translate3d(' + -x + 'px,' + -y + 'px,0)')
+	var g = st.geo
+	if (!g) return
+	if (st.hthumb) {
+		var tx = g.maxX > 0 ? Math.round((x / g.maxX) * g.hTravel) : 0
+		st.hthumb.setStyle({ transform: 'translateX(' + tx + 'px)' })
+	}
+	if (st.vthumb) {
+		var ty = g.maxY > 0 ? Math.round((y / g.maxY) * g.vTravel) : 0
+		st.vthumb.setStyle({ transform: 'translateY(' + ty + 'px)' })
+	}
+}
+
+function report(owner, st, end) {
+	var g = st.geo
+	if (!g) return
+	var bx = Math.floor(st.left / g.blockX)
+	var by = Math.floor(st.top / g.blockY)
+	if (!end && bx === st.bx && by === st.by) return
+	st.bx = bx
+	st.by = by
+	owner.callMethod('onSyncScroll', { left: st.left, top: st.top, end: !!end })
+}
+
+function ensure(st) {
+	if (typeof st.left !== 'number') st.left = 0
+	if (typeof st.top !== 'number') st.top = 0
+	if (typeof st.glideId !== 'number') st.glideId = 0
+}
+
+function propWatch(next, prev, owner) {
+	if (!next) return
+	var st = owner.getState()
+	ensure(st)
+	st.geo = next
+	var cmd = st.seq !== next.seq
+	if (cmd) {
+		st.seq = next.seq
+		st.gliding = false
+		st.glideId += 1
+		st.left = next.left || 0
+		st.top = next.top || 0
+	}
+	var left = clamp(st.left, 0, next.maxX)
+	var top = clamp(st.top, 0, next.maxY)
+	var clamped = left !== st.left || top !== st.top
+	st.left = left
+	st.top = top
+	collect(owner, st)
+	apply(st)
+	if (clamped) report(owner, st, true)
+}
+
+function touchPoint(e) {
+	var t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0])
+	if (!t) return null
+	return { x: t.clientX, y: t.clientY }
+}
+
+function sample(st, p, t) {
+	var list = st.samples
+	list.push({ x: p.x, y: p.y, t: t })
+	var keep = t - 100
+	while (list.length > 1 && list[0].t < keep) list.shift()
+}
+
+function releaseSpeed(st) {
+	var list = st.samples
+	if (!list || list.length < 2) return 0
+	var last = list[list.length - 1]
+	var first = last
+	for (var i = list.length - 1; i >= 0; i--) {
+		if (last.t - list[i].t > 90) break
+		first = list[i]
+	}
+	var dt = last.t - first.t
+	if (dt < 16) return 0
+	if (st.axis === 'x') return -(last.x - first.x) / dt
+	return -(last.y - first.y) / dt
+}
+
+function touchstart(e, owner) {
+	var st = owner.getState()
+	ensure(st)
+	if (!st.geo) return
+	var p = touchPoint(e)
+	if (!p) return
+	st.wasGliding = !!st.gliding
+	if (st.gliding) {
+		st.gliding = false
+		st.glideId += 1
+		report(owner, st, true)
+	}
+	collect(owner, st)
+	st.touching = true
+	st.axis = ''
+	st.sx = p.x
+	st.sy = p.y
+	st.sl = st.left
+	st.st = st.top
+	st.samples = []
+	sample(st, p, e.timeStamp || now())
+}
+
+function touchmove(e, owner) {
+	var st = owner.getState()
+	if (!st.touching || !st.geo) return false
+	var p = touchPoint(e)
+	if (!p) return false
+	var dx = p.x - st.sx
+	var dy = p.y - st.sy
+	if (!st.axis) {
+		var ax = dx < 0 ? -dx : dx
+		var ay = dy < 0 ? -dy : dy
+		if (ax < AXIS_LOCK && ay < AXIS_LOCK) return false
+		st.axis = ax > ay ? 'x' : 'y'
+		owner.callMethod('onSyncMoveStart')
+	}
+	sample(st, p, e.timeStamp || now())
+	if (st.axis === 'x') st.left = clamp(st.sl - dx, 0, st.geo.maxX)
+	else st.top = clamp(st.st - dy, 0, st.geo.maxY)
+	apply(st)
+	report(owner, st, false)
+	return false
+}
+
+function glide(owner, st, axis, speed) {
+	st.gliding = true
+	st.glideId += 1
+	var id = st.glideId
+	var v = clamp(speed, -MAX_V, MAX_V)
+	var at = now()
+	var step = function () {
+		if (!st.gliding || st.glideId !== id) return
+		var t = now()
+		var dt = clamp(t - at, 1, 34)
+		at = t
+		v = v * Math.exp(-dt / DECAY)
+		var before = axis === 'x' ? st.left : st.top
+		var next = 0
+		if (axis === 'x') {
+			next = clamp(before + v * dt, 0, st.geo.maxX)
+			st.left = next
+		} else {
+			next = clamp(before + v * dt, 0, st.geo.maxY)
+			st.top = next
+		}
+		apply(st)
+		var done = (next - before < 0.5 && before - next < 0.5) || (v < 0.02 && v > -0.02)
+		if (done) {
+			st.gliding = false
+			report(owner, st, true)
+			return
+		}
+		report(owner, st, false)
+		owner.requestAnimationFrame(step)
+	}
+	owner.requestAnimationFrame(step)
+}
+
+function touchend(e, owner) {
+	var st = owner.getState()
+	if (!st.touching) return
+	st.touching = false
+	var p = touchPoint(e)
+	if (p && st.axis) sample(st, p, e.timeStamp || now())
+	var moved = !!st.axis || !!st.wasGliding
+	st.wasGliding = false
+	owner.callMethod('onSyncTouchEnd', { moved: moved })
+	var speed = st.axis ? releaseSpeed(st) : 0
+	if (st.axis && (speed >= 0.08 || speed <= -0.08)) {
+		glide(owner, st, st.axis, speed)
+		return
+	}
+	report(owner, st, true)
+}
+
+module.exports = {
+	propWatch: propWatch,
+	touchstart: touchstart,
+	touchmove: touchmove,
+	touchend: touchend,
+	touchcancel: touchend
+}

@@ -107,12 +107,12 @@
         <!-- #ifdef MP-WEIXIN -->
         <view
           class="lingyun-table__x lingyun-table__x--head lingyun-table__x--mp"
-          @touchstart="onCenterTouchStart"
-          @touchmove.stop="onCenterTouchMove"
-          @touchend="onCenterTouchEnd"
-          @touchcancel="onCenterTouchEnd"
+          @touchstart="tableSync.touchstart"
+          @touchmove="tableSync.touchmove"
+          @touchend="tableSync.touchend"
+          @touchcancel="tableSync.touchcancel"
         >
-          <view class="lingyun-table__row lingyun-table__row--head" :style="mpHeadRowStyle">
+          <view class="lingyun-table__row lingyun-table__row--head ly-sync-hx" :style="centerRowStyle">
             <view v-if="colPadLeft" class="lingyun-table__col-pad" :style="colPadLeftStyle" />
             <view
               v-for="col in visibleCenterColumns"
@@ -223,6 +223,23 @@
       </view>
     </view>
 
+    <!-- #ifdef MP-WEIXIN -->
+    <view
+      class="lingyun-table__body"
+      :style="bodyBoxStyle"
+      :change:prop="tableSync.propWatch"
+      :prop="mpSync"
+      @touchstart="tableSync.touchstart"
+      @touchmove="tableSync.touchmove"
+      @touchend="tableSync.touchend"
+      @touchcancel="tableSync.touchcancel"
+      @mousewheel.stop="onTableWheel"
+      @wheel.stop="onTableWheel"
+      @mouseenter="onTablePointerEnter"
+      @pointerenter="onTablePointerEnter"
+    >
+    <!-- #endif -->
+    <!-- #ifndef MP-WEIXIN -->
     <view
       class="lingyun-table__body"
       :style="bodyBoxStyle"
@@ -231,11 +248,20 @@
       @mouseenter="onTablePointerEnter"
       @pointerenter="onTablePointerEnter"
     >
+    <!-- #endif -->
       <view v-if="!pageRows.length && !loading" class="lingyun-table__empty">
         <slot name="empty">
           <lingyun-empty variant="plain" :title="emptyText" />
         </slot>
       </view>
+      <!-- #ifdef MP-WEIXIN -->
+      <view
+        v-if="pageRows.length && leftWidth"
+        class="lingyun-table__y lingyun-table__y--mp"
+        :style="sideScrollStyle(leftWidth)"
+      >
+      <!-- #endif -->
+      <!-- #ifndef MP-WEIXIN -->
       <scroll-view
         v-if="pageRows.length && leftWidth"
         class="lingyun-table__y"
@@ -250,7 +276,8 @@
         @mousewheel.stop="onTableWheel"
         @wheel.stop="onTableWheel"
       >
-        <view class="lingyun-table__track" :style="rowTrackStyle">
+      <!-- #endif -->
+        <view class="lingyun-table__track ly-sync-y" :style="rowTrackStyle">
           <view v-if="rowPadTop" class="lingyun-table__row-pad" :style="rowPadTopStyle" />
           <view
             v-for="item in visibleRows"
@@ -293,20 +320,17 @@
           </view>
           <view v-if="rowPadBottom" class="lingyun-table__row-pad" :style="rowPadBottomStyle" />
         </view>
+      <!-- #ifdef MP-WEIXIN -->
+      </view>
+      <!-- #endif -->
+      <!-- #ifndef MP-WEIXIN -->
       </scroll-view>
+      <!-- #endif -->
 
       <view v-if="pageRows.length" class="lingyun-table__clip" :style="centerClipStyle('body')">
         <!-- #ifdef MP-WEIXIN -->
-        <view
-          class="lingyun-table__x lingyun-table__x--body lingyun-table__x--mp"
-          @touchstart="onCenterTouchStart"
-          @touchmove.stop="onCenterTouchMove"
-          @touchend="onCenterTouchEnd"
-          @touchcancel="onCenterTouchEnd"
-          @mousewheel.stop="onTableWheel"
-          @wheel.stop="onTableWheel"
-        >
-          <view class="lingyun-table__track" :style="mpBodyTrackStyle">
+        <view class="lingyun-table__x lingyun-table__x--body lingyun-table__x--mp">
+          <view class="lingyun-table__track ly-sync-xy" :style="centerTrackStyle">
             <view v-if="rowPadTop" class="lingyun-table__row-pad" :style="rowPadTopStyle" />
             <view
               v-for="item in visibleRows"
@@ -390,6 +414,14 @@
         <!-- #endif -->
       </view>
 
+      <!-- #ifdef MP-WEIXIN -->
+      <view
+        v-if="pageRows.length && rightWidth"
+        class="lingyun-table__y lingyun-table__y--right lingyun-table__y--mp"
+        :style="sideScrollStyle(rightWidth)"
+      >
+      <!-- #endif -->
+      <!-- #ifndef MP-WEIXIN -->
       <scroll-view
         v-if="pageRows.length && rightWidth"
         class="lingyun-table__y lingyun-table__y--right"
@@ -404,7 +436,8 @@
         @mousewheel.stop="onTableWheel"
         @wheel.stop="onTableWheel"
       >
-        <view class="lingyun-table__track" :style="rowTrackStyle">
+      <!-- #endif -->
+        <view class="lingyun-table__track ly-sync-y" :style="rowTrackStyle">
           <view v-if="rowPadTop" class="lingyun-table__row-pad" :style="rowPadTopStyle" />
           <view
             v-for="item in visibleRows"
@@ -434,7 +467,12 @@
           </view>
           <view v-if="rowPadBottom" class="lingyun-table__row-pad" :style="rowPadBottomStyle" />
         </view>
+      <!-- #ifdef MP-WEIXIN -->
+      </view>
+      <!-- #endif -->
+      <!-- #ifndef MP-WEIXIN -->
       </scroll-view>
+      <!-- #endif -->
       <view
         v-if="hBarNeeded"
         class="lingyun-table__hbar"
@@ -446,7 +484,7 @@
         @touchend.stop="onHBarEnd"
         @touchcancel.stop="onHBarEnd"
       >
-        <view class="lingyun-table__hbar-thumb" :style="hThumbStyle" />
+        <view class="lingyun-table__hbar-thumb ly-sync-hthumb" :style="hThumbStyle" />
       </view>
       <view
         v-if="vBarNeeded"
@@ -459,7 +497,7 @@
         @touchend.stop="onVBarEnd"
         @touchcancel.stop="onVBarEnd"
       >
-        <view class="lingyun-table__vbar-thumb" :style="vThumbStyle" />
+        <view class="lingyun-table__vbar-thumb ly-sync-vthumb" :style="vThumbStyle" />
       </view>
       <view v-if="loading" class="lingyun-table__loading">
         <lingyun-activity-indicator size="small" />
@@ -491,6 +529,17 @@
           </view>
         </view>
         <view class="lingyun-table__clip" :style="footerClipStyle">
+          <!-- #ifdef MP-WEIXIN -->
+          <view
+            class="lingyun-table__row lingyun-table__row--foot ly-sync-hx"
+            :style="footerCenterStyle"
+            @touchstart="tableSync.touchstart"
+            @touchmove="tableSync.touchmove"
+            @touchend="tableSync.touchend"
+            @touchcancel="tableSync.touchcancel"
+          >
+          <!-- #endif -->
+          <!-- #ifndef MP-WEIXIN -->
           <view
             class="lingyun-table__row lingyun-table__row--foot"
             :style="footerCenterStyle"
@@ -499,6 +548,7 @@
             @touchend="onCenterTouchEnd"
             @touchcancel="onCenterTouchEnd"
           >
+          <!-- #endif -->
             <view v-if="colPadLeft" class="lingyun-table__col-pad" :style="colPadLeftStyle" />
             <view
               v-for="col in visibleCenterColumns"
@@ -557,8 +607,12 @@
 import { defineComponent, type PropType } from 'vue'
 
 const COL_W = 120
-const ROW_OVERSCAN = 8
-const COL_OVERSCAN = COL_W * 2
+/** 虚拟窗口按块移动：块内滚动不换行，窗口上下各至少留一块 */
+const ROW_BLOCK = 10
+/** 横向列窗口按块移动，左右各至少留一块 */
+const COL_BLOCK = COL_W * 2
+/** 按下行延迟高亮，手势一开始就滚动时不闪 */
+const PRESS_DELAY = 90
 
 interface TableMetrics {
   row: number
@@ -626,6 +680,7 @@ interface ResolvedColumn extends LingyunTableColumn {
   side: 'left' | 'right' | 'center'
 }
 
+type TouchPoint = { clientX?: number; pageX?: number; clientY?: number; pageY?: number }
 type ScrollDetail = { scrollLeft?: number; scrollTop?: number }
 type ScrollEvent = { detail?: ScrollDetail }
 
@@ -665,18 +720,41 @@ function sanitizeFileName(value: string): string {
   return name || '表格'
 }
 
-function compareValue(a: unknown, b: unknown): number {
-  const aEmpty = a == null || a === ''
-  const bEmpty = b == null || b === ''
-  if (aEmpty && bEmpty) return 0
-  if (aEmpty) return -1
-  if (bEmpty) return 1
-  const na = typeof a === 'number' ? a : Number(String(a).trim())
-  const nb = typeof b === 'number' ? b : Number(String(b).trim())
-  const aNum = typeof a !== 'boolean' && Number.isFinite(na) && String(a).trim() !== ''
-  const bNum = typeof b !== 'boolean' && Number.isFinite(nb) && String(b).trim() !== ''
-  if (aNum && bNum) return na - nb
-  return String(a).localeCompare(String(b), 'zh')
+interface SortKey {
+  empty: boolean
+  isNum: boolean
+  num: number
+  text: string
+}
+
+function toSortKey(value: unknown): SortKey {
+  if (value == null || value === '') return { empty: true, isNum: false, num: 0, text: '' }
+  const text = String(value)
+  const trimmed = text.trim()
+  const num = typeof value === 'number' ? value : Number(trimmed)
+  const isNum = typeof value !== 'boolean' && Number.isFinite(num) && trimmed !== ''
+  return { empty: false, isNum, num, text }
+}
+
+let zhCollator: Intl.Collator | null | undefined
+
+function compareText(a: string, b: string): number {
+  if (zhCollator === undefined) {
+    try {
+      zhCollator = typeof Intl !== 'undefined' && typeof Intl.Collator === 'function' ? new Intl.Collator('zh') : null
+    } catch {
+      zhCollator = null
+    }
+  }
+  return zhCollator ? zhCollator.compare(a, b) : a.localeCompare(b)
+}
+
+function compareKey(a: SortKey, b: SortKey): number {
+  if (a.empty && b.empty) return 0
+  if (a.empty) return -1
+  if (b.empty) return 1
+  if (a.isNum && b.isNum) return a.num - b.num
+  return compareText(a.text, b.text)
 }
 
 function isGroupRow(row: LingyunTableRow | null | undefined): boolean {
@@ -692,17 +770,13 @@ function toSumNumber(value: unknown): number {
   return 0
 }
 
-/** 按分组列重排，并在组首插入带合计的分组行 */
-function expandGroupedRows(
-  rows: LingyunTableRow[],
-  group: LingyunTableGroupFields | null | undefined,
-  rowKey: string,
-  sumSource?: LingyunTableRow[],
-): LingyunTableRow[] {
-  const field = group && typeof group.field === 'string' ? group.field.trim() : ''
-  if (!field || !rows.length) return rows
-  const sumKeys = (group?.sum || []).filter((key) => !!key && key !== field)
-  const source = sumSource && sumSource.length ? sumSource : rows
+interface GroupTotals {
+  totals: Map<string, Record<string, number>>
+  labels: Map<string, unknown>
+}
+
+/** 按分组列算每组合计与组名 */
+function groupTotalsOf(source: LingyunTableRow[], field: string, sumKeys: string[]): GroupTotals {
   const totals = new Map<string, Record<string, number>>()
   const labels = new Map<string, unknown>()
   source.forEach((row) => {
@@ -721,6 +795,19 @@ function expandGroupedRows(
       bag![key] += toSumNumber(row[key])
     })
   })
+  return { totals, labels }
+}
+
+/** 按分组列重排，并在组首插入带合计的分组行 */
+function expandGroupedRows(
+  rows: LingyunTableRow[],
+  field: string,
+  sumKeys: string[],
+  rowKey: string,
+  sums: GroupTotals,
+): LingyunTableRow[] {
+  if (!field || !rows.length) return rows
+  const { totals, labels } = sums
   const out: LingyunTableRow[] = []
   let last = '\u0000'
   rows.forEach((row) => {
@@ -761,6 +848,23 @@ function findSectionMarkHost(start: unknown): SectionMarkHost | null {
     parent = parent.$parent || null
   }
   return null
+}
+
+type WxsHandler = (...args: unknown[]) => unknown
+
+/** 小程序 WXS 模块（table-sync.wxs），模板里按 tableSync.xxx 引用；运行时由编译器注入，不在实例上 */
+interface TableSyncModule {
+  propWatch: WxsHandler
+  touchstart: WxsHandler
+  touchmove: WxsHandler
+  touchend: WxsHandler
+  touchcancel: WxsHandler
+}
+
+declare module 'vue' {
+  interface ComponentCustomProperties {
+    tableSync: TableSyncModule
+  }
 }
 
 export default defineComponent({
@@ -889,6 +993,13 @@ export default defineComponent({
       gliding: false,
       pageHoldTop: -1,
       pageHoldTimer: 0,
+      pressDelayTimer: 0,
+      pressPendingKey: '',
+      movedTimer: 0,
+      /** 小程序：逻辑层要求 WXS 跳到某处时加一 */
+      syncSeq: 0,
+      syncCmdLeft: 0,
+      syncCmdTop: 0,
       /** PC / H5 用可拖句柄；手机小程序只用细指示条 */
       scrollbarHandle: true,
     }
@@ -1031,19 +1142,31 @@ export default defineComponent({
     centerRowStyle(): Record<string, string> {
       return { width: `${this.centerWidth}px` }
     },
-    mpHeadRowStyle(): Record<string, string> {
+    /** 交给 WXS 的滚动几何。不含当前位置，滚动中逻辑层回写位置不会触发它 */
+    mpSync(): Record<string, number> {
+      const h = this.hThumbGeo
+      const v = this.vThumbGeo
       return {
-        width: `${this.centerWidth}px`,
-        transform: `translate3d(${-this.headLeft}px, 0, 0)`,
+        seq: this.syncSeq,
+        left: this.syncCmdLeft,
+        top: this.syncCmdTop,
+        maxX: h.max,
+        maxY: v.max,
+        blockX: COL_BLOCK,
+        blockY: ROW_BLOCK * this.metrics.row,
+        hTravel: h.travel,
+        vTravel: v.travel,
       }
     },
-    mpBodyTrackStyle(): Record<string, string> {
-      const y = this.rowPadTop - this.bodyTop
-      return {
-        width: `${this.centerWidth}px`,
-        height: `${this.contentHeightPx}px`,
-        transform: `translate3d(${-this.bodyLeft}px, ${y}px, 0)`,
-      }
+    mpLayoutKey(): string {
+      return [
+        this.pageRows.length > 0 ? 1 : 0,
+        this.leftWidth > 0 ? 1 : 0,
+        this.rightWidth > 0 ? 1 : 0,
+        this.footerRows.length,
+        this.hBarNeeded ? 1 : 0,
+        this.vBarNeeded ? 1 : 0,
+      ].join('|')
     },
     centerViewPx(): number {
       if (this.centerClientPx > 0) return this.centerClientPx
@@ -1077,23 +1200,40 @@ export default defineComponent({
         height: `${this.vBarTrackPx}px`,
       }
     },
-    hThumbStyle(): Record<string, string> {
+    hThumbGeo(): { thumb: number; travel: number; max: number } {
+      const view = this.centerViewPx
+      const content = Math.max(this.centerWidth, view)
+      const max = Math.max(0, content - view)
       const track = this.hBarTrackPx
-      const content = Math.max(this.centerWidth, this.centerViewPx)
-      const max = Math.max(0, content - this.centerViewPx)
-      const thumb = Math.max(40, Math.round((track * this.centerViewPx) / content))
-      const travel = Math.max(1, track - thumb)
-      const x = max <= 0 ? 0 : Math.round((this.bodyLeft / max) * travel)
-      return { width: `${thumb}px`, transform: `translateX(${x}px)` }
+      const thumb = Math.max(40, Math.round((track * view) / Math.max(1, content)))
+      return { thumb, travel: Math.max(1, track - thumb), max }
+    },
+    vThumbGeo(): { thumb: number; travel: number; max: number } {
+      const view = this.bodyHeightPx
+      const content = Math.max(this.contentHeightPx, view)
+      const max = Math.max(0, content - view)
+      const track = this.vBarTrackPx
+      const thumb = Math.max(40, Math.round((track * view) / Math.max(1, content)))
+      return { thumb, travel: Math.max(1, track - thumb), max }
+    },
+    hThumbStyle(): Record<string, string> {
+      const geo = this.hThumbGeo
+      const style: Record<string, string> = { width: `${geo.thumb}px` }
+      // 小程序由 WXS 移动拇指
+      // #ifndef MP-WEIXIN
+      const x = geo.max <= 0 ? 0 : Math.round((this.bodyLeft / geo.max) * geo.travel)
+      style.transform = `translateX(${x}px)`
+      // #endif
+      return style
     },
     vThumbStyle(): Record<string, string> {
-      const track = this.vBarTrackPx
-      const content = Math.max(this.contentHeightPx, this.bodyHeightPx)
-      const max = Math.max(0, content - this.bodyHeightPx)
-      const thumb = Math.max(40, Math.round((track * this.bodyHeightPx) / content))
-      const travel = Math.max(1, track - thumb)
-      const y = max <= 0 ? 0 : Math.round((this.bodyTop / max) * travel)
-      return { height: `${thumb}px`, transform: `translateY(${y}px)` }
+      const geo = this.vThumbGeo
+      const style: Record<string, string> = { height: `${geo.thumb}px` }
+      // #ifndef MP-WEIXIN
+      const y = geo.max <= 0 ? 0 : Math.round((this.bodyTop / geo.max) * geo.travel)
+      style.transform = `translateY(${y}px)`
+      // #endif
+      return style
     },
     bodyBoxStyle(): Record<string, string> {
       if (this.fixed && this.bodyHeightPx > 0) return { height: `${this.bodyHeightPx}px` }
@@ -1110,15 +1250,16 @@ export default defineComponent({
     },
     filteredRows(): LingyunTableRow[] {
       const rows = this.data || []
-      if (this.remote) return rows.slice()
+      if (this.remote) return rows
       const map = this.filterMap
+      const active = Object.keys(map)
+        .filter((key) => map[key] && map[key].length)
+        .map((key) => ({ key, picked: new Set(map[key]) }))
+      if (!active.length) return rows
       return rows.filter((row) => {
-        const keys = Object.keys(map)
-        for (let i = 0; i < keys.length; i += 1) {
-          const key = keys[i]
-          const picked = map[key]
-          if (!picked || !picked.length) continue
-          if (picked.indexOf(String(row[key] ?? '')) < 0) return false
+        for (let i = 0; i < active.length; i += 1) {
+          const item = active[i]
+          if (!item.picked.has(String(row[item.key] ?? ''))) return false
         }
         return true
       })
@@ -1133,24 +1274,36 @@ export default defineComponent({
       return list.filter((key) => !!key && key !== field)
     },
     sortedRows(): LingyunTableRow[] {
-      const rows = this.filteredRows.slice()
+      const rows = this.filteredRows
+      if (this.remote) return rows
       const groupKey = this.groupFieldKey
-      if (!this.remote && groupKey) {
-        const sortKey = this.sortKey
-        const dir = this.sortOrder === 'asc' ? 1 : this.sortOrder === 'desc' ? -1 : 0
-        rows.sort((a, b) => {
-          const byGroup = compareValue(a[groupKey], b[groupKey])
+      const sortKey = this.sortKey
+      const dir = this.sortOrder === 'asc' ? 1 : this.sortOrder === 'desc' ? -1 : 0
+      const bySort = !!sortKey && dir !== 0
+      if (!groupKey && !bySort) return rows
+      // 每行只取一次排序键，比较时不再反复读字段和解析数字
+      const decorated = rows.map((row, index) => ({
+        row,
+        index,
+        group: groupKey ? toSortKey(row[groupKey]) : null,
+        key: bySort ? toSortKey(row[sortKey]) : null,
+      }))
+      decorated.sort((a, b) => {
+        if (a.group && b.group) {
+          const byGroup = compareKey(a.group, b.group)
           if (byGroup !== 0) return byGroup
-          if (!sortKey || !dir) return 0
-          return compareValue(a[sortKey], b[sortKey]) * dir
-        })
-        return rows
-      }
-      if (this.remote || !this.sortKey || !this.sortOrder) return rows
-      const key = this.sortKey
-      const dir = this.sortOrder === 'asc' ? 1 : -1
-      rows.sort((a, b) => compareValue(a[key], b[key]) * dir)
-      return rows
+        }
+        if (a.key && b.key) {
+          const byKey = compareKey(a.key, b.key) * dir
+          if (byKey !== 0) return byKey
+        }
+        return a.index - b.index
+      })
+      return decorated.map((item) => item.row)
+    },
+    groupTotals(): GroupTotals | null {
+      if (!this.groupFieldKey) return null
+      return groupTotalsOf(this.sortedRows, this.groupFieldKey, this.groupSumKeys)
     },
     totalCount(): number {
       if (this.remote) return this.total > 0 ? this.total : 0
@@ -1170,10 +1323,11 @@ export default defineComponent({
       return style
     },
     footerCenterStyle(): Record<string, string> {
-      return {
-        width: `${this.centerWidth}px`,
-        transform: `translate3d(${-this.bodyLeft}px, 0, 0)`,
-      }
+      const style: Record<string, string> = { width: `${this.centerWidth}px` }
+      // #ifndef MP-WEIXIN
+      style.transform = `translate3d(${-this.bodyLeft}px, 0, 0)`
+      // #endif
+      return style
     },
     pageCount(): number {
       if (!this.showPager) return 1
@@ -1189,18 +1343,46 @@ export default defineComponent({
     },
     pageRows(): LingyunTableRow[] {
       const page = this.pageDataRows
-      if (!this.groupFieldKey) return page
-      return expandGroupedRows(page, this.groupFields, this.rowKey, this.sortedRows)
+      const totals = this.groupTotals
+      if (!totals) return page
+      return expandGroupedRows(page, this.groupFieldKey, this.groupSumKeys, this.rowKey, totals)
+    },
+    /** 页内序号：分组行为 0，明细从 1 起。只有序号列且分组时才需要逐行数 */
+    rowNumbers(): number[] | null {
+      if (!this.groupFieldKey) return null
+      if (!this.resolvedColumns.some((col) => col.type === 'index')) return null
+      const out: number[] = new Array(this.pageRows.length)
+      let n = 0
+      this.pageRows.forEach((row, i) => {
+        if (isGroupRow(row)) {
+          out[i] = 0
+          return
+        }
+        n += 1
+        out[i] = n
+      })
+      return out
     },
     pageKeys(): string[] {
       return this.pageRows.map((row) => this.keyOf(row)).filter(Boolean)
     },
+    selectedSet(): Set<string> {
+      return new Set(this.innerSelected)
+    },
+    pageSelectedCount(): number {
+      const set = this.selectedSet
+      if (!set.size) return 0
+      let count = 0
+      this.pageKeys.forEach((key) => {
+        if (set.has(key)) count += 1
+      })
+      return count
+    },
     pageAll(): boolean {
-      return this.pageKeys.length > 0 && this.pageKeys.every((key) => this.innerSelected.indexOf(key) >= 0)
+      return this.pageKeys.length > 0 && this.pageSelectedCount === this.pageKeys.length
     },
     pageSome(): boolean {
-      if (this.pageAll) return false
-      return this.pageKeys.some((key) => this.innerSelected.indexOf(key) >= 0)
+      return this.pageSelectedCount > 0 && !this.pageAll
     },
     pageCheckClass(): Record<string, boolean> {
       return {
@@ -1230,8 +1412,17 @@ export default defineComponent({
         this.innerSelected = (value || []).map((item) => String(item))
       },
     },
-    pageRows() {
+    pageRows(next: LingyunTableRow[], prev: LingyunTableRow[]) {
+      if (next.length && !(prev && prev.length)) {
+        this.bodyTop = 0
+        this.leftTop = 0
+        this.rightTop = 0
+      }
       this.syncRowWindow(this.bodyTop)
+    },
+    /** 小程序：受 WXS 驱动的节点被重新创建后，让 WXS 把当前位置再写一遍 */
+    mpLayoutKey() {
+      this.$nextTick(() => this.mpCommand(this.bodyLeft, this.bodyTop))
     },
     centerColumns() {
       this.syncColWindow(this.bodyLeft)
@@ -1301,6 +1492,8 @@ export default defineComponent({
     if (this.pressTimer) clearTimeout(this.pressTimer)
     if (this.hBarTimer) clearTimeout(this.hBarTimer)
     if (this.pageHoldTimer) clearTimeout(this.pageHoldTimer)
+    if (this.pressDelayTimer) clearTimeout(this.pressDelayTimer)
+    if (this.movedTimer) clearTimeout(this.movedTimer)
     this.stopGlide()
     if (this.onResize) uni.offWindowResize(this.onResize)
   },
@@ -1315,9 +1508,9 @@ export default defineComponent({
           typeof uni.getDeviceInfo === 'function'
             ? (uni.getDeviceInfo() as { deviceType?: string; platform?: string })
             : null
-        if (device && device.deviceType === 'pc') return true
+        if (device?.deviceType === 'pc') return true
         const platform =
-          (device && device.platform) ||
+          device?.platform ||
           (typeof uni.getSystemInfoSync === 'function' ? uni.getSystemInfoSync().platform : '') ||
           ''
         return platform === 'windows' || platform === 'mac'
@@ -1347,9 +1540,10 @@ export default defineComponent({
       const total = this.pageRows.length
       const rowH = this.metrics.row
       const view = this.bodyHeightPx > 0 ? this.bodyHeightPx : rowH * 12
-      let start = Math.floor(top / rowH) - ROW_OVERSCAN
+      const blockTop = Math.floor(Math.max(0, top) / (ROW_BLOCK * rowH)) * ROW_BLOCK
+      let start = blockTop - ROW_BLOCK
       if (start < 0) start = 0
-      let end = Math.ceil((top + view) / rowH) + ROW_OVERSCAN
+      let end = blockTop + ROW_BLOCK + Math.ceil(view / rowH) + ROW_BLOCK
       if (end > total) end = total
       if (start > end) start = end
       if (this.rowStart !== start) this.rowStart = start
@@ -1358,8 +1552,9 @@ export default defineComponent({
     syncColWindow(left: number) {
       const cols = this.centerColumns
       const view = this.viewportCenterPx > 0 ? this.viewportCenterPx : this.guessCenterWidth()
-      const startX = Math.max(0, left - COL_OVERSCAN)
-      const endX = left + view + COL_OVERSCAN
+      const blockLeft = Math.floor(Math.max(0, left) / COL_BLOCK) * COL_BLOCK
+      const startX = Math.max(0, blockLeft - COL_BLOCK)
+      const endX = blockLeft + COL_BLOCK + view + COL_BLOCK
       let x = 0
       let start = 0
       let end = 0
@@ -1519,29 +1714,45 @@ export default defineComponent({
     },
     onRowPress(row: LingyunTableRow) {
       if (isGroupRow(row)) return
-      if (this.pressTimer) {
-        clearTimeout(this.pressTimer)
-        this.pressTimer = 0
-      }
-      this.pressedKey = this.keyOf(row)
+      this.cancelPress()
       this.pressLeft = this.bodyLeft
       this.pressTop = this.bodyTop
+      this.pressPendingKey = this.keyOf(row)
+      this.pressDelayTimer = setTimeout(() => {
+        this.pressDelayTimer = 0
+        this.pressedKey = this.pressPendingKey
+        this.pressPendingKey = ''
+      }, PRESS_DELAY) as unknown as number
     },
     onRowRelease() {
+      if (this.pressDelayTimer) {
+        clearTimeout(this.pressDelayTimer)
+        this.pressDelayTimer = 0
+        this.pressedKey = this.pressPendingKey
+        this.pressPendingKey = ''
+      }
       if (this.pressTimer) clearTimeout(this.pressTimer)
       this.pressTimer = setTimeout(() => {
         this.pressedKey = ''
         this.pressTimer = 0
       }, 80) as unknown as number
     },
-    clearPressIfScrolled(left: number, top: number) {
-      if (!this.pressedKey) return
-      if (Math.abs(left - this.pressLeft) <= 8 && Math.abs(top - this.pressTop) <= 8) return
-      this.pressedKey = ''
+    cancelPress() {
+      if (this.pressDelayTimer) {
+        clearTimeout(this.pressDelayTimer)
+        this.pressDelayTimer = 0
+      }
+      this.pressPendingKey = ''
       if (this.pressTimer) {
         clearTimeout(this.pressTimer)
         this.pressTimer = 0
       }
+      if (this.pressedKey) this.pressedKey = ''
+    },
+    clearPressIfScrolled(left: number, top: number) {
+      if (!this.pressedKey && !this.pressPendingKey) return
+      if (Math.abs(left - this.pressLeft) <= 8 && Math.abs(top - this.pressTop) <= 8) return
+      this.cancelPress()
     },
     queryPayload(): LingyunTableQuery {
       const filters: Record<string, string[]> = {}
@@ -1601,12 +1812,10 @@ export default defineComponent({
     rowNo(index: number): number {
       const size = this.pageSize > 0 ? this.pageSize : 0
       const base = size > 0 ? (this.currentPage - 1) * size : 0
-      let dataIndex = 0
-      for (let i = 0; i < index; i += 1) {
-        if (!isGroupRow(this.pageRows[i])) dataIndex += 1
-      }
-      if (isGroupRow(this.pageRows[index])) return 0
-      return base + dataIndex + 1
+      const numbers = this.rowNumbers
+      if (!numbers) return base + index + 1
+      const n = numbers[index] || 0
+      return n ? base + n : 0
     },
     showToolbar(): boolean {
       return !!(this.title || this.icon || this.showRefresh || this.columnPicker || this.exportExcel || this.$slots.tools)
@@ -1634,8 +1843,9 @@ export default defineComponent({
     },
     buildExcelXml(): string {
       const cols = this.resolvedColumns
-      const rows = this.groupFieldKey
-        ? expandGroupedRows(this.sortedRows, this.groupFields, this.rowKey, this.sortedRows)
+      const totals = this.groupTotals
+      const rows = totals
+        ? expandGroupedRows(this.sortedRows, this.groupFieldKey, this.groupSumKeys, this.rowKey, totals)
         : this.sortedRows
       const head = cols.map((col) => excelCell(col.title || col.key, false)).join('')
       let dataIndex = 0
@@ -1718,7 +1928,7 @@ export default defineComponent({
     },
     isSelected(row: LingyunTableRow): boolean {
       const key = this.keyOf(row)
-      return !!key && this.innerSelected.indexOf(key) >= 0
+      return !!key && this.selectedSet.has(key)
     },
     emitSelection(next: string[]) {
       this.innerSelected = next
@@ -1737,9 +1947,18 @@ export default defineComponent({
     togglePage() {
       const keys = this.pageKeys
       if (!keys.length) return
-      let next = this.innerSelected.slice()
-      if (this.pageAll) next = next.filter((key) => keys.indexOf(key) < 0)
-      else keys.forEach((key) => { if (next.indexOf(key) < 0) next.push(key) })
+      if (this.pageAll) {
+        const drop = new Set(keys)
+        this.emitSelection(this.innerSelected.filter((key) => !drop.has(key)))
+        return
+      }
+      const next = this.innerSelected.slice()
+      const have = new Set(next)
+      keys.forEach((key) => {
+        if (have.has(key)) return
+        have.add(key)
+        next.push(key)
+      })
       this.emitSelection(next)
     },
     sortMark(col: ResolvedColumn): string {
@@ -1797,6 +2016,8 @@ export default defineComponent({
       this.bodyTop = 0
       this.leftTop = 0
       this.rightTop = 0
+      this.syncRowWindow(0)
+      this.mpCommand(this.bodyLeft, 0)
       this.$emit('update:page', page)
       this.$emit('page-change', page)
       this.emitQuery()
@@ -1990,8 +2211,46 @@ export default defineComponent({
       this.bodyLeft = left
       this.headLeft = left
       this.armSync('body')
+      this.mpCommand(left, this.bodyTop)
     },
-    onCenterTouchStart(event: { touches?: Array<{ clientX?: number; pageX?: number; clientY?: number; pageY?: number }>; timeStamp?: number }) {
+    /** 小程序：让 WXS 跳到指定位置（滚轮、拖滚动条、翻页） */
+    mpCommand(left: number, top: number) {
+      // #ifdef MP-WEIXIN
+      this.syncCmdLeft = left
+      this.syncCmdTop = top
+      this.syncSeq += 1
+      // #endif
+    },
+    /** WXS：跨块或停下时回报位置，用来换虚拟窗口 */
+    onSyncScroll(event?: { left?: number; top?: number; end?: boolean } | null) {
+      const left = Number(event && event.left) || 0
+      const top = Number(event && event.top) || 0
+      this.clearPressIfScrolled(left, top)
+      this.syncRowWindow(top)
+      this.syncColWindow(left)
+      this.bodyLeft = left
+      this.headLeft = left
+      this.bodyTop = top
+      this.leftTop = top
+      this.rightTop = top
+    },
+    /** WXS：手势确认方向，取消按下高亮，并挡住随后的行点击 */
+    onSyncMoveStart() {
+      this.cancelPress()
+      this.markMoved()
+    },
+    onSyncTouchEnd(event?: { moved?: boolean } | null) {
+      if (event && event.moved) this.markMoved()
+    },
+    markMoved() {
+      this.centerMoved = true
+      if (this.movedTimer) clearTimeout(this.movedTimer)
+      this.movedTimer = setTimeout(() => {
+        this.movedTimer = 0
+        this.centerMoved = false
+      }, 120) as unknown as number
+    },
+    onCenterTouchStart(event: { touches?: ArrayLike<TouchPoint>; timeStamp?: number }) {
       const touch = event.touches && event.touches[0]
       if (!touch) return
       this.stopGlide()
@@ -2003,7 +2262,7 @@ export default defineComponent({
       this.centerTouchAxis = ''
       this.noteGlideSample(event)
     },
-    onCenterTouchMove(event: { touches?: Array<{ clientX?: number; pageX?: number; clientY?: number; pageY?: number }>; timeStamp?: number }) {
+    onCenterTouchMove(event: { touches?: ArrayLike<TouchPoint>; timeStamp?: number }) {
       const touch = event.touches && event.touches[0]
       if (!touch) return
       const x = touch.clientX || touch.pageX || 0
@@ -2026,7 +2285,7 @@ export default defineComponent({
       }
       this.scrollBodyTo(this.centerTouchTop - dy)
     },
-    onCenterTouchEnd(event?: { changedTouches?: Array<{ clientX?: number; pageX?: number; clientY?: number; pageY?: number }>; timeStamp?: number }) {
+    onCenterTouchEnd(event?: { changedTouches?: ArrayLike<TouchPoint>; timeStamp?: number }) {
       if (event && event.changedTouches && event.changedTouches.length) {
         this.noteGlideSample({ touches: event.changedTouches, timeStamp: event.timeStamp })
       }
@@ -2046,7 +2305,7 @@ export default defineComponent({
         this.centerMoved = false
       }, 80)
     },
-    noteGlideSample(event: { touches?: Array<{ clientX?: number; pageX?: number; clientY?: number; pageY?: number }>; timeStamp?: number }) {
+    noteGlideSample(event: { touches?: ArrayLike<TouchPoint>; timeStamp?: number }) {
       const touch = event.touches && event.touches[0]
       if (!touch) return
       const t = event.timeStamp || Date.now()
@@ -2083,6 +2342,7 @@ export default defineComponent({
       this.rightTop = next
       this.syncRowWindow(next)
       this.armSync('body')
+      this.mpCommand(this.bodyLeft, next)
     },
     stopGlide() {
       if (this.glideTimer) {
@@ -2134,25 +2394,26 @@ export default defineComponent({
       // #endif
       // #ifdef MP-WEIXIN
       uni.createSelectorQuery().selectViewport().scrollOffset((res) => {
-        const top = res && typeof res.scrollTop === 'number' ? res.scrollTop : 0
-        this.pageHoldTop = top
+        const offset = res as { scrollTop?: number } | null
+        this.pageHoldTop = offset && typeof offset.scrollTop === 'number' ? offset.scrollTop : 0
       }).exec()
       // #endif
     },
-    onTableWheel(event: {
-      deltaX?: number
-      deltaY?: number
-      shiftKey?: boolean
-      detail?: { deltaX?: number; deltaY?: number; wheelDelta?: number; wheelDeltaY?: number; shiftKey?: boolean }
-      preventDefault?: () => void
-      stopPropagation?: () => void
-    }) {
+    onTableWheel(raw: unknown) {
       // #ifndef MP-WEIXIN
       return
       // #endif
       // #ifdef MP-WEIXIN
-      if (event.preventDefault) event.preventDefault()
-      if (event.stopPropagation) event.stopPropagation()
+      const event = (raw || {}) as {
+        deltaX?: number
+        deltaY?: number
+        shiftKey?: boolean
+        detail?: { deltaX?: number; deltaY?: number; wheelDelta?: number; wheelDeltaY?: number; shiftKey?: boolean }
+        preventDefault?: () => void
+        stopPropagation?: () => void
+      }
+      event.preventDefault?.()
+      event.stopPropagation?.()
       this.stopGlide()
       const detail = event.detail || {}
       let dx = detail.deltaX || event.deltaX || 0
@@ -2204,7 +2465,8 @@ export default defineComponent({
       }
       // 以当前真实页滚为准累加，避免陈旧 pageHoldTop 把页面拽回去
       uni.createSelectorQuery().selectViewport().scrollOffset((res) => {
-        const top = res && typeof res.scrollTop === 'number' ? res.scrollTop : 0
+        const offset = res as { scrollTop?: number } | null
+        const top = offset && typeof offset.scrollTop === 'number' ? offset.scrollTop : 0
         const next = Math.max(0, top + delta)
         this.pageHoldTop = next
         if (Math.abs(next - top) <= 0.5) return
@@ -2221,8 +2483,10 @@ export default defineComponent({
       this.clearPressIfScrolled(left, top)
       this.syncRowWindow(top)
       this.syncColWindow(left)
-      const client = this.readCenterClient()
-      if (client > 0 && this.centerClientPx !== client) this.centerClientPx = client
+      if (this.centerClientPx <= 0) {
+        const client = this.readCenterClient()
+        if (client > 0) this.centerClientPx = client
+      }
       this.bodyLeft = left
       this.bodyTop = top
       this.revealHBar(leftChanged)
@@ -2267,6 +2531,8 @@ export default defineComponent({
   },
 })
 </script>
+
+<script src="./table-sync.wxs" module="tableSync" lang="wxs"></script>
 
 <style lang="scss">
 @import '../../styles/variables.scss';
@@ -2547,6 +2813,11 @@ $ly-table-radius: 26px;
 .lingyun-table__y--right {
   border-right-width: 0;
   border-left: 1px solid var(--lingyun-separator, #{$lingyun-separator});
+}
+
+/* 小程序固定列不用原生 scroll-view，和中间区一起由 WXS 位移，这里只负责裁切 */
+.lingyun-table__y--mp {
+  overflow: hidden;
 }
 
 .lingyun-table__row {

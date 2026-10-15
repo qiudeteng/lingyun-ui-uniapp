@@ -122,7 +122,7 @@ lingyun-ui/
     ├── lingyun-toolbars/
     ├── lingyun-fab/
     ├── lingyun-goods-nav/
-    ├── lingyun-table/
+    ├── lingyun-table/    # 小程序滚动同步见 table-sync.wxs
     ├── lingyun-grid/
     ├── lingyun-grid-item/
     ├── lingyun-indexed-list/
