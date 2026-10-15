@@ -251,6 +251,11 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Column' }
 	},
 	{
+		path: '/pages/demo/charts/stack',
+		name: 'pagesDemoChartsStack',
+		meta: { title: 'Stack' }
+	},
+	{
 		path: '/pages/demo/charts/bar',
 		name: 'pagesDemoChartsBar',
 		meta: { title: 'Bar' }
@@ -259,6 +264,11 @@ export const routes: RouteConfig[] = [
 		path: '/pages/demo/charts/line',
 		name: 'pagesDemoChartsLine',
 		meta: { title: 'Line' }
+	},
+	{
+		path: '/pages/demo/charts/curve',
+		name: 'pagesDemoChartsCurve',
+		meta: { title: 'Curve' }
 	},
 	{
 		path: '/pages/demo/charts/area',

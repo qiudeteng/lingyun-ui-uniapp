@@ -344,6 +344,13 @@
 			}
 		},
 		{
+			"path": "pages/demo/charts/stack",
+			"style": {
+				"navigationBarTitleText": "Stack",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/charts/bar",
 			"style": {
 				"navigationBarTitleText": "Bar",
@@ -354,6 +361,13 @@
 			"path": "pages/demo/charts/line",
 			"style": {
 				"navigationBarTitleText": "Line",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/charts/curve",
+			"style": {
+				"navigationBarTitleText": "Curve",
 				"navigationStyle": "custom"
 			}
 		},

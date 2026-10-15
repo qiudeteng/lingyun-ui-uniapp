@@ -54,4 +54,6 @@ const chartOpts = {
 }
 ```
 
+要叠成总量请用 [堆积图](./stack.md)（`type="stack"` 或 `extra.column.type: "stack"`）。
+
 接法、属性、事件见 [图表总览](/charts/)。

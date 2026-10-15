@@ -34,6 +34,8 @@ const chartData = {
 const chartOpts = {}
 ```
 
+堆积面积可设 `extra.area.stack: true`；更推荐在折线 / 曲线上开 `extra.line.stack: true`（数据不必自累加），见 [堆积图](./stack.md)。
+
 ```scss
 .chart-box {
   width: 100%;

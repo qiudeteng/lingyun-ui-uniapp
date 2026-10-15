@@ -103,8 +103,10 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
     title: '图表',
     items: [
       { title: 'Column', url: '/pages/demo/charts/column', note: '柱状图', icon: 'bars' },
+      { title: 'Stack', url: '/pages/demo/charts/stack', note: '堆积图', icon: 'bars' },
       { title: 'Bar', url: '/pages/demo/charts/bar', note: '条状图', icon: 'bars' },
       { title: 'Line', url: '/pages/demo/charts/line', note: '折线图', icon: 'tune' },
+      { title: 'Curve', url: '/pages/demo/charts/curve', note: '曲线图', icon: 'tune' },
       { title: 'Area', url: '/pages/demo/charts/area', note: '区域图', icon: 'image' },
       { title: 'Pie', url: '/pages/demo/charts/pie', note: '饼图', icon: 'circle' },
       { title: 'Ring', url: '/pages/demo/charts/ring', note: '圆环图', icon: 'loop' },

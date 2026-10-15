@@ -82,8 +82,10 @@ const chartSidebar = [
     children: [
       { text: '图表', link: '/charts/' },
       { text: '柱状图', link: '/charts/column.html' },
+      { text: '堆积图', link: '/charts/stack.html' },
       { text: '条状图', link: '/charts/bar.html' },
       { text: '折线图', link: '/charts/line.html' },
+      { text: '曲线图', link: '/charts/curve.html' },
       { text: '区域图', link: '/charts/area.html' },
       { text: '饼图', link: '/charts/pie.html' },
       { text: '圆环图', link: '/charts/ring.html' },

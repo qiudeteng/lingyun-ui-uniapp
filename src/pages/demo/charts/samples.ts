@@ -20,6 +20,15 @@ export const chartSamples: Record<string, ChartSample> = {
 			{ name: '门店 B', data: [18, 27, 21, 24, 6, 28, 22] }
 		]
 	},
+	/** 堆积：原始分层数据（与折线同形），引擎 stack-series 累加 */
+	stack: {
+		categories: week,
+		series: [
+			{ name: '直营', data: [35, 36, 31, 33, 13, 34, 32] },
+			{ name: '加盟', data: [18, 27, 21, 24, 6, 28, 22] },
+			{ name: '电商', data: [12, 15, 10, 14, 8, 16, 11] },
+		],
+	},
 	bar: {
 		categories: ['华东', '华南', '华北', '西南', '东北'],
 		series: [
@@ -28,6 +37,13 @@ export const chartSamples: Record<string, ChartSample> = {
 		]
 	},
 	line: {
+		categories: week,
+		series: [
+			{ name: '访客', data: [120, 132, 101, 134, 90, 230, 210] },
+			{ name: '下单', data: [22, 18, 19, 23, 29, 33, 31] }
+		]
+	},
+	curve: {
 		categories: week,
 		series: [
 			{ name: '访客', data: [120, 132, 101, 134, 90, 230, 210] },
@@ -234,7 +250,7 @@ export const chartDemoOpts: Partial<Record<keyof typeof chartSamples, Record<str
 		}
 	},
 	tline: timeAxisOpts,
-	tarea: timeAxisOpts
+	tarea: timeAxisOpts,
 }
 
 type LegendCell = string | { text: string; color: string }
@@ -299,6 +315,10 @@ export const chartLegendSamples: Partial<Record<keyof typeof chartSamples, Chart
 		{ value: '135', rate: '48%' },
 	]),
 	line: seriesTable('line', [
+		{ value: '1017', rate: '82%' },
+		{ value: '175', rate: '18%' },
+	]),
+	curve: seriesTable('curve', [
 		{ value: '1017', rate: '82%' },
 		{ value: '175', rate: '18%' },
 	]),
@@ -401,8 +421,10 @@ export const chartLegendSamples: Partial<Record<keyof typeof chartSamples, Chart
 
 export const chartLegendOpts: Partial<Record<keyof typeof chartSamples, Record<string, unknown>>> = {
 	column: seriesLegend,
+	stack: seriesLegend,
 	bar: seriesLegend,
 	line: seriesLegend,
+	curve: seriesLegend,
 	area: seriesLegend,
 	pie: sliceLegend,
 	ring: {
@@ -446,8 +468,10 @@ export const chartDemoMeta: Array<{
 	note: string
 }> = [
 	{ type: 'column', title: 'Column', note: '柱状图' },
+	{ type: 'stack', title: 'Stack', note: '堆积图' },
 	{ type: 'bar', title: 'Bar', note: '条状图' },
 	{ type: 'line', title: 'Line', note: '折线图' },
+	{ type: 'curve', title: 'Curve', note: '曲线图' },
 	{ type: 'area', title: 'Area', note: '区域图' },
 	{ type: 'pie', title: 'Pie', note: '饼图' },
 	{ type: 'ring', title: 'Ring', note: '圆环图' },

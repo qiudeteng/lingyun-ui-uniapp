@@ -1,6 +1,6 @@
 # lingyun-ui-charts
 
-图表。独立包 `lingyun-ui-charts`，当前版本 **1.0.5**。easycom 可用，不必 `import`。默认走 **uCharts**（微信 / H5 / App）；`echartsH5` / `echartsApp` 默认关。
+图表。独立包 `lingyun-ui-charts`，当前版本 **{{ chartsVersion }}**。easycom 可用，不必 `import`。默认走 **uCharts**（微信 / H5 / App）；`echartsH5` / `echartsApp` 默认关。
 
 容器必须有明确高度。放在 `lingyun-app-page` 滚动区内时打开 `canvas2d`、`inScrollView`、`ontouch`。同页多图的 `canvasId` 不能重复。
 
@@ -11,8 +11,10 @@
 | 图种 | `type` | 专页 |
 | --- | --- | --- |
 | 柱状图 | `column` | [柱状图](./column.md) |
+| 堆积图 | `stack` | [堆积图](./stack.md) |
 | 条状图 | `bar` | [条状图](./bar.md) |
 | 折线图 | `line` | [折线图](./line.md) |
+| 曲线图 | `curve` | [曲线图](./curve.md) |
 | 区域图 | `area` | [区域图](./area.md) |
 | 饼图 | `pie` | [饼图](./pie.md) |
 | 圆环图 | `ring` | [圆环图](./ring.md) |
@@ -100,7 +102,7 @@ const chartOpts = { color: chartColorDark }
 | 图种 | 一行是什么 | 额外字段写在哪 |
 | --- | --- | --- |
 | `pie` `ring` `rose` `funnel` `mount` | 一个扇区 | `series[0].data` 的每一项 |
-| `column` `bar` `line` `area` `mix` `radar` `scatter` `bubble` `tline` `tarea` | 一条序列 | 和 `name`、`data` 同级，不要写进每个点 |
+| `column` `stack` `bar` `line` `curve` `area` `mix` `radar` `scatter` `bubble` `tline` `tarea` | 一条序列 | 和 `name`、`data` 同级，不要写进每个点 |
 | `candle` | 开了均线时每条均线一行；否则那一条 K 线 | 写在对应序列上 |
 
 `word`、`map`、`arcbar`、`gauge` 不画图例。ECharts（`echartsH5` / `echartsApp`）不走这套列。

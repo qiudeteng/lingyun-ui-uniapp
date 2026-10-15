@@ -19,6 +19,13 @@
 
 'use strict';
 
+import {
+  applyLineStackAsArea,
+  dataCombineStackValues,
+  seriesPointValue,
+  stackLayerBounds,
+} from './stack-series';
+
 var config = {
   version: 'v1.0.5',
   yAxisWidth: 15,
@@ -474,18 +481,7 @@ function dataCombine(series) {
 }
 
 function dataCombineStack(series, len) {
-  var sum = new Array(len);
-  for (var j = 0; j < sum.length; j++) {
-    sum[j] = 0;
-  }
-  for (var i = 0; i < series.length; i++) {
-    for (var j = 0; j < sum.length; j++) {
-      sum[j] += series[i].data[j];
-    }
-  }
-  return series.reduce(function(a, b) {
-    return (a.data ? a.data : a).concat(b.data).concat(sum);
-  }, []);
+  return dataCombineStackValues(series, len);
 }
 
 function getTouches(touches, opts, e) {
@@ -1906,36 +1902,32 @@ function getStackDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing, 
   var points = [];
   var validHeight = opts.height - opts.area[0] - opts.area[2];
   data.forEach(function(item, index) {
-    if (item === null) {
+    var layer = seriesPointValue(item);
+    if (layer === null) {
       points.push(null);
-    } else {
-      var point = {};
-      point.color = item.color;
-      point.x = xAxisPoints[index] + Math.round(eachSpacing / 2);
-
-      if (seriesIndex > 0) {
-        var value = 0;
-        for (let i = 0; i <= seriesIndex; i++) {
-          value += stackSeries[i].data[index];
-        }
-        var value0 = value - item;
-        var height = validHeight * (value - minRange) / (maxRange - minRange);
-        var height0 = validHeight * (value0 - minRange) / (maxRange - minRange);
-      } else {
-        var value = item;
-        if (typeof item === 'object' && item !== null) {
-          value = item.value;
-        }
-        var height = validHeight * (value - minRange) / (maxRange - minRange);
-        var height0 = 0;
-      }
-      var heightc = height0;
-      height *= process;
-      heightc *= process;
-      point.y = opts.height - Math.round(height) - opts.area[2];
-      point.y0 = opts.height - Math.round(heightc) - opts.area[2];
-      points.push(point);
+      return;
     }
+    var point = {};
+    point.color = item && typeof item === 'object' ? item.color : undefined;
+    point.x = xAxisPoints[index] + Math.round(eachSpacing / 2);
+
+    var height, height0;
+    if (seriesIndex > 0) {
+      var bounds = stackLayerBounds(stackSeries, seriesIndex, index);
+      var value = bounds ? bounds.value : layer;
+      var value0 = bounds ? bounds.value0 : 0;
+      height = validHeight * (value - minRange) / (maxRange - minRange);
+      height0 = validHeight * (value0 - minRange) / (maxRange - minRange);
+    } else {
+      height = validHeight * (layer - minRange) / (maxRange - minRange);
+      height0 = 0;
+    }
+    var heightc = height0;
+    height *= process;
+    heightc *= process;
+    point.y = opts.height - Math.round(height) - opts.area[2];
+    point.y0 = opts.height - Math.round(heightc) - opts.area[2];
+    points.push(point);
   });
   return points;
 }
@@ -1945,36 +1937,32 @@ function getBarStackDataPoints(data, minRange, maxRange, yAxisPoints, eachSpacin
   var points = [];
   var validHeight = opts.width - opts.area[1] - opts.area[3];
   data.forEach(function(item, index) {
-    if (item === null) {
+    var layer = seriesPointValue(item);
+    if (layer === null) {
       points.push(null);
-    } else {
-      var point = {};
-      point.color = item.color;
-      point.y = yAxisPoints[index];
-      if (seriesIndex > 0) {
-        var value = 0;
-        for (let i = 0; i <= seriesIndex; i++) {
-          value += stackSeries[i].data[index];
-        }
-        var value0 = value - item;
-        var height = validHeight * (value - minRange) / (maxRange - minRange);
-        var height0 = validHeight * (value0 - minRange) / (maxRange - minRange);
-      } else {
-        var value = item;
-        if (typeof item === 'object' && item !== null) {
-          value = item.value;
-        }
-        var height = validHeight * (value - minRange) / (maxRange - minRange);
-        var height0 = 0;
-      }
-      var heightc = height0;
-      height *= process;
-      heightc *= process;
-      point.height = height - heightc;
-      point.x = opts.area[3] + height;
-      point.x0 = opts.area[3] + heightc;
-      points.push(point);
+      return;
     }
+    var point = {};
+    point.color = item && typeof item === 'object' ? item.color : undefined;
+    point.y = yAxisPoints[index];
+    var height, height0;
+    if (seriesIndex > 0) {
+      var bounds = stackLayerBounds(stackSeries, seriesIndex, index);
+      var value = bounds ? bounds.value : layer;
+      var value0 = bounds ? bounds.value0 : 0;
+      height = validHeight * (value - minRange) / (maxRange - minRange);
+      height0 = validHeight * (value0 - minRange) / (maxRange - minRange);
+    } else {
+      height = validHeight * (layer - minRange) / (maxRange - minRange);
+      height0 = 0;
+    }
+    var heightc = height0;
+    height *= process;
+    heightc *= process;
+    point.height = height - heightc;
+    point.x = opts.area[3] + height;
+    point.x0 = opts.area[3] + heightc;
+    points.push(point);
   });
   return points;
 }
@@ -2042,11 +2030,21 @@ function getYAxisTextList(series, opts, config, stack, yData) {
   return range.reverse();
 }
 
+/** 柱 / 条 / 折线 / 区域堆积时 Y 轴按总和缩放 */
+function resolveChartStackMode(opts) {
+  if (opts.extra && opts.extra.column && opts.extra.column.type === 'stack') return 'stack';
+  if (opts.extra && opts.extra.bar && opts.extra.bar.type === 'stack') return 'stack';
+  if (opts.extra && opts.extra.line && opts.extra.line.stack === true) return 'stack';
+  if (opts.extra && opts.extra.area && opts.extra.area.stack === true) return 'stack';
+  return '';
+}
+
 function calYAxisData(series, opts, config, context) {
   //堆叠图重算Y轴
   var columnstyle = assign({}, {
     type: ""
   }, opts.extra.column);
+  var stackMode = resolveChartStackMode(opts) || columnstyle.type;
   //如果是多Y轴，重新计算
   var YLength = opts.yAxis.data.length;
   var newSeries = new Array(YLength);
@@ -2079,7 +2077,7 @@ function calYAxisData(series, opts, config, context) {
         if(!yData.formatter){
           yData.formatter = (val,index,opts) => {return util.toFixed(val, yData.tofix || 0) + (yData.unit || '')};
         }
-        rangesArr[i] = getYAxisTextList(newSeries[i], opts, config, columnstyle.type, yData, i);
+        rangesArr[i] = getYAxisTextList(newSeries[i], opts, config, stackMode, yData, i);
       }
       let yAxisFontSizes = yData.fontSize * opts.pix || config.fontSize;
       yAxisWidthArr[i] = {
@@ -2110,7 +2108,7 @@ function calYAxisData(series, opts, config, context) {
       if(!opts.yAxis.formatter){
         opts.yAxis.formatter = (val,index,opts) => {return val.toFixed(opts.yAxis.tofix ) + (opts.yAxis.unit || '')}
       }
-      rangesArr[0] = getYAxisTextList(series, opts, config, columnstyle.type, {});
+      rangesArr[0] = getYAxisTextList(series, opts, config, stackMode, {});
     }
     yAxisWidthArr[0] = {
       position: 'left',
@@ -3885,6 +3883,72 @@ function drawCandleDataPoints(series, seriesMA, opts, config, context) {
   };
 }
 
+/** 沿点列描边（y 已是目标边），供区域图 / 堆积带使用；doMove=false 时接续上一段路径 */
+function pathAreaSeriesEdge(context, points, areaOption, leftSpace, rightSpace, doMove) {
+  if (!points || !points.length) return;
+  var startPoint = 0;
+  var goTo = function(x, y) {
+    if (doMove && startPoint == 0) {
+      context.moveTo(x, y);
+    } else if (startPoint == 0) {
+      context.lineTo(x, y);
+    }
+    startPoint = 1;
+  };
+  if (points.length === 1) {
+    goTo(points[0].x, points[0].y);
+    return;
+  }
+  if (areaOption.type === 'curve') {
+    for (let j = 0; j < points.length; j++) {
+      let item = points[j];
+      if (startPoint == 0 && item.x > leftSpace) {
+        goTo(item.x, item.y);
+      }
+      if (j > 0 && item.x > leftSpace && item.x < rightSpace) {
+        if (startPoint == 0) goTo(points[j - 1].x, points[j - 1].y);
+        let ctrlPoint = createCurveControlPoints(points, j - 1);
+        context.bezierCurveTo(ctrlPoint.ctrA.x, ctrlPoint.ctrA.y, ctrlPoint.ctrB.x, ctrlPoint.ctrB.y, item.x, item.y);
+        startPoint = 1;
+      }
+    }
+  }
+  if (areaOption.type === 'straight') {
+    for (let j = 0; j < points.length; j++) {
+      let item = points[j];
+      if (startPoint == 0 && item.x > leftSpace) {
+        goTo(item.x, item.y);
+      }
+      if (j > 0 && item.x > leftSpace && item.x < rightSpace) {
+        if (startPoint == 0) goTo(points[j - 1].x, points[j - 1].y);
+        context.lineTo(item.x, item.y);
+        startPoint = 1;
+      }
+    }
+  }
+  if (areaOption.type === 'step') {
+    for (let j = 0; j < points.length; j++) {
+      let item = points[j];
+      if (startPoint == 0 && item.x > leftSpace) {
+        goTo(item.x, item.y);
+      }
+      if (j > 0 && item.x > leftSpace && item.x < rightSpace) {
+        if (startPoint == 0) goTo(points[j - 1].x, points[j - 1].y);
+        context.lineTo(item.x, points[j - 1].y);
+        context.lineTo(item.x, item.y);
+        startPoint = 1;
+      }
+    }
+  }
+}
+
+function mapAreaEdgePoints(points, key) {
+  return points.map(function(p) {
+    if (p === null) return null;
+    return { x: p.x, y: p[key], color: p.color };
+  });
+}
+
 function drawAreaDataPoints(series, opts, config, context) {
   var process = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 1;
   var areaOption = assign({}, {
@@ -3893,13 +3957,16 @@ function drawAreaDataPoints(series, opts, config, context) {
     addLine: false,
     width: 2,
     gradient: false,
-    activeType: 'none'
+    activeType: 'none',
+    stack: false
   }, opts.extra.area);
   let xAxisData = opts.chartData.xAxisData,
     xAxisPoints = xAxisData.xAxisPoints,
     eachSpacing = xAxisData.eachSpacing;
   let endY = opts.height - opts.area[2];
   let calPoints = [];
+  let isStack = areaOption.stack === true;
+  let fillOpacity = isStack ? (areaOption.opacity > 0 ? areaOption.opacity : 0.55) : areaOption.opacity;
   context.save();
   let leftSpace = 0;
   let rightSpace = opts.width + eachSpacing;
@@ -3914,76 +3981,45 @@ function drawAreaDataPoints(series, opts, config, context) {
     minRange = ranges.pop();
     maxRange = ranges.shift();
     let data = eachSeries.data;
-    let points = getDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing, opts, config, process);
+    let points = isStack
+      ? getStackDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing, opts, config, seriesIndex, series, process)
+      : getDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing, opts, config, process);
     calPoints.push(points);
     let splitPointList = splitPoints(points,eachSeries);
     for (let i = 0; i < splitPointList.length; i++) {
       let points = splitPointList[i];
       // 绘制区域数
       context.beginPath();
-      context.setStrokeStyle(hexToRgb(eachSeries.color, areaOption.opacity));
-      if (areaOption.gradient) {
+      context.setStrokeStyle(hexToRgb(eachSeries.color, fillOpacity));
+      if (areaOption.gradient && !isStack) {
         let gradient = context.createLinearGradient(0, opts.area[0], 0, opts.height - opts.area[2]);
-        gradient.addColorStop('0', hexToRgb(eachSeries.color, areaOption.opacity));
+        gradient.addColorStop('0', hexToRgb(eachSeries.color, fillOpacity));
         gradient.addColorStop('1.0', hexToRgb("#FFFFFF", 0.1));
         context.setFillStyle(gradient);
       } else {
-        context.setFillStyle(hexToRgb(eachSeries.color, areaOption.opacity));
+        context.setFillStyle(hexToRgb(eachSeries.color, fillOpacity));
       }
       context.setLineWidth(areaOption.width * opts.pix);
       if (points.length > 1) {
         let firstPoint = points[0];
         let lastPoint = points[points.length - 1];
-        context.moveTo(firstPoint.x, firstPoint.y);
-        let startPoint = 0;
-        if (areaOption.type === 'curve') {
-          for (let j = 0; j < points.length; j++) {
-            let item = points[j];
-            if (startPoint == 0 && item.x > leftSpace) {
-              context.moveTo(item.x, item.y);
-              startPoint = 1;
-            }
-            if (j > 0 && item.x > leftSpace && item.x < rightSpace) {
-              let ctrlPoint = createCurveControlPoints(points, j - 1);
-              context.bezierCurveTo(ctrlPoint.ctrA.x, ctrlPoint.ctrA.y, ctrlPoint.ctrB.x, ctrlPoint.ctrB.y, item.x, item.y);
-            }
-          };
-        } 
-        if (areaOption.type === 'straight') {
-          for (let j = 0; j < points.length; j++) {
-            let item = points[j];
-            if (startPoint == 0 && item.x > leftSpace) {
-              context.moveTo(item.x, item.y);
-              startPoint = 1;
-            }
-            if (j > 0 && item.x > leftSpace && item.x < rightSpace) {
-              context.lineTo(item.x, item.y);
-            }
-          };
+        if (isStack) {
+          // 上沿 y → 下沿 y0 闭合，形成本层色带
+          let upper = mapAreaEdgePoints(points, 'y');
+          let lower = mapAreaEdgePoints(points, 'y0').reverse();
+          pathAreaSeriesEdge(context, upper, areaOption, leftSpace, rightSpace, true);
+          pathAreaSeriesEdge(context, lower, areaOption, leftSpace, rightSpace, false);
+          context.lineTo(firstPoint.x, firstPoint.y);
+        } else {
+          context.moveTo(firstPoint.x, firstPoint.y);
+          pathAreaSeriesEdge(context, points, areaOption, leftSpace, rightSpace, false);
+          context.lineTo(lastPoint.x, endY);
+          context.lineTo(firstPoint.x, endY);
+          context.lineTo(firstPoint.x, firstPoint.y);
         }
-        if (areaOption.type === 'step') {
-          for (let j = 0; j < points.length; j++) {
-            let item = points[j];
-            if (startPoint == 0 && item.x > leftSpace) {
-              context.moveTo(item.x, item.y);
-              startPoint = 1;
-            }
-            if (j > 0 && item.x > leftSpace && item.x < rightSpace) {
-              context.lineTo(item.x, points[j - 1].y);
-              context.lineTo(item.x, item.y);
-            }
-          };
-        }
-        context.lineTo(lastPoint.x, endY);
-        context.lineTo(firstPoint.x, endY);
-        context.lineTo(firstPoint.x, firstPoint.y);
       } else {
         let item = points[0];
         context.moveTo(item.x - eachSpacing / 2, item.y);
-        // context.lineTo(item.x + eachSpacing / 2, item.y);
-        // context.lineTo(item.x + eachSpacing / 2, endY);
-        // context.lineTo(item.x - eachSpacing / 2, endY);
-        // context.moveTo(item.x - eachSpacing / 2, item.y);
       }
       context.closePath();
       context.fill();
@@ -3999,49 +4035,8 @@ function drawAreaDataPoints(series, opts, config, context) {
         context.setLineWidth(areaOption.width * opts.pix);
         if (points.length === 1) {
           context.moveTo(points[0].x, points[0].y);
-          // context.arc(points[0].x, points[0].y, 1, 0, 2 * Math.PI);
         } else {
-          context.moveTo(points[0].x, points[0].y);
-          let startPoint = 0;
-          if (areaOption.type === 'curve') {
-            for (let j = 0; j < points.length; j++) {
-              let item = points[j];
-              if (startPoint == 0 && item.x > leftSpace) {
-                context.moveTo(item.x, item.y);
-                startPoint = 1;
-              }
-              if (j > 0 && item.x > leftSpace && item.x < rightSpace) {
-                let ctrlPoint = createCurveControlPoints(points, j - 1);
-                context.bezierCurveTo(ctrlPoint.ctrA.x, ctrlPoint.ctrA.y, ctrlPoint.ctrB.x, ctrlPoint.ctrB.y, item.x, item.y);
-              }
-            };
-          }
-          if (areaOption.type === 'straight') {
-            for (let j = 0; j < points.length; j++) {
-              let item = points[j];
-              if (startPoint == 0 && item.x > leftSpace) {
-                context.moveTo(item.x, item.y);
-                startPoint = 1;
-              }
-              if (j > 0 && item.x > leftSpace && item.x < rightSpace) {
-                context.lineTo(item.x, item.y);
-              }
-            };
-          }
-          if (areaOption.type === 'step') {
-            for (let j = 0; j < points.length; j++) {
-              let item = points[j];
-              if (startPoint == 0 && item.x > leftSpace) {
-                context.moveTo(item.x, item.y);
-                startPoint = 1;
-              }
-              if (j > 0 && item.x > leftSpace && item.x < rightSpace) {
-                context.lineTo(item.x, points[j - 1].y);
-                context.lineTo(item.x, item.y);
-              }
-            };
-          }
-          context.moveTo(points[0].x, points[0].y);
+          pathAreaSeriesEdge(context, isStack ? mapAreaEdgePoints(points, 'y') : points, areaOption, leftSpace, rightSpace, true);
         }
         context.stroke();
         context.setLineDash([]);
@@ -4061,7 +4056,9 @@ function drawAreaDataPoints(series, opts, config, context) {
       minRange = ranges.pop();
       maxRange = ranges.shift();
       var data = eachSeries.data;
-      var points = getDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing, opts, config, process);
+      var points = isStack
+        ? getStackDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing, opts, config, seriesIndex, series, process)
+        : getDataPoints(data, minRange, maxRange, xAxisPoints, eachSpacing, opts, config, process);
       drawPointText(points, eachSeries, config, context, opts);
     });
   }
@@ -6600,6 +6597,9 @@ Animation.prototype.stop = function() {
 
 function drawCharts(type, opts, config, context) {
   var _this = this;
+  // 折线 / 曲线 + stack → 区域堆积（引擎内累加，业务侧仍传原始分层数据）
+  applyLineStackAsArea(opts);
+  type = opts.type;
   var series = opts.series;
   //兼容ECharts饼图类数据格式
   if (type === 'pie' || type === 'ring' || type === 'mount' || type === 'rose' || type === 'funnel') {

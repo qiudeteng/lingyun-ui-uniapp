@@ -1,6 +1,8 @@
 # 折线图 · line
 
-类目轴折线。`type="line"`。Demo 页：`/pages/demo/charts/line`。
+类目轴折线。`type="line"`（默认 `extra.line.type: "straight"`）。Demo 页：`/pages/demo/charts/line`。
+
+需要平滑曲线请用 [曲线图](./curve.md)（`type="curve"`），或给折线覆盖 `extra.line.type: "curve"`。
 
 ## 数据
 

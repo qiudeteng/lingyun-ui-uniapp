@@ -55,7 +55,7 @@ import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/u-charts/
 
 ### 3.1 有 categories（类目轴）
 
-`column` · `bar` · `line` · `area` · `radar` · `mix` · `candle`
+`column` · `stack` · `bar` · `line` · `curve` · `area` · `radar` · `mix` · `candle`
 
 ```ts
 {
@@ -67,6 +67,8 @@ import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/u-charts/
 | type | 额外约定 |
 |------|----------|
 | `column` | 默认 `extra.column`：`categoryGap` 拉开各组、`seriesGap` 同组柱距、`barBorderRadius: [6,6,0,0]` 顶部圆角 |
+| `stack` | 堆积柱状别名：引擎 `column` + `extra.column.type: "stack"`；折线/曲线传同款原始数据 + `extra.line.stack: true`（算法见 `stack-series.ts`），见 `doc/charts/stack.md` |
+| `curve` | 自定义图种别名，引擎为 `line`，默认 `extra.line.type: "curve"` 平滑曲线；数据形状同 `line` |
 | `radar` | `opts.extra.radar.max` 要盖住数据（demo 用 100） |
 | `mix` | 每条 `series[i].type` 为 `column` / `line` / `area` 等 |
 | `candle` | `data` 为 `[开盘, 收盘, 最低, 最高]` |
@@ -146,7 +148,7 @@ opts: {
 | 图种 | 一行 | 额外字段 |
 |------|------|----------|
 | `pie` `ring` `rose` `funnel` `mount` | 一个扇区 | `series[0].data` 的每一项 |
-| `column` `bar` `line` `area` `mix` `radar` `scatter` `bubble` `tline` `tarea` | 一条序列 | 与 `name`、`data` 同级 |
+| `column` `stack` `bar` `line` `curve` `area` `mix` `radar` `scatter` `bubble` `tline` `tarea` | 一条序列 | 与 `name`、`data` 同级 |
 | `candle` | 开了均线时每条均线；否则那一条 K 线 | 写在对应序列上 |
 
 `word`、`map`、`arcbar`、`gauge` 不画图例。ECharts 不走这套列。
@@ -230,8 +232,10 @@ legend: {
 | 路由 | type | 说明 |
 |------|------|------|
 | `/pages/demo/charts/column` | `column` | 柱状图 |
+| `/pages/demo/charts/stack` | `stack` | 堆积图（柱 / 折线 / 曲线，原始数据 + stack） |
 | `/pages/demo/charts/bar` | `bar` | 条状图 |
 | `/pages/demo/charts/line` | `line` | 折线图 |
+| `/pages/demo/charts/curve` | `curve` | 曲线图 |
 | `/pages/demo/charts/area` | `area` | 区域图 |
 | `/pages/demo/charts/pie` | `pie` | 饼图 |
 | `/pages/demo/charts/ring` | `ring` | 圆环图 |
