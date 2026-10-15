@@ -113,7 +113,7 @@ export default defineComponent({
     showArrow: { type: Boolean, default: true },
     /** 面板宽（px）。0 表示跟触发器，并限制在 160–280 */
     width: { type: [Number, String] as PropType<number | string>, default: 0 },
-    /** auto 指向触发器中心；leading / middle / trailing 固定在边上 */
+    /** 箭头落在面板哪一侧（面板随之偏移），箭头始终指向触发器：auto / middle 居中，leading 靠前，trailing 靠后 */
     arrowAlign: { type: String, default: 'auto' },
     maskClosable: { type: Boolean, default: true },
     zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },

@@ -23,7 +23,7 @@
 | ✅ | `lingyun-tabbars` | 底部标签栏 | [`TABBARS.md`](./TABBARS.md) |
 | ✅ | `lingyun-search-bar` | 搜索栏 | [`SEARCHBARS.md`](./SEARCHBARS.md) |
 | ✅ | `lingyun-list` / `lingyun-list-item` | 分组列表；附属含 toggle / stepper / slider | [`LISTS.md`](./LISTS.md) |
-| ✅ | `lingyun-table` | 分组表格；固定列、吸顶表头、排序、筛选、分页、多选 | [`TABLES.md`](./TABLES.md) |
+| ✅ | `lingyun-table` | 分组表格；固定列、吸顶表头、排序、筛选、分页、多选、分组收起 | [`TABLES.md`](./TABLES.md) |
 | ✅ | `lingyun-swipe-action` / `lingyun-swipe-action-item` | 列表左右滑菜单 | [`SWIPE_ACTIONS.md`](./SWIPE_ACTIONS.md) |
 | ✅ | `lingyun-alert` | 弹窗 | [`ALERTS.md`](./ALERTS.md) |
 | ✅ | `lingyun-activity-indicator` | 转圈加载 | [`ACTIVITY_INDICATORS.md`](./ACTIVITY_INDICATORS.md) |
@@ -121,7 +121,7 @@
 | 2026-10-15 | 图表 1.0.8：新增曲线图 `curve` |
 | 2026-10-15 | 图表 1.0.7：柱状图组间距与顶圆角；图例表上下布局拉满宽度 |
 | 2026-10-15 | 页面 1.0.2：登录页默认隐藏顶栏（`showToolbar=false`） |
-| 2026-10-15 | 凌云UI 1.0.25：表格筛选改为面板，支持多选、数字、文本、日期筛选；排序改用图标；列宽自动占满与 `fit` |
+| 2026-10-15 | 凌云UI 1.0.25：表格筛选改为面板（窄屏 Sheet、宽屏 Popover），支持多选、数字、文本、日期筛选；排序改用图标；列宽自动占满与 `fit`；分组可收起；加载遮罩覆盖整表 |
 | 2026-10-15 | 凌云UI 1.0.23：表格支持分组 `group-fields` 自动求和 |
 | 2026-10-15 | 凌云UI 1.0.22：表格支持紧凑布局 `size="compact"` |
 | 2026-10-14 | 凌云UI 1.0.21：`mp-overlay-gate` 防图表 canvas 穿透浮层；分组内嵌表格贴边 |
