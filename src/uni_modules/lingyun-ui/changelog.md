@@ -1,6 +1,10 @@
+## 1.0.23（2026-10-15）
+- `lingyun-table` 支持 `group-fields`。按列归组并插入分组行，`sum` 列自动求和；格式化与 `#cell` 跟数据行一致。
+
 ## 1.0.22（2026-10-15）
 - `lingyun-table` 支持 `size="compact"`。表头 32、行高 36，标题栏、分页、勾选和字号一起收紧。默认仍是 52 行高。
 - 表体默认绘制行分割线。不传 `stripe` 和 `border` 时只有横线。
+- `lingyun-table` 支持 `show-footer` 与 `footer-data`。表尾按列 `key` 填值，没写的列留空，并固定在表体下方。
 
 ## 1.0.21（2026-10-14）
 - 新增 `mp-overlay-gate`：Sheet / Picker / Alert 等浮层打开时占位，图表侧截图并 `hidden` canvas，避免微信原生层盖住弹层。

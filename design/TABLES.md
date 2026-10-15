@@ -27,6 +27,8 @@
 | 多选 | `selection`。勾选列固定在左。`v-model:selected-keys`。表头勾选当前页 |
 | 自定义单元格 | 插槽 `#cell`，参数 `row` / `column` / `value` |
 | 紧凑 | `size="compact"`。默认 `regular` |
+| 表尾 | `show-footer`。`footer-data` 每项是一行，字段名对应列 `key`，没写的列留空。表尾固定在表体下方，横向跟着表体走 |
+| 分组 | `group-fields: { field, sum }`。按 `field` 列归组并插入分组行；`sum` 列自动加总。分组行有底色、字重加粗，无圆点。合计走列 `formatter` / `#cell`，与数据行一致 |
 
 ```vue
 <lingyun-table

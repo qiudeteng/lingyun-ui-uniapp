@@ -11,5 +11,7 @@
 - 序号列：`type: 'index'`，翻页后序号接着上一页。标题栏带刷新、选列、导出和自定义按钮
 - 紧凑：`size="compact"`，表头 32、行高 36
 - 行分割线：不传 `stripe`、`border`，只有横线
+- 表尾：`show-footer` + `footer-data`，未写的列留空
+- 分组：`group-fields` 按列归组并自动求和
 - 空数据
 - 放在 `lingyun-section` 里：标题在卡片外，表格贴边（与 Sections demo「内嵌表格」同一规则）

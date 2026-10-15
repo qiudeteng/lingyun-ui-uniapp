@@ -27,6 +27,27 @@
 
 行与行之间默认有横线。不传 `stripe` 和 `border` 时只有横线：没有竖线，也没有斑马纹。
 
+表尾用 `show-footer` 打开，数据跟列 `key` 对齐。下面这行只填了序号、性别和数量，菜品和地址留空。
+
+```vue
+<lingyun-table
+  show-footer
+  :columns="columns"
+  :data="rows"
+  :footer-data="[{ seq: '合计', sex: '45', num: '282' }]"
+/>
+```
+
+分组用 `group-fields`，和表尾不同：合计由当前筛选结果自动算。分组行会插入到数据里，带底色，不参与勾选。
+
+```vue
+<lingyun-table
+  :group-fields="{ field: 'group', sum: ['price', 'ratio'] }"
+  :columns="columns"
+  :data="rows"
+/>
+```
+
 放进 `lingyun-section` 时与内嵌列表同一规则：标题留在卡片外，表格贴边，section 的 body 与外壳 spacing 自动让出。
 
 ```vue
@@ -68,6 +89,9 @@
 | `column-picker` | 标题栏选择列，隐藏后不再参与布局 | false |
 | `export-excel` | 标题栏导出当前结果为 Excel | false |
 | `size` | `regular` / `compact`。紧凑时表头 32、行高 36，标题栏、分页、勾选和字号一起收 | regular |
+| `show-footer` | 在表体下方、分页上方固定表尾 | false |
+| `footer-data` | 表尾行。字段名对应列 `key`，没写的列留空。多条就是多行 | [] |
+| `group-fields` | `{ field, sum }`。按 `field` 归组并插入分组行；`sum` 为要求和的列。合计自动算，走列 `formatter` / `#cell` | null |
 
 `query-change` 参数：`{ page, pageSize, filters, sortKey, sortOrder }`。服务端请求只接这一次，不要再同时用 `filter-change` 和 `page-change` 各请求一遍。
 

@@ -94,6 +94,33 @@
         <lingyun-table :columns="lineColumns" :data="rows" row-key="id" :height="240" />
       </lingyun-section>
 
+      <lingyun-section title="表尾" hint="show-footer 打开。footer-data 的字段对应列 key，没写的列留空。">
+        <lingyun-table
+          show-footer
+          :footer-data="footerData"
+          :columns="lineColumns"
+          :data="rows"
+          row-key="id"
+          :height="240"
+        />
+      </lingyun-section>
+
+      <lingyun-section title="分组" hint="带序号列。分组行序号留空，明细从 1 接着编。">
+        <lingyun-table
+          :group-fields="groupFields"
+          :columns="groupColumns"
+          :data="groupRows"
+          row-key="id"
+          :height="280"
+        >
+          <template #cell="{ row, column, value }">
+            <text v-if="column.key === 'price'" class="cell-text">{{ formatMoney(value) }}</text>
+            <text v-else-if="column.key === 'ratio'" class="cell-text cell-text--muted">{{ formatRatio(value) }}</text>
+            <text v-else class="cell-text" :class="{ 'cell-text--group': row.__lyIsGroup }">{{ value }}</text>
+          </template>
+        </lingyun-table>
+      </lingyun-section>
+
       <lingyun-section title="空数据" hint="外层 200px，空态留在这块高度里" is-last>
         <view class="table-frame table-frame--empty">
           <lingyun-table :columns="columns" :data="[]" empty-text="没有订单" />
@@ -105,7 +132,12 @@
 
 <script setup lang="ts">
   import { ref } from 'vue'
-  import type { LingyunTableColumn, LingyunTableQuery, LingyunTableRow } from '@/uni_modules/lingyun-ui/components/lingyun-table/lingyun-table.vue'
+  import type {
+    LingyunTableColumn,
+    LingyunTableGroupFields,
+    LingyunTableQuery,
+    LingyunTableRow,
+  } from '@/uni_modules/lingyun-ui/components/lingyun-table/lingyun-table.vue'
 
   const columns: LingyunTableColumn[] = [
     { key: 'name', title: '菜品', width: 128, fixed: 'left', sortable: true },
@@ -173,6 +205,57 @@
     note: index % 2 === 0 ? '少辣' : '常规',
     action: '详情',
   }))
+
+  const footerData: LingyunTableRow[] = [
+    { name: '合计', count: '18', price: '282' },
+  ]
+
+  const groupFields: LingyunTableGroupFields = {
+    field: 'group',
+    sum: ['count', 'price', 'ratio'],
+  }
+
+  const groupColumns: LingyunTableColumn[] = [
+    { key: 'no', title: '序号', type: 'index', width: 56, align: 'center', fixed: 'left' },
+    { key: 'group', title: '分组', width: 160, fixed: 'left' },
+    { key: 'name', title: '明细', width: 160 },
+    { key: 'count', title: '用量', width: 88, align: 'right' },
+    {
+      key: 'price',
+      title: '金额',
+      width: 96,
+      align: 'right',
+      formatter: (value) => formatMoney(value),
+    },
+    {
+      key: 'ratio',
+      title: '占比',
+      width: 80,
+      align: 'right',
+      formatter: (value) => formatRatio(value),
+    },
+  ]
+
+  const groupRows: LingyunTableRow[] = [
+    { id: 'g1', group: '夹心 · 八喜草莓冰淇淋', name: '6寸草莓冰淇淋胚', count: 200, price: 6.2, ratio: 5.6 },
+    { id: 'g2', group: '夹心 · 八喜草莓冰淇淋', name: '动物性淡奶油', count: 100, price: 6, ratio: 5.3 },
+    { id: 'g3', group: '夹心 · 八喜草莓冰淇淋', name: '草莓果酱', count: 60, price: 4.8, ratio: 4.3 },
+    { id: 'g4', group: '面皮', name: '低筋面粉', count: 120, price: 3.6, ratio: 3.2 },
+    { id: 'g5', group: '面皮', name: '细砂糖', count: 80, price: 1.2, ratio: 1.1 },
+    { id: 'g6', group: '面皮', name: '鸡蛋', count: 3, price: 2.4, ratio: 2.1 },
+  ]
+
+  function formatMoney(value: unknown): string {
+    const n = typeof value === 'number' ? value : Number(value)
+    if (!Number.isFinite(n)) return ''
+    return `¥${n.toFixed(2)}`
+  }
+
+  function formatRatio(value: unknown): string {
+    const n = typeof value === 'number' ? value : Number(value)
+    if (!Number.isFinite(n)) return ''
+    return `${n.toFixed(1)}%`
+  }
 
   const page = ref(1)
   const indexPage = ref(1)
@@ -268,6 +351,14 @@
     font-size: 15px;
     line-height: 20px;
     color: var(--lingyun-label, #1c1c1e);
+  }
+
+  .cell-text--muted {
+    color: var(--lingyun-label-secondary, #6a6a6a);
+  }
+
+  .cell-text--group {
+    font-weight: 600;
   }
 
   .cell-link {

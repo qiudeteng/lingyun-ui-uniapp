@@ -265,8 +265,16 @@
             @mouseleave="onRowRelease"
             @click="onRowClick(item.row)"
           >
-            <view v-if="selection" class="lingyun-table__cell lingyun-table__cell--check" @click.stop="toggleRow(item.row)">
-              <view class="lingyun-table__check" :class="{ 'lingyun-table__check--on': isSelected(item.row) }">
+            <view
+              v-if="selection"
+              class="lingyun-table__cell lingyun-table__cell--check"
+              @click.stop="toggleRow(item.row)"
+            >
+              <view
+                v-if="!item.row.__lyIsGroup"
+                class="lingyun-table__check"
+                :class="{ 'lingyun-table__check--on': isSelected(item.row) }"
+              >
                 <lingyun-icon v-if="isSelected(item.row)" type="checkmarkempty" :size="tickSize" color="#ffffff" />
               </view>
             </view>
@@ -274,7 +282,10 @@
               <view class="lingyun-table__cell" :style="cellStyle(col)">
                 <view class="lingyun-table__value">
                   <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
-                    <text class="lingyun-table__text">{{ cellText(item.row, col, item.index) }}</text>
+                    <text
+                      class="lingyun-table__text"
+                      :class="{ 'lingyun-table__text--group': item.row.__lyIsGroup }"
+                    >{{ cellText(item.row, col, item.index) }}</text>
                   </slot>
                 </view>
               </view>
@@ -316,7 +327,10 @@
                 <view v-if="col" class="lingyun-table__cell" :style="cellStyle(col)">
                   <view class="lingyun-table__value">
                     <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
-                      <text class="lingyun-table__text">{{ cellText(item.row, col, item.index) }}</text>
+                      <text
+                        class="lingyun-table__text"
+                        :class="{ 'lingyun-table__text--group': item.row.__lyIsGroup }"
+                      >{{ cellText(item.row, col, item.index) }}</text>
                     </slot>
                   </view>
                 </view>
@@ -360,7 +374,10 @@
                 <view v-if="col" class="lingyun-table__cell" :style="cellStyle(col)">
                   <view class="lingyun-table__value">
                     <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
-                      <text class="lingyun-table__text">{{ cellText(item.row, col, item.index) }}</text>
+                      <text
+                        class="lingyun-table__text"
+                        :class="{ 'lingyun-table__text--group': item.row.__lyIsGroup }"
+                      >{{ cellText(item.row, col, item.index) }}</text>
                     </slot>
                   </view>
                 </view>
@@ -406,7 +423,10 @@
               <view v-if="col" class="lingyun-table__cell" :style="cellStyle(col)">
                 <view class="lingyun-table__value">
                   <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
-                    <text class="lingyun-table__text">{{ cellText(item.row, col, item.index) }}</text>
+                    <text
+                      class="lingyun-table__text"
+                      :class="{ 'lingyun-table__text--group': item.row.__lyIsGroup }"
+                    >{{ cellText(item.row, col, item.index) }}</text>
                   </slot>
                 </view>
               </view>
@@ -443,6 +463,70 @@
       </view>
       <view v-if="loading" class="lingyun-table__loading">
         <lingyun-activity-indicator size="small" />
+      </view>
+    </view>
+
+    <view
+      v-if="footerRows.length"
+      class="lingyun-table__foot"
+      @mousewheel.stop="onTableWheel"
+      @wheel.stop="onTableWheel"
+      @mouseenter="onTablePointerEnter"
+      @pointerenter="onTablePointerEnter"
+    >
+      <view v-for="(foot, footIndex) in footerRows" :key="footIndex" class="lingyun-table__foot-line">
+        <view v-if="leftWidth" class="lingyun-table__side" :style="sideStyle(leftWidth)">
+          <view class="lingyun-table__row lingyun-table__row--foot">
+            <view v-if="selection" class="lingyun-table__cell lingyun-table__cell--check" />
+            <view
+              v-for="col in leftColumns"
+              :key="col.key"
+              class="lingyun-table__cell"
+              :style="cellStyle(col)"
+            >
+              <view class="lingyun-table__value">
+                <text class="lingyun-table__text lingyun-table__text--foot">{{ footerText(foot, col) }}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+        <view class="lingyun-table__clip" :style="footerClipStyle">
+          <view
+            class="lingyun-table__row lingyun-table__row--foot"
+            :style="footerCenterStyle"
+            @touchstart="onCenterTouchStart"
+            @touchmove.stop="onCenterTouchMove"
+            @touchend="onCenterTouchEnd"
+            @touchcancel="onCenterTouchEnd"
+          >
+            <view v-if="colPadLeft" class="lingyun-table__col-pad" :style="colPadLeftStyle" />
+            <view
+              v-for="col in visibleCenterColumns"
+              :key="col.key"
+              class="lingyun-table__cell"
+              :style="cellStyle(col)"
+            >
+              <view class="lingyun-table__value">
+                <text class="lingyun-table__text lingyun-table__text--foot">{{ footerText(foot, col) }}</text>
+              </view>
+            </view>
+            <view v-if="colPadRight" class="lingyun-table__col-pad" :style="colPadRightStyle" />
+          </view>
+        </view>
+        <view v-if="rightWidth" class="lingyun-table__side lingyun-table__side--right" :style="sideStyle(rightWidth)">
+          <view class="lingyun-table__row lingyun-table__row--foot">
+            <view
+              v-for="col in rightColumns"
+              :key="col.key"
+              class="lingyun-table__cell"
+              :style="cellStyle(col)"
+            >
+              <view class="lingyun-table__value">
+                <text class="lingyun-table__text lingyun-table__text--foot">{{ footerText(foot, col) }}</text>
+              </view>
+            </view>
+          </view>
+        </view>
       </view>
     </view>
 
@@ -496,6 +580,9 @@ const TABLE_METRICS: Record<'regular' | 'compact', TableMetrics> = {
 export type LingyunTableAlign = 'left' | 'center' | 'right'
 export type LingyunTableSortOrder = 'asc' | 'desc' | ''
 
+/** 分组行内部标记。业务 data 不要传这个字段 */
+export const LINGYUN_TABLE_GROUP = '__lyIsGroup'
+
 export interface LingyunTableFilterOption {
   text: string
   value: string | number
@@ -516,6 +603,15 @@ export interface LingyunTableColumn {
 }
 
 export type LingyunTableRow = Record<string, unknown>
+
+/**
+ * 分组规则。按 field 列归组，在组首插入一行；sum 里的列自动加总。
+ * 与 footer 不同：合计由当前筛选结果自动算，不手写。
+ */
+export interface LingyunTableGroupFields {
+  field: string
+  sum?: string[]
+}
 
 export interface LingyunTableQuery {
   page: number
@@ -581,6 +677,74 @@ function compareValue(a: unknown, b: unknown): number {
   const bNum = typeof b !== 'boolean' && Number.isFinite(nb) && String(b).trim() !== ''
   if (aNum && bNum) return na - nb
   return String(a).localeCompare(String(b), 'zh')
+}
+
+function isGroupRow(row: LingyunTableRow | null | undefined): boolean {
+  return !!(row && row[LINGYUN_TABLE_GROUP] === true)
+}
+
+function toSumNumber(value: unknown): number {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string') {
+    const n = Number(value.replace(/,/g, '').trim())
+    return Number.isFinite(n) ? n : 0
+  }
+  return 0
+}
+
+/** 按分组列重排，并在组首插入带合计的分组行 */
+function expandGroupedRows(
+  rows: LingyunTableRow[],
+  group: LingyunTableGroupFields | null | undefined,
+  rowKey: string,
+  sumSource?: LingyunTableRow[],
+): LingyunTableRow[] {
+  const field = group && typeof group.field === 'string' ? group.field.trim() : ''
+  if (!field || !rows.length) return rows
+  const sumKeys = (group?.sum || []).filter((key) => !!key && key !== field)
+  const source = sumSource && sumSource.length ? sumSource : rows
+  const totals = new Map<string, Record<string, number>>()
+  const labels = new Map<string, unknown>()
+  source.forEach((row) => {
+    if (isGroupRow(row)) return
+    const g = String(row[field] ?? '')
+    if (!labels.has(g)) labels.set(g, row[field] ?? '')
+    let bag = totals.get(g)
+    if (!bag) {
+      bag = {}
+      sumKeys.forEach((key) => {
+        bag![key] = 0
+      })
+      totals.set(g, bag)
+    }
+    sumKeys.forEach((key) => {
+      bag![key] += toSumNumber(row[key])
+    })
+  })
+  const out: LingyunTableRow[] = []
+  let last = '\u0000'
+  rows.forEach((row) => {
+    if (isGroupRow(row)) {
+      out.push(row)
+      return
+    }
+    const g = String(row[field] ?? '')
+    if (g !== last) {
+      const head: LingyunTableRow = {
+        [LINGYUN_TABLE_GROUP]: true,
+        [rowKey]: `__ly_group_${g}`,
+        [field]: labels.has(g) ? labels.get(g) : g,
+      }
+      const bag = totals.get(g) || {}
+      sumKeys.forEach((key) => {
+        head[key] = bag[key] || 0
+      })
+      out.push(head)
+      last = g
+    }
+    out.push(row)
+  })
+  return out
 }
 
 type SectionMarkHost = {
@@ -653,6 +817,18 @@ export default defineComponent({
     /** 标题栏右侧导出 Excel */
     exportExcel: { type: Boolean, default: false },
     emptyText: { type: String, default: '暂无数据' },
+    /** 为真时在表体下方、分页上方固定表尾 */
+    showFooter: { type: Boolean, default: false },
+    /**
+     * 表尾行。字段名对应列 key，没写的列留空。
+     * 多条就是多行表尾。
+     */
+    footerData: { type: Array as PropType<LingyunTableRow[]>, default: () => [] },
+    /**
+     * 分组。按 field 列归组并插入分组行；sum 列自动求和。
+     * 分组行带底色，不参与勾选。合计走列 formatter / #cell。
+     */
+    groupFields: { type: Object as PropType<LingyunTableGroupFields | null>, default: null },
     /** regular 行高 52；compact 行高 36，表头、标题栏、分页和字号一起收紧 */
     size: { type: String as PropType<'regular' | 'compact'>, default: 'regular' },
   },
@@ -947,8 +1123,29 @@ export default defineComponent({
         return true
       })
     },
+    groupFieldKey(): string {
+      const field = this.groupFields && this.groupFields.field
+      return typeof field === 'string' ? field.trim() : ''
+    },
+    groupSumKeys(): string[] {
+      const field = this.groupFieldKey
+      const list = (this.groupFields && this.groupFields.sum) || []
+      return list.filter((key) => !!key && key !== field)
+    },
     sortedRows(): LingyunTableRow[] {
       const rows = this.filteredRows.slice()
+      const groupKey = this.groupFieldKey
+      if (!this.remote && groupKey) {
+        const sortKey = this.sortKey
+        const dir = this.sortOrder === 'asc' ? 1 : this.sortOrder === 'desc' ? -1 : 0
+        rows.sort((a, b) => {
+          const byGroup = compareValue(a[groupKey], b[groupKey])
+          if (byGroup !== 0) return byGroup
+          if (!sortKey || !dir) return 0
+          return compareValue(a[sortKey], b[sortKey]) * dir
+        })
+        return rows
+      }
       if (this.remote || !this.sortKey || !this.sortOrder) return rows
       const key = this.sortKey
       const dir = this.sortOrder === 'asc' ? 1 : -1
@@ -962,6 +1159,22 @@ export default defineComponent({
     showPager(): boolean {
       return this.pageSize > 0 && this.totalCount > 0
     },
+    footerRows(): LingyunTableRow[] {
+      if (!this.showFooter) return []
+      const rows = this.footerData || []
+      return rows.length ? rows : [{}]
+    },
+    footerClipStyle(): Record<string, string> {
+      const style: Record<string, string> = { height: `${this.metrics.row}px` }
+      if (this.viewportCenterPx > 0) style.width = `${this.viewportCenterPx}px`
+      return style
+    },
+    footerCenterStyle(): Record<string, string> {
+      return {
+        width: `${this.centerWidth}px`,
+        transform: `translate3d(${-this.bodyLeft}px, 0, 0)`,
+      }
+    },
     pageCount(): number {
       if (!this.showPager) return 1
       return Math.max(1, Math.ceil(this.totalCount / this.pageSize))
@@ -969,10 +1182,15 @@ export default defineComponent({
     currentPage(): number {
       return Math.min(this.pageCount, Math.max(1, this.innerPage || 1))
     },
-    pageRows(): LingyunTableRow[] {
+    pageDataRows(): LingyunTableRow[] {
       if (this.remote || !this.showPager) return this.sortedRows
       const start = (this.currentPage - 1) * this.pageSize
       return this.sortedRows.slice(start, start + this.pageSize)
+    },
+    pageRows(): LingyunTableRow[] {
+      const page = this.pageDataRows
+      if (!this.groupFieldKey) return page
+      return expandGroupedRows(page, this.groupFields, this.rowKey, this.sortedRows)
     },
     pageKeys(): string[] {
       return this.pageRows.map((row) => this.keyOf(row)).filter(Boolean)
@@ -1033,6 +1251,19 @@ export default defineComponent({
     size() {
       this.syncRowWindow(this.bodyTop)
       this.$nextTick(() => this.measureViewport())
+    },
+    showFooter() {
+      this.$nextTick(() => this.measureViewport())
+    },
+    footerData() {
+      this.$nextTick(() => this.measureViewport())
+    },
+    groupFields: {
+      deep: true,
+      handler() {
+        this.syncRowWindow(this.bodyTop)
+        this.$nextTick(() => this.measureViewport())
+      },
     },
   },
   created() {
@@ -1264,6 +1495,7 @@ export default defineComponent({
       if (this.showToolbar()) height += metrics.toolbar
       if (this.openColumn) height += metrics.filter
       if (this.showPager) height += metrics.pager
+      if (this.footerRows.length) height += this.footerRows.length * metrics.row
       return height
     },
     intrinsicHeight(): number {
@@ -1276,14 +1508,17 @@ export default defineComponent({
     },
     rowClass(index: number, row: LingyunTableRow): Record<string, boolean> {
       const key = this.keyOf(row)
+      const group = isGroupRow(row)
       return {
-        'lingyun-table__row--alt': this.stripe && index % 2 === 1,
-        'lingyun-table__row--hover': !!key && this.pressedKey === key,
+        'lingyun-table__row--group': group,
+        'lingyun-table__row--alt': !group && this.stripe && index % 2 === 1,
+        'lingyun-table__row--hover': !group && !!key && this.pressedKey === key,
         'lingyun-table__row--end': index === this.pageRows.length - 1,
         'lingyun-table__row--last': index === this.pageRows.length - 1 && this.contentHeightPx < this.bodyHeightPx,
       }
     },
     onRowPress(row: LingyunTableRow) {
+      if (isGroupRow(row)) return
       if (this.pressTimer) {
         clearTimeout(this.pressTimer)
         this.pressTimer = 0
@@ -1327,15 +1562,36 @@ export default defineComponent({
       this.$emit('query-change', this.queryPayload())
     },
     keyOf(row: LingyunTableRow): string {
+      if (isGroupRow(row)) return ''
       const value = row[this.rowKey]
       if (value == null || value === '') return ''
       return String(value)
     },
     cellValue(row: LingyunTableRow, col: ResolvedColumn, index = 0): unknown {
+      if (isGroupRow(row)) {
+        if (col.type === 'index') return ''
+        if (col.key === this.groupFieldKey) return row[col.key]
+        if (this.groupSumKeys.indexOf(col.key) >= 0) return row[col.key]
+        return ''
+      }
       if (col.type === 'index') return this.rowNo(index)
       return row[col.key]
     },
+    footerText(row: LingyunTableRow, col: ResolvedColumn): string {
+      if (!Object.prototype.hasOwnProperty.call(row, col.key)) return ''
+      const value = row[col.key]
+      if (value == null || value === '') return ''
+      return String(value)
+    },
     cellText(row: LingyunTableRow, col: ResolvedColumn, index = 0): string {
+      if (isGroupRow(row)) {
+        if (col.type === 'index') return ''
+        if (col.key !== this.groupFieldKey && this.groupSumKeys.indexOf(col.key) < 0) return ''
+        const value = row[col.key]
+        if (col.formatter) return col.formatter(value, row)
+        if (value == null || value === '') return ''
+        return String(value)
+      }
       if (col.type === 'index') return String(this.rowNo(index))
       const value = row[col.key]
       if (col.formatter) return col.formatter(value, row)
@@ -1345,7 +1601,12 @@ export default defineComponent({
     rowNo(index: number): number {
       const size = this.pageSize > 0 ? this.pageSize : 0
       const base = size > 0 ? (this.currentPage - 1) * size : 0
-      return base + index + 1
+      let dataIndex = 0
+      for (let i = 0; i < index; i += 1) {
+        if (!isGroupRow(this.pageRows[i])) dataIndex += 1
+      }
+      if (isGroupRow(this.pageRows[index])) return 0
+      return base + dataIndex + 1
     },
     showToolbar(): boolean {
       return !!(this.title || this.icon || this.showRefresh || this.columnPicker || this.exportExcel || this.$slots.tools)
@@ -1373,15 +1634,38 @@ export default defineComponent({
     },
     buildExcelXml(): string {
       const cols = this.resolvedColumns
-      const rows = this.sortedRows
+      const rows = this.groupFieldKey
+        ? expandGroupedRows(this.sortedRows, this.groupFields, this.rowKey, this.sortedRows)
+        : this.sortedRows
       const head = cols.map((col) => excelCell(col.title || col.key, false)).join('')
+      let dataIndex = 0
       const body = rows
-        .map((row, index) => {
+        .map((row) => {
           const cells = cols.map((col) => {
-            if (col.type === 'index') return excelCell(String(index + 1), true)
+            if (isGroupRow(row)) {
+              const text = this.cellText(row, col, 0)
+              const value = row[col.key]
+              const numeric = typeof value === 'number' && Number.isFinite(value) && !col.formatter
+              return excelCell(text, numeric)
+            }
+            if (col.type === 'index') {
+              dataIndex += 1
+              return excelCell(String(dataIndex), true)
+            }
             const value = row[col.key]
             const text = col.formatter ? col.formatter(value, row) : value == null ? '' : String(value)
             const numeric = typeof value === 'number' && Number.isFinite(value) && !col.formatter
+            return excelCell(text, numeric)
+          })
+          return `<Row>${cells.join('')}</Row>`
+        })
+        .join('')
+      const foot = this.footerRows
+        .map((row) => {
+          const cells = cols.map((col) => {
+            const text = this.footerText(row, col)
+            const value = row[col.key]
+            const numeric = typeof value === 'number' && Number.isFinite(value)
             return excelCell(text, numeric)
           })
           return `<Row>${cells.join('')}</Row>`
@@ -1391,7 +1675,7 @@ export default defineComponent({
       return `<?xml version="1.0" encoding="UTF-8"?>
 <?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
-<Worksheet ss:Name="${escapeXml(sheet)}"><Table><Row>${head}</Row>${body}</Table></Worksheet>
+<Worksheet ss:Name="${escapeXml(sheet)}"><Table><Row>${head}</Row>${body}${foot}</Table></Worksheet>
 </Workbook>`
     },
     saveExcel(xml: string, filename: string) {
@@ -1518,7 +1802,7 @@ export default defineComponent({
       this.emitQuery()
     },
     onRowClick(row: LingyunTableRow) {
-      if (this.centerMoved) return
+      if (this.centerMoved || isGroupRow(row)) return
       this.$emit('row-click', row)
     },
     armSync(source: string) {
@@ -2009,6 +2293,7 @@ $ly-table-radius: 26px;
 .lingyun-table--fill .lingyun-table__toolbar,
 .lingyun-table--fill .lingyun-table__head,
 .lingyun-table--fill .lingyun-table__filters,
+.lingyun-table--fill .lingyun-table__foot,
 .lingyun-table--fill .lingyun-table__pager {
   flex-shrink: 0;
 }
@@ -2297,6 +2582,10 @@ $ly-table-radius: 26px;
   background-color: var(--lingyun-fill-quaternary, #{$lingyun-fill-quaternary});
 }
 
+.lingyun-table__row--group {
+  background-color: var(--lingyun-fill-tertiary, #{$lingyun-fill-tertiary});
+}
+
 .lingyun-table__row--hover {
   background-color: var(--lingyun-fill-tertiary, #{$lingyun-fill-tertiary});
 }
@@ -2401,6 +2690,10 @@ $ly-table-radius: 26px;
   color: var(--lingyun-label, #{$lingyun-label});
 }
 
+.lingyun-table__text--group {
+  font-weight: 600;
+}
+
 .lingyun-table__check {
   width: 22px;
   height: 22px;
@@ -2467,6 +2760,32 @@ $ly-table-radius: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.lingyun-table__foot {
+  flex-shrink: 0;
+  background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
+  border-top: 1px solid var(--lingyun-separator, #{$lingyun-separator});
+}
+
+.lingyun-table__foot-line {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  width: 100%;
+}
+
+.lingyun-table__foot-line + .lingyun-table__foot-line {
+  border-top: 1px solid var(--lingyun-separator, #{$lingyun-separator});
+}
+
+.lingyun-table__row--foot {
+  height: var(--ly-table-row, #{$ly-table-row});
+  background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
+}
+
+.lingyun-table__text--foot {
+  font-weight: 600;
 }
 
 .lingyun-table__pager {
