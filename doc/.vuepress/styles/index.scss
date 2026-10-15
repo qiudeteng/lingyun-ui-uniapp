@@ -1,5 +1,45 @@
+@import './lingyun-tokens.scss';
+
 @media (min-width: 1180px) {
   body.has-phone-preview main.vp-page {
     padding-right: var(--ly-phone-pad, 360px);
+  }
+}
+
+/* 顶栏与下拉压过右侧演示框 */
+.vp-navbar,
+.navbar {
+  z-index: 100;
+}
+
+.vp-navbar .vp-navbar-dropdown,
+.vp-navbar .navbar-dropdown,
+.navbar .nav-dropdown,
+.vp-navbar-item > .vp-dropdown-wrapper {
+  z-index: 110;
+}
+
+/* 首页：主题容器与正文栏不再限宽，背景横向铺满 */
+html.ly-home-root,
+body.ly-home-root {
+  background: var(--lingyun-bg-grouped-primary, #f2f2f7);
+}
+
+body.ly-home-root {
+  .vp-theme-container.no-sidebar,
+  .theme-container.no-sidebar {
+    background: transparent;
+  }
+
+  .vp-page,
+  main.vp-page,
+  .page,
+  .theme-default-content:not(.custom) {
+    max-width: none !important;
+    width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
 }

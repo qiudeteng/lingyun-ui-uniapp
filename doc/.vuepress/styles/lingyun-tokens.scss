@@ -1,0 +1,7 @@
+/**
+ * 凌云UI 主题 token → 手册站。
+ * VuePress 的 html[data-theme=dark|light] 与 _color.scss 手动主题选择器对齐。
+ */
+@import '../../../src/uni_modules/lingyun-ui/styles/theme.scss';
+@import '../../../src/uni_modules/lingyun-ui/styles/variables.scss';
+@import '../../../src/uni_modules/lingyun-ui/styles/setting/_color.scss';

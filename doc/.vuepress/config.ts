@@ -25,6 +25,13 @@ const lingyunVersionPlugin: Plugin = {
         .replaceAll('{{ pageVersion }}', versions.page || '')
     })
   },
+  // frontmatter 在 markdown-it 之前抽出，首页版本走这里注入
+  extendsPage: (page) => {
+    if (page.path !== '/' && page.path !== '/index.html') return
+    page.frontmatter.uiVersion = versions.ui || lingyunVersion
+    page.frontmatter.chartsVersion = versions.charts || ''
+    page.frontmatter.pageVersion = versions.page || ''
+  },
 }
 
 const guideSidebar = [
@@ -98,6 +105,10 @@ const chartSidebar = [
 ]
 
 const componentSidebar = [
+  {
+    text: '组件',
+    children: [{ text: '目录', link: '/components/' }],
+  },
   {
     text: '页面与导航',
     children: [
@@ -198,9 +209,8 @@ export default defineUserConfig({
     repoLabel: 'GitHub',
     sidebarDepth: 0,
     navbar: [
-      { text: lingyunVersion, link: '/' },
       { text: '接入', link: '/guide/start.html', activeMatch: '^/guide/' },
-      { text: '组件', link: '/components/app-page.html', activeMatch: '^/components/' },
+      { text: '组件', link: '/components/', activeMatch: '^/components/' },
       { text: '图表', link: '/charts/', activeMatch: '^/charts/' },
       { text: '页面', link: '/page/', activeMatch: '^/page/' },
       {

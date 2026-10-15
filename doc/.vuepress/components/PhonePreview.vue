@@ -246,7 +246,8 @@ onBeforeUnmount(() => {
     flex-direction: column;
     align-items: center;
     position: fixed;
-    z-index: 20;
+    /* 低于顶栏下拉（navbar ~100），避免挡住「更新记录」等菜单 */
+    z-index: 5;
     top: 76px;
     right: 20px;
     gap: 8px;
