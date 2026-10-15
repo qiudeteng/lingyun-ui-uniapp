@@ -1,8 +1,8 @@
 <template>
-  <view class="lingyun-table" :class="rootClass" :style="fillStyle">
+  <view class="lingyun-table" :class="rootClass" :style="rootStyle">
     <view v-if="showToolbar()" class="lingyun-table__toolbar">
       <view class="lingyun-table__toolbar-main">
-        <lingyun-icon v-if="icon" :type="icon" :size="22" color="label" />
+        <lingyun-icon v-if="icon" :type="icon" :size="titleIconSize" color="label" />
         <text v-if="title" class="lingyun-table__toolbar-title" :class="{ 'lingyun-table__toolbar-title--gap': !!icon }">{{ title }}</text>
       </view>
       <view class="lingyun-table__toolbar-tools">
@@ -13,7 +13,7 @@
           :hover-stay-time="70"
           @click="onRefresh"
         >
-          <lingyun-icon type="reload" :size="18" color="secondary" />
+          <lingyun-icon type="reload" :size="toolIconSize" color="secondary" />
         </view>
         <lingyun-popover
           v-if="columnPicker"
@@ -29,7 +29,7 @@
               :hover-stay-time="70"
               @click.stop="toggle"
             >
-              <lingyun-icon type="list" :size="18" color="secondary" />
+              <lingyun-icon type="list" :size="toolIconSize" color="secondary" />
             </view>
           </template>
           <scroll-view scroll-y class="lingyun-table__pick-scroll" :style="pickerScrollStyle">
@@ -42,7 +42,7 @@
               @click.stop="toggleColumn(col.key)"
             >
               <view class="lingyun-table__check" :class="{ 'lingyun-table__check--on': columnShown(col.key) }">
-                <lingyun-icon v-if="columnShown(col.key)" type="checkmarkempty" :size="14" color="#ffffff" />
+                <lingyun-icon v-if="columnShown(col.key)" type="checkmarkempty" :size="tickSize" color="#ffffff" />
               </view>
               <text class="lingyun-table__pick-text">{{ col.title }}</text>
             </view>
@@ -55,7 +55,7 @@
           :hover-stay-time="70"
           @click="onExportExcel"
         >
-          <lingyun-icon type="download" :size="18" color="secondary" />
+          <lingyun-icon type="download" :size="toolIconSize" color="secondary" />
         </view>
         <slot name="tools" />
       </view>
@@ -75,7 +75,7 @@
             @click.stop="togglePage"
           >
             <view class="lingyun-table__check" :class="pageCheckClass">
-              <lingyun-icon v-if="pageAll" type="checkmarkempty" :size="14" color="#ffffff" />
+              <lingyun-icon v-if="pageAll" type="checkmarkempty" :size="tickSize" color="#ffffff" />
               <view v-else-if="pageSome" class="lingyun-table__dash" />
             </view>
           </view>
@@ -267,7 +267,7 @@
           >
             <view v-if="selection" class="lingyun-table__cell lingyun-table__cell--check" @click.stop="toggleRow(item.row)">
               <view class="lingyun-table__check" :class="{ 'lingyun-table__check--on': isSelected(item.row) }">
-                <lingyun-icon v-if="isSelected(item.row)" type="checkmarkempty" :size="14" color="#ffffff" />
+                <lingyun-icon v-if="isSelected(item.row)" type="checkmarkempty" :size="tickSize" color="#ffffff" />
               </view>
             </view>
             <template v-for="col in leftColumns" :key="col.key">
@@ -472,11 +472,26 @@
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
 
-const ROW_H = 52
-const CHECK_W = 48
 const COL_W = 120
 const ROW_OVERSCAN = 8
 const COL_OVERSCAN = COL_W * 2
+
+interface TableMetrics {
+  row: number
+  head: number
+  toolbar: number
+  pager: number
+  filter: number
+  check: number
+  index: number
+  pick: number
+}
+
+/** 紧凑与常规的高度必须和样式里的变量一致，虚拟滚动按同一套像素切行 */
+const TABLE_METRICS: Record<'regular' | 'compact', TableMetrics> = {
+  regular: { row: 52, head: 44, toolbar: 52, pager: 48, filter: 40, check: 48, index: 64, pick: 44 },
+  compact: { row: 36, head: 32, toolbar: 40, pager: 40, filter: 32, check: 40, index: 48, pick: 36 },
+}
 
 export type LingyunTableAlign = 'left' | 'center' | 'right'
 export type LingyunTableSortOrder = 'asc' | 'desc' | ''
@@ -638,6 +653,8 @@ export default defineComponent({
     /** 标题栏右侧导出 Excel */
     exportExcel: { type: Boolean, default: false },
     emptyText: { type: String, default: '暂无数据' },
+    /** regular 行高 52；compact 行高 36，表头、标题栏、分页和字号一起收紧 */
+    size: { type: String as PropType<'regular' | 'compact'>, default: 'regular' },
   },
   data() {
     return {
@@ -701,23 +718,50 @@ export default defineComponent({
     }
   },
   computed: {
+    isCompact(): boolean {
+      return this.size === 'compact'
+    },
+    metrics(): TableMetrics {
+      return this.isCompact ? TABLE_METRICS.compact : TABLE_METRICS.regular
+    },
+    titleIconSize(): number {
+      return this.isCompact ? 18 : 22
+    },
+    toolIconSize(): number {
+      return this.isCompact ? 16 : 18
+    },
+    tickSize(): number {
+      return this.isCompact ? 12 : 14
+    },
     rootClass(): string[] {
       return [
         this.stripe ? 'lingyun-table--stripe' : '',
         this.border ? 'lingyun-table--border' : '',
+        this.isCompact ? 'lingyun-table--compact' : '',
         this.fixed ? 'lingyun-table--fixed' : 'lingyun-table--fill',
       ].filter(Boolean)
     },
     fixed(): boolean {
       return parseHeight(this.height) > 0
     },
-    fillStyle(): Record<string, string> {
-      if (this.fixed || this.fillHeightPx <= 0) return {}
-      return { height: `${this.fillHeightPx}px` }
+    rootStyle(): Record<string, string> {
+      const metrics = this.metrics
+      const style: Record<string, string> = {
+        '--ly-table-row': `${metrics.row}px`,
+        '--ly-table-head': `${metrics.head}px`,
+        '--ly-table-toolbar': `${metrics.toolbar}px`,
+        '--ly-table-pager': `${metrics.pager}px`,
+        '--ly-table-filter': `${metrics.filter}px`,
+        '--ly-table-check': `${metrics.check}px`,
+        '--ly-table-pick': `${metrics.pick}px`,
+      }
+      if (!this.fixed && this.fillHeightPx > 0) style.height = `${this.fillHeightPx}px`
+      return style
     },
     pickerScrollStyle(): Record<string, string> {
       const count = (this.columns || []).length
-      const height = Math.min(280, Math.max(44, count * 44))
+      const row = this.metrics.pick
+      const height = Math.min(280, Math.max(row, count * row))
       return { height: `${height}px` }
     },
     bodyHeightPx(): number {
@@ -725,13 +769,13 @@ export default defineComponent({
       return this.viewportBodyPx
     },
     contentHeightPx(): number {
-      return this.pageRows.length * ROW_H
+      return this.pageRows.length * this.metrics.row
     },
     rowPadTop(): number {
-      return this.rowStart * ROW_H
+      return this.rowStart * this.metrics.row
     },
     rowPadBottom(): number {
-      return Math.max(0, this.pageRows.length - this.rowEnd) * ROW_H
+      return Math.max(0, this.pageRows.length - this.rowEnd) * this.metrics.row
     },
     rowPadTopStyle(): Record<string, string> {
       return { height: `${this.rowPadTop}px` }
@@ -784,7 +828,7 @@ export default defineComponent({
         .filter((col) => hidden.indexOf(col.key) < 0)
         .map((col) => ({
           ...col,
-          widthPx: columnWidth(col.type === 'index' ? (col.width ?? 64) : col.width),
+          widthPx: columnWidth(col.type === 'index' ? (col.width ?? this.metrics.index) : col.width),
           side: columnSide(col.fixed),
         }))
     },
@@ -799,7 +843,7 @@ export default defineComponent({
     },
     leftWidth(): number {
       const cols = this.leftColumns.reduce((sum, col) => sum + col.widthPx, 0)
-      return cols + (this.selection ? CHECK_W : 0)
+      return cols + (this.selection ? this.metrics.check : 0)
     },
     rightWidth(): number {
       return this.rightColumns.reduce((sum, col) => sum + col.widthPx, 0)
@@ -986,6 +1030,10 @@ export default defineComponent({
     openFilterKey() {
       this.$nextTick(() => this.measureViewport())
     },
+    size() {
+      this.syncRowWindow(this.bodyTop)
+      this.$nextTick(() => this.measureViewport())
+    },
   },
   created() {
     this.syncRowWindow(0)
@@ -1066,10 +1114,11 @@ export default defineComponent({
     },
     syncRowWindow(top: number) {
       const total = this.pageRows.length
-      const view = this.bodyHeightPx > 0 ? this.bodyHeightPx : ROW_H * 12
-      let start = Math.floor(top / ROW_H) - ROW_OVERSCAN
+      const rowH = this.metrics.row
+      const view = this.bodyHeightPx > 0 ? this.bodyHeightPx : rowH * 12
+      let start = Math.floor(top / rowH) - ROW_OVERSCAN
       if (start < 0) start = 0
-      let end = Math.ceil((top + view) / ROW_H) + ROW_OVERSCAN
+      let end = Math.ceil((top + view) / rowH) + ROW_OVERSCAN
       if (end > total) end = total
       if (start > end) start = end
       if (this.rowStart !== start) this.rowStart = start
@@ -1205,20 +1254,21 @@ export default defineComponent({
     centerClipStyle(part: 'head' | 'body'): Record<string, string> {
       const style: Record<string, string> = {}
       if (this.viewportCenterPx > 0) style.width = `${this.viewportCenterPx}px`
-      if (part === 'head') style.height = '44px'
+      if (part === 'head') style.height = `${this.metrics.head}px`
       else if (this.bodyHeightPx > 0) style.height = `${this.bodyHeightPx}px`
       return style
     },
     chromeHeight(): number {
-      let height = 44
-      if (this.showToolbar()) height += 52
-      if (this.openColumn) height += 40
-      if (this.showPager) height += 48
+      const metrics = this.metrics
+      let height = metrics.head
+      if (this.showToolbar()) height += metrics.toolbar
+      if (this.openColumn) height += metrics.filter
+      if (this.showPager) height += metrics.pager
       return height
     },
     intrinsicHeight(): number {
       const rows = this.pageRows.length
-      return this.chromeHeight() + (rows > 0 ? rows * 52 : 120)
+      return this.chromeHeight() + (rows > 0 ? rows * this.metrics.row : 120)
     },
     cellStyle(col: ResolvedColumn): Record<string, string> {
       const align = col.align === 'right' ? 'flex-end' : col.align === 'center' ? 'center' : 'flex-start'
@@ -1229,6 +1279,7 @@ export default defineComponent({
       return {
         'lingyun-table__row--alt': this.stripe && index % 2 === 1,
         'lingyun-table__row--hover': !!key && this.pressedKey === key,
+        'lingyun-table__row--end': index === this.pageRows.length - 1,
         'lingyun-table__row--last': index === this.pageRows.length - 1 && this.contentHeightPx < this.bodyHeightPx,
       }
     },
@@ -1973,7 +2024,7 @@ $ly-table-radius: 26px;
 }
 
 .lingyun-table__toolbar {
-  height: 52px;
+  height: var(--ly-table-toolbar, 52px);
   padding: 0 8px 0 16px;
   box-sizing: border-box;
   display: flex;
@@ -2027,7 +2078,7 @@ $ly-table-radius: 26px;
 }
 
 .lingyun-table__pick {
-  height: 44px;
+  height: var(--ly-table-pick, 44px);
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -2196,7 +2247,7 @@ $ly-table-radius: 26px;
 }
 
 .lingyun-table__x--head {
-  height: $ly-table-head;
+  height: var(--ly-table-head, #{$ly-table-head});
 }
 
 .lingyun-table__y {
@@ -2217,18 +2268,29 @@ $ly-table-radius: 26px;
   display: flex;
   flex-direction: row;
   align-items: stretch;
-  height: $ly-table-row;
+  height: var(--ly-table-row, #{$ly-table-row});
   box-sizing: border-box;
   background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
 }
 
 .lingyun-table__row--head {
-  height: $ly-table-head;
+  height: var(--ly-table-head, #{$ly-table-head});
   border-bottom: 1px solid var(--lingyun-separator, #{$lingyun-separator});
 }
 
-.lingyun-table__row--last {
+.lingyun-table__body .lingyun-table__row {
   border-bottom: 1px solid var(--lingyun-separator, #{$lingyun-separator});
+}
+
+/* 最后一行贴着分页或卡片底边时不再画，避免和上边线叠成两道。内容比表体矮时仍画线，把数据和空白分开 */
+.lingyun-table__body .lingyun-table__row--end {
+  border-bottom-width: 0;
+}
+
+.lingyun-table__body .lingyun-table__row--last {
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: var(--lingyun-separator, #{$lingyun-separator});
 }
 
 .lingyun-table--stripe .lingyun-table__row--alt {
@@ -2256,7 +2318,7 @@ $ly-table-radius: 26px;
 }
 
 .lingyun-table__cell--check {
-  width: 48px;
+  width: var(--ly-table-check, 48px);
   padding: 0;
   justify-content: center;
 }
@@ -2367,8 +2429,11 @@ $ly-table-radius: 26px;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
+  min-height: var(--ly-table-filter, 40px);
   padding: 8px 12px 10px;
+  box-sizing: border-box;
   border-bottom: 1px solid var(--lingyun-separator, #{$lingyun-separator});
   background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
 }
@@ -2405,7 +2470,7 @@ $ly-table-radius: 26px;
 }
 
 .lingyun-table__pager {
-  min-height: 48px;
+  min-height: var(--ly-table-pager, 48px);
   padding: 8px 12px;
   box-sizing: border-box;
   display: flex;
@@ -2443,5 +2508,80 @@ $ly-table-radius: 26px;
   font-size: 13px;
   line-height: 18px;
   color: var(--lingyun-label, #{$lingyun-label});
+}
+
+.lingyun-table--compact .lingyun-table__toolbar {
+  padding-left: 12px;
+}
+
+.lingyun-table--compact .lingyun-table__toolbar-title {
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.lingyun-table--compact .lingyun-table__tool {
+  width: 28px;
+  height: 28px;
+}
+
+.lingyun-table--compact .lingyun-table__pick-text,
+.lingyun-table--compact .lingyun-table__text {
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.lingyun-table--compact .lingyun-table__head-text {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.lingyun-table--compact .lingyun-table__sort,
+.lingyun-table--compact .lingyun-table__filter-mark {
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.lingyun-table--compact .lingyun-table__filter {
+  width: 20px;
+  height: 20px;
+}
+
+.lingyun-table--compact .lingyun-table__cell {
+  padding: 0 8px;
+}
+
+.lingyun-table--compact .lingyun-table__check {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+}
+
+.lingyun-table--compact .lingyun-table__dash {
+  width: 8px;
+}
+
+.lingyun-table--compact .lingyun-table__filters {
+  gap: 6px;
+  padding: 4px 8px;
+}
+
+.lingyun-table--compact .lingyun-table__chip {
+  padding: 2px 8px;
+}
+
+.lingyun-table--compact .lingyun-table__chip-text,
+.lingyun-table--compact .lingyun-table__pager-meta,
+.lingyun-table--compact .lingyun-table__page-no,
+.lingyun-table--compact .lingyun-table__page-btn-text {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.lingyun-table--compact .lingyun-table__pager {
+  padding: 4px 8px;
+}
+
+.lingyun-table--compact .lingyun-table__page-btn {
+  padding: 2px 8px;
 }
 </style>

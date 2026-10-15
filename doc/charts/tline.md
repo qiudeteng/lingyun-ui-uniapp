@@ -1,6 +1,6 @@
 # 时间轴折线 · tline
 
-时间轴折线。`type="tline"`。Demo 页：`/pages/demo/charts/tline`。
+时间轴折线。`type="tline"`。Demo 页：`/pages/demo/charts/tline`（矢量坐标 / 秒级时间戳）。
 
 ## 数据
 

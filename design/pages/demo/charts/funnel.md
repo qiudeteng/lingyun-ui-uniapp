@@ -2,7 +2,7 @@
 
 对应源码：`src/pages/demo/charts/funnel.vue`
 
-展示 `lingyun-ui-charts` **漏斗图**（type=`funnel`）。
+展示 `lingyun-ui-charts` **漏斗图**：标准、渐变标签、倒三角、金字塔。
 
 - 数据：`series: [{ data: [{ name, value }] }]`
 - 规范：[`design/CHARTS.md`](../../../CHARTS.md)

@@ -40,6 +40,7 @@ const DEMO: Record<string, string> = {
   list: '/pages/demo/lists',
   'list-item': '/pages/demo/lists',
   section: '/pages/demo/sections',
+  table: '/pages/demo/tables',
   'swipe-action': '/pages/demo/swipe-actions',
   'swipe-action-item': '/pages/demo/swipe-actions',
   empty: '/pages/demo/empty',

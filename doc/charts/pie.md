@@ -1,6 +1,6 @@
 # 饼图 · pie
 
-饼图。`type="pie"`。Demo 页：`/pages/demo/charts/pie`。
+饼图。`type="pie"`。Demo 页：`/pages/demo/charts/pie`（基本 / 分割线渐变 / 自定义标签）。
 
 ## 数据
 

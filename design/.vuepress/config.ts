@@ -91,6 +91,7 @@ export default defineUserConfig({
         collapsible: true,
         children: [
           { text: 'Lists · 分组列表', link: '/LISTS.md' },
+          { text: 'Tables · 表格', link: '/TABLES.md' },
           { text: 'Swipe Actions · 滑动操作', link: '/SWIPE_ACTIONS.md' },
           { text: 'Images · 图片', link: '/IMAGES.md' },
           { text: 'Charts · 图表', link: '/CHARTS.md' },
@@ -117,6 +118,7 @@ export default defineUserConfig({
           { text: 'demo / buttons', link: '/pages/demo/buttons.md' },
           { text: 'demo / icons', link: '/pages/demo/icons.md' },
           { text: 'demo / lists', link: '/pages/demo/lists.md' },
+          { text: 'demo / tables', link: '/pages/demo/tables.md' },
           { text: 'demo / sections', link: '/pages/demo/sections.md' },
           { text: 'demo / search-bar', link: '/pages/demo/search-bar.md' },
           { text: 'demo / tabbars', link: '/pages/demo/tabbars.md' },

@@ -1,6 +1,6 @@
 # 气泡图 · bubble
 
-气泡图。`type="bubble"`。Demo 页：`/pages/demo/charts/bubble`。
+气泡图。`type="bubble"`。Demo 页：`/pages/demo/charts/bubble`（坐标 `[x, y, size, 标题]`）。
 
 ## 数据
 

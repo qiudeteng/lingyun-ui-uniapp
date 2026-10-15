@@ -1,6 +1,6 @@
 # 散点图 · scatter
 
-散点图。`type="scatter"`。Demo 页：`/pages/demo/charts/scatter`。
+散点图。`type="scatter"`。Demo 页：`/pages/demo/charts/scatter`（坐标 `[x, y]`）。
 
 ## 数据
 

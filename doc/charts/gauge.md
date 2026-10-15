@@ -1,6 +1,6 @@
 # 仪表盘 · gauge
 
-仪表盘。`type="gauge"`。Demo 页：`/pages/demo/charts/gauge`。
+仪表盘。`type="gauge"`。Demo 页：`/pages/demo/charts/gauge`（基本指针 / 进度刻度）。
 
 ## 数据
 

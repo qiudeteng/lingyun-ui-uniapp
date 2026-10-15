@@ -1,6 +1,6 @@
 # 玫瑰图 · rose
 
-南丁格尔玫瑰图。`type="rose"`。Demo 页：`/pages/demo/charts/rose`。
+南丁格尔玫瑰图。`type="rose"`。Demo 页：`/pages/demo/charts/rose`（面积 / 半径渐变 / 自定义标签）。
 
 ## 数据
 

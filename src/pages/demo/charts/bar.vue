@@ -3,7 +3,7 @@
     <view class="page">
       <view class="hero">
         <text class="hero__title">Bar</text>
-        <text class="hero__desc">lingyun-ui-charts · 条状图（分组 / 堆积）</text>
+        <text class="hero__desc">lingyun-ui-charts · 条状图</text>
       </view>
 
       <lingyun-section title="分组条状图">
@@ -20,13 +20,27 @@
         </view>
       </lingyun-section>
 
-      <lingyun-section title="堆积条状图">
+      <lingyun-section title="堆叠条状图" hint="type=stack · xAxis.max=70">
         <view class="chart-box">
           <lingyun-ui-charts
             type="bar"
             canvasId="lychart-bar-stack"
-            :chartData="stackData"
+            :chartData="meterData"
             :opts="stackOpts"
+            :canvas2d="true"
+            :inScrollView="true"
+            :ontouch="true"
+          />
+        </view>
+      </lingyun-section>
+
+      <lingyun-section title="圆角条状图+渐变色" hint="barBorderCircle · linearType=custom">
+        <view class="chart-box">
+          <lingyun-ui-charts
+            type="bar"
+            canvasId="lychart-bar-round"
+            :chartData="meterData"
+            :opts="roundOpts"
             :canvas2d="true"
             :inScrollView="true"
             :ontouch="true"
@@ -92,21 +106,24 @@
   const groupData = chartSamples.bar
   const groupOpts = {}
 
-  /** 原始分层数据；extra.bar.type = stack 由引擎累加 */
-  const stackData = {
-    categories: chartSamples.bar.categories,
+  /** 与官方温度计柱同一组目标 / 完成量 */
+  const meterData = {
+    categories: ['2018', '2019', '2020', '2021', '2022', '2023'],
     series: [
-      { name: '直营', data: [35, 36, 31, 33, 28] },
-      { name: '加盟', data: [18, 27, 21, 24, 19] },
-      { name: '电商', data: [12, 15, 10, 14, 11] },
+      { name: '目标值', data: [35, 36, 31, 33, 13, 34] },
+      { name: '完成量', data: [18, 27, 21, 24, 6, 28] },
     ],
   }
+
   const stackOpts = {
+    xAxis: { max: 70 },
+    extra: { bar: { type: 'stack', categoryGap: 2 } },
+  }
+
+  const roundOpts = {
+    xAxis: { max: 40 },
     extra: {
-      bar: {
-        type: 'stack',
-        barBorderRadius: [6, 6, 0, 0],
-      },
+      bar: { linearType: 'custom', barBorderCircle: true, seriesGap: 2, categoryGap: 2 },
     },
   }
 

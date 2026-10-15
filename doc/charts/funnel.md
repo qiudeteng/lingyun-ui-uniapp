@@ -1,6 +1,6 @@
 # 漏斗图 · funnel
 
-漏斗图。`type="funnel"`。Demo 页：`/pages/demo/charts/funnel`。
+漏斗图。`type="funnel"`。Demo 页：`/pages/demo/charts/funnel`（标准 / 渐变标签 / 倒三角 / 金字塔）。
 
 ## 数据
 

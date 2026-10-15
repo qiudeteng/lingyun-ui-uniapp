@@ -2,7 +2,7 @@
 
 对应源码：`src/pages/demo/charts/rose.vue`
 
-展示 `lingyun-ui-charts` **玫瑰图**（type=`rose`）。
+展示 `lingyun-ui-charts` **玫瑰图**：面积、半径渐变、自定义标签内容 / 隐藏。
 
 - 数据：`series: [{ data: [{ name, value }] }]`
 - 规范：[`design/CHARTS.md`](../../../CHARTS.md)

@@ -1,6 +1,6 @@
 # 区域图 · area
 
-类目轴面积图。`type="area"`。Demo 页：`/pages/demo/charts/area`。
+类目轴面积图。`type="area"`。Demo 页：`/pages/demo/charts/area`（折线 / 曲线渐变 / 时序渐变 / 时间轴）。
 
 ## 数据
 

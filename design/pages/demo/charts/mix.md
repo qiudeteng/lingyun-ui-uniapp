@@ -2,7 +2,7 @@
 
 对应源码：`src/pages/demo/charts/mix.vue`
 
-展示 `lingyun-ui-charts` **混合图**（type=`mix`）。
+展示 `lingyun-ui-charts` **混合图**：多坐标系（折线 / 柱 / 点）。
 
 - 数据：每条 `series[i].type`（如 column / line）
 - 规范：[`design/CHARTS.md`](../../../CHARTS.md)

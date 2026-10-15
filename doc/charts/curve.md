@@ -1,6 +1,6 @@
 # 曲线图 · curve
 
-类目轴平滑曲线。`type="curve"`（内部仍是 uCharts `line`，默认 `extra.line.type: "curve"`）。Demo 页：`/pages/demo/charts/curve`。
+类目轴平滑曲线。`type="curve"`（内部仍是 uCharts `line`，默认 `extra.line.type: "curve"`）。Demo 页：`/pages/demo/charts/curve`（基本 / 渐变 / 阴影水平动画）。
 
 与 [折线图](./line.md) 数据形状相同；折线默认直线，曲线默认平滑。
 

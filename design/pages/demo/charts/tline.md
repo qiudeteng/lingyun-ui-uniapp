@@ -2,7 +2,7 @@
 
 对应源码：`src/pages/demo/charts/tline.vue`
 
-展示 `lingyun-ui-charts` **时间轴折线**（type=`tline`）。
+展示 `lingyun-ui-charts` **时间轴折线**：矢量坐标、秒级时间戳。
 
 - 数据：无 categories；`[Unix秒, y]`；`xAxis.format: 'xAxisDemo2'`
 - 规范：[`design/CHARTS.md`](../../../CHARTS.md)

@@ -1,6 +1,6 @@
 # 混合图 · mix
 
-同一坐标系混柱 + 线。`type="mix"`。Demo 页：`/pages/demo/charts/mix`。
+多坐标系混柱、折线、面积和点。`type="mix"`。Demo 页：`/pages/demo/charts/mix`。
 
 ## 数据
 

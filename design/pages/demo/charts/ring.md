@@ -2,7 +2,7 @@
 
 对应源码：`src/pages/demo/charts/ring.vue`
 
-展示 `lingyun-ui-charts` **圆环图**（type=`ring`）。
+展示 `lingyun-ui-charts` **圆环图**：基本、分割线渐变、自定义标签内容 / 隐藏。
 
 - 第一张是原来的三扇区圆环（已完成 / 进行中 / 未开始）
 - 第二张「图例表」：`series[0].data` 带 `count`、`rate`，`opts.legend.columns` 按列对齐

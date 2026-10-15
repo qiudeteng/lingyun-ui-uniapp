@@ -1,6 +1,6 @@
 # lingyun-table
 
-分组卡片里的多列表格。行高、圆角和底色与列表卡片一致。
+分组卡片里的多列表格。行高、圆角和底色与列表卡片一致。演示页：`/pages/demo/tables`。
 
 ## 示例
 
@@ -25,6 +25,8 @@
 
 `height` 不传时，表格占满外层高度；外层没有高度时占满页面。表体在这块区域里滚动。传入像素时只固定表体。行和中间列只画可视区域。
 
+行与行之间默认有横线。不传 `stripe` 和 `border` 时只有横线：没有竖线，也没有斑马纹。
+
 放进 `lingyun-section` 时与内嵌列表同一规则：标题留在卡片外，表格贴边，section 的 body 与外壳 spacing 自动让出。
 
 ```vue
@@ -41,7 +43,7 @@
 | `width` | 列宽，像素。默认 120 |
 | `align` | `left` / `center` / `right` |
 | `fixed` | `left` / `right` / `true`（左侧） |
-| `type` | `index` 时显示序号，按当前页从 1 编号，翻页接着数 |
+| `type` | `index` 时显示序号，按当前页从 1 编号，翻页接着数。不传宽度时常规 64、紧凑 48 |
 | `sortable` | 可排序 |
 | `filters` | `{ text, value }[]`，表头出现筛选 |
 | `formatter` | `(value, row) => string`，没有自定义插槽时使用 |
@@ -65,6 +67,7 @@
 | `show-refresh` | 标题栏刷新，抛 `refresh` | false |
 | `column-picker` | 标题栏选择列，隐藏后不再参与布局 | false |
 | `export-excel` | 标题栏导出当前结果为 Excel | false |
+| `size` | `regular` / `compact`。紧凑时表头 32、行高 36，标题栏、分页、勾选和字号一起收 | regular |
 
 `query-change` 参数：`{ page, pageSize, filters, sortKey, sortOrder }`。服务端请求只接这一次，不要再同时用 `filter-change` 和 `page-change` 各请求一遍。
 

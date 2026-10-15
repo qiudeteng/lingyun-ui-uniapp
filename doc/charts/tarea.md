@@ -1,6 +1,6 @@
 # 时间轴区域 · tarea
 
-时间轴面积图。`type="tarea"`。Demo 页：`/pages/demo/charts/tarea`。
+时间轴面积图。`type="tarea"`。Demo 页：`/pages/demo/charts/tarea`（矢量轴 / 秒级时间戳）。
 
 ## 数据
 

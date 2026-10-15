@@ -2,7 +2,7 @@
 
 对应源码：`src/pages/demo/charts/bar.vue`
 
-展示 `lingyun-ui-charts` **条状图**（type=`bar`）。
+展示 `lingyun-ui-charts` **条状图**：分组、堆叠、圆角渐变。
 
 - 数据：categories + series[].data
 - 规范：[`design/CHARTS.md`](../../../CHARTS.md)

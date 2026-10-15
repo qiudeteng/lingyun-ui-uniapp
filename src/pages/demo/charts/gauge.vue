@@ -6,7 +6,7 @@
         <text class="hero__desc">lingyun-ui-charts · 仪表盘</text>
       </view>
 
-      <lingyun-section title="基础仪表盘" hint="type=default · series.data 为 0–1">
+      <lingyun-section title="基本仪表盘" hint="type=default · series.data 为 0–1">
         <view class="chart-box">
           <lingyun-ui-charts
             type="gauge"
@@ -20,7 +20,7 @@
         </view>
       </lingyun-section>
 
-      <lingyun-section title="其他仪表盘" hint="type=progress · 刻度随进度变色" is-last>
+      <lingyun-section title="其他仪表盘" hint="type=progress · 刻度贴圆弧" is-last>
         <view class="chart-box">
           <lingyun-ui-charts
             type="gauge"
@@ -38,20 +38,22 @@
 </template>
 
 <script setup lang="ts">
-  /** series.data 为 0–1。categories 只给 default 样式分段上色；progress 主要看 series。 */
-  const defaultData = {
-    categories: [{ value: 0.2 }, { value: 0.8 }],
-    series: [{ name: '完成率', data: 0.8 }],
+  /** series.data 为 0–1。categories 给 default 样式分段上色。 */
+  const gaugeData = {
+    categories: [
+      { value: 0.2, color: '#1890ff' },
+      { value: 0.8, color: '#2fc25b' },
+      { value: 1, color: '#f04864' },
+    ],
+    series: [{ name: '完成率', data: 0.66 }],
   }
 
-  const progressData = {
-    categories: [{ value: 0.2 }, { value: 0.8 }],
-    series: [{ name: '实时速度', data: 0.66, color: '#1890ff' }],
-  }
+  const defaultData = gaugeData
+  const progressData = gaugeData
 
   const defaultOpts = {
-    title: { name: '80%', color: '#2fc25b', fontSize: 25 },
-    subtitle: { name: '完成率', color: '#666666', fontSize: 15 },
+    title: { name: '60Km/H', color: '#2fc25b', fontSize: 25, offsetY: 50 },
+    subtitle: { name: '实时速度', color: '#666666', fontSize: 15, offsetY: -50 },
     extra: {
       gauge: {
         type: 'default',
@@ -78,8 +80,8 @@
   }
 
   const progressOpts = {
-    title: { name: '66Km/H', color: '#2fc25b', fontSize: 25 },
-    subtitle: { name: '实时速度', color: '#1890ff', fontSize: 15 },
+    title: { name: '66Km/H', color: '#2fc25b', fontSize: 25, offsetY: 0 },
+    subtitle: { name: '实时速度', color: '#1890ff', fontSize: 15, offsetY: 0 },
     extra: {
       gauge: {
         type: 'progress',
@@ -90,9 +92,9 @@
         startNumber: 0,
         endNumber: 100,
         splitLine: {
-          fixRadius: 0,
+          fixRadius: -10,
           splitNumber: 10,
-          width: 20,
+          width: 15,
           color: '#FFFFFF',
           childNumber: 5,
           childWidth: 12,

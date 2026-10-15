@@ -1,6 +1,6 @@
 # K 线图 · candle
 
-K 线 / 蜡烛图。`type="candle"`。Demo 页：`/pages/demo/charts/candle`。
+K 线 / 蜡烛图。`type="candle"`。Demo 页：`/pages/demo/charts/candle`（双指缩放）。
 
 ## 数据
 

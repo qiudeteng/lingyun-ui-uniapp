@@ -76,6 +76,24 @@
         </view>
       </lingyun-section>
 
+      <lingyun-section title="紧凑" hint="size=compact。表头 32、行高 36，字号和内边距一起收。">
+        <lingyun-table
+          size="compact"
+          :columns="columns"
+          :data="rows"
+          row-key="id"
+          stripe
+          border
+          selection
+          :page-size="8"
+          :height="240"
+        />
+      </lingyun-section>
+
+      <lingyun-section title="行分割线" hint="只有行与行之间的横线。没有竖线，也没有斑马纹。">
+        <lingyun-table :columns="lineColumns" :data="rows" row-key="id" :height="240" />
+      </lingyun-section>
+
       <lingyun-section title="空数据" hint="外层 200px，空态留在这块高度里" is-last>
         <view class="table-frame table-frame--empty">
           <lingyun-table :columns="columns" :data="[]" empty-text="没有订单" />
@@ -122,6 +140,15 @@
     { key: 'price', title: '单价', width: 88, align: 'right', sortable: true },
     { key: 'note', title: '备注', width: 200 },
     { key: 'action', title: '操作', width: 72, fixed: 'right', align: 'center' },
+  ]
+
+  const lineColumns: LingyunTableColumn[] = [
+    { key: 'name', title: '菜品', width: 140, sortable: true },
+    { key: 'category', title: '分类', width: 96 },
+    { key: 'count', title: '数量', width: 80, align: 'right' },
+    { key: 'price', title: '单价', width: 88, align: 'right' },
+    { key: 'status', title: '状态', width: 96 },
+    { key: 'note', title: '备注', width: 160 },
   ]
 
   const indexColumns: LingyunTableColumn[] = [

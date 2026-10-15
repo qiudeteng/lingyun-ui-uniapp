@@ -166,6 +166,7 @@ const componentSidebar = [
       { text: '列表', link: '/components/list.html' },
       { text: '列表行', link: '/components/list-item.html' },
       { text: '分组卡片', link: '/components/section.html' },
+      { text: '表格', link: '/components/table.html' },
       { text: '滑动容器', link: '/components/swipe-action.html' },
       { text: '滑动行', link: '/components/swipe-action-item.html' },
       { text: '空状态', link: '/components/empty.html' },

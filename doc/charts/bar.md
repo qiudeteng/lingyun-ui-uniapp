@@ -1,6 +1,6 @@
 # 条状图 · bar
 
-横向条形图。`type="bar"`。Demo 页：`/pages/demo/charts/bar`（分组 / 堆积 / 图例表）。
+横向条形图。`type="bar"`。Demo 页：`/pages/demo/charts/bar`（分组 / 堆叠 / 圆角渐变 / 图例表）。
 
 默认 `extra.bar.barBorderRadius: [6, 6, 0, 0]`（右上、右下圆角，即右侧顶端圆角）。
 

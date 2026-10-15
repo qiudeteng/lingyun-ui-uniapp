@@ -236,25 +236,25 @@ legend: {
 |------|------|------|
 | `/pages/demo/charts/column` | `column` | 柱状图 |
 | `/pages/demo/charts/stack` | `stack` | 堆积图（柱 / 折线 / 曲线，原始数据 + stack） |
-| `/pages/demo/charts/bar` | `bar` | 条状图 |
+| `/pages/demo/charts/bar` | `bar` | 条状图（分组 / 堆叠 / 圆角渐变） |
 | `/pages/demo/charts/line` | `line` | 折线图（折线 / 曲线 / 阶梯 / 断点续连 / 渐变 / 阴影动画 / 滚动 / 时间轴） |
-| `/pages/demo/charts/curve` | `curve` | 曲线图 |
-| `/pages/demo/charts/area` | `area` | 区域图 |
-| `/pages/demo/charts/pie` | `pie` | 饼图 |
-| `/pages/demo/charts/ring` | `ring` | 圆环图 |
-| `/pages/demo/charts/rose` | `rose` | 玫瑰图 |
-| `/pages/demo/charts/funnel` | `funnel` | 漏斗图 |
+| `/pages/demo/charts/curve` | `curve` | 曲线图（基本 / 渐变 / 阴影动画） |
+| `/pages/demo/charts/area` | `area` | 区域图（折线 / 曲线渐变 / 时序渐变 / 时间轴） |
+| `/pages/demo/charts/pie` | `pie` | 饼图（基本 / 分割线渐变 / 自定义标签） |
+| `/pages/demo/charts/ring` | `ring` | 圆环图（基本 / 分割线渐变 / 自定义标签） |
+| `/pages/demo/charts/rose` | `rose` | 玫瑰图（面积 / 半径渐变 / 自定义标签） |
+| `/pages/demo/charts/funnel` | `funnel` | 漏斗图（标准 / 渐变标签 / 倒三角 / 金字塔） |
 | `/pages/demo/charts/radar` | `radar` | 雷达图（多边形 / 圆形 / 刻度抽稀 / 渐变） |
-| `/pages/demo/charts/gauge` | `gauge` | 仪表盘 |
-| `/pages/demo/charts/arcbar` | `arcbar` | 圆弧进度 |
+| `/pages/demo/charts/gauge` | `gauge` | 仪表盘（基本 / 进度） |
+| `/pages/demo/charts/arcbar` | `arcbar` | 圆弧进度（渐变 / 多环 / 逆时针 / 圆角 / 平角） |
 | `/pages/demo/charts/mount` | `mount` | 山峰图（圆角 / 尖角 / 三角 / 直角 / 正负渐变 / 滚动 / 标记线） |
-| `/pages/demo/charts/mix` | `mix` | 混合图 |
+| `/pages/demo/charts/mix` | `mix` | 混合图（多坐标系） |
 | `/pages/demo/charts/scatter` | `scatter` | 散点图 |
 | `/pages/demo/charts/bubble` | `bubble` | 气泡图 |
-| `/pages/demo/charts/candle` | `candle` | K 线 |
-| `/pages/demo/charts/word` | `word` | 词云 |
-| `/pages/demo/charts/tline` | `tline` | 时间轴折线 |
-| `/pages/demo/charts/tarea` | `tarea` | 时间轴区域 |
+| `/pages/demo/charts/candle` | `candle` | K 线（双指缩放） |
+| `/pages/demo/charts/word` | `word` | 词云（水平 / 横竖混排） |
+| `/pages/demo/charts/tline` | `tline` | 时间轴折线（矢量坐标 / 秒级时间戳） |
+| `/pages/demo/charts/tarea` | `tarea` | 时间轴区域（矢量轴 / 秒级时间戳） |
 
 示例数据集中在 `src/pages/demo/charts/samples.ts`。首页「图表」分组见 `src/router/pageNav.ts`。
 

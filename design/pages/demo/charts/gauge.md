@@ -2,7 +2,7 @@
 
 对应源码：`src/pages/demo/charts/gauge.vue`
 
-展示 `lingyun-ui-charts` **仪表盘**（type=`gauge`）。
+展示 `lingyun-ui-charts` **仪表盘**：基本指针、进度刻度。
 
 - **基础仪表盘**：`extra.gauge.type=default`（百度分段色 + 指针）
 - **其他仪表盘**：`extra.gauge.type=progress`（外圈刻度随进度变色、圆弧进度、中心渐变）

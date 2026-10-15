@@ -1,6 +1,6 @@
 # 词云图 · word
 
-词云。`type="word"`。Demo 页：`/pages/demo/charts/word`。
+词云。`type="word"`。Demo 页：`/pages/demo/charts/word`（水平 / 横竖混排）。
 
 ## 数据
 
