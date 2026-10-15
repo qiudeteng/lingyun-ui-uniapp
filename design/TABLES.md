@@ -24,6 +24,7 @@
 | 筛选 | 列 `filterType` 或 `filters`。点表头右侧 `tune` 图标打开筛选面板（`lingyun-table-filter`；窄屏底部 Sheet，宽屏弹出菜单），只能筛选不能排序的列点表头也会打开。见下文「筛选」 |
 | 分页 | `page-size` 大于 0 时出现。`v-model:page`。`remote` 时只改页码并抛 `query-change` |
 | 服务端 | `remote`。筛选、排序、翻页合成一次 `query-change`。用 `loading` 表示请求中，用 `total` 表示总条数 |
+| 加载 | `loading` 为真时，标题栏以下全部（筛选标签、表头、表体含左右固定列、表尾、分页）盖一层表格底色 60% 的蒙层，中间显示菊花，不能点也不能滚。标题栏的标题不变；右侧刷新、选列、导出变灰不可点，刷新图标自动旋转；`#tools` 插槽整体变淡并禁止点击 |
 | 列宽 | 列 `width` 写了就用写的。有列没写时，表格宽度减去已写宽度的列、序号列和勾选列，剩下的平分给没写的列，每列不小于 `minWidth`（默认 120），放不下就横向滚动；都没写就平分整个宽度。`fit` 且全部写了宽度时，总宽不足按宽度比例放大占满，超出则保持原宽度横向滚动。固定列也参与分配，序号列不参与。窗口变化时重新测量并重算 |
 | 序号 | 列 `type: 'index'`。按当前页顺序从 1 编号，翻页接着数，不读行数据。不传宽度时常规 64、紧凑 48 |
 | 标题栏 | `title`、`icon`。右侧 `show-refresh`、`column-picker`、`export-excel`，自定义按钮用 `#tools` |
@@ -31,7 +32,7 @@
 | 自定义单元格 | 插槽 `#cell`，参数 `row` / `column` / `value` |
 | 紧凑 | `size="compact"`。默认 `regular` |
 | 表尾 | `show-footer`。`footer-data` 每项是一行，字段名对应列 `key`，没写的列留空。表尾固定在表体下方，横向跟着表体走 |
-| 分组 | `group-fields: { field, sum }`。按 `field` 列归组并插入分组行；`sum` 列自动加总。分组行有底色、字重加粗，无圆点。合计走列 `formatter` / `#cell`，与数据行一致 |
+| 分组 | `group-fields: { field, sum }`。按 `field` 列归组并插入分组行；`sum` 列自动加总。分组行底色与分割线同色（Separator）、字重加粗，无圆点。合计走列 `formatter` / `#cell`，与数据行一致 |
 
 ## 筛选
 

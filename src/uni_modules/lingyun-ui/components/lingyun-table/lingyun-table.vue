@@ -9,11 +9,13 @@
         <view
           v-if="showRefresh"
           class="lingyun-table__tool"
-          hover-class="lingyun-table__tool--hover"
+          :hover-class="loading ? 'none' : 'lingyun-table__tool--hover'"
           :hover-stay-time="70"
           @click="onRefresh"
         >
-          <lingyun-icon type="reload" :size="toolIconSize" color="secondary" />
+          <view class="lingyun-table__tool-icon" :class="{ 'lingyun-table__tool-icon--spin': loading }">
+            <lingyun-icon type="reload" :size="toolIconSize" :color="toolColor" />
+          </view>
         </view>
         <lingyun-popover
           v-if="columnPicker"
@@ -25,11 +27,11 @@
           <template #trigger="{ toggle }">
             <view
               class="lingyun-table__tool"
-              hover-class="lingyun-table__tool--hover"
+              :hover-class="loading ? 'none' : 'lingyun-table__tool--hover'"
               :hover-stay-time="70"
-              @click.stop="toggle"
+              @click.stop="loading || toggle()"
             >
-              <lingyun-icon type="list" :size="toolIconSize" color="secondary" />
+              <lingyun-icon type="list" :size="toolIconSize" :color="toolColor" />
             </view>
           </template>
           <scroll-view scroll-y class="lingyun-table__pick-scroll" :style="pickerScrollStyle">
@@ -51,13 +53,15 @@
         <view
           v-if="exportExcel"
           class="lingyun-table__tool"
-          hover-class="lingyun-table__tool--hover"
+          :hover-class="loading ? 'none' : 'lingyun-table__tool--hover'"
           :hover-stay-time="70"
           @click="onExportExcel"
         >
-          <lingyun-icon type="download" :size="toolIconSize" color="secondary" />
+          <lingyun-icon type="download" :size="toolIconSize" :color="toolColor" />
         </view>
-        <slot name="tools" />
+        <view class="lingyun-table__tools-slot" :class="{ 'lingyun-table__tools-slot--off': loading }">
+          <slot name="tools" />
+        </view>
       </view>
     </view>
     <view v-if="activeFilters.length" class="lingyun-table__filters">
@@ -509,9 +513,6 @@
       >
         <view class="lingyun-table__vbar-thumb ly-sync-vthumb" :style="vThumbStyle" />
       </view>
-      <view v-if="loading" class="lingyun-table__loading">
-        <lingyun-activity-indicator size="small" />
-      </view>
     </view>
 
     <view
@@ -608,6 +609,22 @@
         >
           <text class="lingyun-table__page-btn-text">下一页</text>
         </view>
+      </view>
+    </view>
+
+    <view
+      v-if="loading"
+      class="lingyun-table__loading"
+      :style="loadingStyle"
+      @click.stop
+      @touchstart.stop
+      @touchmove.stop.prevent
+      @mousewheel.stop.prevent
+      @wheel.stop.prevent
+    >
+      <view class="lingyun-table__loading-wash" />
+      <view class="lingyun-table__loading-spin">
+        <lingyun-activity-indicator size="small" />
       </view>
     </view>
 
@@ -1188,7 +1205,15 @@ export default defineComponent({
         this.border ? 'lingyun-table--border' : '',
         this.isCompact ? 'lingyun-table--compact' : '',
         this.fixed ? 'lingyun-table--fixed' : 'lingyun-table--fill',
+        this.loading ? 'lingyun-table--loading' : '',
       ].filter(Boolean)
+    },
+    toolColor(): string {
+      return this.loading ? 'quaternary' : 'secondary'
+    },
+    /** 加载时锁住标题栏以下全部：筛选标签、表头、表体（含固定列）、表尾、分页 */
+    loadingStyle(): Record<string, string> {
+      return { top: this.showToolbar() ? `${this.metrics.toolbar}px` : '0px' }
     },
     fixed(): boolean {
       return parseHeight(this.height) > 0
@@ -1637,7 +1662,11 @@ export default defineComponent({
     centerColumns() {
       this.syncColWindow(this.bodyLeft)
     },
-    loading() {
+    loading(on: boolean) {
+      if (on) {
+        this.columnPickerOpen = false
+        this.cancelPress()
+      }
       this.$nextTick(() => this.measureViewport())
     },
     total() {
@@ -2045,9 +2074,11 @@ export default defineComponent({
       this.hiddenKeys = this.hiddenKeys.filter((item) => item !== key)
     },
     onRefresh() {
+      if (this.loading) return
       this.$emit('refresh', this.queryPayload())
     },
     onExportExcel() {
+      if (this.loading) return
       const filename = sanitizeFileName(this.title || '表格')
       this.saveExcel(this.buildExcelXml(), filename)
       this.$emit('export', { filename: `${filename}.xls` })
@@ -2986,6 +3017,7 @@ $ly-table-head: 44px;
 $ly-table-radius: 26px;
 
 .lingyun-table {
+  position: relative;
   width: 100%;
   overflow: hidden;
   border-radius: $ly-table-radius;
@@ -3065,6 +3097,37 @@ $ly-table-radius: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.lingyun-table__tool-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lingyun-table__tool-icon--spin {
+  animation: lingyun-table-spin 0.9s linear infinite;
+}
+
+@keyframes lingyun-table-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.lingyun-table__tools-slot {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+/* 加载时插槽里的自定义工具也一起变灰、不能点 */
+.lingyun-table__tools-slot--off {
+  opacity: 0.35;
+  pointer-events: none;
 }
 
 .lingyun-table__tool--hover,
@@ -3189,17 +3252,32 @@ $ly-table-radius: 26px;
   background-color: rgba(60, 60, 67, 0.35);
 }
 
+/* 盖在固定列（4）和滚动条（20）之上；top 由 loadingStyle 让出标题栏 */
 .lingyun-table__loading {
   position: absolute;
   left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 3;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--lingyun-fill-quaternary, #{$lingyun-fill-quaternary});
+}
+
+/* 用表格底色半透明盖住内容，浅色发白、暗黑发黑；菊花在它上面不跟着变淡 */
+.lingyun-table__loading-wash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
+  opacity: 0.6;
+}
+
+.lingyun-table__loading-spin {
+  position: relative;
+  z-index: 1;
 }
 
 .lingyun-table__side {
@@ -3297,8 +3375,9 @@ $ly-table-radius: 26px;
   background-color: var(--lingyun-fill-quaternary, #{$lingyun-fill-quaternary});
 }
 
-.lingyun-table__row--group {
-  background-color: var(--lingyun-fill-tertiary, #{$lingyun-fill-tertiary});
+/* 分组行用分割线同色作底，和数据行拉开层次 */
+.lingyun-table__row.lingyun-table__row--group {
+  background-color: var(--lingyun-separator, #{$lingyun-separator});
 }
 
 .lingyun-table__row--hover {

@@ -91,6 +91,49 @@
         </view>
       </lingyun-section>
 
+      <lingyun-section
+        title="加载中"
+        hint="loading 时锁住标题栏以下全部：筛选标签、表头、表体（含左右固定列）、表尾和分页。标题栏右侧工具变灰不可点，刷新图标自动旋转。点刷新会加载 2 秒；下方按钮可一直保持加载。"
+      >
+        <lingyun-table
+          title="订单"
+          icon="list"
+          show-refresh
+          column-picker
+          export-excel
+          :loading="demoLoading"
+          :columns="loadingColumns"
+          :data="rows"
+          row-key="id"
+          :height="320"
+          stripe
+          border
+          show-footer
+          :footer-data="footerData"
+          :page-size="5"
+          v-model:page="loadingPage"
+          @refresh="onLoadingRefresh"
+        >
+          <template #tools>
+            <view class="table-tool" @click="onCustomTool">
+              <lingyun-icon type="compose" :size="18" color="secondary" />
+            </view>
+          </template>
+          <template #cell="{ row, column, value }">
+            <text v-if="column.key === 'action'" class="cell-link" @click.stop="onDetail(row)">详情</text>
+            <text v-else class="cell-text">{{ value }}</text>
+          </template>
+        </lingyun-table>
+        <view class="demo-actions">
+          <lingyun-button
+            variant="bordered"
+            size="small"
+            :text="demoLoading ? '结束加载' : '开始加载'"
+            @click="toggleDemoLoading"
+          />
+        </view>
+      </lingyun-section>
+
       <lingyun-section title="紧凑" hint="size=compact。表头 32、行高 36，字号和内边距一起收。">
         <lingyun-table
           size="compact"
@@ -154,7 +197,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { onUnmounted, ref } from 'vue'
   import type {
     LingyunTableColumn,
     LingyunTableGroupFields,
@@ -193,6 +236,15 @@
     { key: 'name', title: '菜品', width: 128, fixed: 'left', sortable: true },
     { key: 'category', title: '分类', width: 96 },
     { key: 'count', title: '数量', width: 80, align: 'right', sortable: true },
+    { key: 'price', title: '单价', width: 88, align: 'right', sortable: true },
+    { key: 'note', title: '备注', width: 200 },
+    { key: 'action', title: '操作', width: 72, fixed: 'right', align: 'center' },
+  ]
+
+  const loadingColumns: LingyunTableColumn[] = [
+    { key: 'name', title: '菜品', width: 128, fixed: 'left', sortable: true, filterType: 'text' },
+    { key: 'category', title: '分类', width: 96, filterable: true },
+    { key: 'count', title: '数量', width: 80, align: 'right', sortable: true, filterType: 'number' },
     { key: 'price', title: '单价', width: 88, align: 'right', sortable: true },
     { key: 'note', title: '备注', width: 200 },
     { key: 'action', title: '操作', width: 72, fixed: 'right', align: 'center' },
@@ -380,6 +432,32 @@
     uni.showToast({ title: '已刷新', icon: 'none' })
   }
 
+  const demoLoading = ref(false)
+  const loadingPage = ref(1)
+  let demoLoadingTimer: ReturnType<typeof setTimeout> | null = null
+
+  function stopDemoTimer(): void {
+    if (demoLoadingTimer) clearTimeout(demoLoadingTimer)
+    demoLoadingTimer = null
+  }
+
+  function onLoadingRefresh(): void {
+    stopDemoTimer()
+    demoLoading.value = true
+    demoLoadingTimer = setTimeout(() => {
+      demoLoadingTimer = null
+      demoLoading.value = false
+      uni.showToast({ title: '已刷新', icon: 'none' })
+    }, 2000)
+  }
+
+  function toggleDemoLoading(): void {
+    stopDemoTimer()
+    demoLoading.value = !demoLoading.value
+  }
+
+  onUnmounted(stopDemoTimer)
+
   function onCustomTool(): void {
     uni.showToast({ title: '自定义', icon: 'none' })
   }
@@ -455,6 +533,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .demo-actions {
+    display: flex;
+    flex-direction: row;
+    margin-top: 12px;
   }
 
   .picked {
