@@ -168,12 +168,216 @@ const chartOpts = {
 
 | 事件 | 说明 |
 | --- | --- |
-| `complete` | 绘制完成 |
-| `error` | 数据或类型错误 |
-| `getIndex` | 点击命中，带 `currentIndex` |
-| `getTouchStart` / `getTouchMove` / `getTouchEnd` | 触摸或鼠标 |
-| `scrollLeft` / `scrollRight` | 滚动到头 |
-| `getImage` | 导出图片，带 `base64` |
+| `@complete` | 渲染完成。返回 `{ complete: true, id, type: "complete", opts }`。可用返回的 `id`（canvasId）从 `config-ucharts` / `config-echarts` 取实例再调引擎方法 |
+| `@getIndex` | 点击数据索引。返回 `{ type: "getIndex", currentIndex: { group, index }, legendIndex, id, event: { x, y }, opts }`；未命中时 index / legendIndex 为 `-1` |
+| `@error` | 组件出错。返回 `{ type: "error", errorShow, msg, id }`（`errorShow` 为 props 状态） |
+| `@getTouchStart` | 拖动开始。返回 `{ type: "touchStart", event: { x, y }, id, opts }` |
+| `@getTouchMove` | 拖动中。返回 `{ type: "touchMove", event: { x, y }, id, opts }` |
+| `@getTouchEnd` | 拖动结束。返回 `{ type: "touchEnd", event: { x, y }, id, opts }` |
+| `@scrollLeft` | 开启滚动条后到最左侧；用于动态打点，需自行防抖。返回 `{ type: "scrollLeft", scrollLeft: true, id, opts }` |
+| `@scrollRight` | 开启滚动条后到最右侧；用于动态打点，需自行防抖。返回 `{ type: "scrollRight", scrollRight: true, id, opts }` |
+| `@getImage` | `ref` 调用 `getImage()` 后回传。返回 `{ type: "getImage", base64 }` |
+
+## 方法
+
+日常用 props / 事件 / ref 即可；需要底层实例时再调引擎方法（组件内 `cfu.instance[canvasId]`）。
+
+### 组件侧怎么用
+
+| 需求 | 做法 |
+| --- | --- |
+| 更新数据 | 改 `chartData`（或 `opts`）；组件内部走 `updateData` |
+| 强制再绘 | `reshow` / `reload` 置 `true` |
+| Tooltip | `tooltipShow` + `ontouch` / `ontap` / `onmovetip`（内部 `showToolTip`） |
+| 点图例显隐 | `tapLegend`（内部 `touchLegend`） |
+| 横向拖拽 | `opts.enableScroll: true` + `ontouch`（内部 `scrollStart` / `scroll` / `scrollEnd`） |
+| 双指缩放 | 上项 + `onzoom`（内部 `dobuleZoom`） |
+| 点击命中序号 | `@getIndex` |
+| 绘制完成 | `@complete` |
+| 导出图片 | `ref.getImage()`，听 `@getImage` |
+| 保存到相册 / 下载 | `ref.saveImage()` |
+
+```vue
+<lingyun-ui-charts
+  ref="chartRef"
+  type="line"
+  canvasId="lychart-line"
+  :chartData="chartData"
+  :opts="chartOpts"
+  :canvas2d="true"
+  :ontouch="true"
+  @complete="onComplete"
+  @getIndex="onGetIndex"
+  @getImage="onGetImage"
+/>
+```
+
+```ts
+const chartRef = ref<{ getImage: () => void; saveImage: () => void } | null>(null)
+
+function exportPng() {
+  chartRef.value?.getImage()
+}
+
+function onGetImage(e: { base64?: string }) {
+  // e.base64：非 2d 为临时路径，canvas2d 多为 dataURL
+  console.log(e.base64)
+}
+```
+
+改数据即可，不必手写 `updateData`：
+
+```ts
+chartData.series = [{ name: '门店 A', data: [40, 42, 38] }]
+```
+
+开启拖拽与缩放：
+
+```ts
+const chartOpts = {
+  enableScroll: true,
+  xAxis: { itemCount: 5, scrollShow: true },
+}
+// 模板另开 :ontouch="true" :onzoom="true"
+```
+
+### 组件 ref
+
+| 方法 | 说明 |
+| --- | --- |
+| `getImage()` | 导出当前画布，经 `@getImage` 回传 `base64`（路径或 dataURL） |
+| `saveImage()` | H5 触发下载；App / 小程序尝试写入相册 |
+
+### 引擎方法
+
+#### updateData(data)
+
+更新数据并重绘，不必重建实例。组件侧改 `chartData` / 相关 `opts` 即可。
+
+| 字段 | 类型 | 默认 | 说明 |
+| --- | --- | --- | --- |
+| `categories` | Array | 当前实例 | 同 `opts.categories` |
+| `series` | Array | 当前实例 | 同 `opts.series` |
+| `title` | Object | 当前实例 | 同 `opts.title` |
+| `subtitle` | Object | 当前实例 | 同 `opts.subtitle` |
+| `scrollPosition` | String | `current` | 开启拖拽后：`current` 保持 / `left` 靠左 / `right` 靠右 |
+| `animation` | Boolean | 当前实例 | 是否动画 |
+
+```ts
+chart.updateData({
+  categories: ['7月', '8月', '9月'],
+  series: [{ name: '销售额', data: [240, 190, 310] }],
+  scrollPosition: 'current',
+  animation: true,
+})
+```
+
+#### stopAnimation()
+
+立刻停掉入场动画，停在当前帧。
+
+```ts
+chart.stopAnimation()
+```
+
+#### addEventListener(type, listener) / delEventListener(type)
+
+| type | 说明 |
+| --- | --- |
+| `renderComplete` | 每次绘制结束（含 `updateData`）→ 组件 `@complete` |
+| `scrollLeft` | 拖到最左 → `@scrollLeft` |
+| `scrollRight` | 拖到最右 → `@scrollRight` |
+
+```ts
+chart.addEventListener('renderComplete', () => {})
+chart.delEventListener('renderComplete')
+```
+
+#### getCurrentDataIndex(e)
+
+根据触摸 / 点击算数据序号。未命中 `-1`（或 `{ index: -1 }`）。类目轴、饼、环、玫瑰、雷达、漏斗、词云、条状等均支持。组件优先用 `@getIndex`。
+
+```ts
+const current = chart.getCurrentDataIndex(e)
+```
+
+#### getLegendDataIndex(e)
+
+点击处图例项序号，未命中 `-1`。对应 `@getIndex` 的 `legendIndex`。
+
+```ts
+const legendIndex = chart.getLegendDataIndex(e)
+```
+
+#### touchLegend(e, option?)
+
+点图例切换该系列 `show`。`option.animation` 控制动画。组件开 `tapLegend` 即可。
+
+```ts
+chart.touchLegend(e, { animation: false })
+```
+
+#### showToolTip(e, option?)
+
+在触摸位置画提示窗。支持 line、area、column、bar、mix、candle、scatter、bubble、mount、pie、ring、rose、funnel、radar、map、word 等。
+
+| option 字段 | 说明 |
+| --- | --- |
+| `index` | 强制指定类目 / 扇区序号 |
+| `textList` | 自定义提示行 |
+| `offset` | 自定义位置 `{ x, y }` |
+| `formatter` | `(item, category, index, opts) => string` |
+
+```ts
+chart.showToolTip(e, {
+  formatter(item, category) {
+    return `${category} ${item.name}: ${item.data}`
+  },
+})
+```
+
+组件侧用 `tooltipShow`、`tooltipFormat`（名字写在 `config-ucharts` 的 `formatter`）及触摸相关 props。
+
+#### scrollStart(e) / scroll(e) / scrollEnd(e)
+
+横向拖拽三件套。须 `opts.enableScroll: true`。组件在 `ontouch` 时自动转发。
+
+```ts
+function onTouchStart(e) {
+  chart.scrollStart(e)
+}
+function onTouchMove(e) {
+  chart.scroll(e)
+}
+function onTouchEnd(e) {
+  chart.scrollEnd(e)
+  chart.showToolTip(e)
+}
+```
+
+#### translate(distance)
+
+平移到指定偏移（与内部 `_scrollDistance_` 一致），无动画。
+
+```ts
+chart.translate(-120)
+```
+
+#### zoom(val)
+
+改一屏类目数并重算偏移。须先 `enableScroll: true`。`val.itemCount` 为一屏数量。
+
+```ts
+chart.zoom({ itemCount: 6 })
+```
+
+#### dobuleZoom(e)
+
+双指缩放（按两指间距改 `xAxis.itemCount`）。须 `enableScroll`；组件在 `onzoom` + 双指 `touchmove` 时调用。
+
+```ts
+chart.dobuleZoom(e)
+```
 
 弹层里的图第一次可能量不到宽高，打开后再把 `reshow` 置 `true`。
 

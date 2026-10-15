@@ -407,7 +407,11 @@ const cfu: Record<string, any> = {
   	"extra": {
   		"bar": {
   			"type": "group",
-  			"width": 30,
+  			"width": 28,
+  			"seriesGap": 3,
+  			"categoryGap": 6,
+  			/** [右上, 右下, 左下, 左上]：默认右侧顶端圆角 */
+  			"barBorderRadius": [6, 6, 0, 0],
   			"meterBorde": 1,
   			"meterFillColor": "#FFFFFF",
   			"activeBgColor": "#000000",

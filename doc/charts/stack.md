@@ -10,7 +10,7 @@
 | 画法 | 怎么配 | 说明 |
 | --- | --- | --- |
 | 堆积柱状 | `type="stack"`，或 `type="column"` + `extra.column.type: "stack"` | 引擎原生累加 |
-| 堆积条状 | `type="bar"` + `extra.bar.type: "stack"` | 同上，横向 |
+| 堆积条状 | `type="bar"` + `extra.bar.type: "stack"` | 同上，横向；Demo 见 [条状图](./bar.md) |
 | 堆积折线 | `type="line"` + `extra.line.stack: true` | 自动改走面积色带，层间填色 |
 | 堆积曲线 | `type="curve"` + `extra.line.stack: true` | 同上（曲线预设已是 `line.type: curve`） |
 

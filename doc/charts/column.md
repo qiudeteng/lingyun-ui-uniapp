@@ -2,9 +2,24 @@
 
 类目轴柱状图。`type="column"`。Demo 页：`/pages/demo/charts/column`。
 
+对齐 [uCharts 官方演示](https://www.ucharts.cn/v2/#/demo/index) 中的柱状图条目。
+
 ## 数据
 
-必须有 `categories`。每条 `series.data` 与类目等长。
+必须有 `categories`。每条 `series.data` 与类目等长。温度计图第一组为外框（目标），第二组为内柱（完成）。
+
+## Demo 覆盖
+
+| 标题 | 配置要点 |
+|------|----------|
+| 基本柱状图 | `extra.column.type: "group"` |
+| 堆叠柱状图 | `type: "stack"`，`labelPosition: "center"` |
+| 圆角+渐变+半透明 | `linearType: "custom"`，`barBorderCircle: true` |
+| 温度计图表 | `type: "meter"`，`meterBorder` / `meterFillColor` |
+| 圆角温度计 | meter + `barBorderRadius: [50,50,50,50]` |
+| 正负柱状图 | 数据含负值，`yAxis.data: [{ min, max }]` |
+| 柱状图滚动条 | `enableScroll: true`，`xAxis.itemCount` |
+| 全圆角+标记线 | `barBorderRadius` + `enableMarkLine` + `extra.markLine` |
 
 ## 示例
 
@@ -24,10 +39,10 @@
 
 ```ts
 const chartData = {
-  categories: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+  categories: ['2018', '2019', '2020', '2021', '2022', '2023'],
   series: [
-    { name: '门店 A', data: [35, 36, 31, 33, 13, 34, 32] },
-    { name: '门店 B', data: [18, 27, 21, 24, 6, 28, 22] },
+    { name: '目标值', data: [35, 36, 31, 33, 13, 34] },
+    { name: '完成量', data: [18, 27, 21, 24, 6, 28] },
   ],
 }
 
@@ -35,10 +50,8 @@ const chartOpts = {
   extra: {
     column: {
       type: 'group',
-      // 同组柱间距、类目组左右留白（组与组之间的间隔）
       seriesGap: 3,
       categoryGap: 6,
-      // 顶部圆角 [左上, 右上, 右下, 左下]
       barBorderRadius: [6, 6, 0, 0],
     },
   },
@@ -54,6 +67,6 @@ const chartOpts = {
 }
 ```
 
-要叠成总量请用 [堆积图](./stack.md)（`type="stack"` 或 `extra.column.type: "stack"`）。
+堆积折线 / 曲线另见 [堆积图](./stack.md)。
 
 接法、属性、事件见 [图表总览](/charts/)。

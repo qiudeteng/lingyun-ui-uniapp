@@ -3700,20 +3700,48 @@ function drawBarDataPoints(series, opts, config, context) {
         };
         break;
       case 'stack':
-        // 绘制堆叠数据图
+        // 绘制堆叠数据图；最右一层带右侧圆角
         var points = getBarStackDataPoints(data, minRange, maxRange, yAxisPoints, eachSpacing, opts, config, seriesIndex, series, process);
         calPoints.push(points);
         points = fixBarStackData(points, eachSpacing, series.length, seriesIndex, config, opts, series);
+        var isLastStack = seriesIndex === series.length - 1;
         for (let i = 0; i < points.length; i++) {
           let item = points[i];
           if (item !== null && i > leftNum && i < rightNum) {
             context.beginPath();
             var fillColor = item.color || eachSeries.color;
             var startX = item.x0;
+            var top = item.y - item.width / 2;
+            var barH = item.width;
+            var barW = item.height;
             context.setFillStyle(fillColor);
-            context.moveTo(startX, item.y - item.width/2);
-            context.fillRect(startX, item.y - item.width/2, item.height , item.width);
-            context.closePath();
+            if (
+              isLastStack &&
+              ((columnOption.barBorderRadius && columnOption.barBorderRadius.length === 4) ||
+                columnOption.barBorderCircle === true)
+            ) {
+              let radius = columnOption.barBorderRadius;
+              if (columnOption.barBorderCircle) {
+                radius = [barH / 2, barH / 2, 0, 0];
+              }
+              let [r0, r1, r2, r3] = radius;
+              let minRadius = Math.min(barH / 2, barW / 2);
+              r0 = Math.max(0, Math.min(r0, minRadius));
+              r1 = Math.max(0, Math.min(r1, minRadius));
+              r2 = 0;
+              r3 = 0;
+              context.moveTo(startX, top);
+              context.lineTo(item.x - r0, top);
+              context.arc(item.x - r0, top + r0, r0, -Math.PI / 2, 0);
+              context.lineTo(item.x, top + barH - r1);
+              context.arc(item.x - r1, top + barH - r1, r1, 0, Math.PI / 2);
+              context.lineTo(startX, top + barH);
+              context.closePath();
+            } else {
+              context.moveTo(startX, top);
+              context.fillRect(startX, top, barW, barH);
+              context.closePath();
+            }
             context.fill();
           }
         };

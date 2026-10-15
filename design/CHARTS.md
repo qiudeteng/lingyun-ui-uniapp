@@ -6,10 +6,10 @@
 
 ## 权威来源
 
-1. 使用手册 [`doc/charts/README.md`](../doc/charts/README.md) · 图种 [`doc/charts/`](../doc/charts/)
+1. 使用手册 [`doc/charts/README.md`](../doc/charts/README.md)（含属性 / 事件 / 方法全文）· 图种 [`doc/charts/`](../doc/charts/)
 2. 系列色 [`config-colors.ts`](../src/uni_modules/lingyun-ui-charts/js_sdk/u-charts/config-colors.ts) · [`COLORS.md`](./COLORS.md) System Accents
 3. 默认 option：`config-ucharts.ts` / `config-echarts.ts`
-4. [uCharts 指南](https://www.ucharts.cn/v2/#/guide/index)
+4. 引擎实现：`js_sdk/u-charts/u-charts.ts`（源自 uCharts / qiun-data-charts）
 
 尺寸 **1pt = 1px**。禁止 `rpx`。
 
@@ -66,10 +66,11 @@ import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/u-charts/
 
 | type | 额外约定 |
 |------|----------|
-| `column` | 默认 `extra.column`：`categoryGap` 拉开各组、`seriesGap` 同组柱距、`barBorderRadius: [6,6,0,0]` 顶部圆角 |
+| `column` | 默认 `extra.column`：`categoryGap` 拉开各组、`seriesGap` 同组柱距、`barBorderRadius: [6,6,0,0]` 顶部圆角。Demo 另含 stack / meter / 渐变圆角 / 正负 / 滚动 / 标记线（对齐 [uCharts 官方](https://www.ucharts.cn/v2/#/demo/index)） |
 | `stack` | 堆积柱状别名：引擎 `column` + `extra.column.type: "stack"`；折线/曲线传同款原始数据 + `extra.line.stack: true`（算法见 `stack-series.ts`），见 `doc/charts/stack.md` |
+| `line` | `extra.line.type`：`straight` 折线、`curve` 曲线、`step` 阶梯。`data` 里写 `null` 断开，`connectNulls: true` 续连。渐变 `linearType: "custom"` + `series.linearColor`；阴影 `onShadow` + `setShadow`；`animation: "horizontal"` 从左画入。滚动：`enableScroll` + `xAxis.itemCount` |
 | `curve` | 自定义图种别名，引擎为 `line`，默认 `extra.line.type: "curve"` 平滑曲线；数据形状同 `line` |
-| `radar` | `opts.extra.radar.max` 要盖住数据（demo 用 100） |
+| `radar` | `opts.extra.radar.max` 要盖住数据。`gridType`：`radar` 多边形、`circle` 圆形。`axisLabel` 刻度、`gridEval` 径向线抽稀、`linearType: "custom"` 渐变 |
 | `mix` | 每条 `series[i].type` 为 `column` / `line` / `area` 等 |
 | `candle` | `data` 为 `[开盘, 收盘, 最低, 最高]` |
 
@@ -84,6 +85,8 @@ import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/u-charts/
 ```
 
 图例表见下文 **§3.6**。饼类的格子写在 `series[0].data` 的每一项上。
+
+`mount` 的峰形在 `extra.mount.type`：`mount` 圆角（默认）、`sharp` 尖角、`triangle` 三角、`bar` 直角柱。`widthRatio` 为峰宽相对类目间距，0–2，默认 1.5。`linearType` 为 `custom`（内置渐变）或 `opacity`（顶透）。正负值要把 `yAxis.data[0]` 的 `min` / `max` 设成能包住数据的范围（默认 `min: 0` 会裁掉负值）。横向滚动：`enableScroll` + `xAxis.itemCount` + 组件 `ontouch`。标记线：`enableMarkLine` + `extra.markLine`。见 `doc/charts/mount.md`。
 
 ### 3.3 时间轴（无 categories）
 
@@ -126,7 +129,7 @@ opts: {
 
 | type | 数据 |
 |------|------|
-| `gauge` | `categories: [{ value: 0.2 }, { value: 0.8 }]`，`series: [{ name, data: 0.8 }]`（**0–1**，不是 0–100） |
+| `gauge` | `categories: [{ value: 0.2 }, { value: 0.8 }]`，`series: [{ name, data: 0.8 }]`（**0–1**，不是 0–100）。`extra.gauge.type`：`default` 分段色指针；`progress` 外圈刻度 + 圆弧进度 |
 | `arcbar` | `series: [{ name, data: 0.8 }]`（0–1） |
 
 ### 3.6 图例表
@@ -170,7 +173,7 @@ legend: {
 { name: '门店 A', data: [35, 36, 31], value: 102, rate: '48%' }
 ```
 
-未做 demo：`map`、`demotype`。完整 option 仍以 [uCharts 指南](https://www.ucharts.cn/v2/#/guide/index) 为准。
+未做 demo：`map`、`demotype`。属性 / 事件 / 方法见手册 [`doc/charts/README.md`](../doc/charts/README.md)；其余 option 字段以本包 `config-ucharts.ts` 与引擎源码为准。
 
 ---
 
@@ -234,17 +237,17 @@ legend: {
 | `/pages/demo/charts/column` | `column` | 柱状图 |
 | `/pages/demo/charts/stack` | `stack` | 堆积图（柱 / 折线 / 曲线，原始数据 + stack） |
 | `/pages/demo/charts/bar` | `bar` | 条状图 |
-| `/pages/demo/charts/line` | `line` | 折线图 |
+| `/pages/demo/charts/line` | `line` | 折线图（折线 / 曲线 / 阶梯 / 断点续连 / 渐变 / 阴影动画 / 滚动 / 时间轴） |
 | `/pages/demo/charts/curve` | `curve` | 曲线图 |
 | `/pages/demo/charts/area` | `area` | 区域图 |
 | `/pages/demo/charts/pie` | `pie` | 饼图 |
 | `/pages/demo/charts/ring` | `ring` | 圆环图 |
 | `/pages/demo/charts/rose` | `rose` | 玫瑰图 |
 | `/pages/demo/charts/funnel` | `funnel` | 漏斗图 |
-| `/pages/demo/charts/radar` | `radar` | 雷达图 |
+| `/pages/demo/charts/radar` | `radar` | 雷达图（多边形 / 圆形 / 刻度抽稀 / 渐变） |
 | `/pages/demo/charts/gauge` | `gauge` | 仪表盘 |
 | `/pages/demo/charts/arcbar` | `arcbar` | 圆弧进度 |
-| `/pages/demo/charts/mount` | `mount` | 山峰图 |
+| `/pages/demo/charts/mount` | `mount` | 山峰图（圆角 / 尖角 / 三角 / 直角 / 正负渐变 / 滚动 / 标记线） |
 | `/pages/demo/charts/mix` | `mix` | 混合图 |
 | `/pages/demo/charts/scatter` | `scatter` | 散点图 |
 | `/pages/demo/charts/bubble` | `bubble` | 气泡图 |
