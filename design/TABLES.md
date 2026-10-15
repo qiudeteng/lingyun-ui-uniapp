@@ -20,8 +20,8 @@
 
 | 能力 | 做法 |
 |------|------|
-| 排序 | 列 `sortable`。点击表头在升序、降序、不排序之间切换。`remote` 时交给 `query-change` |
-| 筛选 | 列 `filters`。点 ▾ 在表头下展开选项，可多选。`remote` 时交给 `query-change` |
+| 排序 | 列 `sortable`。点击表头在升序、降序、不排序之间切换。表头用 `lingyun-icon` 的 `up` / `down` 叠成一组，当前方向主色。`remote` 时交给 `query-change` |
+| 筛选 | 列 `filterType` 或 `filters`。点表头右侧 `tune` 图标打开筛选面板（`lingyun-table-filter`，底部 Sheet），只能筛选不能排序的列点表头也会打开。见下文「筛选」 |
 | 分页 | `page-size` 大于 0 时出现。`v-model:page`。`remote` 时只改页码并抛 `query-change` |
 | 服务端 | `remote`。筛选、排序、翻页合成一次 `query-change`。用 `loading` 表示请求中，用 `total` 表示总条数 |
 | 序号 | 列 `type: 'index'`。按当前页顺序从 1 编号，翻页接着数，不读行数据。不传宽度时常规 64、紧凑 48 |
@@ -31,6 +31,32 @@
 | 紧凑 | `size="compact"`。默认 `regular` |
 | 表尾 | `show-footer`。`footer-data` 每项是一行，字段名对应列 `key`，没写的列留空。表尾固定在表体下方，横向跟着表体走 |
 | 分组 | `group-fields: { field, sum }`。按 `field` 列归组并插入分组行；`sum` 列自动加总。分组行有底色、字重加粗，无圆点。合计走列 `formatter` / `#cell`，与数据行一致 |
+
+## 筛选
+
+| `filterType` | 面板 | 条件 |
+|------|------|------|
+| `select` | 勾选列表。选项多于 8 个时出搜索；有「全选」（搜索时只全选搜索结果）；本地模式显示每项条数 | 勾选的值，不勾选等于不筛选 |
+| `number` | 比较方式 + 数字输入框 | 等于、不等于、大于、大于等于、小于、小于等于、介于 |
+| `text` | 比较方式 + 文本输入框 | 包含、不包含、等于、开头是（不区分大小写） |
+| `date` | 比较方式 + 日期选择（`lingyun-picker` 的 `date` / `daterange`） | 当天、不早于、不晚于、介于 |
+
+- 配了 `filters` 就是 `select`，选项用 `filters`。`filterable: true` 或 `filterType: 'select'` 但没配 `filters` 时，从数据去重生成选项，`formatter` 用作选项文字，空值显示「（空白）」。`remote` 只看得到当前页，选项也只来自当前页，最好配 `filters`。
+- 本地模式下，选项条数按「其它列筛选后」的行数计算，和 Excel 一致。
+- 面板里改动点右上 ✓ 才生效；左上 × 或点遮罩放弃。可排序的列面板顶部还有「不排序 / 升序 / 降序」。
+- 介于时上下限填反会自动对调。数字去掉千分位逗号再比较；日期统一成 `YYYY-MM-DD`，时间戳按本地时区取日。
+- 生效的筛选在标题栏下、表头上显示为一条可横滑的标签栏：点标签重新打开面板，点 × 删除这一列的条件，两个以上时末尾有「清除全部」。没有筛选时不占高度。
+- 筛选一变就回到第 1 页、表体回顶。
+- `query-change` / `refresh` 的载荷：`filters` 为多选（列 key → 值数组），`conditions` 为其它三种（列 key → `{ op, value, value2? }`，`op` 见 `LingyunTableFilterOp`）。`filter-change` 另带当前列的 `key`、`values`、`condition`。服务端可直接复用 `table-filter.ts` 里的 `makeFilterTest` 做同样的判断。
+
+```ts
+const columns: LingyunTableColumn[] = [
+  { key: 'name', title: '菜品', sortable: true, filterType: 'text' },
+  { key: 'shop', title: '门店', filterable: true },
+  { key: 'count', title: '数量', align: 'right', sortable: true, filterType: 'number' },
+  { key: 'date', title: '日期', sortable: true, filterType: 'date' },
+]
+```
 
 ```vue
 <lingyun-table

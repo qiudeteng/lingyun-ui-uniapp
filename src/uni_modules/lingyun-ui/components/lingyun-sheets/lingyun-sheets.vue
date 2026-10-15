@@ -49,8 +49,10 @@
               <template v-if="$slots.leading" #leading>
                 <slot name="leading" />
               </template>
-              <template v-if="$slots.title" #title>
-                <slot name="title" />
+              <template #title>
+                <slot name="title">
+                  <text class="lingyun-sheets__title">{{ title }}</text>
+                </slot>
               </template>
               <template v-if="$slots.trailing" #trailing>
                 <slot name="trailing" />
@@ -119,8 +121,10 @@
               <template v-if="$slots.leading" #leading>
                 <slot name="leading" />
               </template>
-              <template v-if="$slots.title" #title>
-                <slot name="title" />
+              <template #title>
+                <slot name="title">
+                  <text class="lingyun-sheets__title">{{ title }}</text>
+                </slot>
               </template>
               <template v-if="$slots.trailing" #trailing>
                 <slot name="trailing" />
@@ -784,6 +788,20 @@ export default defineComponent({
   box-sizing: border-box;
   touch-action: pan-y;
   overscroll-behavior: contain;
+}
+
+/* 小程序上转发给顶栏的 title 插槽总是存在，顶栏不会再画默认标题，这里补上同款样式 */
+.lingyun-sheets__title {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--lingyun-label-glass, #{$lingyun-label-glass});
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 22px;
+  text-align: center;
 }
 
 .lingyun-sheets__body-inner {

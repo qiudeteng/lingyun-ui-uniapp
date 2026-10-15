@@ -60,6 +60,34 @@
         <slot name="tools" />
       </view>
     </view>
+    <view v-if="activeFilters.length" class="lingyun-table__filters">
+      <scroll-view class="lingyun-table__filters-scroll" scroll-x enable-flex :show-scrollbar="false">
+        <view class="lingyun-table__filters-track">
+          <view
+            v-for="item in activeFilters"
+            :key="item.key"
+            class="lingyun-table__chip"
+            hover-class="lingyun-table__chip--hover"
+            :hover-stay-time="70"
+            @click="openFilter(item.key)"
+          >
+            <text class="lingyun-table__chip-text">{{ item.label }}</text>
+            <view class="lingyun-table__chip-x" @click.stop="clearColumnFilter(item.key)">
+              <lingyun-icon type="closeempty" :size="chipIconSize" color="primary" />
+            </view>
+          </view>
+          <view
+            v-if="activeFilters.length > 1"
+            class="lingyun-table__chip lingyun-table__chip--clear"
+            hover-class="lingyun-table__chip--hover"
+            :hover-stay-time="70"
+            @click="clearAllFilters"
+          >
+            <text class="lingyun-table__chip-text lingyun-table__chip-text--clear">清除全部</text>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
     <view
       class="lingyun-table__head"
       @mousewheel.stop="onTableWheel"
@@ -85,19 +113,19 @@
             class="lingyun-table__cell"
             :style="cellStyle(col)"
           >
-            <view class="lingyun-table__head-hit" @click="onSort(col)">
+            <view class="lingyun-table__head-hit" @click="onHeadTap(col)">
               <text class="lingyun-table__head-text">{{ col.title }}</text>
-              <text v-if="col.sortable" class="lingyun-table__sort" :class="sortClass(col)">{{
-                sortMark(col)
-              }}</text>
+              <view v-if="col.sortable" class="lingyun-table__sort">
+                <view class="lingyun-table__sort-up"><lingyun-icon type="up" :size="sortIconSize" :color="sortColor(col, 'asc')" /></view>
+                <view class="lingyun-table__sort-down"><lingyun-icon type="down" :size="sortIconSize" :color="sortColor(col, 'desc')" /></view>
+              </view>
             </view>
-            <view
-              v-if="col.filters && col.filters.length"
-              class="lingyun-table__filter"
-              :class="{ 'lingyun-table__filter--on': filterOn(col) }"
-              @click.stop="toggleFilter(col)"
-            >
-              <text class="lingyun-table__filter-mark">▾</text>
+            <view v-if="filterTypeOf(col)" class="lingyun-table__filter" @click.stop="openFilter(col.key)">
+              <lingyun-icon
+                :type="filterOn(col.key) ? 'tune-filled' : 'tune'"
+                :size="filterIconSize"
+                :color="filterOn(col.key) ? 'primary' : 'tertiary'"
+              />
             </view>
           </view>
         </view>
@@ -120,19 +148,19 @@
               class="lingyun-table__cell"
               :style="cellStyle(col)"
             >
-              <view class="lingyun-table__head-hit" @click="onSort(col)">
+              <view class="lingyun-table__head-hit" @click="onHeadTap(col)">
                 <text class="lingyun-table__head-text">{{ col.title }}</text>
-                <text v-if="col.sortable" class="lingyun-table__sort" :class="sortClass(col)">{{
-                  sortMark(col)
-                }}</text>
+                <view v-if="col.sortable" class="lingyun-table__sort">
+                  <view class="lingyun-table__sort-up"><lingyun-icon type="up" :size="sortIconSize" :color="sortColor(col, 'asc')" /></view>
+                  <view class="lingyun-table__sort-down"><lingyun-icon type="down" :size="sortIconSize" :color="sortColor(col, 'desc')" /></view>
+                </view>
               </view>
-              <view
-                v-if="col.filters && col.filters.length"
-                class="lingyun-table__filter"
-                :class="{ 'lingyun-table__filter--on': filterOn(col) }"
-                @click.stop="toggleFilter(col)"
-              >
-                <text class="lingyun-table__filter-mark">▾</text>
+              <view v-if="filterTypeOf(col)" class="lingyun-table__filter" @click.stop="openFilter(col.key)">
+                <lingyun-icon
+                  :type="filterOn(col.key) ? 'tune-filled' : 'tune'"
+                  :size="filterIconSize"
+                  :color="filterOn(col.key) ? 'primary' : 'tertiary'"
+                />
               </view>
             </view>
             <view v-if="colPadRight" class="lingyun-table__col-pad" :style="colPadRightStyle" />
@@ -156,19 +184,19 @@
               class="lingyun-table__cell"
               :style="cellStyle(col)"
             >
-              <view class="lingyun-table__head-hit" @click="onSort(col)">
+              <view class="lingyun-table__head-hit" @click="onHeadTap(col)">
                 <text class="lingyun-table__head-text">{{ col.title }}</text>
-                <text v-if="col.sortable" class="lingyun-table__sort" :class="sortClass(col)">{{
-                  sortMark(col)
-                }}</text>
+                <view v-if="col.sortable" class="lingyun-table__sort">
+                  <view class="lingyun-table__sort-up"><lingyun-icon type="up" :size="sortIconSize" :color="sortColor(col, 'asc')" /></view>
+                  <view class="lingyun-table__sort-down"><lingyun-icon type="down" :size="sortIconSize" :color="sortColor(col, 'desc')" /></view>
+                </view>
               </view>
-              <view
-                v-if="col.filters && col.filters.length"
-                class="lingyun-table__filter"
-                :class="{ 'lingyun-table__filter--on': filterOn(col) }"
-                @click.stop="toggleFilter(col)"
-              >
-                <text class="lingyun-table__filter-mark">▾</text>
+              <view v-if="filterTypeOf(col)" class="lingyun-table__filter" @click.stop="openFilter(col.key)">
+                <lingyun-icon
+                  :type="filterOn(col.key) ? 'tune-filled' : 'tune'"
+                  :size="filterIconSize"
+                  :color="filterOn(col.key) ? 'primary' : 'tertiary'"
+                />
               </view>
             </view>
             <view v-if="colPadRight" class="lingyun-table__col-pad" :style="colPadRightStyle" />
@@ -185,41 +213,22 @@
             class="lingyun-table__cell"
             :style="cellStyle(col)"
           >
-            <view class="lingyun-table__head-hit" @click="onSort(col)">
+            <view class="lingyun-table__head-hit" @click="onHeadTap(col)">
               <text class="lingyun-table__head-text">{{ col.title }}</text>
-              <text v-if="col.sortable" class="lingyun-table__sort" :class="sortClass(col)">{{
-                sortMark(col)
-              }}</text>
+              <view v-if="col.sortable" class="lingyun-table__sort">
+                <view class="lingyun-table__sort-up"><lingyun-icon type="up" :size="sortIconSize" :color="sortColor(col, 'asc')" /></view>
+                <view class="lingyun-table__sort-down"><lingyun-icon type="down" :size="sortIconSize" :color="sortColor(col, 'desc')" /></view>
+              </view>
             </view>
-            <view
-              v-if="col.filters && col.filters.length"
-              class="lingyun-table__filter"
-              :class="{ 'lingyun-table__filter--on': filterOn(col) }"
-              @click.stop="toggleFilter(col)"
-            >
-              <text class="lingyun-table__filter-mark">▾</text>
+            <view v-if="filterTypeOf(col)" class="lingyun-table__filter" @click.stop="openFilter(col.key)">
+              <lingyun-icon
+                :type="filterOn(col.key) ? 'tune-filled' : 'tune'"
+                :size="filterIconSize"
+                :color="filterOn(col.key) ? 'primary' : 'tertiary'"
+              />
             </view>
           </view>
         </view>
-      </view>
-    </view>
-
-    <view v-if="openColumn" class="lingyun-table__filters">
-      <view
-        class="lingyun-table__chip"
-        :class="{ 'lingyun-table__chip--on': !activeFilterValues.length }"
-        @click="clearFilter(openColumn.key)"
-      >
-        <text class="lingyun-table__chip-text">全部</text>
-      </view>
-      <view
-        v-for="opt in openColumn.filters"
-        :key="String(opt.value)"
-        class="lingyun-table__chip"
-        :class="{ 'lingyun-table__chip--on': filterPicked(openColumn.key, opt.value) }"
-        @click="pickFilter(openColumn.key, opt.value)"
-      >
-        <text class="lingyun-table__chip-text">{{ opt.text }}</text>
       </view>
     </view>
 
@@ -600,11 +609,41 @@
         </view>
       </view>
     </view>
+
+    <lingyun-table-filter
+      v-if="hasFilterUi"
+      :show="filterSheetOpen"
+      :title="sheetColumn ? sheetColumn.title : ''"
+      :type="sheetColumn ? filterTypeOf(sheetColumn) : ''"
+      :options="sheetOptions"
+      :values="sheetColumn ? filterMap[sheetColumn.key] || [] : []"
+      :condition="sheetColumn ? conditionMap[sheetColumn.key] || null : null"
+      :sortable="!!(sheetColumn && sheetColumn.sortable)"
+      :sort-order="sheetColumn && sortKey === sheetColumn.key ? sortOrder : ''"
+      @update:show="onFilterSheetShow"
+      @confirm="onFilterConfirm"
+    />
   </view>
 </template>
 
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
+import {
+  filterConditionLabel,
+  makeFilterTest,
+  type LingyunTableFilterCondition,
+  type LingyunTableFilterOption,
+  type LingyunTableFilterResult,
+  type LingyunTableFilterType,
+} from './table-filter'
+
+export type {
+  LingyunTableFilterCondition,
+  LingyunTableFilterOp,
+  LingyunTableFilterOption,
+  LingyunTableFilterResult,
+  LingyunTableFilterType,
+} from './table-filter'
 
 const COL_W = 120
 /** 虚拟窗口按块移动：块内滚动不换行，窗口上下各至少留一块 */
@@ -637,11 +676,6 @@ export type LingyunTableSortOrder = 'asc' | 'desc' | ''
 /** 分组行内部标记。业务 data 不要传这个字段 */
 export const LINGYUN_TABLE_GROUP = '__lyIsGroup'
 
-export interface LingyunTableFilterOption {
-  text: string
-  value: string | number
-}
-
 export interface LingyunTableColumn {
   key: string
   title: string
@@ -652,7 +686,12 @@ export interface LingyunTableColumn {
   /** index 时显示当前顺序的序号，不读行数据 */
   type?: 'index'
   sortable?: boolean
+  /** 多选筛选的选项。配了就是 select 筛选 */
   filters?: LingyunTableFilterOption[]
+  /** 筛选方式。select 没配 filters 时从数据去重生成选项 */
+  filterType?: LingyunTableFilterType
+  /** 只开多选筛选、选项从数据里取时写 true，等同 filterType: 'select' */
+  filterable?: boolean
   formatter?: (value: unknown, row: LingyunTableRow) => string
 }
 
@@ -670,7 +709,10 @@ export interface LingyunTableGroupFields {
 export interface LingyunTableQuery {
   page: number
   pageSize: number
+  /** 多选筛选：列 key → 勾选的值 */
   filters: Record<string, string[]>
+  /** 数字、文本、日期筛选：列 key → 条件 */
+  conditions: Record<string, LingyunTableFilterCondition>
   sortKey: string
   sortOrder: LingyunTableSortOrder
 }
@@ -759,6 +801,40 @@ function compareKey(a: SortKey, b: SortKey): number {
 
 function isGroupRow(row: LingyunTableRow | null | undefined): boolean {
   return !!(row && row[LINGYUN_TABLE_GROUP] === true)
+}
+
+function columnFilterType(col: LingyunTableColumn): LingyunTableFilterType | '' {
+  if (col.type === 'index') return ''
+  if (col.filterType) return col.filterType
+  if ((col.filters && col.filters.length) || col.filterable) return 'select'
+  return ''
+}
+
+interface RowTest {
+  key: string
+  test: (row: LingyunTableRow) => boolean
+}
+
+const EMPTY_OPTION_TEXT = '（空白）'
+
+/** 选项的显示文字：先找列上配置的 filters，再用 formatter，最后用原值 */
+function optionTextOf(col: LingyunTableColumn, token: string, sample?: LingyunTableRow): string {
+  const preset = (col.filters || []).find((opt) => String(opt.value) === token)
+  if (preset) return preset.text
+  if (token === '') return EMPTY_OPTION_TEXT
+  if (col.formatter && sample) return col.formatter(sample[col.key], sample)
+  return token
+}
+
+function sameStrings(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false
+  const set = new Set(a)
+  return b.every((item) => set.has(item))
+}
+
+function sameCondition(a: LingyunTableFilterCondition | null | undefined, b: LingyunTableFilterCondition | null | undefined): boolean {
+  if (!a || !b) return !a && !b
+  return a.op === b.op && a.value === b.value && (a.value2 || '') === (b.value2 || '')
 }
 
 function toSumNumber(value: unknown): number {
@@ -943,7 +1019,12 @@ export default defineComponent({
       sortKey: '',
       sortOrder: '' as LingyunTableSortOrder,
       filterMap: {} as Record<string, string[]>,
-      openFilterKey: '',
+      conditionMap: {} as Record<string, LingyunTableFilterCondition>,
+      /** 筛选面板对应的列。关面板时保留，收起动画里内容不跳 */
+      filterSheetKey: '',
+      filterSheetOpen: false,
+      /** 打开面板时算好的选项快照 */
+      sheetOptions: [] as LingyunTableFilterOption[],
       headLeft: 0,
       bodyLeft: 0,
       bodyTop: 0,
@@ -1248,21 +1329,71 @@ export default defineComponent({
       // #endif
       return { height: '100%' }
     },
+    columnByKey(): Record<string, LingyunTableColumn> {
+      const out: Record<string, LingyunTableColumn> = {}
+      ;(this.columns || []).forEach((col) => {
+        out[col.key] = col
+      })
+      return out
+    },
+    rowTests(): RowTest[] {
+      const tests: RowTest[] = []
+      const map = this.filterMap
+      Object.keys(map).forEach((key) => {
+        const picked = map[key]
+        if (!picked || !picked.length) return
+        const set = new Set(picked)
+        tests.push({ key, test: (row) => set.has(String(row[key] ?? '')) })
+      })
+      const conds = this.conditionMap
+      Object.keys(conds).forEach((key) => {
+        const col = this.columnByKey[key]
+        const type = col ? columnFilterType(col) : ''
+        if (!type || type === 'select') return
+        const test = makeFilterTest(type, conds[key])
+        tests.push({ key, test: (row) => test(row[key]) })
+      })
+      return tests
+    },
     filteredRows(): LingyunTableRow[] {
       const rows = this.data || []
       if (this.remote) return rows
-      const map = this.filterMap
-      const active = Object.keys(map)
-        .filter((key) => map[key] && map[key].length)
-        .map((key) => ({ key, picked: new Set(map[key]) }))
-      if (!active.length) return rows
-      return rows.filter((row) => {
-        for (let i = 0; i < active.length; i += 1) {
-          const item = active[i]
-          if (!item.picked.has(String(row[item.key] ?? ''))) return false
+      return this.rowsPassing(rows, this.rowTests)
+    },
+    hasFilterUi(): boolean {
+      return (this.columns || []).some((col) => !!col.sortable || !!columnFilterType(col))
+    },
+    sheetColumn(): LingyunTableColumn | null {
+      if (!this.filterSheetKey) return null
+      return this.columnByKey[this.filterSheetKey] || null
+    },
+    activeFilters(): Array<{ key: string; label: string }> {
+      const out: Array<{ key: string; label: string }> = []
+      ;(this.columns || []).forEach((col) => {
+        const type = columnFilterType(col)
+        if (!type) return
+        if (type === 'select') {
+          const picked = this.filterMap[col.key]
+          if (!picked || !picked.length) return
+          const texts = picked.slice(0, 2).map((token) => optionTextOf(col, token))
+          const more = picked.length > 2 ? ` 等${picked.length}项` : ''
+          out.push({ key: col.key, label: `${col.title}：${texts.join('、')}${more}` })
+          return
         }
-        return true
+        const cond = this.conditionMap[col.key]
+        if (!cond) return
+        out.push({ key: col.key, label: `${col.title} ${filterConditionLabel(type, cond)}` })
       })
+      return out
+    },
+    sortIconSize(): number {
+      return this.isCompact ? 10 : 12
+    },
+    filterIconSize(): number {
+      return this.isCompact ? 14 : 16
+    },
+    chipIconSize(): number {
+      return this.isCompact ? 12 : 14
     },
     groupFieldKey(): string {
       const field = this.groupFields && this.groupFields.field
@@ -1390,14 +1521,6 @@ export default defineComponent({
         'lingyun-table__check--some': this.pageSome,
       }
     },
-    openColumn(): ResolvedColumn | null {
-      if (!this.openFilterKey) return null
-      return this.resolvedColumns.find((col) => col.key === this.openFilterKey) || null
-    },
-    activeFilterValues(): string[] {
-      if (!this.openFilterKey) return []
-      return this.filterMap[this.openFilterKey] || []
-    },
   },
   watch: {
     page: {
@@ -1436,7 +1559,7 @@ export default defineComponent({
     pageSize() {
       this.$nextTick(() => this.measureViewport())
     },
-    openFilterKey() {
+    'activeFilters.length'() {
       this.$nextTick(() => this.measureViewport())
     },
     size() {
@@ -1688,7 +1811,7 @@ export default defineComponent({
       const metrics = this.metrics
       let height = metrics.head
       if (this.showToolbar()) height += metrics.toolbar
-      if (this.openColumn) height += metrics.filter
+      if (this.activeFilters.length) height += metrics.filter
       if (this.showPager) height += metrics.pager
       if (this.footerRows.length) height += this.footerRows.length * metrics.row
       return height
@@ -1755,15 +1878,11 @@ export default defineComponent({
       this.cancelPress()
     },
     queryPayload(): LingyunTableQuery {
-      const filters: Record<string, string[]> = {}
-      const map = this.filterMap
-      Object.keys(map).forEach((key) => {
-        filters[key] = (map[key] || []).slice()
-      })
       return {
         page: this.currentPage,
         pageSize: this.pageSize,
-        filters,
+        filters: this.filtersSnapshot(),
+        conditions: this.conditionsSnapshot(),
         sortKey: this.sortKey,
         sortOrder: this.sortOrder,
       }
@@ -1828,7 +1947,6 @@ export default defineComponent({
         const visible = (this.columns || []).filter((col) => this.columnShown(col.key))
         if (visible.length <= 1) return
         this.hiddenKeys = this.hiddenKeys.concat(key)
-        if (this.openFilterKey === key) this.openFilterKey = ''
         return
       }
       this.hiddenKeys = this.hiddenKeys.filter((item) => item !== key)
@@ -1961,12 +2079,23 @@ export default defineComponent({
       })
       this.emitSelection(next)
     },
-    sortMark(col: ResolvedColumn): string {
-      if (this.sortKey !== col.key || !this.sortOrder) return '↕'
-      return this.sortOrder === 'asc' ? '↑' : '↓'
+    sortColor(col: ResolvedColumn, order: 'asc' | 'desc'): string {
+      return this.sortKey === col.key && this.sortOrder === order ? 'primary' : 'tertiary'
     },
-    sortClass(col: ResolvedColumn): string {
-      return this.sortKey === col.key && this.sortOrder ? 'lingyun-table__sort--on' : ''
+    filterTypeOf(col: LingyunTableColumn): LingyunTableFilterType | '' {
+      return columnFilterType(col)
+    },
+    filterOn(key: string): boolean {
+      const picked = this.filterMap[key]
+      return !!(picked && picked.length) || !!this.conditionMap[key]
+    },
+    /** 可排序列点表头切换排序；只能筛选的列点表头打开筛选面板 */
+    onHeadTap(col: ResolvedColumn) {
+      if (col.sortable) {
+        this.onSort(col)
+        return
+      }
+      if (columnFilterType(col)) this.openFilter(col.key)
     },
     onSort(col: ResolvedColumn) {
       if (!col.sortable) return
@@ -1974,40 +2103,148 @@ export default defineComponent({
       if (this.sortKey === col.key) {
         order = this.sortOrder === 'asc' ? 'desc' : this.sortOrder === 'desc' ? '' : 'asc'
       }
-      this.sortKey = order ? col.key : ''
+      this.applySort(col.key, order)
+      this.emitQuery()
+    },
+    applySort(key: string, order: LingyunTableSortOrder) {
+      this.sortKey = order ? key : ''
       this.sortOrder = order
       this.$emit('sort-change', { key: this.sortKey, order })
-      this.emitQuery()
     },
-    filterOn(col: ResolvedColumn): boolean {
-      const picked = this.filterMap[col.key]
-      return this.openFilterKey === col.key || !!(picked && picked.length)
+    rowsPassing(rows: LingyunTableRow[], tests: RowTest[]): LingyunTableRow[] {
+      if (!tests.length) return rows
+      return rows.filter((row) => {
+        for (let i = 0; i < tests.length; i += 1) {
+          if (!tests[i].test(row)) return false
+        }
+        return true
+      })
     },
-    toggleFilter(col: ResolvedColumn) {
-      this.openFilterKey = this.openFilterKey === col.key ? '' : col.key
+    /**
+     * 面板选项：本地模式按「其它列筛选后」的行计数，和 Excel 一致；
+     * remote 只看得到当前页，不计数。已勾选但当前数据里没有的值也保留。
+     */
+    buildFilterOptions(col: LingyunTableColumn): LingyunTableFilterOption[] {
+      const source = (this.data || []).filter((row) => !isGroupRow(row))
+      const rows = this.remote ? source : this.rowsPassing(source, this.rowTests.filter((item) => item.key !== col.key))
+      const counts = new Map<string, number>()
+      const samples = new Map<string, LingyunTableRow>()
+      rows.forEach((row) => {
+        const token = String(row[col.key] ?? '')
+        counts.set(token, (counts.get(token) || 0) + 1)
+        if (!samples.has(token)) samples.set(token, row)
+      })
+      const countOf = (token: string): number | undefined => (this.remote ? undefined : counts.get(token) || 0)
+      const picked = this.filterMap[col.key] || []
+      if (col.filters && col.filters.length) {
+        const out = col.filters.map((opt) => ({ text: opt.text, value: opt.value, count: countOf(String(opt.value)) }))
+        picked.forEach((token) => {
+          if (!out.some((opt) => String(opt.value) === token)) out.push({ text: optionTextOf(col, token), value: token, count: countOf(token) })
+        })
+        return out
+      }
+      picked.forEach((token) => {
+        if (!counts.has(token)) counts.set(token, 0)
+      })
+      const tokens = Array.from(counts.keys())
+      const keyed = tokens.map((token) => ({
+        token,
+        sort: toSortKey(samples.has(token) ? samples.get(token)![col.key] : token),
+      }))
+      keyed.sort((a, b) => compareKey(a.sort, b.sort))
+      return keyed.map(({ token }) => ({
+        text: optionTextOf(col, token, samples.get(token)),
+        value: token,
+        count: countOf(token),
+      }))
     },
-    filterPicked(key: string, value: string | number): boolean {
-      const picked = this.filterMap[key] || []
-      return picked.indexOf(String(value)) >= 0
+    openFilter(key: string) {
+      const col = this.columnByKey[key]
+      if (!col) return
+      this.cancelPress()
+      this.filterSheetKey = key
+      this.sheetOptions = columnFilterType(col) === 'select' ? this.buildFilterOptions(col) : []
+      this.filterSheetOpen = true
     },
-    emitFilter(key: string) {
+    onFilterSheetShow(open: boolean) {
+      this.filterSheetOpen = open
+    },
+    onFilterConfirm(result: LingyunTableFilterResult) {
+      const col = this.sheetColumn
+      if (!col) return
+      const key = col.key
+      let sortChanged = false
+      if (col.sortable) {
+        const current: LingyunTableSortOrder = this.sortKey === key ? this.sortOrder : ''
+        if (result.sortOrder !== current) {
+          sortChanged = true
+          if (result.sortOrder) this.applySort(key, result.sortOrder)
+          else this.applySort('', '')
+        }
+      }
+      const filterChanged = this.setColumnFilter(key, result.values, result.condition)
+      if (filterChanged) this.afterFilterChange(key)
+      else if (sortChanged) this.emitQuery()
+    },
+    /** 返回这一列的筛选是否真的变了 */
+    setColumnFilter(key: string, values: string[], condition: LingyunTableFilterCondition | null): boolean {
+      const prevValues = this.filterMap[key] || []
+      const prevCond = this.conditionMap[key] || null
+      if (sameStrings(prevValues, values) && sameCondition(prevCond, condition)) return false
+      const nextMap = { ...this.filterMap }
+      if (values.length) nextMap[key] = values.slice()
+      else delete nextMap[key]
+      const nextConds = { ...this.conditionMap }
+      if (condition) nextConds[key] = { ...condition }
+      else delete nextConds[key]
+      this.filterMap = nextMap
+      this.conditionMap = nextConds
+      return true
+    },
+    filtersSnapshot(): Record<string, string[]> {
+      const out: Record<string, string[]> = {}
+      Object.keys(this.filterMap).forEach((key) => {
+        out[key] = this.filterMap[key].slice()
+      })
+      return out
+    },
+    conditionsSnapshot(): Record<string, LingyunTableFilterCondition> {
+      const out: Record<string, LingyunTableFilterCondition> = {}
+      Object.keys(this.conditionMap).forEach((key) => {
+        out[key] = { ...this.conditionMap[key] }
+      })
+      return out
+    },
+    /** 筛选变了回到第一页、表体回顶，再统一抛事件 */
+    afterFilterChange(key: string) {
       this.innerPage = 1
       this.$emit('update:page', 1)
-      this.$emit('filter-change', { key, values: this.filterMap[key] || [], filters: { ...this.filterMap } })
+      this.scrollBodyToTop()
+      this.$emit('filter-change', {
+        key,
+        values: (this.filterMap[key] || []).slice(),
+        condition: this.conditionMap[key] ? { ...this.conditionMap[key] } : null,
+        filters: this.filtersSnapshot(),
+        conditions: this.conditionsSnapshot(),
+      })
       this.emitQuery()
     },
-    clearFilter(key: string) {
-      this.filterMap = { ...this.filterMap, [key]: [] }
-      this.emitFilter(key)
+    clearColumnFilter(key: string) {
+      if (this.setColumnFilter(key, [], null)) this.afterFilterChange(key)
     },
-    pickFilter(key: string, value: string | number) {
-      const token = String(value)
-      const current = (this.filterMap[key] || []).slice()
-      const index = current.indexOf(token)
-      if (index >= 0) current.splice(index, 1)
-      else current.push(token)
-      this.filterMap = { ...this.filterMap, [key]: current }
-      this.emitFilter(key)
+    clearAllFilters() {
+      if (!Object.keys(this.filterMap).length && !Object.keys(this.conditionMap).length) return
+      this.filterMap = {}
+      this.conditionMap = {}
+      this.afterFilterChange('')
+    },
+    scrollBodyToTop() {
+      if (!this.bodyTop && !this.leftTop && !this.rightTop) return
+      this.bodyTop = 0
+      this.leftTop = 0
+      this.rightTop = 0
+      this.syncRowWindow(0)
+      this.mpCommand(this.bodyLeft, 0)
     },
     goPage(next: number) {
       const page = Math.min(this.pageCount, Math.max(1, next))
@@ -2913,36 +3150,33 @@ $ly-table-radius: 26px;
   color: var(--lingyun-label-secondary, #{$lingyun-label-secondary});
 }
 
+/* 上下两个箭头叠成一组，字形盒比箭头大，靠负边距收紧 */
 .lingyun-table__sort {
   flex-shrink: 0;
   margin-left: 4px;
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--lingyun-label-tertiary, #{$lingyun-label-tertiary});
-}
-
-.lingyun-table__sort--on {
-  color: var(--lingyun-primary, #{$lingyun-primary});
-}
-
-.lingyun-table__filter {
-  flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  margin-left: 2px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
 
-.lingyun-table__filter-mark {
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--lingyun-label-tertiary, #{$lingyun-label-tertiary});
+.lingyun-table__sort-up,
+.lingyun-table__sort-down {
+  display: flex;
+  height: 7px;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
 }
 
-.lingyun-table__filter--on .lingyun-table__filter-mark {
-  color: var(--lingyun-primary, #{$lingyun-primary});
+.lingyun-table__filter {
+  flex-shrink: 0;
+  width: 28px;
+  height: 100%;
+  margin-right: -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .lingyun-table__value {
@@ -2990,36 +3224,66 @@ $ly-table-radius: 26px;
 }
 
 .lingyun-table__filters {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  min-height: var(--ly-table-filter, 40px);
-  padding: 8px 12px 10px;
+  height: var(--ly-table-filter, 40px);
   box-sizing: border-box;
   border-bottom: 1px solid var(--lingyun-separator, #{$lingyun-separator});
   background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
 }
 
+.lingyun-table__filters-scroll {
+  width: 100%;
+  height: 100%;
+  white-space: nowrap;
+}
+
+.lingyun-table__filters-track {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  height: 100%;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
 .lingyun-table__chip {
-  padding: 4px 10px;
-  border-radius: 999px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 28px;
+  padding: 0 4px 0 12px;
+  margin-right: 8px;
+  box-sizing: border-box;
+  border-radius: 14px;
   background-color: var(--lingyun-fill-tertiary, #{$lingyun-fill-tertiary});
 }
 
-.lingyun-table__chip--on {
-  background-color: var(--lingyun-primary, #{$lingyun-primary});
+.lingyun-table__chip--clear {
+  padding: 0 12px;
+  background-color: transparent;
+}
+
+.lingyun-table__chip--hover {
+  background-color: var(--lingyun-fill-secondary, #{$lingyun-fill-secondary});
 }
 
 .lingyun-table__chip-text {
   font-size: 13px;
   line-height: 18px;
-  color: var(--lingyun-label, #{$lingyun-label});
+  white-space: nowrap;
+  color: var(--lingyun-primary, #{$lingyun-primary});
 }
 
-.lingyun-table__chip--on .lingyun-table__chip-text {
-  color: #ffffff;
+.lingyun-table__chip-text--clear {
+  color: var(--lingyun-label-secondary, #{$lingyun-label-secondary});
+}
+
+.lingyun-table__chip-x {
+  width: 24px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .lingyun-table__empty {
@@ -3125,15 +3389,13 @@ $ly-table-radius: 26px;
   line-height: 16px;
 }
 
-.lingyun-table--compact .lingyun-table__sort,
-.lingyun-table--compact .lingyun-table__filter-mark {
-  font-size: 11px;
-  line-height: 14px;
+.lingyun-table--compact .lingyun-table__sort-up,
+.lingyun-table--compact .lingyun-table__sort-down {
+  height: 6px;
 }
 
 .lingyun-table--compact .lingyun-table__filter {
-  width: 20px;
-  height: 20px;
+  width: 24px;
 }
 
 .lingyun-table--compact .lingyun-table__cell {
@@ -3150,13 +3412,22 @@ $ly-table-radius: 26px;
   width: 8px;
 }
 
-.lingyun-table--compact .lingyun-table__filters {
-  gap: 6px;
-  padding: 4px 8px;
+.lingyun-table--compact .lingyun-table__filters-track {
+  padding: 0 8px;
 }
 
 .lingyun-table--compact .lingyun-table__chip {
-  padding: 2px 8px;
+  height: 24px;
+  padding-left: 10px;
+  border-radius: 12px;
+}
+
+.lingyun-table--compact .lingyun-table__chip--clear {
+  padding: 0 10px;
+}
+
+.lingyun-table--compact .lingyun-table__chip-x {
+  height: 24px;
 }
 
 .lingyun-table--compact .lingyun-table__chip-text,

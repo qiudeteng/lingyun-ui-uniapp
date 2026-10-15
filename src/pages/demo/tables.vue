@@ -7,7 +7,7 @@
       </view>
 
 
-      <lingyun-section title="外层高度" hint="外层 320px。表格跟上外层，不把外层撑开。筛选和翻页走服务端。">
+      <lingyun-section title="外层高度" hint="外层 320px。表格跟上外层，不把外层撑开。筛选（分类、状态多选，数量、单价比大小，菜品按文字）和翻页走服务端。">
         <view class="table-frame">
         <lingyun-table
           remote
@@ -50,7 +50,7 @@
         </lingyun-table>
       </lingyun-section>
 
-      <lingyun-section title="大数据" hint="2000 行、9 列，勾选和序号固定在左，状态固定在右。可多选、排序，快速上下甩动看固定列是否跟手。">
+      <lingyun-section title="大数据" hint="2000 行、9 列，勾选和序号固定在左，状态固定在右。点表头右侧的筛选图标：分类、门店、状态多选，数量、单价比大小，菜品按文字，日期按区间。">
         <lingyun-table
           :columns="bigColumns"
           :data="bigRows"
@@ -153,9 +153,10 @@
     LingyunTableQuery,
     LingyunTableRow,
   } from '@/uni_modules/lingyun-ui/components/lingyun-table/lingyun-table.vue'
+  import { makeFilterTest } from '@/uni_modules/lingyun-ui/components/lingyun-table/table-filter'
 
   const columns: LingyunTableColumn[] = [
-    { key: 'name', title: '菜品', width: 128, fixed: 'left', sortable: true },
+    { key: 'name', title: '菜品', width: 128, fixed: 'left', sortable: true, filterType: 'text' },
     {
       key: 'category',
       title: '分类',
@@ -166,8 +167,8 @@
         { text: '饮品', value: '饮品' },
       ],
     },
-    { key: 'count', title: '数量', width: 80, align: 'right', sortable: true },
-    { key: 'price', title: '单价', width: 88, align: 'right', sortable: true },
+    { key: 'count', title: '数量', width: 96, align: 'right', sortable: true, filterType: 'number' },
+    { key: 'price', title: '单价', width: 96, align: 'right', sortable: true, filterType: 'number' },
     {
       key: 'status',
       title: '状态',
@@ -223,14 +224,14 @@
 
   const bigColumns: LingyunTableColumn[] = [
     { key: 'no', title: '序号', type: 'index', width: 64, align: 'center', fixed: 'left' },
-    { key: 'name', title: '菜品', width: 112, sortable: true },
-    { key: 'category', title: '分类', width: 80 },
-    { key: 'count', title: '数量', width: 80, align: 'right', sortable: true },
-    { key: 'price', title: '单价', width: 88, align: 'right', sortable: true },
-    { key: 'shop', title: '门店', width: 120 },
-    { key: 'date', title: '日期', width: 120, sortable: true },
+    { key: 'name', title: '菜品', width: 128, sortable: true, filterType: 'text' },
+    { key: 'category', title: '分类', width: 88, filterable: true },
+    { key: 'count', title: '数量', width: 96, align: 'right', sortable: true, filterType: 'number' },
+    { key: 'price', title: '单价', width: 96, align: 'right', sortable: true, filterType: 'number' },
+    { key: 'shop', title: '门店', width: 104, filterable: true },
+    { key: 'date', title: '日期', width: 136, sortable: true, filterType: 'date' },
     { key: 'note', title: '备注', width: 160 },
-    { key: 'status', title: '状态', width: 80, align: 'center', fixed: 'right' },
+    { key: 'status', title: '状态', width: 88, align: 'center', fixed: 'right', filterable: true },
   ]
 
   const shops = ['朝阳店', '海淀店', '西湖店', '天河店', '南山店']
@@ -320,6 +321,13 @@
         const picked = filters[key]
         if (!picked || !picked.length) return
         list = list.filter((row) => picked.indexOf(String(row[key] ?? '')) >= 0)
+      })
+      const conditions = query.conditions || {}
+      Object.keys(conditions).forEach((key) => {
+        const col = columns.find((item) => item.key === key)
+        if (!col || !col.filterType || col.filterType === 'select') return
+        const test = makeFilterTest(col.filterType, conditions[key])
+        list = list.filter((row) => test(row[key]))
       })
       if (query.sortKey && query.sortOrder) {
         const dir = query.sortOrder === 'asc' ? 1 : -1

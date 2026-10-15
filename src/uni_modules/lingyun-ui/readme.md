@@ -122,7 +122,8 @@ lingyun-ui/
     ├── lingyun-toolbars/
     ├── lingyun-fab/
     ├── lingyun-goods-nav/
-    ├── lingyun-table/    # 小程序滚动同步见 table-sync.wxs
+    ├── lingyun-table/    # 小程序滚动同步见 table-sync.wxs；筛选类型与匹配见 table-filter.ts
+    ├── lingyun-table-filter/ # 表格列的排序与筛选面板（Sheet），由 lingyun-table 内部打开
     ├── lingyun-grid/
     ├── lingyun-grid-item/
     ├── lingyun-indexed-list/
