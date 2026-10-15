@@ -500,6 +500,5 @@
 		"backgroundTextStyle": "@bgTxtStyle",
 		"backgroundColorTop": "@bgColorTop",
 		"backgroundColorBottom": "@bgColorBottom"
-	},
-	"uniIdRouter": {}
+	}
 }

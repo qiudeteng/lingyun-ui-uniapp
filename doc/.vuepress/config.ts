@@ -206,7 +206,18 @@ export default defineUserConfig({
   lang: 'zh-CN',
   title: '凌云UI 使用手册',
   description: '组件用法与示例',
-  bundler: viteBundler(),
+  bundler: viteBundler({
+    viteOptions: {
+      css: {
+        preprocessorOptions: {
+          scss: {
+            // 与 vite.config.ts 一致：手册站会编译 lingyun-ui 的 @import / mix()，先静默弃用噪声
+            silenceDeprecations: ['import', 'global-builtin', 'color-functions', 'if-function', 'legacy-js-api'],
+          },
+        },
+      },
+    },
+  }),
   theme: defaultTheme({
     repo: 'qiudeteng/lingyun-ui-uniapp',
     repoLabel: 'GitHub',

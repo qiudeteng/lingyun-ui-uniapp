@@ -26,6 +26,9 @@
     },
     "quickapp" : {},
     "vueVersion" : "3",
+    "uniStatistics" : {
+        "enable" : false
+    },
     "mp-weixin" : {
         "appid" : "wx25e71a05eae85aac",
         "resizable" : true,
