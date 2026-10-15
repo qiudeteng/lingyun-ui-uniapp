@@ -24,6 +24,7 @@
 | 筛选 | 列 `filterType` 或 `filters`。点表头右侧 `tune` 图标打开筛选面板（`lingyun-table-filter`，底部 Sheet），只能筛选不能排序的列点表头也会打开。见下文「筛选」 |
 | 分页 | `page-size` 大于 0 时出现。`v-model:page`。`remote` 时只改页码并抛 `query-change` |
 | 服务端 | `remote`。筛选、排序、翻页合成一次 `query-change`。用 `loading` 表示请求中，用 `total` 表示总条数 |
+| 列宽 | 列 `width` 写了就用写的。有列没写时，表格宽度减去已写宽度的列、序号列和勾选列，剩下的平分给没写的列，每列不小于 `minWidth`（默认 120），放不下就横向滚动；都没写就平分整个宽度。`fit` 且全部写了宽度时，总宽不足按宽度比例放大占满，超出则保持原宽度横向滚动。固定列也参与分配，序号列不参与。窗口变化时重新测量并重算 |
 | 序号 | 列 `type: 'index'`。按当前页顺序从 1 编号，翻页接着数，不读行数据。不传宽度时常规 64、紧凑 48 |
 | 标题栏 | `title`、`icon`。右侧 `show-refresh`、`column-picker`、`export-excel`，自定义按钮用 `#tools` |
 | 多选 | `selection`。勾选列固定在左。`v-model:selected-keys`。表头勾选当前页 |

@@ -60,7 +60,12 @@
         <slot name="tools" />
       </view>
     </view>
-    <view v-if="activeFilters.length" class="lingyun-table__filters">
+    <view
+      v-if="activeFilters.length"
+      class="lingyun-table__filters"
+      @wheel="onChipsWheel"
+      @mousedown="onChipsMouseDown"
+    >
       <scroll-view class="lingyun-table__filters-scroll" scroll-x enable-flex :show-scrollbar="false">
         <view class="lingyun-table__filters-track">
           <view
@@ -69,10 +74,10 @@
             class="lingyun-table__chip"
             hover-class="lingyun-table__chip--hover"
             :hover-stay-time="70"
-            @click="openFilter(item.key)"
+            @click="onChipTap(item.key)"
           >
             <text class="lingyun-table__chip-text">{{ item.label }}</text>
-            <view class="lingyun-table__chip-x" @click.stop="clearColumnFilter(item.key)">
+            <view class="lingyun-table__chip-x" @click.stop="onChipClear(item.key)">
               <lingyun-icon type="closeempty" :size="chipIconSize" color="primary" />
             </view>
           </view>
@@ -679,7 +684,10 @@ export const LINGYUN_TABLE_GROUP = '__lyIsGroup'
 export interface LingyunTableColumn {
   key: string
   title: string
+  /** 不写时平分剩余宽度 */
   width?: number | string
+  /** 不写宽度的列分到的最小宽度，默认 120。剩余宽度不够时按它显示并横向滚动 */
+  minWidth?: number | string
   align?: LingyunTableAlign
   /** true 与 left 都固定在左侧 */
   fixed?: 'left' | 'right' | boolean
@@ -726,13 +734,72 @@ type TouchPoint = { clientX?: number; pageX?: number; clientY?: number; pageY?: 
 type ScrollDetail = { scrollLeft?: number; scrollTop?: number }
 type ScrollEvent = { detail?: ScrollDetail }
 
-function columnWidth(value: number | string | undefined): number {
-  if (typeof value === 'number' && Number.isFinite(value) && value > 0) return value
+/** 只取写明的宽度，没写或不合法时为 0 */
+function explicitWidth(value: number | string | undefined): number {
+  if (typeof value === 'number') return Number.isFinite(value) && value > 0 ? value : 0
   if (typeof value === 'string') {
     const n = parseFloat(value)
-    if (Number.isFinite(n) && n > 0) return n
+    return Number.isFinite(n) && n > 0 ? n : 0
   }
-  return COL_W
+  return 0
+}
+
+/** 把 extra 按 weights 比例分下去，取整后的零头补给最后一项，合计正好等于 extra */
+function shareOut(weights: number[], extra: number): number[] {
+  const total = weights.reduce((sum, w) => sum + w, 0)
+  if (total <= 0 || extra <= 0) return weights.map(() => 0)
+  let given = 0
+  return weights.map((w, i) => {
+    if (i === weights.length - 1) return extra - given
+    const part = Math.floor((extra * w) / total)
+    given += part
+    return part
+  })
+}
+
+/**
+ * 列宽分配。avail 为表格宽度减去勾选列。
+ * - 有列没写宽度：剩余宽度平分给这些列，每列不小于 minWidth（默认 120），不够时横向滚动。
+ * - 都写了宽度且 fit：总宽不足时按宽度比例放大占满；超出时保持原宽度。
+ * 序号列不参与分配。
+ */
+function layoutColumnWidths(
+  cols: LingyunTableColumn[],
+  avail: number,
+  fit: boolean,
+  indexWidth: number,
+): number[] {
+  const widths = cols.map((col) => (col.type === 'index' ? explicitWidth(col.width) || indexWidth : explicitWidth(col.width)))
+  const autoIdx: number[] = []
+  cols.forEach((col, i) => {
+    if (col.type !== 'index' && !widths[i]) autoIdx.push(i)
+  })
+  const used = widths.reduce((sum, w) => sum + w, 0)
+  if (autoIdx.length) {
+    const mins = autoIdx.map((i) => explicitWidth(cols[i].minWidth) || COL_W)
+    const remain = Math.max(0, avail - used)
+    const share = shareOut(
+      autoIdx.map(() => 1),
+      remain,
+    )
+    autoIdx.forEach((colIndex, k) => {
+      widths[colIndex] = Math.max(mins[k], share[k])
+    })
+    return widths
+  }
+  if (!fit || avail <= used) return widths
+  const stretchIdx: number[] = []
+  cols.forEach((col, i) => {
+    if (col.type !== 'index') stretchIdx.push(i)
+  })
+  const extra = shareOut(
+    stretchIdx.map((i) => widths[i]),
+    Math.floor(avail - used),
+  )
+  stretchIdx.forEach((colIndex, k) => {
+    widths[colIndex] += extra[k]
+  })
+  return widths
 }
 
 function columnSide(fixed: LingyunTableColumn['fixed']): 'left' | 'right' | 'center' {
@@ -1009,6 +1076,11 @@ export default defineComponent({
      * 分组行带底色，不参与勾选。合计走列 formatter / #cell。
      */
     groupFields: { type: Object as PropType<LingyunTableGroupFields | null>, default: null },
+    /**
+     * 所有列都写了宽度时，总宽不足表格宽度就按各列宽度比例放大占满；超出时保持原宽度横向滚动。
+     * 有列没写宽度时不需要它，这些列本来就会平分剩余宽度。
+     */
+    fit: { type: Boolean, default: false },
     /** regular 行高 52；compact 行高 36，表头、标题栏、分页和字号一起收紧 */
     size: { type: String as PropType<'regular' | 'compact'>, default: 'regular' },
   },
@@ -1047,6 +1119,11 @@ export default defineComponent({
       colPadLeft: 0,
       colPadRight: 0,
       centerClientPx: 0,
+      /** 表格实测宽度，列宽按它分配。测到之前用窗口宽度估算 */
+      tableWidthPx: 0,
+      /** 电脑上用鼠标拖过筛选标签栏，松手那次点击不算点标签 */
+      chipsDragged: false,
+      chipsDragStop: null as (() => void) | null,
       hBarTimer: 0,
       hDragging: false,
       hDragX: 0,
@@ -1192,13 +1269,19 @@ export default defineComponent({
     },
     resolvedColumns(): ResolvedColumn[] {
       const hidden = this.hiddenKeys
-      return (this.columns || [])
-        .filter((col) => hidden.indexOf(col.key) < 0)
-        .map((col) => ({
-          ...col,
-          widthPx: columnWidth(col.type === 'index' ? (col.width ?? this.metrics.index) : col.width),
-          side: columnSide(col.fixed),
-        }))
+      const cols = (this.columns || []).filter((col) => hidden.indexOf(col.key) < 0)
+      const avail = this.layoutWidth - (this.selection ? this.metrics.check : 0)
+      const widths = layoutColumnWidths(cols, avail, this.fit, this.metrics.index)
+      return cols.map((col, i) => ({
+        ...col,
+        widthPx: widths[i],
+        side: columnSide(col.fixed),
+      }))
+    },
+    layoutWidth(): number {
+      if (this.tableWidthPx > 0) return this.tableWidthPx
+      const info = uni.getWindowInfo()
+      return info && info.windowWidth ? Math.floor(info.windowWidth) : 375
     },
     leftColumns(): ResolvedColumn[] {
       return this.resolvedColumns.filter((col) => col.side === 'left')
@@ -1611,6 +1694,7 @@ export default defineComponent({
     section?.markEmbeddedList?.(false)
     this.detachHBarDrag()
     this.detachVBarDrag()
+    if (this.chipsDragStop) this.chipsDragStop()
     if (this.syncTimer) clearTimeout(this.syncTimer)
     if (this.pressTimer) clearTimeout(this.pressTimer)
     if (this.hBarTimer) clearTimeout(this.hBarTimer)
@@ -1746,6 +1830,9 @@ export default defineComponent({
       center: { width?: number } | null,
     ) {
       const tableW = table && table.width ? Math.round(table.width) : 0
+      // 列宽按向下取整的宽度分，避免小数宽度时多出半像素横向可滚
+      const layoutW = table && table.width ? Math.floor(table.width) : 0
+      if (layoutW > 1 && this.tableWidthPx !== layoutW) this.tableWidthPx = layoutW
       if (tableW > 1) {
         const pane = Math.max(1, tableW - this.leftWidth - this.rightWidth)
         if (this.viewportCenterPx !== pane) this.viewportCenterPx = pane
@@ -2228,6 +2315,64 @@ export default defineComponent({
         conditions: this.conditionsSnapshot(),
       })
       this.emitQuery()
+    },
+    onChipTap(key: string) {
+      if (!this.chipsDragged) this.openFilter(key)
+    },
+    onChipClear(key: string) {
+      if (!this.chipsDragged) this.clearColumnFilter(key)
+    },
+    /** H5：标签栏里真正带横向滚动的节点（uni scroll-view 内层） */
+    chipsScroller(host: EventTarget | null): HTMLElement | null {
+      // #ifdef H5
+      const el = host as HTMLElement | null
+      if (!el || typeof el.querySelectorAll !== 'function') return null
+      const list = el.querySelectorAll<HTMLElement>('.uni-scroll-view')
+      for (let i = 0; i < list.length; i += 1) {
+        if (list[i].scrollWidth > list[i].clientWidth + 1) return list[i]
+      }
+      // #endif
+      return null
+    },
+    /** 电脑上滚轮只有竖向，竖向滚轮也拿来横滚；滚到头时放给页面 */
+    onChipsWheel(raw: unknown) {
+      const e = raw as WheelEvent
+      const box = this.chipsScroller(e.currentTarget)
+      if (!box) return
+      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
+      const before = box.scrollLeft
+      box.scrollLeft = before + delta
+      if (box.scrollLeft !== before) e.preventDefault()
+    },
+    /** 电脑上鼠标按住拖动横滚。手机走 scroll-view 原生滑动 */
+    onChipsMouseDown(raw: unknown) {
+      // #ifdef H5
+      const e = raw as MouseEvent
+      if (e.button !== 0) return
+      const box = this.chipsScroller(e.currentTarget)
+      if (!box) return
+      if (this.chipsDragStop) this.chipsDragStop()
+      this.chipsDragged = false
+      const startX = e.clientX
+      const startLeft = box.scrollLeft
+      const move = (ev: MouseEvent) => {
+        const dx = ev.clientX - startX
+        if (Math.abs(dx) > 4) this.chipsDragged = true
+        if (this.chipsDragged) box.scrollLeft = startLeft - dx
+      }
+      const stop = () => {
+        window.removeEventListener('mousemove', move)
+        window.removeEventListener('mouseup', stop)
+        this.chipsDragStop = null
+        // 松手后的 click 同步先到，再复位
+        setTimeout(() => {
+          this.chipsDragged = false
+        }, 0)
+      }
+      window.addEventListener('mousemove', move)
+      window.addEventListener('mouseup', stop)
+      this.chipsDragStop = stop
+      // #endif
     },
     clearColumnFilter(key: string) {
       if (this.setColumnFilter(key, [], null)) this.afterFilterChange(key)

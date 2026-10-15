@@ -109,6 +109,14 @@
         <lingyun-table :columns="lineColumns" :data="rows" row-key="id" :height="240" />
       </lingyun-section>
 
+      <lingyun-section title="自动列宽" hint="只有菜品写了宽度 112，其余列平分剩余宽度，每列至少 120，放不下就横向滚动。">
+        <lingyun-table :columns="autoColumns" :data="rows" row-key="id" :height="200" />
+      </lingyun-section>
+
+      <lingyun-section title="按比例占满" hint="fit 打开，各列都写了宽度（合计 240）。比表格窄时按比例拉满；比表格宽时保持原宽度横向滚动。">
+        <lingyun-table fit :columns="fitColumns" :data="rows" row-key="id" :height="200" />
+      </lingyun-section>
+
       <lingyun-section title="表尾" hint="show-footer 打开。footer-data 的字段对应列 key，没写的列留空。">
         <lingyun-table
           show-footer
@@ -197,6 +205,19 @@
     { key: 'price', title: '单价', width: 88, align: 'right' },
     { key: 'status', title: '状态', width: 96 },
     { key: 'note', title: '备注', width: 160 },
+  ]
+
+  const autoColumns: LingyunTableColumn[] = [
+    { key: 'name', title: '菜品', width: 112 },
+    { key: 'category', title: '分类' },
+    { key: 'price', title: '单价', align: 'right' },
+  ]
+
+  const fitColumns: LingyunTableColumn[] = [
+    { key: 'name', title: '菜品', width: 100 },
+    { key: 'category', title: '分类', width: 60 },
+    { key: 'count', title: '数量', width: 40, align: 'right' },
+    { key: 'price', title: '单价', width: 40, align: 'right' },
   ]
 
   const indexColumns: LingyunTableColumn[] = [
