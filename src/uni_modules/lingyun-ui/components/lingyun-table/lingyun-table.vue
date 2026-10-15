@@ -3375,9 +3375,13 @@ $ly-table-radius: 26px;
   background-color: var(--lingyun-fill-quaternary, #{$lingyun-fill-quaternary});
 }
 
-/* 分组行用分割线同色作底，和数据行拉开层次 */
+/* 分组行用分割线同色作底，和数据行拉开层次。分割线是半透明的，自己的底边线再叠一层会更深，所以去掉 */
 .lingyun-table__row.lingyun-table__row--group {
   background-color: var(--lingyun-separator, #{$lingyun-separator});
+}
+
+.lingyun-table__body .lingyun-table__row.lingyun-table__row--group {
+  border-bottom-color: transparent;
 }
 
 .lingyun-table__row--hover {
