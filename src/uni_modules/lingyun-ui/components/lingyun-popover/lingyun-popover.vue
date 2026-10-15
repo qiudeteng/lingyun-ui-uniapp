@@ -18,7 +18,7 @@
           <view v-if="showArrow" class="lingyun-popover__arrow" :style="arrowStyle">
             <view class="lingyun-popover__arrow-fill" />
           </view>
-          <view class="lingyun-popover__panel">
+          <view ref="panel" class="lingyun-popover__panel">
             <slot />
           </view>
         </view>
@@ -41,7 +41,7 @@
           <view v-if="showArrow" class="lingyun-popover__arrow" :style="arrowStyle">
             <view class="lingyun-popover__arrow-fill" />
           </view>
-          <view class="lingyun-popover__panel">
+          <view ref="panel" class="lingyun-popover__panel">
             <slot />
           </view>
         </view>
@@ -61,6 +61,11 @@ import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
  * @see design/POPOVERS.md
  *
  * 进场：对齐 Alert——先测锚点；lift 从 scale(1.16) 弹性缩至 1（不对玻璃做 opacity）
+ *
+ * 定位：锚点与面板都换算到浮层根（fixed 铺满视口）的坐标系；面板先以 measure 阶段
+ * （visibility:hidden、scale 1）挂载量出真实高度，再算方向、位置和箭头。
+ * H5 的 uni boundingClientRect 会减去 windowTop，而浮层 Teleport 到 body 用的是真实视口坐标，
+ * 所以 H5 用组件根节点的 DOM 矩形与 uni 矩形求差补回。
  */
 const LEAVE_MS = 240
 const GAP = 8
@@ -73,12 +78,22 @@ const PANEL_MAX_W = 280
 const QUERY_TIMEOUT_MS = 200
 const EST_PANEL_H = 52
 
-type PopoverPhase = '' | 'enter' | 'open' | 'leave'
+type PopoverPhase = '' | 'measure' | 'enter' | 'open' | 'leave'
 type AnchorBox = {
   top?: number
   left?: number
   width?: number
   height?: number
+}
+type Viewport = { width: number; height: number }
+type DomLike = { getBoundingClientRect?: () => { left: number; top: number; width: number; height: number } }
+
+function toDom(ref: unknown): DomLike | null {
+  const r = ref as { $el?: DomLike } & DomLike
+  if (!r) return null
+  if (typeof r.getBoundingClientRect === 'function') return r
+  if (r.$el && typeof r.$el.getBoundingClientRect === 'function') return r.$el
+  return null
 }
 
 export default defineComponent({
@@ -120,6 +135,7 @@ export default defineComponent({
       panelLeft: 16,
       panelWidth: 200,
       arrowOffset: 80,
+      openSeq: 0,
     }
   },
   computed: {
@@ -161,19 +177,22 @@ export default defineComponent({
       if (this.phase === 'enter') scale = 1.16
       else if (this.phase === 'leave') scale = 0.92
       const leaving = this.phase === 'leave'
+      /* 缩放原点放在箭头尖（指向点），缩放过程中箭头始终贴着锚点 */
+      const tip = `${this.arrowOffset + ARROW_W / 2}px`
+      const place = this.resolvedPlace
       return {
         top: `${this.panelTop}px`,
         left: `${this.panelLeft}px`,
         width: `${this.panelWidth}px`,
         transform: `scale(${scale})`,
         transformOrigin:
-          this.resolvedPlace === 'top'
-            ? 'center bottom'
-            : this.resolvedPlace === 'left'
-              ? 'right center'
-              : this.resolvedPlace === 'right'
-                ? 'left center'
-                : 'center top',
+          place === 'top'
+            ? `${tip} 100%`
+            : place === 'left'
+              ? `100% ${tip}`
+              : place === 'right'
+                ? `0 ${tip}`
+                : `${tip} 0`,
         transition: this.noTrans
           ? 'none'
           : leaving
@@ -217,38 +236,97 @@ export default defineComponent({
       if (!this.maskClosable) return
       this.setVisible(false)
     },
-    queryTrigger(): Promise<{ rect: AnchorBox | null; viewport: AnchorBox | null }> {
-      if (this.anchor) {
+    readViewport(): Viewport {
+      let width = 0
+      let height = 0
+      // #ifdef H5
+      width = window.innerWidth
+      height = window.innerHeight
+      // #endif
+      if (!(width > 0) || !(height > 0)) {
         const info = uni.getWindowInfo()
-        const viewport = { width: info.windowWidth, height: info.windowHeight }
-        return Promise.resolve({ rect: this.anchor, viewport })
+        width = info.windowWidth
+        height = info.windowHeight
       }
+      return { width: width || 375, height: height || 667 }
+    },
+    /** uni 矩形 → 浮层根坐标。host 为同一次 uni 查询得到的组件根矩形 */
+    toOverlayRect(rect: AnchorBox | null, host: AnchorBox | null): AnchorBox | null {
+      if (!rect || rect.top == null) return null
+      let dx = 0
+      let dy = 0
+      // #ifdef H5
+      const el = toDom(this.$el)
+      if (host && host.top != null && el && el.getBoundingClientRect) {
+        const real = el.getBoundingClientRect()
+        dx = real.left - (host.left ?? 0)
+        dy = real.top - host.top
+      }
+      // #endif
+      return {
+        left: (rect.left ?? 0) + dx,
+        top: rect.top + dy,
+        width: rect.width ?? 0,
+        height: rect.height ?? 0,
+      }
+    },
+    queryAnchor(): Promise<AnchorBox | null> {
       return new Promise((resolve) => {
         let settled = false
-        const finish = (rect: AnchorBox | null, viewport: AnchorBox | null) => {
+        const finish = (rect: AnchorBox | null, host: AnchorBox | null) => {
           if (settled) return
           settled = true
-          resolve({ rect, viewport })
+          resolve(this.toOverlayRect(rect, host))
         }
-        const timer = setTimeout(() => finish(null, null), QUERY_TIMEOUT_MS)
+        const timer = setTimeout(() => finish(this.anchor, null), QUERY_TIMEOUT_MS)
         try {
           const q = uni.createSelectorQuery().in(this)
-          q.select('.lingyun-popover__trigger').boundingClientRect()
-          q.selectViewport().boundingClientRect()
+          q.select('.lingyun-popover').boundingClientRect()
+          if (!this.anchor) q.select('.lingyun-popover__trigger').boundingClientRect()
           q.exec((res) => {
             clearTimeout(timer)
-            const list = Array.isArray(res) ? res : []
-            finish((list[0] || null) as AnchorBox | null, (list[1] || null) as AnchorBox | null)
+            const list = (Array.isArray(res) ? res : []) as Array<AnchorBox | null>
+            finish(this.anchor || list[1] || null, list[0] || null)
           })
         } catch {
           clearTimeout(timer)
-          finish(null, null)
+          finish(this.anchor, null)
         }
       })
     },
-    applyAnchor(trigger: AnchorBox | null, panelH: number, viewport: AnchorBox | null) {
-      const vw = (viewport && viewport.width) || 375
-      const vh = (viewport && viewport.height) || 667
+    /** measure 阶段（scale 1）量面板真实高度；量不到返回 0 */
+    queryPanelHeight(): Promise<number> {
+      // #ifndef MP-WEIXIN
+      const el = toDom(this.$refs.panel)
+      if (el && el.getBoundingClientRect) {
+        return Promise.resolve(el.getBoundingClientRect().height || 0)
+      }
+      // #endif
+      return new Promise((resolve) => {
+        let settled = false
+        const finish = (h: number) => {
+          if (settled) return
+          settled = true
+          resolve(h)
+        }
+        const timer = setTimeout(() => finish(0), QUERY_TIMEOUT_MS)
+        try {
+          const q = uni.createSelectorQuery().in(this)
+          q.select('.lingyun-popover__panel').boundingClientRect()
+          q.exec((res) => {
+            clearTimeout(timer)
+            const rect = (Array.isArray(res) ? res[0] : null) as AnchorBox | null
+            finish((rect && rect.height) || 0)
+          })
+        } catch {
+          clearTimeout(timer)
+          finish(0)
+        }
+      })
+    },
+    applyAnchor(trigger: AnchorBox | null, panelH: number, viewport: Viewport) {
+      const vw = viewport.width
+      const vh = viewport.height
       const height = panelH > 0 ? panelH : EST_PANEL_H
       const along = this.showArrow ? ARROW_H + TIP_GAP : GAP
 
@@ -273,8 +351,8 @@ export default defineComponent({
       if (place === 'left' || place === 'right') {
         const roomRight = vw - (anchorLeft + anchorWidth) - along - width
         const roomLeft = anchorLeft - along - width
-        if (place === 'right' && roomRight < 12 && roomLeft >= 12) place = 'left'
-        if (place === 'left' && roomLeft < 12 && roomRight >= 12) place = 'right'
+        if (place === 'right' && roomRight < 12 && roomLeft > roomRight) place = 'left'
+        if (place === 'left' && roomLeft < 12 && roomRight > roomLeft) place = 'right'
 
         let left =
           place === 'right'
@@ -301,8 +379,10 @@ export default defineComponent({
 
       const below = anchorTop + anchorHeight + along
       const above = anchorTop - along - height
-      if (place === 'bottom' && below + height > vh - 12 && above >= 12) place = 'top'
-      if (place === 'top' && above < 12 && below + height <= vh - 12) place = 'bottom'
+      const roomBelow = vh - 12 - (below + height)
+      const roomAbove = above - 12
+      if (place === 'bottom' && roomBelow < 0 && roomAbove > roomBelow) place = 'top'
+      if (place === 'top' && roomAbove < 0 && roomBelow > roomAbove) place = 'bottom'
 
       let top = place === 'top' ? above : below
       top = Math.max(12, Math.min(top, vh - height - 12))
@@ -336,26 +416,43 @@ export default defineComponent({
     },
     openAnim() {
       this.clearTimers()
-      // 先测锚点 → 无过渡落到 enter（略上方）→ 再开过渡落到 open（从上往下）
-      this.queryTrigger().then(({ rect, viewport }) => {
-        if (!this.visible) return
-        this.applyAnchor(rect, this.estimateHeight > 0 ? this.estimateHeight : EST_PANEL_H, viewport)
+      const seq = ++this.openSeq
+      const alive = () => seq === this.openSeq && this.visible
+      const estimate = this.estimateHeight > 0 ? this.estimateHeight : EST_PANEL_H
+      // 测锚点 → measure 挂载（隐藏、scale 1）量面板高 → 定位 → enter（无过渡）→ open
+      this.queryAnchor().then((rect) => {
+        if (!alive()) return
+        const viewport = this.readViewport()
+        this.applyAnchor(rect, estimate, viewport)
         this.noTrans = true
-        this.phase = 'enter'
+        this.phase = 'measure'
         this.mounted = true
         this.$nextTick(() => {
           this.enterTimer = setTimeout(() => {
             this.enterTimer = null
-            if (!this.visible) return
-            this.noTrans = false
-            this.phase = 'open'
-          }, 48)
+            if (!alive()) return
+            this.queryPanelHeight().then((h) => {
+              if (!alive()) return
+              this.applyAnchor(rect, h > 0 ? h : estimate, viewport)
+              this.phase = 'enter'
+              this.$nextTick(() => {
+                this.enterTimer = setTimeout(() => {
+                  this.enterTimer = null
+                  if (!alive()) return
+                  this.noTrans = false
+                  this.phase = 'open'
+                }, 48)
+              })
+            })
+          }, 16)
         })
       })
     },
     closeAnim() {
       this.clearTimers()
-      if (!this.mounted) {
+      this.openSeq++
+      if (!this.mounted || this.phase === 'measure') {
+        this.mounted = false
         this.phase = ''
         return
       }
@@ -390,6 +487,11 @@ export default defineComponent({
   top: 0;
   bottom: 0;
   z-index: 1100;
+}
+
+/* 量面板高度用：不可见、不吃点击；勿改成 opacity（玻璃节点） */
+.lingyun-popover--measure {
+  visibility: hidden;
 }
 
 .lingyun-popover__mask {

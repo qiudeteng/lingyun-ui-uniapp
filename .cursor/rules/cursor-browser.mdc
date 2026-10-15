@@ -1,0 +1,57 @@
+---
+description: 用 Cursor 内置浏览器验收 H5。规定地址、调用方式和锁标签页的顺序，避免调试停在空白页或锁住的浏览器上。
+alwaysApply: true
+---
+
+# Cursor 内置浏览器（H5 调试）
+
+改了用户能看到的界面后，用 Cursor 内置浏览器把受影响的操作走一遍。微信小程序不是这个浏览器。
+
+## 打开哪一页
+
+1. 先看终端。`pnpm dev` 已在跑就复用，不要再开一个。没开就启动，等到日志出现 `Local: http://localhost:5175/`。`vite.config.ts` 把端口固定在 **5175**（`strictPort`）。文档站是 **5174**，不要混用。
+2. H5 是 **hash 路由**（`src/manifest.json`）。地址是 `http://localhost:5175/#/` 加上 `pages.json` 里的 `path`。表格演示页是 `http://localhost:5175/#/pages/demo/tables`。
+3. 演示站不做登录拦截。页面可直接进入。
+4. 第一次打开某个页面时，Vite 会先编译再显示，空白几秒是正常的。
+
+## 怎么调用
+
+浏览器工具在动态命名空间 `cursor-ide-browser` 里。本会话的工具列表里如果没有名为 `browser_navigate` 的工具，就用 `CallDynamicTool` 调用，不要把它当成普通工具直接写。
+
+每次会话第一次使用前，用 `GetDynamicTools` 读取该命名空间一次。读完就按下面的顺序操作，不要在每次点击前再把整份 schema 读一遍。
+
+`CallDynamicTool` 的参数：
+
+- `namespace`：`cursor-ide-browser`
+- `toolName`：下面顺序里的工具名
+- `mcpDetails.description`：一句人话，写清打开哪一页、要确认什么。不要写工具名、参数名或 JSON
+- `arguments`：该工具自己的参数
+
+## 顺序
+
+1. `browser_tabs`，`arguments.action` 为 `list`。
+2. 没有标签页：先 `browser_navigate` 到上面的 hash 地址。**不要传 `position`**。这时还没有标签页，不能 lock。
+3. 导航返回之后，立刻 `browser_lock`，`action` 为 `lock`。
+4. 已经有标签页：先 lock，再导航或点击。
+5. `browser_snapshot` 读取页面结构和 `ref`。页面很大时加上 `compact: true` 或 `interactive: true`。
+6. 用刚拿到的 `ref` 调用 `browser_click`、`browser_fill`、`browser_type`、`browser_press_key`、`browser_scroll`、`browser_select_option`。页面一变，旧 `ref` 就作废，先重新 snapshot。
+7. 要看外观时用 `browser_take_screenshot`。截图只用来看，点击仍以 snapshot 的 `ref` 为准。
+8. 本轮浏览器操作全部做完后，`browser_lock` 的 `action` 改为 `unlock`。
+
+## 停住就换做法
+
+- 导航后用 snapshot 看内容是否出现。仍是空白就再 snapshot 两次。还是空白，就报告当前 URL 和画面，不要用 Shell 空等。
+- 同一次点击失败后，先重新 snapshot 再点。不要原样重发。同一动作连错 4 次就停下来，说明卡在哪一页、哪一步。
+- 点击、输入、按键、滚动、拖拽只用上面的专用工具。`browser_cdp` 只用于查看 DOM、样式和运行时，例如 `Runtime.evaluate`。
+- 工具调用弹出审批时，停下来等用户点一次允许。不要循环重发同一次调用。
+- 遇到登录、验证码或权限弹窗时停下来，交给用户。
+
+## 怎样算验完
+
+把受影响的路径实际走一遍：点击、输入、提交、跳转。一张截图不算验完。共享同一状态的页面也要打开看。
+
+需要手机宽度时，用 `browser_cdp` 调用 `Emulation.setDeviceMetricsOverride`。本轮结束前再调用 `Emulation.clearDeviceMetricsOverride`。
+
+## 微信小程序
+
+`mp-weixin` 用微信开发者工具 MCP（命名空间 `user-wechat-devtools`）。项目目录是 `D:\projects\lingyun-ui\dist\dev\mp-weixin`。小程序验收走 `.cursor/rules/mp-weixin-compat.mdc`，不要在内置浏览器里打开 `dist/dev/mp-weixin`。

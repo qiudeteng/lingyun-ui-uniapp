@@ -171,7 +171,7 @@
         />
       </lingyun-section>
 
-      <lingyun-section title="分组" hint="带序号列。分组行序号留空，明细从 1 接着编。">
+      <lingyun-section title="分组" hint="带序号列。分组行序号留空，明细从 1 接着编。点分组行收起 / 展开该组。">
         <lingyun-table
           :group-fields="groupFields"
           :columns="groupColumns"

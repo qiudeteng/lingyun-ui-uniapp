@@ -32,7 +32,7 @@
 | 自定义单元格 | 插槽 `#cell`，参数 `row` / `column` / `value` |
 | 紧凑 | `size="compact"`。默认 `regular` |
 | 表尾 | `show-footer`。`footer-data` 每项是一行，字段名对应列 `key`，没写的列留空。表尾固定在表体下方，横向跟着表体走 |
-| 分组 | `group-fields: { field, sum }`。按 `field` 列归组并插入分组行；`sum` 列自动加总。分组行底色与分割线同色（Separator）、字重加粗，无圆点。合计走列 `formatter` / `#cell`，与数据行一致 |
+| 分组 | `group-fields: { field, sum }`。按 `field` 列归组并插入分组行；`sum` 列自动加总。分组行底色与分割线同色（Separator）、字重加粗；点分组行收起 / 展开该组明细，分组列前的箭头展开朝下、收起朝右，并抛 `group-toggle`（`{ group, collapsed }`）。收起的明细仍计入序号和本页全选，导出 Excel 不受影响，无圆点。合计走列 `formatter` / `#cell`，与数据行一致 |
 
 ## 筛选
 

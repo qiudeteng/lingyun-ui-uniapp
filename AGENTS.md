@@ -113,6 +113,8 @@ pnpm docs:build          # 文档站静态产物 → design/.vuepress/dist
 
 > 文档站搜索在 dev 模式下依赖 Service Worker，仅 `localhost` 可用（局域网裸 HTTP 非安全上下文）；要在手机上验搜索请用 `docs:build` 后的产物。
 
+H5 界面改完后，用 Cursor 内置浏览器验收，地址是 `http://localhost:5175/#/pages/...`（hash 路由，端口固定 5175）。调用顺序和卡死时怎么停，见始终生效的 [`.cursor/rules/cursor-browser.mdc`](.cursor/rules/cursor-browser.mdc)。微信小程序仍走开发者工具，不进这个浏览器。
+
 ## 5. 红线（Hard rules）
 
 - ❌ **不要交付无法在微信小程序编译/运行的代码**。`mp-weixin` 为硬门禁；样式须符合 WXSS（禁止通用选择器 `*` 等），模板/API 走 uni-app 多端能力，不得只靠 H5。详见 Cursor 规则 `mp-weixin-compat.mdc`；验证用 `pnpm dev:mp-weixin` + 微信开发者工具。
@@ -162,6 +164,7 @@ pnpm docs:build          # 文档站静态产物 → design/.vuepress/dist
 - [ ] 改动与本仓库技术栈一致（uni-app / Vue3 / TS）
 - [ ] **组件与页面为 TypeScript**（自研组件、标准页、`src/pages` 以及 api / stores / utils / router / config 未新增 `.js`；改到的 `.js` 脚本已改成 `lang="ts"`）。未改第三方 `uni-*`；renderjs 仍为 `.js`
 - [ ] **微信小程序兼容**：涉及 UI/样式/模板/API 的改动可通过 `pnpm dev:mp-weixin` 编译，WXSS 无 `*` 等非法选择器，微信开发者工具无编译报错（见 `mp-weixin-compat.mdc`）
+- [ ] **H5 浏览器验收**：改了用户可见界面时，已按 `cursor-browser.mdc` 在 Cursor 内置浏览器里走通受影响的操作（`http://localhost:5175/#/pages/...`）
 - [ ] `pnpm type-check` 通过
 - [ ] 新页面已写入 `pages.json`；入口 HTML 仍为 `/src/main.ts`
 - [ ] UI 来自 `src/uni_modules`，未重新引入 `@dcloudio/uni-ui`

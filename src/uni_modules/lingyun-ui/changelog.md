@@ -2,8 +2,10 @@
 - `lingyun-table` 排序标记改用 `lingyun-icon` 上下箭头，手机上不再显示成 emoji；当前方向用主色。
 - 筛选改为面板（新组件 `lingyun-table-filter`，内容拆在 `lingyun-table-filter-form`），不再在表头下插一行。窄屏是底部 Sheet，右上 ✓ 生效；窗口宽 690 及以上改为贴着筛选图标弹出的菜单，底部「取消 / 确定」。点表头右侧筛选图标打开，可排序的列在面板里也能改排序；`remote` 只发一次请求。
 - `lingyun-table` 分组行底色改为与分割线同色。
+- `lingyun-table` 点分组行可收起 / 展开该组明细，分组列前显示箭头；新增事件 `group-toggle`。收起时序号不变。
 - `lingyun-table` 加载遮罩改为盖住标题栏以下全部（含左右固定列、表头、表尾、分页），并加表格底色蒙层；加载中标题栏工具变灰不可点，刷新图标旋转。
 - `lingyun-popover` 新增 `anchor`（直接给视口矩形定位，不测触发器插槽）和 `estimateHeight`（判断上下翻转用的面板预估高度）。
+- 修复 `lingyun-popover` 箭头指不准触发器：打开前先隐藏挂载量出面板真实高度再定位（原来固定按 52px 估算，`top` 方向会压住按钮、`left` / `right` 箭头纵向偏移）；H5 补回 uni 坐标里减掉的 windowTop；缩放原点改到箭头尖，进场动画中箭头不再偏离；上下 / 左右都放不下时选空间大的一侧；快速连点不再用到过期的测量结果。
 - 列新增 `filterType`：`select` 多选（选项多时可搜索、全选、显示条数）、`number` 等于 / 不等于 / 大于 / 大于等于 / 小于 / 小于等于 / 介于、`text` 包含 / 不包含 / 等于 / 开头是、`date` 当天 / 不早于 / 不晚于 / 介于。`filterable: true` 时多选项从数据去重生成。
 - 生效的筛选在表格上方显示为可横滑的标签，可单个删除或清除全部。
 - `query-change`、`filter-change` 新增 `conditions`（数字、文本、日期条件）；原 `filters` 不变。

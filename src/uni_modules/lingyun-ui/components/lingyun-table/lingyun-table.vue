@@ -321,6 +321,9 @@
             </view>
             <template v-for="col in leftColumns" :key="col.key">
               <view class="lingyun-table__cell" :style="cellStyle(col)">
+                <view v-if="isGroupHead(item.row, col)" class="lingyun-table__fold" :class="{ 'lingyun-table__fold--closed': groupClosed(item.row) }">
+                  <lingyun-icon type="down" :size="foldIconSize" color="secondary" />
+                </view>
                 <view class="lingyun-table__value">
                   <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
                     <text
@@ -363,6 +366,9 @@
               <view v-if="colPadLeft" class="lingyun-table__col-pad" :style="colPadLeftStyle" />
               <template v-for="(col, colIndex) in centerSlotColumns" :key="col ? col.key : 'pad-' + colIndex">
                 <view v-if="col" class="lingyun-table__cell" :style="cellStyle(col)">
+                  <view v-if="isGroupHead(item.row, col)" class="lingyun-table__fold" :class="{ 'lingyun-table__fold--closed': groupClosed(item.row) }">
+                    <lingyun-icon type="down" :size="foldIconSize" color="secondary" />
+                  </view>
                   <view class="lingyun-table__value">
                     <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
                       <text
@@ -410,6 +416,9 @@
               <view v-if="colPadLeft" class="lingyun-table__col-pad" :style="colPadLeftStyle" />
               <template v-for="(col, colIndex) in centerSlotColumns" :key="col ? col.key : 'pad-' + colIndex">
                 <view v-if="col" class="lingyun-table__cell" :style="cellStyle(col)">
+                  <view v-if="isGroupHead(item.row, col)" class="lingyun-table__fold" :class="{ 'lingyun-table__fold--closed': groupClosed(item.row) }">
+                    <lingyun-icon type="down" :size="foldIconSize" color="secondary" />
+                  </view>
                   <view class="lingyun-table__value">
                     <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
                       <text
@@ -468,6 +477,9 @@
           >
             <template v-for="(col, colIndex) in rightSlotColumns" :key="col ? col.key : 'pad-' + colIndex">
               <view v-if="col" class="lingyun-table__cell" :style="cellStyle(col)">
+                <view v-if="isGroupHead(item.row, col)" class="lingyun-table__fold" :class="{ 'lingyun-table__fold--closed': groupClosed(item.row) }">
+                  <lingyun-icon type="down" :size="foldIconSize" color="secondary" />
+                </view>
                 <view class="lingyun-table__value">
                   <slot name="cell" :row="item.row" :column="col" :value="cellValue(item.row, col, item.index)">
                     <text
@@ -886,6 +898,13 @@ function isGroupRow(row: LingyunTableRow | null | undefined): boolean {
   return !!(row && row[LINGYUN_TABLE_GROUP] === true)
 }
 
+/** 分组行上记组名（分组列取值转成字符串），收起 / 展开按它认 */
+const GROUP_ID = '__lyGroupId'
+
+function groupIdOf(row: LingyunTableRow): string {
+  return String(row[GROUP_ID] ?? '')
+}
+
 function columnFilterType(col: LingyunTableColumn): LingyunTableFilterType | '' {
   if (col.type === 'index') return ''
   if (col.filterType) return col.filterType
@@ -978,6 +997,7 @@ function expandGroupedRows(
     if (g !== last) {
       const head: LingyunTableRow = {
         [LINGYUN_TABLE_GROUP]: true,
+        [GROUP_ID]: g,
         [rowKey]: `__ly_group_${g}`,
         [field]: labels.has(g) ? labels.get(g) : g,
       }
@@ -1042,6 +1062,7 @@ export default defineComponent({
     'query-change',
     'refresh',
     'export',
+    'group-toggle',
   ],
   props: {
     columns: { type: Array as PropType<LingyunTableColumn[]>, default: () => [] },
@@ -1117,6 +1138,8 @@ export default defineComponent({
       filterAnchor: null as LingyunTableFilterAnchor | null,
       filterOpenSeq: 0,
       filterUid: Math.random().toString(36).slice(2, 8),
+      /** 收起的分组（组名） */
+      collapsedGroups: [] as string[],
       headLeft: 0,
       bodyLeft: 0,
       bodyTop: 0,
@@ -1584,30 +1607,48 @@ export default defineComponent({
       const start = (this.currentPage - 1) * this.pageSize
       return this.sortedRows.slice(start, start + this.pageSize)
     },
-    pageRows(): LingyunTableRow[] {
+    /** 本页插入分组行后的全部行（含收起的明细） */
+    groupedRows(): LingyunTableRow[] {
       const page = this.pageDataRows
       const totals = this.groupTotals
       if (!totals) return page
       return expandGroupedRows(page, this.groupFieldKey, this.groupSumKeys, this.rowKey, totals)
     },
-    /** 页内序号：分组行为 0，明细从 1 起。只有序号列且分组时才需要逐行数 */
+    collapsedSet(): Set<string> {
+      return new Set(this.collapsedGroups)
+    },
+    /** 实际渲染的行：收起的分组只留分组行 */
+    pageRows(): LingyunTableRow[] {
+      const rows = this.groupedRows
+      const field = this.groupFieldKey
+      const closed = this.collapsedSet
+      if (!field || !closed.size) return rows
+      return rows.filter((row) => isGroupRow(row) || !closed.has(String(row[field] ?? '')))
+    },
+    /** 页内序号：分组行为 0，明细从 1 起，收起的明细也计数，展开收起时序号不变 */
     rowNumbers(): number[] | null {
       if (!this.groupFieldKey) return null
       if (!this.resolvedColumns.some((col) => col.type === 'index')) return null
-      const out: number[] = new Array(this.pageRows.length)
+      const field = this.groupFieldKey
+      const closed = this.collapsedSet
+      const out: number[] = []
       let n = 0
-      this.pageRows.forEach((row, i) => {
+      this.groupedRows.forEach((row) => {
         if (isGroupRow(row)) {
-          out[i] = 0
+          out.push(0)
           return
         }
         n += 1
-        out[i] = n
+        if (!closed.has(String(row[field] ?? ''))) out.push(n)
       })
       return out
     },
+    /** 选择按本页全部明细算，收起的也算在内 */
     pageKeys(): string[] {
-      return this.pageRows.map((row) => this.keyOf(row)).filter(Boolean)
+      return this.groupedRows.map((row) => this.keyOf(row)).filter(Boolean)
+    },
+    foldIconSize(): number {
+      return this.isCompact ? 12 : 14
     },
     selectedSet(): Set<string> {
       return new Set(this.innerSelected)
@@ -1687,6 +1728,9 @@ export default defineComponent({
     },
     footerData() {
       this.$nextTick(() => this.measureViewport())
+    },
+    groupFieldKey() {
+      this.collapsedGroups = []
     },
     groupFields: {
       deep: true,
@@ -1951,6 +1995,7 @@ export default defineComponent({
       const group = isGroupRow(row)
       return {
         'lingyun-table__row--group': group,
+        'lingyun-table__row--group-stack': group && isGroupRow(this.pageRows[index + 1]),
         'lingyun-table__row--alt': !group && this.stripe && index % 2 === 1,
         'lingyun-table__row--hover': !group && !!key && this.pressedKey === key,
         'lingyun-table__row--end': index === this.pageRows.length - 1,
@@ -2498,8 +2543,27 @@ export default defineComponent({
       this.emitQuery()
     },
     onRowClick(row: LingyunTableRow) {
-      if (this.centerMoved || isGroupRow(row)) return
+      if (this.centerMoved) return
+      if (isGroupRow(row)) {
+        this.toggleGroup(groupIdOf(row))
+        return
+      }
       this.$emit('row-click', row)
+    },
+    isGroupHead(row: LingyunTableRow, col: ResolvedColumn): boolean {
+      return isGroupRow(row) && col.key === this.groupFieldKey
+    },
+    groupClosed(row: LingyunTableRow): boolean {
+      return this.collapsedSet.has(groupIdOf(row))
+    },
+    /** 点分组行收起 / 展开这一组的明细 */
+    toggleGroup(id: string) {
+      const list = this.collapsedGroups
+      const at = list.indexOf(id)
+      const collapsed = at < 0
+      this.collapsedGroups = collapsed ? list.concat(id) : list.filter((item) => item !== id)
+      this.$emit('group-toggle', { group: id, collapsed })
+      this.$nextTick(() => this.measureViewport())
     },
     armSync(source: string) {
       this.syncSource = source
@@ -3384,6 +3448,11 @@ $ly-table-radius: 26px;
   border-bottom-color: transparent;
 }
 
+/* 收起后两条分组行相邻，靠这条线分开 */
+.lingyun-table__body .lingyun-table__row.lingyun-table__row--group.lingyun-table__row--group-stack {
+  border-bottom-color: var(--lingyun-separator, #{$lingyun-separator});
+}
+
 .lingyun-table__row--hover {
   background-color: var(--lingyun-fill-tertiary, #{$lingyun-fill-tertiary});
 }
@@ -3487,6 +3556,30 @@ $ly-table-radius: 26px;
 
 .lingyun-table__text--group {
   font-weight: 600;
+}
+
+.lingyun-table__row--group {
+  cursor: pointer;
+}
+
+/* 分组行的展开箭头：展开朝下，收起转到朝右 */
+.lingyun-table__fold {
+  flex-shrink: 0;
+  width: 16px;
+  margin-right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.lingyun-table__fold--closed {
+  transform: rotate(-90deg);
+}
+
+.lingyun-table--compact .lingyun-table__fold {
+  width: 14px;
+  margin-right: 4px;
 }
 
 .lingyun-table__check {
