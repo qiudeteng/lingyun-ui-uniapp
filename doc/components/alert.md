@@ -1,8 +1,38 @@
 # lingyun-alert
 
-居中确认框。按钮放在 `actions` 里。
+居中确认框。两种用法：用 JS 直接弹（`uni.showLingyunAlert`），或在页面里放组件。
 
-## 示例
+## JS 调用
+
+不用放组件，页面在 `lingyun-app-page` 里就行。返回 Promise，关闭时告诉你点了哪个按钮。
+
+```ts
+await uni.showLingyunAlert('保存成功')
+
+const res = await uni.showLingyunAlert({
+  title: '删除这张订单？',
+  message: '删除后不能恢复。',
+  showCancel: true,
+  confirmText: '删除',
+})
+if (res.confirm) remove()
+
+uni.hideLingyunAlert()
+```
+
+| 选项 | 说明 | 默认值 |
+| --- | --- | --- |
+| `title` / `message` | 标题 / 正文。直接传字符串时是正文 | '' |
+| `actions` | 按钮，同组件。不传时按下面三项生成 | — |
+| `confirmText` | 确定按钮文字 | 确定 |
+| `cancelText` | 取消按钮文字 | 取消 |
+| `showCancel` | 带取消按钮 | false |
+| `inputs` | 输入框，最多 2 个 | [] |
+| `layout` / `maskClosable` | 同组件 | — |
+
+结果：`{ confirm, cancel, index, action, values }`。`confirm` 表示点了非取消的按钮；点遮罩或调 `hideLingyunAlert` 关闭时 `cancel` 为 true、`index` 为 -1；`values` 是输入框的值。新弹一个会顶掉旧的，旧的按取消结束。
+
+## 组件示例
 
 ```vue
 <lingyun-alert

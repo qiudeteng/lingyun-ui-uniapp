@@ -1,6 +1,6 @@
 # lingyun-feedback-host
 
-Toast 和 HUD 的挂载点。`lingyun-app-page` 已经放好了，不要在页面里再写一个。
+Toast、HUD 和 JS 调用的 Alert（`uni.showLingyunAlert`）的挂载点。`lingyun-app-page` 已经放好了，不要在页面里再写一个。
 
 ## 示例
 

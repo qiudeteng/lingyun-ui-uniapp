@@ -12,12 +12,24 @@
       :text="hudText"
       :mask-closable="hudMaskClosable"
     />
+    <lingyun-alert
+      :key="alertEpoch"
+      v-model:show="alertShow"
+      :title="alertProps.title"
+      :message="alertProps.message"
+      :actions="alertProps.actions"
+      :layout="alertProps.layout"
+      :inputs="alertProps.inputs"
+      :mask-closable="alertProps.maskClosable"
+      @action="onAlertAction"
+      @close="onAlertClose"
+    />
   </view>
 </template>
 
 <script setup lang="ts">
   import { storeToRefs } from 'pinia'
-  import { useLingyunFeedbackStore } from '../../utils/feedback'
+  import { useLingyunFeedbackStore, type LingyunAlertAction } from '../../utils/feedback'
 
   const store = useLingyunFeedbackStore()
   const {
@@ -29,7 +41,27 @@
     hudShow,
     hudText,
     hudMaskClosable,
+    alertShow,
+    alertProps,
+    alertEpoch,
   } = storeToRefs(store)
+
+  /* 组件先发 action 再发 close，按钮结果先落定；close 只兜底点遮罩 */
+  function onAlertAction(payload: { action: LingyunAlertAction; index: number; values: string[] }): void {
+    if (payload.action.close === false) return
+    const cancel = payload.action.role === 'cancel'
+    store.settleAlert({
+      confirm: !cancel,
+      cancel,
+      index: payload.index,
+      action: payload.action,
+      values: payload.values,
+    })
+  }
+
+  function onAlertClose(): void {
+    store.settleAlert(store.dismissed())
+  }
 </script>
 
 <style lang="scss">

@@ -44,6 +44,7 @@ export function createApp() {
 uni.showLingyunToast({ text: 'Saved', type: 'success' })
 uni.showLingyunHud('Loading…')
 uni.hideLingyunHud()
+const { confirm } = await uni.showLingyunAlert({ title: '删除？', showCancel: true })
 ```
 
 ## 宽屏
@@ -110,7 +111,7 @@ lingyun-ui/
 ├── readme.md
 ├── changelog.md
 ├── index.ts              # app.use(lingyunUi)
-├── utils/feedback.ts     # uni.showLingyunToast / Hud
+├── utils/feedback.ts     # uni.showLingyunToast / Hud / Alert
 ├── styles/               # variables、theme、Liquid Glass mixin
 └── components/
     ├── lingyun-app-page/ # 页面壳；宽屏时为左侧导航留位

@@ -1,6 +1,10 @@
 /// <reference types="vite/client" />
 
 import type { LingyunEnv } from './src/uni_modules/lingyun-ui/utils/screenResolve'
+import type {
+  LingyunAlertOptions,
+  LingyunAlertResult,
+} from './src/uni_modules/lingyun-ui/utils/feedback'
 
 export {}
 
@@ -44,6 +48,9 @@ declare global {
     hideLingyunToast(): void
     showLingyunHud(options?: LingyunHudCallOptions): void
     hideLingyunHud(): void
+    /** 打开 Alert；关闭时 resolve 点了哪个按钮 */
+    showLingyunAlert(options: LingyunAlertOptions | string): Promise<LingyunAlertResult>
+    hideLingyunAlert(): void
     /** 当前屏幕档、系统、折叠状态、硬件类型 */
     lingyun: LingyunEnv
   }
@@ -55,6 +62,8 @@ declare module 'vue' {
     $hideLingyunToast(): void
     $showLingyunHud(options?: LingyunHudCallOptions): void
     $hideLingyunHud(): void
+    $showLingyunAlert(options: LingyunAlertOptions | string): Promise<LingyunAlertResult>
+    $hideLingyunAlert(): void
     /** 模板里直接 `lingyun.os == 'ios'` */
     lingyun: LingyunEnv
   }

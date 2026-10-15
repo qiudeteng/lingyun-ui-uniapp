@@ -1,6 +1,6 @@
-## 1.0.25（2026-10-15）
-- `lingyun-table` 排序标记改用 `lingyun-icon` 上下箭头，手机上不再显示成 emoji；当前方向用主色。
-- 筛选改为面板（新组件 `lingyun-table-filter`，内容拆在 `lingyun-table-filter-form`），不再在表头下插一行。窄屏是底部 Sheet，右上 ✓ 生效；窗口宽 690 及以上改为箭头指向筛选图标的 Popover，底部「取消 / 确定」。点表头右侧筛选图标打开，可排序的列在面板里也能改排序；`remote` 只发一次请求。
+## 1.0.26（2026-10-15）
+- `lingyun-alert` 新增 JS 调用：`uni.showLingyunAlert(options)` / `uni.hideLingyunAlert()`（也挂在 `this.$showLingyunAlert`），和 Toast 一样由 `lingyun-app-page` 里的反馈宿主渲染，不用在页面放组件。返回 Promise，关闭时给出 `{ confirm, cancel, index, action, values }`；不传 `actions` 时用 `confirmText` / `cancelText` / `showCancel` 生成按钮。原来的组件写法不变。
+- `lingyun-table` 筛选面板在窗口宽 690 及以上改为箭头指向筛选图标的 Popover，底部「取消 / 确定」；窄屏仍是底部 Sheet。面板内容拆到新组件 `lingyun-table-filter-form`。
 - `lingyun-table` 分组行底色改为与分割线同色。
 - `lingyun-table` 点分组行可收起 / 展开该组明细，分组列前显示箭头；新增事件 `group-toggle`。收起时序号不变。
 - `lingyun-table` 加载遮罩改为盖住标题栏以下全部（含左右固定列、表头、表尾、分页），并加表格底色蒙层；加载中标题栏工具变灰不可点，刷新图标旋转。
@@ -8,12 +8,15 @@
 - 修复 `lingyun-popover` 箭头指不准触发器：打开前先隐藏挂载量出面板真实高度再定位（原来固定按 52px 估算，`top` 方向会压住按钮、`left` / `right` 箭头纵向偏移）；H5 补回 uni 坐标里减掉的 windowTop；缩放原点改到箭头尖，进场动画中箭头不再偏离；上下 / 左右都放不下时选空间大的一侧；快速连点不再用到过期的测量结果。
 - `lingyun-popover` 的 `arrowAlign` 改为决定箭头在面板哪一侧、面板随之偏移，箭头始终指向触发器（原来是面板居中后把箭头挪到边上，指不到按钮）。H5 改为同步读 DOM 量触发器，不再因异步查询超时落到左上角兜底位置；打开期间页面滚轮 / 惯性滚动或窗口缩放时弹层跟随触发器；视口宽度扣除滚动条。
 - `lingyun-popover` 箭头与面板融为一体：箭头填充改用面板同一底色，斜边描边与面板 hairline 同色并连成一圈，面板描边和内高光在箭头处挖空。去掉箭头自身的背景模糊，交界处不再出现暗线或亮线。箭头与面板描边接成一条线（面板不再留透明边框，描边挖空只到斜边内侧）；箭头离面板边缘至少「圆角 + 半个箭头宽」，不再压到圆角弧线上。
+
+## 1.0.25（2026-10-15）
+- `lingyun-table` 排序标记改用 `lingyun-icon` 上下箭头，手机上不再显示成 emoji；当前方向用主色。
+- 筛选改为底部面板（新组件 `lingyun-table-filter`），不再在表头下插一行。点表头右侧筛选图标打开，可排序的列在面板里也能改排序；改完点 ✓ 才生效，`remote` 只发一次请求。
 - 列新增 `filterType`：`select` 多选（选项多时可搜索、全选、显示条数）、`number` 等于 / 不等于 / 大于 / 大于等于 / 小于 / 小于等于 / 介于、`text` 包含 / 不包含 / 等于 / 开头是、`date` 当天 / 不早于 / 不晚于 / 介于。`filterable: true` 时多选项从数据去重生成。
 - 生效的筛选在表格上方显示为可横滑的标签，可单个删除或清除全部。
 - `query-change`、`filter-change` 新增 `conditions`（数字、文本、日期条件）；原 `filters` 不变。
 - 修复 `lingyun-sheets` 在小程序上不显示 `title`。
 - `lingyun-table` 列宽按表格实际宽度分配：没写 `width` 的列平分剩余宽度（不小于 `minWidth`，默认 120），都没写就平分整个宽度；新增 `fit`，全部写了宽度且总宽不足时按比例放大占满。窗口变化时重算。
-
 ## 1.0.24（2026-10-15）
 - `lingyun-table` 小程序滚动改由 WXS 在渲染层驱动。表头、表尾、左右固定列、中间列和滚动条同一帧移动，固定列不再慢一拍；惯性也在渲染层跑。
 - 修复小程序表体滚过约 8 行后，中间列比固定列多偏一段、上下错行。

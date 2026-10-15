@@ -22,6 +22,14 @@
         <lingyun-button variant="borderedProminent" size="large" text="打开双输入" @click="openInput2" />
       </lingyun-section>
 
+      <lingyun-section title="JS 调用 · uni.showLingyunAlert">
+        <view class="demo-stack">
+          <lingyun-button variant="bordered" size="large" text="提示 · 只有确定" @click="jsNotice" />
+          <lingyun-button variant="bordered" size="large" text="确认 · 带取消" @click="jsConfirm" />
+          <lingyun-button variant="bordered" size="large" text="输入 · 拿到输入值" @click="jsPrompt" />
+        </view>
+      </lingyun-section>
+
       <lingyun-section v-if="lastAction" title="最近操作" :hint="lastAction" is-last />
 
       <lingyun-alert
@@ -119,6 +127,30 @@
     input2Fields.value = next
   }
 
+  async function jsNotice(): Promise<void> {
+    await uni.showLingyunAlert('保存成功，可以在「我的订单」里查看。')
+    lastAction.value = 'JS · 提示已关闭'
+  }
+
+  async function jsConfirm(): Promise<void> {
+    const res = await uni.showLingyunAlert({
+      title: '删除这张订单？',
+      message: '删除后不能恢复。',
+      showCancel: true,
+      confirmText: '删除',
+    })
+    lastAction.value = `JS · ${res.confirm ? '确认删除' : '取消'}`
+  }
+
+  async function jsPrompt(): Promise<void> {
+    const res = await uni.showLingyunAlert({
+      title: '重命名',
+      inputs: [{ placeholder: '新名称', value: '订单 A' }],
+      showCancel: true,
+    })
+    lastAction.value = res.confirm ? `JS · 新名称：${res.values[0] || ''}` : 'JS · 取消'
+  }
+
   function onAction(payload: {
     action: { text?: string }
     values?: string[]
@@ -144,6 +176,12 @@
 
   .hero {
     padding: 24px 20px 8px;
+  }
+
+  .demo-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
   .hero__title {

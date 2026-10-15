@@ -166,6 +166,52 @@ Sketch **1pt = 1px**。❌ 禁止 `rpx`。
 
 插槽：`header`、默认插槽（面板内容扩展）。
 
+### 3.1 JS 调用（uni.showLingyunAlert）
+
+和 Toast 一样走反馈宿主，不用在页面里放组件；上面的组件写法照常可用。页面须在 `lingyun-app-page` 内（宿主在里面）。
+
+```ts
+await uni.showLingyunAlert('保存成功')                 // 只有「确定」
+
+const res = await uni.showLingyunAlert({
+  title: '删除这张订单？',
+  message: '删除后不能恢复。',
+  showCancel: true,
+  confirmText: '删除',
+})
+if (res.confirm) remove()
+
+const { confirm, values } = await uni.showLingyunAlert({
+  title: '重命名',
+  inputs: [{ placeholder: '新名称', value: name }],
+  showCancel: true,
+})
+
+uni.hideLingyunAlert()
+```
+
+| 选项 | 默认 | 说明 |
+|------|------|------|
+| `title` / `message` | `''` | 传字符串时等于只给 `message` |
+| `actions` | — | 同组件 `actions`。不传时按下面三项生成 |
+| `confirmText` | `确定` | 不传 `actions` 时的确定按钮 |
+| `cancelText` | `取消` | 不传 `actions` 时的取消按钮 |
+| `showCancel` | `false` | 不传 `actions` 时是否带取消 |
+| `layout` / `inputs` / `maskClosable` | — | 同组件 |
+
+返回 Promise，关闭时 resolve（不会 reject）：
+
+| 字段 | 说明 |
+|------|------|
+| `confirm` | 点了非 `cancel` 角色的按钮 |
+| `cancel` | 点了 `cancel` 按钮，或点遮罩、`hideLingyunAlert`、被新的 Alert 顶掉 |
+| `index` | 按钮下标；不是点按钮关闭时为 -1 |
+| `action` | 点的按钮对象；不是点按钮关闭时为 `null` |
+| `values` | 输入框的值 |
+
+- 同一时间只有一个：新的 Alert 会顶掉旧的，旧的 Promise 按 `cancel` 结束。
+- 按钮写 `close: false` 时点了不关、Promise 不结束（用于先校验输入）；在它的 `onClick` 里校验，通过后自己调 `uni.hideLingyunAlert()`，此时 Promise 按 `cancel` 结束，结果要在 `onClick` 里自己处理。
+
 ---
 
 ## 4. 自检
