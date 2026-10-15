@@ -17,6 +17,7 @@
         <view class="lingyun-popover__lift" :style="liftStyle">
           <view v-if="showArrow" class="lingyun-popover__arrow" :style="arrowStyle">
             <view class="lingyun-popover__arrow-fill" />
+            <view class="lingyun-popover__arrow-stroke" />
           </view>
           <view ref="panel" class="lingyun-popover__panel">
             <slot />
@@ -40,6 +41,7 @@
         <view class="lingyun-popover__lift" :style="liftStyle">
           <view v-if="showArrow" class="lingyun-popover__arrow" :style="arrowStyle">
             <view class="lingyun-popover__arrow-fill" />
+            <view class="lingyun-popover__arrow-stroke" />
           </view>
           <view ref="panel" class="lingyun-popover__panel">
             <slot />
@@ -64,8 +66,8 @@ import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
  *
  * 定位：锚点与面板都换算到浮层根（fixed 铺满视口）的坐标系；面板先以 measure 阶段
  * （visibility:hidden、scale 1）挂载量出真实高度，再算方向、位置和箭头。
- * H5 的 uni boundingClientRect 会减去 windowTop，而浮层 Teleport 到 body 用的是真实视口坐标，
- * 所以 H5 用组件根节点的 DOM 矩形与 uni 矩形求差补回。
+ * H5 直接同步读 DOM 矩形（浮层 Teleport 到 body，用真实视口坐标）；uni 的 boundingClientRect
+ * 会减去 windowTop，所以外部传入的 anchor 在 H5 要补回。
  */
 const LEAVE_MS = 240
 const GAP = 8
@@ -75,7 +77,7 @@ const TIP_GAP = 4
 const ARROW_INSET = 22
 const PANEL_MIN_W = 160
 const PANEL_MAX_W = 280
-const QUERY_TIMEOUT_MS = 200
+const QUERY_TIMEOUT_MS = 600
 const EST_PANEL_H = 52
 
 type PopoverPhase = '' | 'measure' | 'enter' | 'open' | 'leave'
@@ -136,6 +138,8 @@ export default defineComponent({
       panelWidth: 200,
       arrowOffset: 80,
       openSeq: 0,
+      panelH: 0,
+      followRaf: 0,
     }
   },
   computed: {
@@ -212,8 +216,39 @@ export default defineComponent({
   },
   beforeUnmount() {
     this.clearTimers()
+    this.unbindFollow()
   },
   methods: {
+    /** H5：遮罩挡不住滚轮 / 惯性滚动，打开期间页面或任意容器滚动、窗口缩放时重新贴锚点 */
+    bindFollow() {
+      // #ifdef H5
+      window.addEventListener('scroll', this.onFollow, true)
+      window.addEventListener('resize', this.onFollow)
+      // #endif
+    },
+    unbindFollow() {
+      // #ifdef H5
+      window.removeEventListener('scroll', this.onFollow, true)
+      window.removeEventListener('resize', this.onFollow)
+      if (this.followRaf) cancelAnimationFrame(this.followRaf)
+      this.followRaf = 0
+      // #endif
+    },
+    onFollow() {
+      // #ifdef H5
+      if (this.followRaf) return
+      this.followRaf = requestAnimationFrame(() => {
+        this.followRaf = 0
+        if (!this.mounted || this.phase === 'leave' || this.phase === 'measure') return
+        const seq = this.openSeq
+        this.queryAnchor().then((rect) => {
+          if (seq !== this.openSeq || !this.visible) return
+          const h = this.panelH || (this.estimateHeight > 0 ? this.estimateHeight : EST_PANEL_H)
+          this.applyAnchor(rect, h, this.readViewport())
+        })
+      })
+      // #endif
+    },
     clearTimers() {
       if (this.leaveTimer) {
         clearTimeout(this.leaveTimer)
@@ -240,8 +275,9 @@ export default defineComponent({
       let width = 0
       let height = 0
       // #ifdef H5
-      width = window.innerWidth
-      height = window.innerHeight
+      /* 浮层根 fixed 铺满时不含滚动条，用 clientWidth 而非 innerWidth */
+      width = document.documentElement.clientWidth
+      height = document.documentElement.clientHeight
       // #endif
       if (!(width > 0) || !(height > 0)) {
         const info = uni.getWindowInfo()
@@ -250,47 +286,54 @@ export default defineComponent({
       }
       return { width: width || 375, height: height || 667 }
     },
-    /** uni 矩形 → 浮层根坐标。host 为同一次 uni 查询得到的组件根矩形 */
-    toOverlayRect(rect: AnchorBox | null, host: AnchorBox | null): AnchorBox | null {
+    normalizeRect(rect: AnchorBox | null, dy = 0): AnchorBox | null {
       if (!rect || rect.top == null) return null
-      let dx = 0
-      let dy = 0
-      // #ifdef H5
-      const el = toDom(this.$el)
-      if (host && host.top != null && el && el.getBoundingClientRect) {
-        const real = el.getBoundingClientRect()
-        dx = real.left - (host.left ?? 0)
-        dy = real.top - host.top
-      }
-      // #endif
       return {
-        left: (rect.left ?? 0) + dx,
+        left: rect.left ?? 0,
         top: rect.top + dy,
         width: rect.width ?? 0,
         height: rect.height ?? 0,
       }
     },
+    /** H5：uni boundingClientRect 减掉的顶部偏移（同 uni-h5 getWindowOffset），用于还原 anchor 到视口坐标 */
+    h5WindowTop(): number {
+      let top = 0
+      // #ifdef H5
+      const style = document.documentElement.style
+      const read = (name: string) => parseInt((style.getPropertyValue(name).match(/\d+/) || ['0'])[0], 10) || 0
+      top = read('--window-top') + read('--top-window-height')
+      // #endif
+      return top
+    },
     queryAnchor(): Promise<AnchorBox | null> {
+      // #ifdef H5
+      if (this.anchor) return Promise.resolve(this.normalizeRect(this.anchor, this.h5WindowTop()))
+      const host = this.$el as { querySelector?: (s: string) => unknown } | null
+      const trigger = host && host.querySelector ? toDom(host.querySelector('.lingyun-popover__trigger')) : null
+      if (trigger && trigger.getBoundingClientRect) {
+        const b = trigger.getBoundingClientRect()
+        return Promise.resolve({ left: b.left, top: b.top, width: b.width, height: b.height })
+      }
+      // #endif
+      if (this.anchor) return Promise.resolve(this.normalizeRect(this.anchor))
       return new Promise((resolve) => {
         let settled = false
-        const finish = (rect: AnchorBox | null, host: AnchorBox | null) => {
+        const finish = (rect: AnchorBox | null) => {
           if (settled) return
           settled = true
-          resolve(this.toOverlayRect(rect, host))
+          resolve(this.normalizeRect(rect))
         }
-        const timer = setTimeout(() => finish(this.anchor, null), QUERY_TIMEOUT_MS)
+        const timer = setTimeout(() => finish(null), QUERY_TIMEOUT_MS)
         try {
           const q = uni.createSelectorQuery().in(this)
-          q.select('.lingyun-popover').boundingClientRect()
-          if (!this.anchor) q.select('.lingyun-popover__trigger').boundingClientRect()
+          q.select('.lingyun-popover__trigger').boundingClientRect()
           q.exec((res) => {
             clearTimeout(timer)
-            const list = (Array.isArray(res) ? res : []) as Array<AnchorBox | null>
-            finish(this.anchor || list[1] || null, list[0] || null)
+            finish((Array.isArray(res) ? res[0] : null) as AnchorBox | null)
           })
         } catch {
           clearTimeout(timer)
-          finish(this.anchor, null)
+          finish(null)
         }
       })
     },
@@ -360,7 +403,7 @@ export default defineComponent({
             : anchorLeft - width - along
         left = Math.max(12, Math.min(left, vw - width - 12))
 
-        let top = anchorTop + anchorHeight / 2 - height / 2
+        let top = anchorTop + anchorHeight / 2 - this.alignTip(height)
         top = Math.max(12, Math.min(top, vh - height - 12))
 
         this.resolvedPlace = place
@@ -374,7 +417,7 @@ export default defineComponent({
         return
       }
 
-      let left = anchorLeft + anchorWidth / 2 - width / 2
+      let left = anchorLeft + anchorWidth / 2 - this.alignTip(width)
       left = Math.max(12, Math.min(left, vw - width - 12))
 
       const below = anchorTop + anchorHeight + along
@@ -403,12 +446,15 @@ export default defineComponent({
       const basis = Math.max(Number(triggerWidth) || 0, PANEL_MIN_W)
       return Math.round(Math.min(PANEL_MAX_W, Math.max(PANEL_MIN_W, Math.min(basis, cap))))
     },
-    resolveArrowOffset(anchorCenter: number, span: number): number {
+    /** 箭头在面板上的理想位置（沿边距离）；面板据此相对锚点偏移，箭头始终指向锚点 */
+    alignTip(span: number): number {
       const align = String(this.arrowAlign || 'auto').toLowerCase()
+      if (align === 'leading' || align === 'start') return Math.min(ARROW_INSET, span / 2)
+      if (align === 'trailing' || align === 'end') return Math.max(span / 2, span - ARROW_INSET)
+      return span / 2
+    },
+    resolveArrowOffset(anchorCenter: number, span: number): number {
       let center = anchorCenter
-      if (align === 'leading' || align === 'start') center = ARROW_INSET
-      else if (align === 'trailing' || align === 'end') center = span - ARROW_INSET
-      else if (align === 'middle' || align === 'center') center = span / 2
       const min = Math.min(ARROW_INSET, span / 2)
       const max = Math.max(min, span - min)
       center = Math.max(min, Math.min(center, max))
@@ -433,8 +479,10 @@ export default defineComponent({
             if (!alive()) return
             this.queryPanelHeight().then((h) => {
               if (!alive()) return
+              this.panelH = h
               this.applyAnchor(rect, h > 0 ? h : estimate, viewport)
               this.phase = 'enter'
+              this.bindFollow()
               this.$nextTick(() => {
                 this.enterTimer = setTimeout(() => {
                   this.enterTimer = null
@@ -450,6 +498,7 @@ export default defineComponent({
     },
     closeAnim() {
       this.clearTimers()
+      this.unbindFollow()
       this.openSeq++
       if (!this.mounted || this.phase === 'measure') {
         this.mounted = false
@@ -525,106 +574,97 @@ export default defineComponent({
   overflow: visible;
 }
 
+/*
+ * 箭头 = 面板的延伸：fill 与面板同底色、同模糊，clip-path 裁成三角；stroke 是斜边上 1px 的 V 形，
+ * 颜色同面板 hairline。箭头底边压进面板 1px，盖住那一段面板描边，两者连成一体。
+ * 边框三角不能用：backdrop-filter 作用在整个矩形上。
+ */
+$popover-panel-bg: rgba(255, 255, 255, 0.72);
+$popover-hairline: rgba(255, 255, 255, 0.45);
+$popover-hairline-dark: rgba(166, 166, 166, 0.45);
+
 .lingyun-popover__arrow {
   position: absolute;
-  width: 0;
-  height: 0;
+  width: 22px;
+  height: 14px;
   z-index: 2;
 }
 
-.lingyun-popover__arrow-fill {
-  position: absolute;
-  width: 0;
-  height: 0;
-}
-
-/* 外层是描边，内层是填充。浅色描边与填充同色；暗黑描边提亮，否则三角贴在深色遮罩上看不见 */
-.lingyun-popover--place-bottom .lingyun-popover__arrow {
-  border-left: 11px solid transparent;
-  border-right: 11px solid transparent;
-  border-bottom: 14px solid rgba(255, 255, 255, 0.86);
-}
-
-.lingyun-popover--place-bottom .lingyun-popover__arrow-fill {
-  left: -8px;
-  top: 3px;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-bottom: 11px solid rgba(255, 255, 255, 0.86);
-}
-
-.lingyun-popover--place-top .lingyun-popover__arrow {
-  border-left: 11px solid transparent;
-  border-right: 11px solid transparent;
-  border-top: 14px solid rgba(255, 255, 255, 0.86);
-}
-
-.lingyun-popover--place-top .lingyun-popover__arrow-fill {
-  left: -8px;
-  bottom: 3px;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 11px solid rgba(255, 255, 255, 0.86);
-}
-
+.lingyun-popover--place-left .lingyun-popover__arrow,
 .lingyun-popover--place-right .lingyun-popover__arrow {
-  border-top: 11px solid transparent;
-  border-bottom: 11px solid transparent;
-  border-right: 14px solid rgba(255, 255, 255, 0.86);
+  width: 14px;
+  height: 22px;
 }
 
+.lingyun-popover__arrow-fill,
+.lingyun-popover__arrow-stroke {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.lingyun-popover__arrow-fill {
+  background-color: $popover-panel-bg;
+  backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
+  -webkit-backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
+}
+
+.lingyun-popover__arrow-stroke {
+  background-color: $popover-hairline;
+}
+
+.lingyun-popover__root.theme-dark .lingyun-popover__arrow-fill {
+  background-color: #{$lingyun-glass-overlay-bg-dark};
+}
+
+.lingyun-popover__root.theme-dark .lingyun-popover__arrow-stroke {
+  background-color: $popover-hairline-dark;
+}
+
+/* 尖朝上（面板在下） */
+.lingyun-popover--place-bottom .lingyun-popover__arrow-fill {
+  -webkit-clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.lingyun-popover--place-bottom .lingyun-popover__arrow-stroke {
+  -webkit-clip-path: polygon(0 14px, 11px 0, 22px 14px, 20.73px 14px, 11px 1.62px, 1.27px 14px);
+  clip-path: polygon(0 14px, 11px 0, 22px 14px, 20.73px 14px, 11px 1.62px, 1.27px 14px);
+}
+
+/* 尖朝下（面板在上） */
+.lingyun-popover--place-top .lingyun-popover__arrow-fill {
+  -webkit-clip-path: polygon(0 0, 100% 0, 50% 100%);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.lingyun-popover--place-top .lingyun-popover__arrow-stroke {
+  -webkit-clip-path: polygon(0 0, 11px 14px, 22px 0, 20.73px 0, 11px 12.38px, 1.27px 0);
+  clip-path: polygon(0 0, 11px 14px, 22px 0, 20.73px 0, 11px 12.38px, 1.27px 0);
+}
+
+/* 尖朝左（面板在右） */
 .lingyun-popover--place-right .lingyun-popover__arrow-fill {
-  top: -8px;
-  left: 3px;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
-  border-right: 11px solid rgba(255, 255, 255, 0.86);
+  -webkit-clip-path: polygon(0 50%, 100% 0, 100% 100%);
+  clip-path: polygon(0 50%, 100% 0, 100% 100%);
 }
 
-.lingyun-popover--place-left .lingyun-popover__arrow {
-  border-top: 11px solid transparent;
-  border-bottom: 11px solid transparent;
-  border-left: 14px solid rgba(255, 255, 255, 0.86);
+.lingyun-popover--place-right .lingyun-popover__arrow-stroke {
+  -webkit-clip-path: polygon(14px 0, 0 11px, 14px 22px, 14px 20.73px, 1.62px 11px, 14px 1.27px);
+  clip-path: polygon(14px 0, 0 11px, 14px 22px, 14px 20.73px, 1.62px 11px, 14px 1.27px);
 }
 
+/* 尖朝右（面板在左） */
 .lingyun-popover--place-left .lingyun-popover__arrow-fill {
-  top: -8px;
-  right: 3px;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
-  border-left: 11px solid rgba(255, 255, 255, 0.86);
+  -webkit-clip-path: polygon(100% 50%, 0 0, 0 100%);
+  clip-path: polygon(100% 50%, 0 0, 0 100%);
 }
 
-.lingyun-popover__root.theme-dark.lingyun-popover--place-bottom .lingyun-popover__arrow {
-  border-bottom-color: rgba(255, 255, 255, 0.92);
-}
-
-.lingyun-popover__root.theme-dark.lingyun-popover--place-top .lingyun-popover__arrow {
-  border-top-color: rgba(255, 255, 255, 0.92);
-}
-
-.lingyun-popover__root.theme-dark.lingyun-popover--place-right .lingyun-popover__arrow {
-  border-right-color: rgba(255, 255, 255, 0.92);
-}
-
-.lingyun-popover__root.theme-dark.lingyun-popover--place-left .lingyun-popover__arrow {
-  border-left-color: rgba(255, 255, 255, 0.92);
-}
-
-.lingyun-popover__root.theme-dark.lingyun-popover--place-bottom .lingyun-popover__arrow-fill {
-  border-bottom-color: rgba(142, 142, 147, 0.98);
-}
-
-.lingyun-popover__root.theme-dark.lingyun-popover--place-top .lingyun-popover__arrow-fill {
-  border-top-color: rgba(142, 142, 147, 0.98);
-}
-
-.lingyun-popover__root.theme-dark.lingyun-popover--place-right .lingyun-popover__arrow-fill {
-  border-right-color: rgba(142, 142, 147, 0.98);
-}
-
-.lingyun-popover__root.theme-dark.lingyun-popover--place-left .lingyun-popover__arrow-fill {
-  border-left-color: rgba(142, 142, 147, 0.98);
+.lingyun-popover--place-left .lingyun-popover__arrow-stroke {
+  -webkit-clip-path: polygon(0 0, 14px 11px, 0 22px, 0 20.73px, 12.38px 11px, 0 1.27px);
+  clip-path: polygon(0 0, 14px 11px, 0 22px, 0 20.73px, 12.38px 11px, 0 1.27px);
 }
 
 .lingyun-popover__panel {
@@ -632,7 +672,7 @@ export default defineComponent({
   padding: 12px 14px;
   box-sizing: border-box;
   @include lingyun-glass-surface;
-  background-color: rgba(255, 255, 255, 0.72);
+  background-color: $popover-panel-bg;
   backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
   -webkit-backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
   box-shadow:

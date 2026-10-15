@@ -32,11 +32,24 @@ alwaysApply: true
 1. `browser_tabs`，`arguments.action` 为 `list`。
 2. 没有标签页：先 `browser_navigate` 到上面的 hash 地址。**不要传 `position`**。这时还没有标签页，不能 lock。
 3. 导航返回之后，立刻 `browser_lock`，`action` 为 `lock`。
-4. 已经有标签页：先 lock，再导航或点击。
+4. 已经有标签页：先 lock，再导航或点击。标签页的 URL 已经是目标地址时**不要再导航**，直接 snapshot。导航到完全相同的 hash 地址不会触发加载完成，调用会一直挂着。要刷新页面，在 `#` **前面**加一个每次不同的查询参数，强制整页重载：`http://localhost:5175/?r=1#/pages/demo/tables`，下次用 `?r=2`。不要用「先导航到 `#/` 再导航回来」，见下文「本项目的坑」。
 5. `browser_snapshot` 读取页面结构和 `ref`。页面很大时加上 `compact: true` 或 `interactive: true`。
-6. 用刚拿到的 `ref` 调用 `browser_click`、`browser_fill`、`browser_type`、`browser_press_key`、`browser_scroll`、`browser_select_option`。页面一变，旧 `ref` 就作废，先重新 snapshot。
+6. 用刚拿到的 `ref` 调用 `browser_click`、`browser_fill`、`browser_type`、`browser_press_key`、`browser_scroll`、`browser_select_option`。页面一变，旧 `ref` 就作废，先重新 snapshot。目标没有 `ref` 时按下文「本项目的坑」用坐标点击。
 7. 要看外观时用 `browser_take_screenshot`。截图只用来看，点击仍以 snapshot 的 `ref` 为准。
 8. 本轮浏览器操作全部做完后，`browser_lock` 的 `action` 改为 `unlock`。
+
+## 本项目的坑
+
+- **快照里拿不到大部分元素。** uni-app 的 `view` 渲染成没有无障碍角色的 `uni-view`，snapshot 通常只给出按钮类节点的 `ref`。表格行、表头、单元格、图标都没有 `ref`，`selector` 参数也取不到它们。
+- **没有 `ref` 时按坐标点。** 先用 `browser_take_screenshot` 截图，再用 `browser_mouse_click_xy` 点击。坐标填**截图上的像素位置**，工具会自己换算成页面坐标。不要填 `getBoundingClientRect()` 得到的 CSS 坐标：截图宽度和视口宽度不同（例如 1024 对 868），会点偏。点完看返回里的 `Target`，确认点中的是目标节点。
+- **`browser_click` 的 `element` 要照抄元素文字。** 填 snapshot 里的 `name` 原文（如「开始加载」），或者干脆不填。写成「开始加载按钮」会被判定为 ref 过期而拒绝。
+- **顶部玻璃导航栏会挡住点击。** 返回 `Click target intercepted` 且拦截者是 `lingyun-toolbars__bar` 时，先用 `browser_scroll` 加 `ref` 和 `scrollIntoView: true` 把元素滚出来，重新 snapshot 后再点。
+- **滚动结果以页面为准。** `browser_scroll` 返回的滚动距离可能不准。要知道实际位置，用 `browser_cdp` 的 `Runtime.evaluate` 读 `scrollY` 或元素的 `getBoundingClientRect().top`。
+- **滚动返回时还没滚完。** 页面是平滑滚动，`browser_scroll` 返回时可能只滚了一部分（请求 1300 返回 818），之后页面还在动。这时截图、点击，坐标会错，打开的浮层也会被带离目标。滚动后先用 `Runtime.evaluate`（`awaitPromise: true`）每 100ms 读一次 `scrollY`，连续 5 次不变再截图、点击。
+- **`browser_mouse_click_xy` 前必须紧跟一次截图。** 中间夹了任何其它浏览器调用（包括 `Runtime.evaluate`），会报 `needs a fresh screenshot`。顺序固定为：截图 → 按坐标点击。
+- **hash 导航可能不生效。** 停在 `http://localhost:5175/#/` 首页时，再 `browser_navigate` 到 `#/pages/...`，调用正常返回，但 URL 和页面仍是首页；重复导航、给 hash 加参数（`#/pages/demo/tables?r=1`）都没用。不要再重试，直接用 `#` 前带查询参数的地址整页重载（见「顺序」第 4 步）。
+- **改代码后浮层会残留旧实例。** HMR 热更新不会清掉已 Teleport 到 `body` 的浮层（Popover、Sheet 等）。旧实例会停在错误的位置，换页后仍盖在页面上，还会挡住点击。改完组件再验收前，先整页重载；用 `document.querySelectorAll('.lingyun-popover__root').length` 确认是 0 再开始。
+- **查状态用 `Runtime.evaluate`。** 类名、行数、动画名等用 DOM 查询确认，例如 `document.querySelectorAll('.lingyun-table__row--group').length`。只读不改，点击和滚动仍走专用工具。
 
 ## 停住就换做法
 

@@ -2,7 +2,7 @@
 
 锚定浮层 · 对齐 [Sketch Popovers](https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02/p/FE2B4D2A-D8C4-4E0A-93EB-CA4A70F48792/canvas#Inspect)。面板玻璃 **§6.2-A.1**（勿对玻璃节点写 opacity）。
 
-箭头与面板同色，指向触发器；`arrowAlign=auto` 时跟锚点中心，也可固定 leading / middle / trailing。暗黑箭头填充用 `rgba(142,142,147,0.98)`，外圈 `rgba(255,255,255,0.92)` 描边约 3px，避免三角贴在深色遮罩上消失。
+箭头与面板同色，始终指向触发器中心；`arrowAlign` 决定箭头落在面板哪一侧（面板随之偏移）：`auto` / `middle` 面板居中，`leading` 面板向后展开，`trailing` 面板向前展开。贴视口边时面板夹在边距内，箭头仍指向锚点。暗黑箭头填充用 `rgba(142,142,147,0.98)`，外圈 `rgba(255,255,255,0.92)` 描边约 3px，避免三角贴在深色遮罩上消失。
 
 ```vue
 <lingyun-popover v-model:show="open" placement="bottom" :width="240">

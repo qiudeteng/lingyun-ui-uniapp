@@ -17,7 +17,7 @@
               <template #trigger>
                 <lingyun-button size="small" text="Top" @click="toggle('top')" />
               </template>
-              <text class="tip">箭头朝上，面板在触发器上方。</text>
+              <text class="tip">箭头朝下，面板在触发器上方。</text>
             </lingyun-popover>
           </view>
           <view class="compass__row compass__row--spread">
@@ -51,7 +51,7 @@
               <template #trigger>
                 <lingyun-button size="small" text="Bottom" @click="toggle('bottom')" />
               </template>
-              <text class="tip">箭头朝下，面板在触发器下方。</text>
+              <text class="tip">箭头朝上，面板在触发器下方。</text>
             </lingyun-popover>
           </view>
         </view>
@@ -71,7 +71,7 @@
             <template #trigger>
               <lingyun-button size="small" :text="alignLabel[align]" @click="toggle(align)" />
             </template>
-            <text class="tip">箭头 {{ alignLabel[align] }}，不跟按钮中心。</text>
+            <text class="tip">箭头在面板 {{ alignLabel[align] }} 侧，仍指向按钮。</text>
           </lingyun-popover>
         </view>
       </lingyun-section>
