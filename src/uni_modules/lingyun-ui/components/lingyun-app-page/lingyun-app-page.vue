@@ -113,6 +113,7 @@ import {
   LINGYUN_APP_PAGE_REPORT_SCROLL,
   LINGYUN_APP_PAGE_SCROLL_LOCK,
   LINGYUN_APP_PAGE_SCROLL_LOCKED,
+  LINGYUN_APP_PAGE_TOP_INSET,
   type LingyunAppPageScrollLock,
 } from './useLingyunAppPageScroll'
 import {
@@ -229,6 +230,7 @@ export default defineComponent({
     provide(LINGYUN_APP_PAGE_EMBEDDED, true)
     const inheritedScrollLocked = inject(LINGYUN_APP_PAGE_SCROLL_LOCKED, null)
     const inheritedNavInset = inject(LINGYUN_APP_PAGE_NAV_INSET, null)
+    const inheritedTopInset = inject(LINGYUN_APP_PAGE_TOP_INSET, null)
     const inheritedScrollReport = inject(LINGYUN_APP_PAGE_REPORT_SCROLL, null)
     const inheritedScrollLock = inject<LingyunAppPageScrollLock | null>(
       LINGYUN_APP_PAGE_SCROLL_LOCK,
@@ -236,8 +238,10 @@ export default defineComponent({
     )
     const scrollLocked = embedded && inheritedScrollLocked ? inheritedScrollLocked : ref(false)
     const navInsetPx = embedded && inheritedNavInset ? inheritedNavInset : ref(0)
+    const topInsetPx = embedded && inheritedTopInset ? inheritedTopInset : ref(0)
     provide(LINGYUN_APP_PAGE_SCROLL_LOCKED, scrollLocked)
     provide(LINGYUN_APP_PAGE_NAV_INSET, navInsetPx)
+    provide(LINGYUN_APP_PAGE_TOP_INSET, topInsetPx)
     onResize((res) => {
       const proxy = (instance && instance.proxy) as
         | { syncNavLayout?: (windowWidth?: number) => void }
@@ -253,6 +257,7 @@ export default defineComponent({
       inheritedScrollReport,
       navInsetPx,
       scrollLocked,
+      topInsetPx,
     }
   },
   created() {
@@ -293,6 +298,18 @@ export default defineComponent({
   watch: {
     safeArea() {
       this.syncNavLayout()
+    },
+    showToolbar() {
+      this.syncTopInset()
+    },
+    titleStyle() {
+      this.syncTopInset()
+    },
+    placement() {
+      this.syncTopInset()
+    },
+    showGrabber() {
+      this.syncTopInset()
     },
     navDocked() {
       this.syncH5PageNavHost()
@@ -506,7 +523,12 @@ export default defineComponent({
       if (!this.embedded) {
         this.navInsetPx = this.navDocked ? LINGYUN_PAGE_NAV_WIDTH : 0
       }
+      this.syncTopInset()
       this.syncH5PageNavHost()
+    },
+    syncTopInset() {
+      const status = this.safeArea ? this.statusBarPx : 0
+      this.topInsetPx = this.showToolbar ? status + this.toolbarStackPx : status
     },
     syncNavHeaderSlots() {
       const slots = this.$slots || {}

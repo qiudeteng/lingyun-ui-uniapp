@@ -115,11 +115,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+import { defineComponent, type PropType, type Ref } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
 import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
 import {
   LINGYUN_APP_PAGE_SCROLL_LOCK,
+  LINGYUN_APP_PAGE_TOP_INSET,
   type LingyunAppPageScrollLock,
 } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 
@@ -173,6 +174,10 @@ export default defineComponent({
     appPageScrollLock: {
       from: LINGYUN_APP_PAGE_SCROLL_LOCK,
       default: null as LingyunAppPageScrollLock | null,
+    },
+    appPageTopInset: {
+      from: LINGYUN_APP_PAGE_TOP_INSET,
+      default: null as Ref<number> | null,
     },
   },
   props: {
@@ -246,7 +251,15 @@ export default defineComponent({
       return { zIndex: Number(this.zIndex) || 1300 }
     },
     panelStyle() {
-      const top = (Number(this.statusBar) || 0) + INSET
+      const injected = this.appPageTopInset as Ref<number> | number | null
+      const pageTop =
+        injected && typeof injected === 'object' && 'value' in injected
+          ? Number(injected.value)
+          : Number(injected)
+      const safeTop = Number.isFinite(pageTop) && pageTop > 0
+        ? pageTop
+        : Number(this.statusBar) || 0
+      const top = safeTop + INSET
       const bottom = (Number(this.safeBottom) || 0) + INSET
       const width = Math.min(
         MAX_W,

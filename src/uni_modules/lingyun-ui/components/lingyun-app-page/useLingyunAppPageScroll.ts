@@ -31,6 +31,11 @@ export const LINGYUN_APP_PAGE_NAV_INSET: InjectionKey<Ref<number>> = Symbol(
   'lingyunAppPageNavInset',
 )
 
+/** 浮层面板需要避开的状态栏 + Toolbar 实际高度。 */
+export const LINGYUN_APP_PAGE_TOP_INSET: InjectionKey<Ref<number>> = Symbol(
+  'lingyunAppPageTopInset',
+)
+
 /** 内层 scroll-view 上报滚动，驱动顶栏玻璃渐变 */
 export function useLingyunAppPageScroll(): (scrollTop: number) => void {
   const fromAncestor = inject(LINGYUN_APP_PAGE_REPORT_SCROLL, null)
