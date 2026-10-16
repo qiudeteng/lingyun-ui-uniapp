@@ -13,7 +13,7 @@
 | `geometry.coordinates` | 多边形。每个多边形只放外环：`[[[lon, lat], ...]]`。多岛时多个多边形排在一起 |
 | `color` | 可选。不写则按系列色依次取色 |
 | `fillOpacity` | 可选。不写用 `extra.map.fillOpacity` |
-| `textSize` | 可选。标签字号 |
+| `textSize` | 可选。标签字号。暗黑下字色为白色，并带一圈深色描边 |
 
 坐标是经纬度时，把 `extra.map.mercator` 设为 `true`，否则图形会被拉高。坐标系已经是墨卡托时不要再开。
 

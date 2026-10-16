@@ -45,6 +45,8 @@ import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/components/lingy
 
 单系列覆盖：`series[].color`。不要自造非系统强调色。
 
+轴刻度、数据标签、地图地名：浅色保持引擎默认色，暗黑改为 `#ffffff`。在 `opts.fontColor`、`xAxis.fontColor`、`yAxis.fontColor` 里写了颜色则用用户的。暗黑地图的白字再描一圈深色边，避免压在浅色省份上看不清。
+
 ---
 
 ## 3. 图种与数据形状

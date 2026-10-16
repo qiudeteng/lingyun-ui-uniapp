@@ -5962,6 +5962,12 @@ function isPoiWithinPoly(poi, poly, mercator) {
   }
 }
 
+function mapLabelHalo(color) {
+  var c = String(color || '').replace(/\s/g, '').toLowerCase();
+  if (c === '#fff' || c === '#ffffff' || c === 'white') return 'rgba(0,0,0,0.72)';
+  return '';
+}
+
 function drawMapDataPoints(series, opts, config, context) {
   var mapOption = assign({}, {
     border: true,
@@ -6042,10 +6048,22 @@ function drawMapDataPoints(series, opts, config, context) {
           fontColor = mapOption.activeTextColor;
         }
         let text = data[i].properties.name;
+        let textX = point.x - measureText(text, fontSize, context) / 2;
+        let textY = point.y + fontSize / 2;
         context.beginPath();
         context.setFontSize(fontSize)
+        // 只有白字（暗黑）描深色边，浅色保持原来的单色字。
+        let halo = mapLabelHalo(fontColor);
+        if (halo) {
+          let haloOffset = Math.max(1, fontSize * 0.14);
+          context.setFillStyle(halo)
+          context.fillText(text, textX - haloOffset, textY);
+          context.fillText(text, textX + haloOffset, textY);
+          context.fillText(text, textX, textY - haloOffset);
+          context.fillText(text, textX, textY + haloOffset);
+        }
         context.setFillStyle(fontColor)
-        context.fillText(text, point.x - measureText(text, fontSize, context) / 2, point.y + fontSize / 2);
+        context.fillText(text, textX, textY);
         context.closePath();
         context.stroke();
       }

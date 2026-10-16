@@ -935,13 +935,27 @@ export default defineComponent({
       if (!option) return
       const legend = option.legend && typeof option.legend === 'object' ? option.legend : {}
       const dark = this.legendTheme === 'dark'
+      const label = dark ? chartLabelColorDark : chartLabelColor
       if (legend.fontColor == null || legend.fontColor === '') {
-        legend.fontColor = dark ? chartLabelColorDark : chartLabelColor
+        legend.fontColor = label
       }
       if (legend.hiddenFontColor == null || legend.hiddenFontColor === '') {
         legend.hiddenFontColor = dark ? chartLabelSecondaryColorDark : chartLabelSecondaryColor
       }
       option.legend = legend
+      // 浅色沿用引擎默认字色。暗黑才改成白色；用户显式传了颜色时不覆盖。
+      if (dark) {
+        const userOpts = this.opts && typeof this.opts === 'object' ? this.opts : {}
+        if (!userOpts.fontColor) option.fontColor = chartLabelColorDark
+        if (!userOpts.xAxis || userOpts.xAxis.fontColor == null || userOpts.xAxis.fontColor === '') {
+          if (!option.xAxis || typeof option.xAxis !== 'object') option.xAxis = {}
+          option.xAxis.fontColor = chartLabelColorDark
+        }
+        if (!userOpts.yAxis || userOpts.yAxis.fontColor == null || userOpts.yAxis.fontColor === '') {
+          if (!option.yAxis || typeof option.yAxis !== 'object') option.yAxis = {}
+          option.yAxis.fontColor = chartLabelColorDark
+        }
+      }
       if (this.type === 'ring') {
         const userTitle = (this.opts && this.opts.title) || {}
         const userSub = (this.opts && this.opts.subtitle) || {}
@@ -976,10 +990,13 @@ export default defineComponent({
             this.cWidth = data.width;
             this.cHeight = data.height;
             this.applyLegendTheme(cid)
-              // 其它图种用白底给空心点/Y 轴遮挡；词云会铺满画布，默认透明才能透出卡片底，和其它图一致
-              cfu.option[cid].background = (this.type === 'word' || this.background != 'rgba(0,0,0,0)')
+              // 滚动图会用 background 遮住绘图区两侧；默认色必须跟随主题，避免暗黑下出现白条。
+              const transparentBackground = this.background === 'rgba(0,0,0,0)'
+                || this.background === 'transparent'
+                || this.background === 'none'
+              cfu.option[cid].background = (this.type === 'word' || !transparentBackground)
                 ? this.background
-                : '#FFFFFF';
+                : (this.legendTheme === 'dark' ? '#1c1c1e' : '#FFFFFF');
               cfu.option[cid].canvas2d = this.type2d;
               cfu.option[cid].pixelRatio = this.pixel;
               cfu.option[cid].animation = this.animation;
