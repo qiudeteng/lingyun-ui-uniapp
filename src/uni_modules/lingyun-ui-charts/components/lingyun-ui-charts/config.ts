@@ -1,9 +1,46 @@
-/*
- * lingyun-ui-charts · uCharts 默认 option
- * 主题色：./config-colors.ts
+/**
+ * lingyun-ui-charts 图表配置
+ * 系列色对齐 design/COLORS.md · Sketch System Accents（默认 Light）
+ * 单图覆盖：`:opts="{ color: chartColorDark }"` 或 `series[].color`。
  */
 
-import { chartColor as color } from './config-colors'
+/** Light：Blue / Green / Yellow / Red / Cyan / Mint / Orange / Purple / Pink */
+export const chartColor = [
+  '#0088ff',
+  '#34c759',
+  '#ffcc00',
+  '#ff383c',
+  '#00c0e8',
+  '#00c8b3',
+  '#ff8d28',
+  '#cb30e0',
+  '#ff2d55',
+]
+
+/**
+ * 图例文字。对齐 design/COLORS.md Labels。
+ * 浅色 Primary `#000` / Secondary `rgba(60, 60, 67, 0.6)`
+ * 暗黑 Primary `#fff` / Secondary `rgba(235, 235, 245, 0.6)`
+ */
+export const chartLabelColor = '#000000'
+export const chartLabelColorDark = '#ffffff'
+export const chartLabelSecondaryColor = 'rgba(60, 60, 67, 0.6)'
+export const chartLabelSecondaryColorDark = 'rgba(235, 235, 245, 0.6)'
+
+/** Dark 对应色，暗黑页可 `:opts="{ color: chartColorDark }"` */
+export const chartColorDark = [
+  '#0091ff',
+  '#30d158',
+  '#ffd600',
+  '#ff4245',
+  '#3cd3fe',
+  '#00dac3',
+  '#ff9230',
+  '#db34f2',
+  '#ff375f',
+]
+
+const color = chartColor
 
 //事件转换函数，主要用作格式化x轴为时间轴，根据需求自行修改
 const formatDateTime = (timeStamp: number, returnType?: string) => {
@@ -641,4 +678,404 @@ const cfu: Record<string, any> = {
 	}
 }
 
-export default cfu;
+// 通用配置项
+
+const cfe: Record<string, any> = {
+  //demotype为自定义图表类型
+	"type": ["pie", "ring", "rose", "funnel", "line", "column", "area", "radar", "gauge","candle","demotype"],
+  //增加自定义图表类型，如果需要categories，请在这里加入您的图表类型例如最后的"demotype"
+	"categories": ["line", "column", "area", "radar", "gauge", "candle","demotype"],
+  //instance为实例变量承载属性，option为eopts承载属性，不要删除
+	"instance": {},
+	"option": {},
+  //下面是自定义format配置，因除H5端外的其他端无法通过props传递函数，只能通过此属性对应下标的方式来替换
+  "formatter":{
+    "tooltipDemo1":function(res: any){
+      let result = ''
+      for (let i in res) {
+      	if (i === '0') {
+      		result += res[i].axisValueLabel + '年销售额'
+      	}
+      	let value = '--'
+      	if (res[i].data !== null) {
+      		value = res[i].data
+      	}
+      	// #ifdef H5
+      	result += '\n' + res[i].seriesName + '：' + value + ' 万元'
+      	// #endif
+      	
+      	// #ifdef APP-PLUS
+      	result += '<br/>' + res[i].marker + res[i].seriesName + '：' + value + ' 万元'
+      	// #endif
+      }
+      return result;
+    },
+    legendFormat:function(name: string){
+      return "自定义图例+"+name;
+    },
+    yAxisFormatDemo:function (value: any) {
+      return value + '元';
+    },
+    seriesFormatDemo:function(res: any){
+      return res.name + '年' + res.value + '元';
+    }
+  },
+  //这里演示了自定义您的图表类型的option，可以随意命名，之后在组件上 type="demotype" 后，组件会调用这个花括号里的option，如果组件上还存在eopts参数，会将demotype与eopts中option合并后渲染图表。
+  "demotype":{
+    "color": color,
+    //在这里填写echarts的option即可
+    
+  },
+  //下面是自定义配置，请添加项目所需的通用配置
+	"column": {
+		"color": color,
+		"title": {
+			"text": ''
+		},
+		"tooltip": {
+			"trigger": 'axis'
+		},
+		"grid": {
+			"top": 30,
+			"bottom": 50,
+			"right": 15,
+			"left": 40
+		},
+		"legend": {
+			"bottom": 'left',
+		},
+		"toolbox": {
+			"show": false,
+		},
+		"xAxis": {
+			"type": 'category',
+			"axisLabel": {
+				"color": '#666666'
+			},
+			"axisLine": {
+				"lineStyle": {
+					"color": '#CCCCCC'
+				}
+			},
+			"boundaryGap": true,
+			"data": []
+		},
+		"yAxis": {
+			"type": 'value',
+			"axisTick": {
+				"show": false,
+			},
+			"axisLabel": {
+				"color": '#666666'
+			},
+			"axisLine": {
+				"lineStyle": {
+					"color": '#CCCCCC'
+				}
+			},
+		},
+		"seriesTemplate": {
+			"name": '',
+			"type": 'bar',
+			"data": [],
+			"barwidth": 20,
+			"label": {
+				"show": true,
+        "color": "#666666",
+				"position": 'top',
+			},
+		},
+	},
+	"line": {
+		"color": color,
+		"title": {
+			"text": ''
+		},
+		"tooltip": {
+			"trigger": 'axis'
+		},
+		"grid": {
+			"top": 30,
+			"bottom": 50,
+			"right": 15,
+			"left": 40
+		},
+		"legend": {
+			"bottom": 'left',
+		},
+		"toolbox": {
+			"show": false,
+		},
+		"xAxis": {
+			"type": 'category',
+			"axisLabel": {
+				"color": '#666666'
+			},
+			"axisLine": {
+				"lineStyle": {
+					"color": '#CCCCCC'
+				}
+			},
+			"boundaryGap": true,
+			"data": []
+		},
+		"yAxis": {
+			"type": 'value',
+			"axisTick": {
+				"show": false,
+			},
+			"axisLabel": {
+				"color": '#666666'
+			},
+			"axisLine": {
+				"lineStyle": {
+					"color": '#CCCCCC'
+				}
+			},
+		},
+		"seriesTemplate": {
+			"name": '',
+			"type": 'line',
+			"data": [],
+			"barwidth": 20,
+			"label": {
+				"show": true,
+        "color": "#666666",
+				"position": 'top',
+			},
+		},
+	},
+	"area": {
+		"color": color,
+		"title": {
+			"text": ''
+		},
+		"tooltip": {
+			"trigger": 'axis'
+		},
+		"grid": {
+			"top": 30,
+			"bottom": 50,
+			"right": 15,
+			"left": 40
+		},
+		"legend": {
+			"bottom": 'left',
+		},
+		"toolbox": {
+			"show": false,
+		},
+		"xAxis": {
+			"type": 'category',
+			"axisLabel": {
+				"color": '#666666'
+			},
+			"axisLine": {
+				"lineStyle": {
+					"color": '#CCCCCC'
+				}
+			},
+			"boundaryGap": true,
+			"data": []
+		},
+		"yAxis": {
+			"type": 'value',
+			"axisTick": {
+				"show": false,
+			},
+			"axisLabel": {
+				"color": '#666666'
+			},
+			"axisLine": {
+				"lineStyle": {
+					"color": '#CCCCCC'
+				}
+			},
+		},
+		"seriesTemplate": {
+			"name": '',
+			"type": 'line',
+			"data": [],
+			"areaStyle": {},
+			"label": {
+				"show": true,
+        "color": "#666666",
+				"position": 'top',
+			},
+		},
+	},
+	"pie": {
+		"color": color,
+		"title": {
+			"text": ''
+		},
+		"tooltip": {
+			"trigger": 'item'
+		},
+		"grid": {
+			"top": 40,
+			"bottom": 30,
+			"right": 15,
+			"left": 15
+		},
+		"legend": {
+			"bottom": 'left',
+		},
+		"seriesTemplate": {
+			"name": '',
+			"type": 'pie',
+			"data": [],
+			"radius": '50%',
+			"label": {
+				"show": true,
+        "color": "#666666",
+				"position": 'top',
+			},
+		},
+	},
+	"ring": {
+		"color": color,
+		"title": {
+			"text": ''
+		},
+		"tooltip": {
+			"trigger": 'item'
+		},
+		"grid": {
+			"top": 40,
+			"bottom": 30,
+			"right": 15,
+			"left": 15
+		},
+		"legend": {
+			"bottom": 'left',
+		},
+		"seriesTemplate": {
+			"name": '',
+			"type": 'pie',
+			"data": [],
+			"radius": ['40%', '70%'],
+			"avoidLabelOverlap": false,
+			"label": {
+				"show": true,
+        "color": "#666666",
+				"position": 'top',
+			},
+			"labelLine": {
+				"show": true
+			},
+		},
+	},
+	"rose": {
+		"color": color,
+		"title": {
+			"text": ''
+		},
+		"tooltip": {
+			"trigger": 'item'
+		},
+		"legend": {
+			"top": 'bottom'
+		},
+		"seriesTemplate": {
+			"name": '',
+			"type": 'pie',
+			"data": [],
+			"radius": "55%",
+			"center": ['50%', '50%'],
+			"roseType": 'area',
+		},
+	},
+	"funnel": {
+		"color": color,
+		"title": {
+			"text": ''
+		},
+		"tooltip": {
+			"trigger": 'item',
+			"formatter": "{b} : {c}%"
+		},
+		"legend": {
+			"top": 'bottom'
+		},
+		"seriesTemplate": {
+			"name": '',
+			"type": 'funnel',
+			"left": '10%',
+			"top": 60,
+			"bottom": 60,
+			"width": '80%',
+			"min": 0,
+			"max": 100,
+			"minSize": '0%',
+			"maxSize": '100%',
+			"sort": 'descending',
+			"gap": 2,
+			"label": {
+				"show": true,
+				"position": 'inside'
+			},
+			"labelLine": {
+				"length": 10,
+				"lineStyle": {
+					"width": 1,
+					"type": 'solid'
+				}
+			},
+			"itemStyle": {
+				"bordercolor": '#fff',
+				"borderwidth": 1
+			},
+			"emphasis": {
+				"label": {
+					"fontSize": 20
+				}
+			},
+			"data": [],
+		},
+	},
+	"gauge": {
+		"color": color,
+		"tooltip": {
+        "formatter": '{a} <br/>{b} : {c}%'
+    },
+		"seriesTemplate": {
+			"name": '业务指标',
+      "type": 'gauge',
+      "detail": {"formatter": '{value}%'},
+      "data": [{"value": 50, "name": '完成率'}]
+		},
+	},
+	"candle": {
+		"xAxis": {
+			"data": []
+		},
+		"yAxis": {},
+		"color": color,
+		"title": {
+			"text": ''
+		},
+		"dataZoom": [{
+				"type": 'inside',
+				"xAxisIndex": [0, 1],
+				"start": 10,
+				"end": 100
+			},
+			{
+				"show": true,
+				"xAxisIndex": [0, 1],
+				"type": 'slider',
+				"bottom": 10,
+				"start": 10,
+				"end": 100
+			}
+		],
+		"seriesTemplate": {
+			"name": '',
+			"type": 'k',
+			"data": [],
+		},
+	}
+}
+
+export { cfu, cfe }

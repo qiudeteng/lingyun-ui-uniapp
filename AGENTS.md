@@ -8,7 +8,7 @@
 |---|---|
 | 类型 | uni-app（Vue 3 + TypeScript + Vite）多端应用 |
 | 包管理 | pnpm |
-| UI | 第三方：`src/uni_modules` 的 uni-ui；自研控件：`src/uni_modules/lingyun-ui`；标准页面：`src/uni_modules/lingyun-ui-page`；图表引擎：`src/uni_modules/lingyun-ui-charts`（fork uCharts，独立于凌云UI 单包） |
+| UI | 第三方：`src/uni_modules` 的 uni-ui；自研控件：`src/uni_modules/lingyun-ui`；标准页面：`src/uni_modules/lingyun-ui-page`；图表引擎：`src/uni_modules/lingyun-ui-charts` |
 | 设计 | `design/`（路径见 `design/README.md`；UI 强制 Liquid Glass 见 `UI_SPEC.md`；清单见 `COMPONENTS.md`；专章含 BUTTONS / … / IMAGES / **CHARTS** / **GOODS_NAV** / **GRID** / **INDEXED_LIST** / CHECKS / … + Sketch） |
 | 状态 | Pinia + `pinia-plugin-persistedstate` |
 | 路由 | `@meng-xi/uni-router`（`generateRouter` 由 `pages.json` 生成） |

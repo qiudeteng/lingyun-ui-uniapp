@@ -2,7 +2,7 @@
 
 对应源码：`src/pages/demo/charts/mount.vue`
 
-展示 `lingyun-ui-charts` **山峰图**（type=`mount`），对照 [uCharts 山峰图示例](https://www.ucharts.cn/v2/#/demo/index)。
+展示 `lingyun-ui-charts` **山峰图**（type=`mount`）。
 
 - **圆角山峰图**：`extra.mount.type=mount`，`widthRatio=1.5`
 - **尖角山峰图**：`type=sharp`
@@ -14,4 +14,4 @@
 - **圆角渐变色柱状图**：`type=bar`，`barBorderRadius=[50,50,50,50]`，`linearType=custom`
 - 数据：没有 `categories`，峰写在 `series[0].data` 的 `{ name, value }`
 - 规范：[`design/CHARTS.md`](../../../CHARTS.md)
-- 系列色：包内 `config-colors.ts` · [`COLORS.md`](../../../COLORS.md)
+- 系列色：包内 `config.ts` · [`COLORS.md`](../../../COLORS.md)

@@ -8,4 +8,4 @@
 - 经纬度要开 `extra.map.mercator`
 - 边界数据：`src/pages/demo/charts/map-geo.ts`
 - 规范：[`design/CHARTS.md`](../../../CHARTS.md)
-- 系列色：包内 `config-colors.ts` · [`COLORS.md`](../../../COLORS.md)
+- 系列色：包内 `config.ts` · [`COLORS.md`](../../../COLORS.md)

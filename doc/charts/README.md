@@ -1,6 +1,6 @@
 # lingyun-ui-charts
 
-图表。独立包 `lingyun-ui-charts`，当前版本 **{{ chartsVersion }}**。easycom 可用，不必 `import`。默认走 **uCharts**（微信 / H5 / App）；`echartsH5` / `echartsApp` 默认关。
+图表。独立包 `lingyun-ui-charts`，当前版本 **{{ chartsVersion }}**。easycom 可用，不必 `import`。
 
 容器必须有明确高度。放在 `lingyun-app-page` 滚动区内时打开 `canvas2d`、`inScrollView`、`ontouch`。同页多图的 `canvasId` 不能重复。
 
@@ -72,17 +72,17 @@ const chartOpts = {}
 
 ## 系列色
 
-改色只动 `js_sdk/lingyun-ui-charts/config-colors.ts`。不要在业务 `src/config` 再备一份。
+改色只动 `components/lingyun-ui-charts/config.ts`。不要在业务 `src/config` 再备一份。
 
 ```ts
-import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/lingyun-ui-charts/config-colors'
+import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/components/lingyun-ui-charts/config'
 
 const chartOpts = { color: chartColorDark }
 ```
 
 也可 `series[i].color`。顺序 Blue → Green → Yellow → Red → Cyan → Mint → Orange → Purple → Pink。
 
-`opts` 与 `config-ucharts.ts` 里同名 type 深合并，只写要覆盖的字段。新 formatter 加在 `config-ucharts.ts` 的 `formatter`，组件上只传名字。
+`opts` 与 `config.ts` 里 `cfu` 同名 type 深合并，只写要覆盖的字段。新 formatter 加在 `config.ts` 的 `cfu.formatter`，组件上只传名字。
 
 ## 图例
 
@@ -139,9 +139,9 @@ const chartOpts = {
 | --- | --- | --- |
 | `type` | 图种，见上表 | — |
 | `chartData` | `{ categories?, series }`，有 series 才绘制 | `{ categories: [], series: [] }` |
-| `opts` | 与 uCharts 默认 option 深合并 | `{}` |
+| `opts` | 默认 option 深合并 | `{}` |
 | `eopts` | 仅开启 ECharts 时 | `{}` |
-| `canvasId` | 画布 id，同页多图必须不同 | uchartsid |
+| `canvasId` | 画布 id，同页多图必须不同 | id |
 | `canvas2d` | 微信建议打开 | false |
 | `inScrollView` | 在页面滚动容器内打开 | false |
 | `ontouch` | 手势 / tooltip | false |
@@ -151,13 +151,12 @@ const chartOpts = {
 | `onzoom` | 缩放 | false |
 | `animation` | 动画 | true |
 | `background` | 画布底 | rgba(0,0,0,0) |
-| `echartsH5` / `echartsApp` | 改走 ECharts | false |
+| `echartsH5` / `echartsApp` | 改走页面上已有的 `window.echarts` | false |
 | `tooltipShow` | 提示窗 | true |
 | `tooltipFormat` | `formatter` 里的名字 | — |
 | `tapLegend` | 点图例显隐系列 | true |
 | `disableScroll` | 禁止页面跟手滚动 | false |
 | `optsWatch` | 监听 opts 变化重绘 | true |
-| `loadingType` | 加载动画 1–5 | 2 |
 | `errorShow` | 出错是否展示错误层 | true |
 | `errorReload` | 点错误层是否重试 | true |
 | `errorMessage` | 外部指定错误文案 | null |
@@ -169,7 +168,7 @@ const chartOpts = {
 
 | 事件 | 说明 |
 | --- | --- |
-| `@complete` | 渲染完成。返回 `{ complete: true, id, type: "complete", opts }`。可用返回的 `id`（canvasId）从 `config-ucharts` / `config-echarts` 取实例再调引擎方法 |
+| `@complete` | 渲染完成。返回 `{ complete: true, id, type: "complete", opts }`。可用返回的 `id`（canvasId）从 `config.ts` 的 `cfu` / `cfe` 取实例再调引擎方法 |
 | `@getIndex` | 点击数据索引。返回 `{ type: "getIndex", currentIndex: { group, index }, legendIndex, id, event: { x, y }, opts }`；未命中时 index / legendIndex 为 `-1` |
 | `@error` | 组件出错。返回 `{ type: "error", errorShow, msg, id }`（`errorShow` 为 props 状态） |
 | `@getTouchStart` | 拖动开始。返回 `{ type: "touchStart", event: { x, y }, id, opts }` |
@@ -337,7 +336,7 @@ chart.showToolTip(e, {
 })
 ```
 
-组件侧用 `tooltipShow`、`tooltipFormat`（名字写在 `config-ucharts` 的 `formatter`）及触摸相关 props。
+组件侧用 `tooltipShow`、`tooltipFormat`（名字写在 `config.ts` 的 `cfu.formatter`）及触摸相关 props。
 
 #### scrollStart(e) / scroll(e) / scrollEnd(e)
 

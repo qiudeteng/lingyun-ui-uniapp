@@ -14,7 +14,6 @@ import {
 } from './stack-series';
 
 var config = {
-  version: 'v1.0.5',
   yAxisWidth: 15,
   xAxisHeight: 22,
   padding: [10, 10, 10, 10],

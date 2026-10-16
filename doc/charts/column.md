@@ -2,7 +2,6 @@
 
 类目轴柱状图。`type="column"`。Demo 页：`/pages/demo/charts/column`。
 
-对齐 [uCharts 官方演示](https://www.ucharts.cn/v2/#/demo/index) 中的柱状图条目。
 
 ## 数据
 

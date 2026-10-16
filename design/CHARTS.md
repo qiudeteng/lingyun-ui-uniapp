@@ -5,9 +5,9 @@
 ## 权威来源
 
 1. 使用手册 [`doc/charts/README.md`](../doc/charts/README.md)（含属性 / 事件 / 方法全文）· 图种 [`doc/charts/`](../doc/charts/)
-2. 系列色 [`config-colors.ts`](../src/uni_modules/lingyun-ui-charts/js_sdk/lingyun-ui-charts/config-colors.ts) · [`COLORS.md`](./COLORS.md) System Accents
-3. 默认 option：`config-ucharts.ts` / `config-echarts.ts`
-4. 引擎实现：`js_sdk/lingyun-ui-charts/lingyun-ui-charts.ts`（源自 uCharts / qiun-data-charts）
+2. 系列色 [`config.ts`](../src/uni_modules/lingyun-ui-charts/components/lingyun-ui-charts/config.ts) · [`COLORS.md`](./COLORS.md) System Accents
+3. 默认 option：`config.ts` 里的 `cfu` / `cfe`
+4. 引擎实现：`components/lingyun-ui-charts/lingyun-ui-charts.ts`
 
 尺寸 **1pt = 1px**。禁止 `rpx`。
 
@@ -18,10 +18,9 @@
 | 项 | 约定 |
 |----|------|
 | 包 | `src/uni_modules/lingyun-ui-charts`（独立于凌云UI 单包） |
-| 版本 | 从 **1.0.1** 起按 `1.0.x` 递增，不跟 uCharts 的 `2.5.x-日期` |
 | 标签 | `<lingyun-ui-charts />`（easycom） |
-| 加载 / 错误 | `<lingyun-ui-charts-loading />` · `<lingyun-ui-charts-error />` |
-| 语言 | 组件、配置和 uCharts 引擎为 TypeScript。ECharts 压缩包、renderjs 保持 JavaScript |
+| 加载 / 错误 | `lingyun-activity-indicator` · `lingyun-empty` |
+| 语言 | 组件、配置和引擎为 TypeScript，与 `lingyun-ui-charts.vue` 同目录。renderjs 保持 JavaScript |
 | Demo | `src/pages/demo/charts/<type>.vue` · 页壳 `chart-demo-block` |
 
 不要为 `uni_modules` 建 `design/` 镜像目录。视觉与数据约定以本章 + 包 readme 为准。
@@ -30,7 +29,7 @@
 
 ## 2. 系列色
 
-改色 **只动** `js_sdk/lingyun-ui-charts/config-colors.ts`。`config-ucharts.ts` / `config-echarts.ts` 从这里取默认 `color`。禁止在业务 `src/config` 再备一份。
+改色 **只动** `components/lingyun-ui-charts/config.ts` 顶部的 `chartColor` / `chartColorDark`。禁止在业务 `src/config` 再备一份。
 
 顺序对齐 System Accents：**Blue → Green → Yellow → Red → Cyan → Mint → Orange → Purple → Pink**。
 
@@ -40,7 +39,7 @@
 | `chartColorDark` | Dark；暗黑页：`:opts="{ color: chartColorDark }"` |
 
 ```ts
-import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/lingyun-ui-charts/config-colors'
+import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/components/lingyun-ui-charts/config'
 ```
 
 单系列覆盖：`series[].color`。不要自造非系统强调色。
@@ -64,7 +63,7 @@ import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/lingyun-u
 
 | type | 额外约定 |
 |------|----------|
-| `column` | 默认 `extra.column`：`categoryGap` 拉开各组、`seriesGap` 同组柱距、`barBorderRadius: [6,6,0,0]` 顶部圆角。Demo 另含 stack / meter / 渐变圆角 / 正负 / 滚动 / 标记线（对齐 [uCharts 官方](https://www.ucharts.cn/v2/#/demo/index)） |
+| `column` | 默认 `extra.column`：`categoryGap` 拉开各组、`seriesGap` 同组柱距、`barBorderRadius: [6,6,0,0]` 顶部圆角。Demo 另含 stack / meter / 渐变圆角 / 正负 / 滚动 / 标记线 |
 | `stack` | 堆积柱状别名：引擎 `column` + `extra.column.type: "stack"`；折线/曲线传同款原始数据 + `extra.line.stack: true`（算法见 `stack-series.ts`），见 `doc/charts/stack.md` |
 | `line` | `extra.line.type`：`straight` 折线、`curve` 曲线、`step` 阶梯。`data` 里写 `null` 断开，`connectNulls: true` 续连。渐变 `linearType: "custom"` + `series.linearColor`；阴影 `onShadow` + `setShadow`；`animation: "horizontal"` 从左画入。滚动：`enableScroll` + `xAxis.itemCount` |
 | `curve` | 自定义图种别名，引擎为 `line`，默认 `extra.line.type: "curve"` 平滑曲线；数据形状同 `line` |
@@ -97,20 +96,20 @@ import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/lingyun-u
 // scatter：[x, y]；bubble：[x, y, size]
 ```
 
-默认 `tline` / `tarea` 的 Y 轴 `max` 是 **80**（写在 `config-ucharts.ts`）。数据超出就会顶破画布；不够用时在 `opts.yAxis.data` 里改 `max`，或把数据收到范围内。
+默认 `tline` / `tarea` 的 Y 轴 `max` 是 **80**（写在 `config.ts`）。数据超出就会顶破画布；不够用时在 `opts.yAxis.data` 里改 `max`，或把数据收到范围内。
 
 X 轴不要直接画时间戳。小程序不能把函数当 props 传递，用 formatter 名：
 
 ```ts
 opts: {
   padding: [15, 28, 0, 15], // 右侧给末点标签留空
-  xAxis: { format: 'xAxisDemo2' } // → HH:mm，见 config-ucharts.ts formatter
+  xAxis: { format: 'xAxisDemo2' } // → HH:mm，见 config.ts formatter
 }
 ```
 
 ### 3.4 词云（扁平 series）
 
-`word`：**不要**套饼图那种 `{ name, data: [...] }`。uCharts 把 `series` 本身当成词条。
+`word`：**不要**套饼图那种 `{ name, data: [...] }`。
 
 ```ts
 {
@@ -179,7 +178,7 @@ legend: {
 
 见 `doc/charts/map.md`。Demo 边界在 `src/pages/demo/charts/map-geo.ts`。
 
-未做 demo：`demotype`。属性 / 事件 / 方法见手册 [`doc/charts/README.md`](../doc/charts/README.md)；其余 option 字段以本包 `config-ucharts.ts` 与引擎源码为准。
+未做 demo：`demotype`。属性 / 事件 / 方法见手册 [`doc/charts/README.md`](../doc/charts/README.md)；其余 option 字段以本包 `config.ts` 与引擎源码为准。
 
 ---
 
@@ -210,14 +209,13 @@ legend: {
 |------|------|------|
 | `type` | — | 图种，见 §3 |
 | `chartData` | `{ categories, series }` | 数据；形状见 §3 |
-| `opts` | `{}` | 与 `config-ucharts.ts` 对应 type 深合并 |
-| `canvasId` | `uchartsid` | 同页多图必须不同 |
+| `opts` | `{}` | 与 `config.ts` 里 `cfu` 对应 type 深合并 |
+| `canvasId` | `id` | 同页多图必须不同 |
 | `canvas2d` | `false` | **微信小程序建议 `true`** |
 | `inScrollView` | `false` | 页面在滚动容器内时 `true`（`lingyun-app-page` 内要开） |
 | `ontouch` | `false` | 需要滑动/提示时 `true` |
-| `echartsH5` / `echartsApp` | `false` | 本仓库默认走 uCharts；打开才用 ECharts |
+| `echartsH5` / `echartsApp` | `false` | 默认走本组件引擎。打开后只使用页面上已有的 `window.echarts` |
 | `animation` | `true` | 动画 |
-| `loadingType` | `2` | 加载动画 1–5 |
 
 业务页不要散落第二套图表库。Demo 统一走 `chart-demo-block`。
 
@@ -270,7 +268,7 @@ legend: {
 ## 7. 自检
 
 - [ ] 数据形状与 `type` 一致（尤其 word 扁平、时间轴秒级时间戳）
-- [ ] 系列色来自 `config-colors.ts`，未在业务侧另备一份
+- [ ] 系列色来自 `config.ts`，未在业务侧另备一份
 - [ ] 画布容器有明确宽高；时间轴右侧未裁字、Y 轴未顶破
 - [ ] 微信：`canvas2d` + 滚动内 `inScrollView`；`pnpm dev:mp-weixin` 可编译
 - [ ] 微信：打开 Sheet / Picker 时图表不穿透浮层

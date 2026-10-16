@@ -1,16 +1,14 @@
 <!--
  * lingyun-ui-charts 凌云UI 图表组件
- * 系列色：js_sdk/lingyun-ui-charts/config-colors.ts
+ * 系列色：config.ts
  -->
 <template>
   <view class="chartsview" :id="'ChartBoxId'+cid">
-    <view v-if="mixinDatacomLoading">
-      <!-- 自定义加载状态，请改这里 -->
-      <lingyun-ui-charts-loading :loadingType="loadingType" />
+    <view v-if="mixinDatacomLoading" class="chartsview__state">
+      <lingyun-activity-indicator />
     </view>
-    <view v-if="mixinDatacomErrorMessage && errorShow" @tap="reloading">
-      <!-- 自定义错误提示，请改这里 -->
-      <lingyun-ui-charts-error :errorMessage="errorMessage" />
+    <view v-if="mixinDatacomErrorMessage && errorShow" class="chartsview__state" @tap="reloading">
+      <lingyun-empty fill :title="chartErrorTitle" />
     </view>
     <!-- APP和H5采用renderjs渲染图表 -->
     <!-- #ifdef APP-VUE || H5 -->
@@ -37,7 +35,7 @@
         v-on:touchmove="rdcharts.touchMove"
         v-on:touchend="rdcharts.touchEnd"
         :id="'UC'+cid"
-        :prop="uchartsOpts"
+        :prop="chartsOpts"
         :change:prop="rdcharts.ucinit"
       >
         <canvas
@@ -158,23 +156,23 @@
 </template>
 
 <script lang="ts">
-// 画布交互沿用 uCharts 组件结构。类型以 any 收口，避免改判断时带偏绘制。
+// 类型以 any 收口，避免改判断时带偏绘制。
 import { defineComponent } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import {
   isLingyunMpOverlayOpen,
   onLingyunMpOverlayChange,
 } from '@/uni_modules/lingyun-ui/utils/mp-overlay-gate'
-import LingyunUiCharts from '../../js_sdk/lingyun-ui-charts/lingyun-ui-charts'
-import cfu from '../../js_sdk/lingyun-ui-charts/config-ucharts'
+import LingyunUiCharts from './lingyun-ui-charts'
 import {
+  cfu,
   chartLabelColor,
   chartLabelColorDark,
   chartLabelSecondaryColor,
   chartLabelSecondaryColorDark,
-} from '../../js_sdk/lingyun-ui-charts/config-colors'
+} from './config'
 // #ifdef APP-VUE || H5
-import cfe from '../../js_sdk/lingyun-ui-charts/config-echarts'
+import { cfe } from './config'
 // #endif
 
 function deepCloneAssign(origin: Record<string, any> = {}, ...args: any[]): Record<string, any> {
@@ -254,7 +252,7 @@ export default defineComponent({
     },
     canvasId: {
       type: String,
-      default: 'uchartsid'
+      default: 'id'
     },
     canvas2d: {
       type: Boolean,
@@ -288,10 +286,6 @@ export default defineComponent({
       default() {
         return {};
       }
-    },
-    loadingType: {
-      type: Number,
-      default: 2
     },
     errorShow: {
       type: Boolean,
@@ -406,7 +400,7 @@ export default defineComponent({
   },
   data(): any {
     return {
-      cid: 'uchartsid',
+      cid: 'id',
       inWx: false,
       inAli: false,
       inTt: false,
@@ -425,7 +419,7 @@ export default defineComponent({
       echartsResize:{
         state:false
       },
-      uchartsOpts: {},
+      chartsOpts: {},
       echartsOpts: {},
       drawData:{},
       lastDrawTime:null,
@@ -441,7 +435,7 @@ export default defineComponent({
   },
   created(){
     this.cid = this.canvasId
-    if (this.canvasId == 'uchartsid' || this.canvasId == '') {
+    if (this.canvasId == 'id' || this.canvasId == '') {
       let t = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
       let len = t.length
       let id = ''
@@ -682,6 +676,11 @@ export default defineComponent({
     }
   },
   computed: {
+    chartErrorTitle(): string {
+      const msg = this.errorMessage
+      if (msg == null || msg === '' || msg === 'null') return '请点击重试'
+      return msg
+    },
     legendTheme(): 'light' | 'dark' {
       return useThemeStore().resolved
     },
@@ -1105,7 +1104,7 @@ export default defineComponent({
                 this.echartsOpts = deepCloneAssign({}, cfe.option[cid]);
               } else {
                 cfu.option[cid].rotateLock = cfu.option[cid].rotate;
-                this.uchartsOpts = deepCloneAssign({}, cfu.option[cid]);
+                this.chartsOpts = deepCloneAssign({}, cfu.option[cid]);
               }
             // 小程序端用凌云图表引擎渲染
             } else {
@@ -1401,9 +1400,8 @@ export default defineComponent({
 
 <!-- #ifdef APP-VUE || H5 -->
 <script module="rdcharts" lang="renderjs">
-import LingyunUiChartsRD from '../../js_sdk/lingyun-ui-charts/lingyun-ui-charts';
-import cfu from '../../js_sdk/lingyun-ui-charts/config-ucharts';
-import cfe from '../../js_sdk/lingyun-ui-charts/config-echarts';
+import LingyunUiChartsRD from './lingyun-ui-charts';
+import { cfu, cfe } from './config';
 
 var that = {};
 var rootdom = null;
@@ -1491,18 +1489,6 @@ export default {
       
       if (typeof window.echarts === 'object') {
           this.newEChart()
-      }else{
-        const script = document.createElement('script')
-        // #ifdef APP-VUE
-        script.src = './uni_modules/lingyun-ui-charts/static/app-plus/echarts.min.js'
-        // #endif
-        // #ifdef H5
-        const rooturl = window.location.origin
-        const directory = instance.getDataset().directory
-        script.src = rooturl + directory + 'uni_modules/lingyun-ui-charts/static/h5/echarts.min.js'
-        // #endif
-        script.onload = this.newEChart
-        document.head.appendChild(script)
       }
     },
     ecresize(newVal, oldVal, owner, instance){
@@ -1538,7 +1524,7 @@ export default {
       if(option.tooltip){
         option.tooltip.show = option.tooltipShow?true:false;
         option.tooltip.position = this.tooltipPosition()
-        //tooltipFormat方法，替换组件的tooltipFormat为config-echarts.ts内对应的方法
+        //tooltipFormat方法，替换组件的tooltipFormat为config.ts内对应的方法
         if (typeof option.tooltipFormat === 'string' && cfe.formatter[option.tooltipFormat]) {
           option.tooltip.formatter = option.tooltip.formatter ? option.tooltip.formatter : cfe.formatter[option.tooltipFormat]
         }
@@ -1803,6 +1789,17 @@ export default {
   justify-content: center;
   align-items: center;
   position: relative;
+}
+
+.chartsview__state {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .chartsview__shot {

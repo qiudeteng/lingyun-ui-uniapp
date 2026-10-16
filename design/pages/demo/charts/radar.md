@@ -12,4 +12,4 @@
 数据：`categories` + 等长 `series.data`。`max` 小于数据峰值时，刻度按较大者计算。
 
 - 规范：[`design/CHARTS.md`](../../../CHARTS.md)
-- 系列色：包内 `config-colors.ts` · [`COLORS.md`](../../../COLORS.md)
+- 系列色：包内 `config.ts` · [`COLORS.md`](../../../COLORS.md)

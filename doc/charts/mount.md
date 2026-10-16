@@ -1,6 +1,6 @@
 # 山峰图 · mount
 
-山峰图。`type="mount"`。Demo 页：`/pages/demo/charts/mount`。对照 [uCharts 官方示例](https://www.ucharts.cn/v2/#/demo/index) 的 8 种峰形。
+山峰图。`type="mount"`。Demo 页：`/pages/demo/charts/mount`。
 
 ## 数据
 

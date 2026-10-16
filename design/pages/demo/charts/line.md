@@ -2,7 +2,7 @@
 
 对应源码：`src/pages/demo/charts/line.vue`
 
-展示 `lingyun-ui-charts` **折线图**，对照 [uCharts 折线图示例](https://www.ucharts.cn/v2/#/demo/index)。
+展示 `lingyun-ui-charts` **折线图**。
 
 - **基本折线图**：`extra.line.type=straight`
 - **基本曲线图**：`type=curve`，首条 `lineType=dash`
@@ -13,4 +13,4 @@
 - **滚动条**：`enableScroll`，`xAxis.itemCount=4`，`scrollShow`
 - **时间轴折线图**：`type=tline`，点为 `[x, y]`
 - 规范：[`design/CHARTS.md`](../../../CHARTS.md)
-- 系列色：包内 `config-colors.ts` · [`COLORS.md`](../../../COLORS.md)
+- 系列色：包内 `config.ts` · [`COLORS.md`](../../../COLORS.md)

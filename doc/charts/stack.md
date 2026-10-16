@@ -5,7 +5,7 @@
 ## 怎么用（心智模型）
 
 **数据与折线 / 曲线相同**：传各层原始值，不要自己累加。  
-**开启堆积**后，引擎用 `js_sdk/lingyun-ui-charts/stack-series.ts` 按类目累加，并按总和缩放 Y 轴。
+**开启堆积**后，引擎用 `components/lingyun-ui-charts/stack-series.ts` 按类目累加，并按总和缩放 Y 轴。
 
 | 画法 | 怎么配 | 说明 |
 | --- | --- | --- |

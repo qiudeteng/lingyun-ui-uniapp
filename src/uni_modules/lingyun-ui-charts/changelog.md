@@ -1,9 +1,12 @@
 ## 1.0.13（2026-10-16）
 - 柱状图顶部、条状图右侧圆角按 `pixelRatio` 放大。小程序画布是物理像素，原来 6 像素圆角在高分屏上几乎看不出来。
+- 引擎和配置收进 `components/lingyun-ui-charts/`，去掉 `js_sdk` 与未使用的 ECharts `static`。
+- 系列色、默认 option、ECharts option 合并为 `components/lingyun-ui-charts/config.ts`。
+- 加载和错误改为 `lingyun-activity-indicator`、`lingyun-empty`，删除图表包内的加载 / 错误组件。
 ## 1.0.12（2026-10-15）
 - 条状图默认右侧顶端圆角 `barBorderRadius: [6, 6, 0, 0]`；堆积条最右一层同样圆角；Demo / 文档增加堆积条状示例。
 ## 1.0.11（2026-10-15）
-- 抽出堆积算法 `js_sdk/lingyun-ui-charts/stack-series.ts`；折线 / 曲线传原始分层数据，开 `extra.line.stack: true` 即可（引擎内累加并画面积色带）。
+- 抽出堆积算法 `components/lingyun-ui-charts/stack-series.ts`；折线 / 曲线传原始分层数据，开 `extra.line.stack: true` 即可（引擎内累加并画面积色带）。
 ## 1.0.10（2026-10-15）
 - 区域图支持 `extra.area.stack`：堆积折线 / 曲线按层填色（`y`～`y0`），Y 轴按总和缩放；Demo 与文档改为面积堆积，无需再累加数据。
 ## 1.0.9（2026-10-15）
@@ -31,4 +34,4 @@
 - 图表包版本从 **1.0.1** 起，按 `1.0.x` 递增。
 - 词云默认不再铺白底，透出卡片背景，与其它图种一致。
 - 使用手册拆成总览与各图种，右侧预览对应 `pages/demo/charts/<type>`。
-- 系列色迁入本包 `js_sdk/lingyun-ui-charts/config-colors.js`。
+- 系列色迁入本包 `components/lingyun-ui-charts/config.ts`。

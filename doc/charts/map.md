@@ -19,7 +19,7 @@
 
 图例默认会按每一块区域占一行，省级图请 `legend.show: false`。
 
-Demo 的省级边界在 `src/pages/demo/charts/map-geo.ts`（DataV GeoAtlas 抽稀，只留外环）。
+Demo 的省级边界在 `src/pages/demo/charts/map-geo.ts`（DataV GeoAtlas 抽稀，只留外环，并去掉纬度低于 17° 的南海零星小岛，避免把大陆压扁）。
 
 ## 示例
 

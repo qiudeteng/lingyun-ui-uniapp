@@ -3,7 +3,7 @@
     <view class="page">
       <view class="hero">
         <text class="hero__title">Column</text>
-        <text class="hero__desc">lingyun-ui-charts · 柱状图（对齐 uCharts 官方演示）</text>
+        <text class="hero__desc">lingyun-ui-charts · 柱状图</text>
       </view>
 
       <lingyun-section title="基本柱状图" hint="type=group · 默认分组">
@@ -139,7 +139,7 @@
   import { computed, onMounted, onUnmounted, ref } from 'vue'
   import { chartLegendOpts, chartLegendSamples } from './samples'
 
-  /** 与 uCharts 官方演示同源：目标值 / 完成量 */
+  /** 目标值 / 完成量 */
   const years = ['2018', '2019', '2020', '2021', '2022', '2023']
 
   const basicData = {

@@ -2,7 +2,7 @@
 
 对应源码：`src/pages/demo/charts/column.vue`
 
-展示 `lingyun-ui-charts` **柱状图**（type=`column`），对齐 [uCharts 官方演示](https://www.ucharts.cn/v2/#/demo/index)：
+展示 `lingyun-ui-charts` **柱状图**（type=`column`）：
 
 | 区块 | 要点 |
 |------|------|
@@ -18,4 +18,4 @@
 
 - 数据：categories + series[].data
 - 规范：[`design/CHARTS.md`](../../../CHARTS.md)
-- 系列色：包内 `config-colors.ts` · [`COLORS.md`](../../../COLORS.md)
+- 系列色：包内 `config.ts` · [`COLORS.md`](../../../COLORS.md)
