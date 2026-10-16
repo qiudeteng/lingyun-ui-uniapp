@@ -1026,6 +1026,9 @@ export default defineComponent({
       let currentIndex = null;
       let legendIndex = null;
       if (this.inScrollView === true || this.inAli) {
+        const originalTouch = e.changedTouches && e.changedTouches[0]
+          ? e.changedTouches[0]
+          : (e.touches && e.touches[0] ? e.touches[0] : null)
         let chartdom = (uni.createSelectorQuery() as any)
           // #ifndef MP-ALIPAY
           .in(this)
@@ -1034,13 +1037,31 @@ export default defineComponent({
           // #ifdef MP-ALIPAY
           .select('#'+this.cid)
           // #endif
-          .boundingClientRect((data: any) => {
-            e.changedTouches=[];
-            if (this.inAli) {
-              e.changedTouches.unshift({ x: e.detail.clientX - data.left, y: e.detail.clientY - data.top});
-            }else{
-              e.changedTouches.unshift({ x: e.detail.x - data.left, y: e.detail.y - data.top - this.pageScrollTop});
+          .boundingClientRect()
+        chartdom.selectViewport().scrollOffset()
+        chartdom.exec((result: any[]) => {
+            const data = result && result[0]
+            if (!data || !cfu.instance[cid]) return
+            const viewport = result[1] || {}
+            const scrollLeft = Number(viewport.scrollLeft) || 0
+            const scrollTop = Number(viewport.scrollTop) || Number(this.pageScrollTop) || 0
+            const detail = e.detail || {}
+            const clientX = originalTouch && Number.isFinite(originalTouch.clientX)
+              ? originalTouch.clientX
+              : (Number.isFinite(detail.clientX)
+                  ? detail.clientX
+                  : (Number(detail.x) || 0) - scrollLeft)
+            const clientY = originalTouch && Number.isFinite(originalTouch.clientY)
+              ? originalTouch.clientY
+              : (Number.isFinite(detail.clientY)
+                  ? detail.clientY
+                  : (Number(detail.y) || 0) - scrollTop)
+            const point = {
+              x: clientX - data.left,
+              y: clientY - data.top
             }
+            e.changedTouches=[];
+            e.changedTouches.unshift(point);
             if(move){
               if (this.tooltipShow === true) {
                 this._showTooltip(e);
@@ -1054,10 +1075,9 @@ export default defineComponent({
               if (this.tooltipShow === true) {
                 this._showTooltip(e);
               }
-              this.emitMsg({name: 'getIndex', params: { type:"getIndex", event:{ x: e.detail.x - data.left, y: e.detail.y - data.top }, currentIndex: currentIndex, legendIndex: legendIndex, id: cid, opts: cfu.instance[cid].opts}});
+              this.emitMsg({name: 'getIndex', params: { type:"getIndex", event:point, currentIndex: currentIndex, legendIndex: legendIndex, id: cid, opts: cfu.instance[cid].opts}});
             }
-          })
-          .exec();
+          });
       } else {
         if(move){
           if (this.tooltipShow === true) {

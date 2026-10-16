@@ -6628,8 +6628,16 @@ function drawCharts(type, opts, config, context) {
   if (type == 'candle') {
     let average = assign({}, opts.extra.candle.average);
     if (average.show) {
+      let previousSeriesMA = opts.seriesMA;
       seriesMA = calCandleMA(average.day, average.name, average.color, series[0].data);
       seriesMA = fillSeries(seriesMA, opts, config);
+      if (previousSeriesMA) {
+        for (let i = 0; i < seriesMA.length; i++) {
+          if (previousSeriesMA[i] && typeof previousSeriesMA[i].show === 'boolean') {
+            seriesMA[i].show = previousSeriesMA[i].show;
+          }
+        }
+      }
       opts.seriesMA = seriesMA;
     } else if (opts.seriesMA) {
       seriesMA = opts.seriesMA = fillSeries(opts.seriesMA, opts, config);
