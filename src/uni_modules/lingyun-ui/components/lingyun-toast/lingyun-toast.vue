@@ -17,7 +17,7 @@
 
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
-import { useThemeStore } from '@/stores/theme'
+import { useLingyunTheme } from '../../utils/theme'
 import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
 
 /**
@@ -65,7 +65,7 @@ export default defineComponent({
     rootClass(): string {
       let themeClass = 'theme-light'
       try {
-        themeClass = useThemeStore().rootClass || 'theme-light'
+        themeClass = useLingyunTheme().rootClass || 'theme-light'
       } catch {
         /* ignore */
       }

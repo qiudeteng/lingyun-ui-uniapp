@@ -143,31 +143,36 @@
 <script lang="ts">
 import { defineComponent, getCurrentInstance, ref, watch, type PropType } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { useAuthStore } from '@/stores/auth'
-import { useThemeStore } from '@/stores/theme'
-import { useUserStore } from '@/stores/user'
-import LingyunIcon from '@/uni_modules/lingyun-ui/components/lingyun-icon/lingyun-icon.vue'
+import { useLingyunTheme } from '../../utils/theme'
+import LingyunIcon from '../lingyun-icon/lingyun-icon.vue'
 import {
   getLingyunNavLayout,
   LINGYUN_TOOLBAR_BAR_DESIGN_PX,
-} from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
+} from '../lingyun-toolbars/getLingyunNavSafeInset'
 import {
-  LINGYUN_PAGE_NAV_GUEST_HOME,
-  LINGYUN_PAGE_NAV_HOME,
-  getLingyunPageNavProfile,
-  getLingyunPageNavSections,
+  clearLingyunPageHost,
   clearLingyunPageNavIntent,
+  getLingyunHostedPath,
+  getLingyunHostedUrl,
   getLingyunPageNavIntent,
+  getLingyunPageNavHome,
+  getLingyunPageNavProfile,
   getLingyunPageNavScrollTop,
+  getLingyunPageNavSections,
+  getLingyunPageNavStoreId,
+  getLingyunPageNavStoreName,
+  getLingyunPageNavStoreOptions,
+  isLingyunPageNavLoggedIn,
   normalizeLingyunPagePath,
+  openLingyunHostedPage,
   resolveLingyunPageUrl,
+  selectLingyunPageNavStore,
   setLingyunPageNavIntent,
   setLingyunPageNavScrollTop,
   useLingyunPageNavIntent,
   type LingyunPageNavSection,
-} from '@/router/pageNav'
-import { clearLingyunPageHost, openLingyunHostedPage, pageHostState } from '@/router/pageHost'
-import { LINGYUN_APP_PAGE_SCROLL_LOCKED } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
+} from '../../utils/pageNavAdapter'
+import { LINGYUN_APP_PAGE_SCROLL_LOCKED } from '../lingyun-app-page/useLingyunAppPageScroll'
 
 type NavPage = {
   route?: string
@@ -241,15 +246,11 @@ export default defineComponent({
     },
     /** 未登录时「首页」进组件演示，登录后仍进业务首页。 */
     navHome(): string {
-      try {
-        return useAuthStore().isLogin ? LINGYUN_PAGE_NAV_HOME : LINGYUN_PAGE_NAV_GUEST_HOME
-      } catch {
-        return LINGYUN_PAGE_NAV_HOME
-      }
+      return getLingyunPageNavHome(isLingyunPageNavLoggedIn())
     },
     themeRootClass() {
       try {
-        return useThemeStore().rootClass
+        return useLingyunTheme().rootClass
       } catch {
         return 'theme-light'
       }
@@ -267,7 +268,7 @@ export default defineComponent({
       return getLingyunPageNavProfile()
     },
     profileAvatar(): string {
-      return this.avatar || this.profile.avatar
+      return this.avatar || this.profile.avatar || ''
     },
     avatarInitial(): string {
       const name = (this.profileName || '').trim()
@@ -300,40 +301,20 @@ export default defineComponent({
       return { width: size, height: size }
     },
     showStorePicker(): boolean {
-      try {
-        const user = useUserStore()
-        return user.storeOptions.length > 0 || !!user.storeName
-      } catch {
-        return false
-      }
+      return getLingyunPageNavStoreOptions().length > 0 || !!getLingyunPageNavStoreName()
     },
     storeLabel(): string {
-      try {
-        return useUserStore().storeName || '请选择门店'
-      } catch {
-        return '请选择门店'
-      }
+      return getLingyunPageNavStoreName() || '请选择门店'
     },
     storeRange(): { store_id: string | number; store_name: string }[] {
-      try {
-        return useUserStore().storeOptions.map((item) => ({
-          store_id: item.store_id,
-          store_name: item.store_name,
-        }))
-      } catch {
-        return []
-      }
+      return getLingyunPageNavStoreOptions()
     },
     storeIndex(): number {
-      try {
-        const user = useUserStore()
-        const idx = user.storeOptions.findIndex(
-          (item) => user.storeId != null && String(item.store_id) === String(user.storeId),
-        )
-        return idx < 0 ? 0 : idx
-      } catch {
-        return 0
-      }
+      const storeId = getLingyunPageNavStoreId()
+      const idx = this.storeRange.findIndex(
+        (item) => storeId != null && String(item.store_id) === String(storeId),
+      )
+      return idx < 0 ? 0 : idx
     },
     showAvatar(): boolean {
       return !!(this.profileAvatar || this.useAvatarSlot)
@@ -415,13 +396,8 @@ export default defineComponent({
     onStorePick(payload: { value?: number | string | string[] }) {
       const idx = Number(payload?.value)
       if (!Number.isFinite(idx) || idx < 0) return
-      try {
-        const item = useUserStore().storeOptions[idx]
-        if (!item) return
-        useUserStore().selectStore(item.store_id)
-      } catch {
-        /* 门店状态尚未就绪 */
-      }
+      const item = this.storeRange[idx]
+      if (item) selectLingyunPageNavStore(item.store_id)
     },
     syncLayout() {
       const layout = getLingyunNavLayout(LINGYUN_TOOLBAR_BAR_DESIGN_PX)
@@ -445,7 +421,7 @@ export default defineComponent({
       // #ifdef H5
       if (typeof window === 'undefined') return ''
       const raw = (window.location.hash || '').replace(/^#/, '').split('?')[0]
-      if (!raw || raw === '/') return normalizeLingyunPagePath(LINGYUN_PAGE_NAV_HOME)
+      if (!raw || raw === '/') return normalizeLingyunPagePath(this.navHome)
       return normalizeLingyunPagePath(raw)
       // #endif
       // #ifndef H5
@@ -498,13 +474,14 @@ export default defineComponent({
      * 404 对不上菜单项。已有点中的菜单路径就留着；刷新进 404 时才用地址里的 from。
      */
     routeHighlight(route: string): string {
-      if (pageHostState.path && route === 'pages/404/404') return pageHostState.path
+      const hostedPath = getLingyunHostedPath()
+      if (hostedPath && route === 'pages/404/404') return hostedPath
       if (route === 'pages/404/404') {
         if (this.currentPath && this.currentPath !== 'pages/404/404') return this.currentPath
         const from = this.missedMenuPath()
         if (from) return from
       }
-      if (pageHostState.path && !route) return pageHostState.path
+      if (hostedPath && !route) return hostedPath
       return route
     },
     missedMenuPath(): string {
@@ -542,7 +519,7 @@ export default defineComponent({
       return next
     },
     isNavCurrent(url: string) {
-      const selected = pageHostState.path || this.currentPath
+      const selected = getLingyunHostedPath() || this.currentPath
       return normalizeLingyunPagePath(url) === selected
     },
     onNavScroll(event: { detail?: { scrollTop?: number } }) {
@@ -579,13 +556,14 @@ export default defineComponent({
       const next = resolveLingyunPageUrl(url)
       const target = normalizeLingyunPagePath(next)
       if (!target) return
-      if (pageHostState.path === rawTarget && pageHostState.url === next) return
-      if (!pageHostState.path && target === this.currentPath && target === rawTarget) return
+      const hostedPath = getLingyunHostedPath()
+      if (hostedPath === rawTarget && getLingyunHostedUrl() === next) return
+      if (!hostedPath && target === this.currentPath && target === rawTarget) return
       if (openLingyunHostedPage(next, rawTarget)) {
         this.currentPath = rawTarget
         return
       }
-      if (pageHostState.path) clearLingyunPageHost()
+      if (hostedPath) clearLingyunPageHost()
       const highlight = target === 'pages/404/404' ? rawTarget : target
       this.currentPath = highlight
       setLingyunPageNavIntent(highlight)

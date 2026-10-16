@@ -56,7 +56,7 @@
 
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
-import { useThemeStore } from '@/stores/theme'
+import { useLingyunTheme } from '../../utils/theme'
 import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
 import {
   LINGYUN_APP_PAGE_SCROLL_LOCK,
@@ -166,7 +166,7 @@ export default defineComponent({
     rootClass() {
       let themeClass = 'theme-light'
       try {
-        themeClass = useThemeStore().rootClass || 'theme-light'
+        themeClass = useLingyunTheme().rootClass || 'theme-light'
       } catch {
         /* pinia 未就绪 */
       }

@@ -52,7 +52,7 @@
 
 <script lang="ts">
 import { defineComponent, inject, ref, type PropType } from 'vue'
-import { useThemeStore } from '@/stores/theme'
+import { useLingyunTheme } from '../../utils/theme'
 import { LINGYUN_APP_PAGE_NAV_INSET } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 
 type FabContent = {
@@ -140,7 +140,7 @@ export default defineComponent({
     },
     themeClass() {
       try {
-        return useThemeStore().rootClass || 'theme-light'
+        return useLingyunTheme().rootClass || 'theme-light'
       } catch {
         return 'theme-light'
       }

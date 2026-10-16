@@ -100,7 +100,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { useThemeStore } from '@/stores/theme'
+import { useLingyunTheme } from '../../utils/theme'
 
 type SwipeSurface = {
   hideDivider?: boolean
@@ -263,7 +263,7 @@ export default defineComponent({
     },
     themeClass() {
       try {
-        return useThemeStore().rootClass || 'theme-light'
+        return useLingyunTheme().rootClass || 'theme-light'
       } catch {
         return 'theme-light'
       }

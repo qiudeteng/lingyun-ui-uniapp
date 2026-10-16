@@ -101,8 +101,6 @@
 
     <!-- 命令式 Toast/HUD：须在页面树内（mp-weixin 的 App.vue 模板不会盖到页面上） -->
     <lingyun-feedback-host v-if="!embedded" />
-    <!-- demo 页悬浮主题开关：非 demo 路由自己不显示 -->
-    <demo-theme-switch v-if="!embedded" />
   </view>
 </template>
 
@@ -116,7 +114,7 @@ import {
   LINGYUN_APP_PAGE_SCROLL_LOCK,
   LINGYUN_APP_PAGE_SCROLL_LOCKED,
   type LingyunAppPageScrollLock,
-} from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
+} from './useLingyunAppPageScroll'
 import {
   coerceTriFlag,
   getLingyunNavLayout,
@@ -124,26 +122,23 @@ import {
   LINGYUN_TOOLBAR_BAR_DESIGN_PX,
   LINGYUN_TOOLBAR_LARGE_EXTRA_PX,
   readLingyunResizeWidth,
-} from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
-import { useThemeStore } from '@/stores/theme'
-import DemoThemeSwitch from '@/components/demo-theme-switch/demo-theme-switch.vue'
-import { pageRequiresLogin } from '@/router/guards'
+} from '../lingyun-toolbars/getLingyunNavSafeInset'
+import { useLingyunTheme } from '../../utils/theme'
 import {
-  LINGYUN_PAGE_NAV_HOME,
   LINGYUN_PAGE_NAV_WIDTH,
   claimLingyunPageNavHeaderSlots,
+  ensureLingyunWidePageHost,
+  getLingyunPageNavHome,
+  hostedFromText,
+  hostedPagePath,
+  lingyunPageRequiresLogin,
+  openLingyunHostedPage,
   releaseLingyunPageNavHeaderSlots,
   setLingyunPageNavIntent,
   type LingyunPageNavSection,
-} from '@/router/pageNav'
-import {
-  ensureLingyunWidePageHost,
-  hostedFromText,
-  hostedPagePath,
-  openLingyunHostedPage,
-} from '@/router/pageHost'
+} from '../../utils/pageNavAdapter'
 // #ifdef H5
-import { setLingyunH5PageNavAllowed } from '@/uni_modules/lingyun-ui/components/lingyun-page-nav/mountLingyunPageNav'
+import { setLingyunH5PageNavAllowed } from '../lingyun-page-nav/mountLingyunPageNav'
 // #endif
 
 /**
@@ -176,7 +171,6 @@ const LINGYUN_APP_PAGE_EMBEDDED = Symbol('lingyun-app-page-embedded')
 
 export default defineComponent({
   name: 'LingyunAppPage',
-  components: { DemoThemeSwitch },
   emits: ['back', 'close', 'trailing', 'scroll'],
   props: {
     title: { type: String, default: '' },
@@ -285,7 +279,7 @@ export default defineComponent({
       this.$nextTick(() => this.setupGlassObserver())
     }
     try {
-      useThemeStore().apply()
+      useLingyunTheme().apply()
     } catch {
       /* pinia 未就绪时忽略 */
     }
@@ -313,7 +307,7 @@ export default defineComponent({
   computed: {
     themeRootClass() {
       try {
-        return useThemeStore().rootClass
+        return useLingyunTheme().rootClass
       } catch {
         return 'theme-light'
       }
@@ -337,14 +331,14 @@ export default defineComponent({
     /** 宽屏需要为顶栏让出左侧。H5 的列在 body 上，这里只留宽度。 */
     navDocked() {
       if (this.embedded) return false
-      if (pageRequiresLogin()) return false
+      if (lingyunPageRequiresLogin()) return false
       if (!coerceTriFlag(this.showNav, true)) return false
       if (this.placement === 'sheet' || this.showGrabberEffective) return false
       return this.regular
     },
     /** 未登录的受保护页先藏起来，避免冷启动先画出首页和侧栏再跳登录 */
     authHold() {
-      return pageRequiresLogin()
+      return lingyunPageRequiresLogin()
     },
     /** 宽屏侧栏点到未注册页面：留在本页，只换右侧。 */
     hostedMiss() {
@@ -640,9 +634,10 @@ export default defineComponent({
       this.scheduleScrollSettle(0)
     },
     onHostHome() {
-      setLingyunPageNavIntent(LINGYUN_PAGE_NAV_HOME)
-      if (openLingyunHostedPage(LINGYUN_PAGE_NAV_HOME, LINGYUN_PAGE_NAV_HOME)) return
-      uni.redirectTo({ url: LINGYUN_PAGE_NAV_HOME })
+      const home = getLingyunPageNavHome(true)
+      setLingyunPageNavIntent(home)
+      if (openLingyunHostedPage(home, home)) return
+      uni.redirectTo({ url: home })
     },
     onBack() {
       this.$emit('back')

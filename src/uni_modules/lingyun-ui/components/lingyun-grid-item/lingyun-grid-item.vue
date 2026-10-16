@@ -66,8 +66,7 @@
 
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
-import { resolveLingyunPageUrl } from '@/router/pageNav'
-import { openLingyunHostedPage } from '@/router/pageHost'
+import { openLingyunHostedPage, resolveLingyunPageUrl } from '../../utils/pageNavAdapter'
 
 const DEFAULT_ICON_PX = 28
 

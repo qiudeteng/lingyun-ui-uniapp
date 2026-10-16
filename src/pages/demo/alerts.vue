@@ -74,6 +74,7 @@
 
 <script setup lang="ts">
   import { ref } from 'vue'
+  import type { LingyunAlertInput } from '@/uni_modules/lingyun-ui'
 
   const defaultVisible = ref(false)
   const stackedVisible = ref(false)
@@ -97,8 +98,10 @@
     { text: 'Continue', primary: true },
   ]
 
-  const input1Fields = ref([{ key: 'value', placeholder: 'Placeholder', value: '' }])
-  const input2Fields = ref([
+  const input1Fields = ref<LingyunAlertInput[]>([
+    { key: 'value', placeholder: 'Placeholder', value: '' },
+  ])
+  const input2Fields = ref<LingyunAlertInput[]>([
     { key: 'value', placeholder: 'Value', value: 'Value' },
     { key: 'placeholder', placeholder: 'Placeholder', value: '' },
   ])
@@ -119,11 +122,11 @@
     input2Visible.value = true
   }
 
-  function onInput1(next: Array<{ key?: string; placeholder?: string; value?: string }>): void {
+  function onInput1(next: LingyunAlertInput[]): void {
     input1Fields.value = next
   }
 
-  function onInput2(next: Array<{ key?: string; placeholder?: string; value?: string }>): void {
+  function onInput2(next: LingyunAlertInput[]): void {
     input2Fields.value = next
   }
 

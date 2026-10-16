@@ -31,7 +31,7 @@
 
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
-import { useThemeStore } from '@/stores/theme'
+import { useLingyunTheme } from '../../utils/theme'
 
 /** Sketch Sliders/Light/No Glyphs：拇指 37×24，轨道高 6 */
 const KNOB_W = 37
@@ -86,7 +86,7 @@ export default defineComponent({
     },
     themeClass(): string {
       try {
-        return useThemeStore().rootClass || 'theme-light'
+        return useLingyunTheme().rootClass || 'theme-light'
       } catch {
         return 'theme-light'
       }

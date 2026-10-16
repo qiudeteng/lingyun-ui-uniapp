@@ -40,7 +40,7 @@
 
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
-import { useThemeStore } from '@/stores/theme'
+import { useLingyunTheme } from '../../utils/theme'
 
 type SegmentObject = {
   key?: string | number
@@ -157,7 +157,7 @@ export default defineComponent({
     },
     themeClass() {
       try {
-        return useThemeStore().rootClass || 'theme-light'
+        return useLingyunTheme().rootClass || 'theme-light'
       } catch (e) {
         return 'theme-light'
       }

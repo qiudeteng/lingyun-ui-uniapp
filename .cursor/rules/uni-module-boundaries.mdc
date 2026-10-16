@@ -1,0 +1,23 @@
+---
+description: uni_modules 发布包必须保持自包含，禁止反向依赖宿主工程
+globs:
+  - "src/uni_modules/**/*"
+alwaysApply: true
+---
+
+# uni_modules 包边界（强制）
+
+`src/uni_modules/<package>/` 是可独立发布、可被任意 uni-app 工程安装的包。
+
+## 硬规则
+
+1. 包内禁止导入宿主工程的 `@/components`、`@/pages`、`@/router`、`@/stores`、`@/api`、`@/utils`、`@/config` 等源码。
+2. 包之间只能依赖各自公开能力，并在使用方 `package.json` 的 `uni_modules.dependencies` 中声明被依赖包。
+3. 宿主业务状态、路由和接口能力须由 props、events、provide/inject 或包公开的配置适配器注入。
+4. 演示专用组件、页面和业务逻辑不得放入发布组件的运行时依赖链。
+5. 发布前必须运行 `pnpm check:uni-boundaries`；检查失败不得发布。
+
+## 允许
+
+- 同一包内使用相对路径，或从自身 `@/uni_modules/<package>/...` 导入。
+- 从已在 `uni_modules.dependencies` 声明的其它 uni_modules 包导入。

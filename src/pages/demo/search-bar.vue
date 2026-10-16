@@ -66,7 +66,9 @@
 <style lang="scss">
   .page {
     flex: 1;
+    height: 100vh;
     min-height: 0;
+    box-sizing: border-box;
     position: relative;
     background:
       radial-gradient(120% 80% at 10% 0%, rgba(37, 99, 235, 0.22), transparent 55%),

@@ -66,6 +66,7 @@
   <charts-tarea-page v-else-if="currentPath === 'pages/demo/charts/tarea'" />
   <app-page-view-outlet v-else-if="currentPath" :path="currentPath" />
   <slot v-else />
+  <demo-theme-switch />
 </template>
 
 <script setup lang="ts">

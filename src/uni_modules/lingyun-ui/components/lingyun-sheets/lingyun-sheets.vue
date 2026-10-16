@@ -150,7 +150,7 @@
 
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
-import { useThemeStore } from '@/stores/theme'
+import { useLingyunTheme } from '../../utils/theme'
 import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
 import { getLingyunToolbarStackPx, LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
 import {
@@ -322,7 +322,7 @@ export default defineComponent({
     rootClass() {
       let themeClass = 'theme-light'
       try {
-        themeClass = useThemeStore().rootClass || 'theme-light'
+        themeClass = useLingyunTheme().rootClass || 'theme-light'
       } catch {
         /* pinia 未就绪 */
       }

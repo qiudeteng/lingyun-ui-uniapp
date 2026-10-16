@@ -37,6 +37,7 @@
     "build:quickapp-webview-huawei": "uni build -p quickapp-webview-huawei",
     "dev:quickapp-webview-union": "uni -p quickapp-webview-union",
     "build:quickapp-webview-union": "uni build -p quickapp-webview-union",
+    "check:uni-boundaries": "node scripts/check-uni-module-boundaries.mjs",
     "type-check": "vue-tsc --noEmit",
     "type-check:native": "tsc --noEmit",
     "docs:dev": "vuepress dev design --host 0.0.0.0 --port 5174",

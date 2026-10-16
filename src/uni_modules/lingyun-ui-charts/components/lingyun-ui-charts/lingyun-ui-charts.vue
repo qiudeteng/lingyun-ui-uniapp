@@ -143,7 +143,7 @@
 <script lang="ts">
 // 类型以 any 收口，避免改判断时带偏绘制。
 import { defineComponent } from 'vue'
-import { useThemeStore } from '@/stores/theme'
+import { useLingyunTheme } from '@/uni_modules/lingyun-ui/utils/theme'
 import {
   isLingyunMpOverlayOpen,
   onLingyunMpOverlayChange,
@@ -572,7 +572,7 @@ export default defineComponent({
       return msg
     },
     legendTheme(): 'light' | 'dark' {
-      return useThemeStore().resolved
+      return useLingyunTheme().resolved
     },
     optsStamp(): string {
       return stableHash(this.opts)

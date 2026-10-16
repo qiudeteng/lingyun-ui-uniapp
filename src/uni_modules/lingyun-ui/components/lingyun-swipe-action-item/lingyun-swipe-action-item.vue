@@ -219,7 +219,7 @@ export default {
 import { defineComponent, type PropType } from 'vue'
 import mpWxs from './mp-wxs.ts'
 import mpJs from './mp-js.ts'
-import { useThemeStore } from '@/stores/theme'
+import { useLingyunTheme } from '../../utils/theme'
 
 const ROLE_COLORS: Record<string, string> = {
   destructive: '#ff383c',
@@ -329,7 +329,7 @@ export default defineComponent({
     },
     themeClass() {
       try {
-        return useThemeStore().rootClass || 'theme-light'
+        return useLingyunTheme().rootClass || 'theme-light'
       } catch {
         return 'theme-light'
       }

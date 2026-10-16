@@ -19,7 +19,7 @@
 
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
-import { useThemeStore } from '@/stores/theme'
+import { useLingyunTheme } from '../../utils/theme'
 
 /**
  * lingyun-refresh
@@ -42,7 +42,7 @@ export default defineComponent({
   computed: {
     isDark() {
       try {
-        return useThemeStore().resolved === 'dark'
+        return useLingyunTheme().resolved === 'dark'
       } catch {
         return false
       }

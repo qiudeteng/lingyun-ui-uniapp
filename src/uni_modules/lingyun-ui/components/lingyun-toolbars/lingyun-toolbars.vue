@@ -109,7 +109,7 @@ import {
   LINGYUN_TOOLBAR_WINDOW_CONTROLS_W_PX,
   readLingyunResizeWidth,
 } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
-import { useThemeStore } from '@/stores/theme'
+import { useLingyunTheme } from '../../utils/theme'
 
 /**
  * lingyun-toolbars
@@ -346,7 +346,7 @@ export default defineComponent({
     },
     themeClass() {
       try {
-        return useThemeStore().rootClass || 'theme-light'
+        return useLingyunTheme().rootClass || 'theme-light'
       } catch (e) {
         return 'theme-light'
       }

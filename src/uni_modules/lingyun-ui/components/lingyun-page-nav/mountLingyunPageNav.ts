@@ -1,6 +1,6 @@
 import { h, render, type App, type AppContext } from 'vue'
 import LingyunPageNav from './lingyun-page-nav.vue'
-import { LINGYUN_PAGE_NAV_WIDTH } from '@/router/pageNav'
+import { LINGYUN_PAGE_NAV_WIDTH } from '../../utils/pageNavAdapter'
 import { LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH } from '../lingyun-toolbars/getLingyunNavSafeInset'
 
 let booted = false

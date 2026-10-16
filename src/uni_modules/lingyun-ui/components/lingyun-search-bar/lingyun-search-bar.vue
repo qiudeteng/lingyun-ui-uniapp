@@ -392,6 +392,7 @@ $ly-search-cancel: $ly-search-field-h;
 
   &--fixed {
     position: fixed;
+    width: auto;
     left: 0;
     right: 0;
     bottom: 0;
