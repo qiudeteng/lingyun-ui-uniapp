@@ -1,7 +1,7 @@
 <!--
  * lingyun-ui-charts 凌云UI 图表组件
  * 基于 uCharts / ECharts（Apache-2.0，QIUN® 秋云 https://www.ucharts.cn）
- * 系列色：js_sdk/u-charts/config-colors.ts
+ * 系列色：js_sdk/lingyun-ui-charts/config-colors.ts
  -->
 <template>
   <view class="chartsview" :id="'ChartBoxId'+cid">
@@ -166,16 +166,16 @@ import {
   isLingyunMpOverlayOpen,
   onLingyunMpOverlayChange,
 } from '@/uni_modules/lingyun-ui/utils/mp-overlay-gate'
-import uCharts from '../../js_sdk/u-charts/u-charts'
-import cfu from '../../js_sdk/u-charts/config-ucharts'
+import LingyunUiCharts from '../../js_sdk/lingyun-ui-charts/lingyun-ui-charts'
+import cfu from '../../js_sdk/lingyun-ui-charts/config-ucharts'
 import {
   chartLabelColor,
   chartLabelColorDark,
   chartLabelSecondaryColor,
   chartLabelSecondaryColorDark,
-} from '../../js_sdk/u-charts/config-colors'
+} from '../../js_sdk/lingyun-ui-charts/config-colors'
 // #ifdef APP-VUE || H5
-import cfe from '../../js_sdk/u-charts/config-echarts'
+import cfe from '../../js_sdk/lingyun-ui-charts/config-echarts'
 // #endif
 
 function deepCloneAssign(origin: Record<string, any> = {}, ...args: any[]): Record<string, any> {
@@ -1108,7 +1108,7 @@ export default defineComponent({
                 cfu.option[cid].rotateLock = cfu.option[cid].rotate;
                 this.uchartsOpts = deepCloneAssign({}, cfu.option[cid]);
               }
-            //如果是小程序端，采用uCharts渲染
+            // 小程序端用凌云图表引擎渲染
             } else {
               cfu.option[cid] = formatterAssign(cfu.option[cid],cfu.formatter)
               this.mixinDatacomErrorMessage = null;
@@ -1223,7 +1223,7 @@ export default defineComponent({
         return;
       }
       this.showchart = true;
-      cfu.instance[cid] = new uCharts(cfu.option[cid]);
+      cfu.instance[cid] = new LingyunUiCharts(cfu.option[cid]);
       cfu.instance[cid].addEventListener('renderComplete', () => {
         this.emitMsg({name: 'complete', params: {type:"complete", complete: true, id: cid, opts: cfu.instance[cid].opts}});
         this.scheduleMpLastShot()
@@ -1402,9 +1402,9 @@ export default defineComponent({
 
 <!-- #ifdef APP-VUE || H5 -->
 <script module="rdcharts" lang="renderjs">
-import uChartsRD from '../../js_sdk/u-charts/u-charts';
-import cfu from '../../js_sdk/u-charts/config-ucharts';
-import cfe from '../../js_sdk/u-charts/config-echarts';
+import LingyunUiChartsRD from '../../js_sdk/lingyun-ui-charts/lingyun-ui-charts';
+import cfu from '../../js_sdk/lingyun-ui-charts/config-ucharts';
+import cfe from '../../js_sdk/lingyun-ui-charts/config-echarts';
 
 var that = {};
 var rootdom = null;
@@ -1589,7 +1589,7 @@ export default {
       	return [posX, posY]
       }
     },
-    //==============以下是uCharts的方法====================
+    //==============以下是图表引擎的方法====================
     ucinit(newVal, oldVal, owner, instance){
       if(JSON.stringify(newVal) == JSON.stringify(oldVal)){
         return;
@@ -1618,7 +1618,7 @@ export default {
     },
     newUChart() {
       let cid = this.rid
-      cfu.instance[cid] = new uChartsRD(cfu.option[cid])
+      cfu.instance[cid] = new LingyunUiChartsRD(cfu.option[cid])
       cfu.instance[cid].addEventListener('renderComplete', () => {
         that[cid].callMethod('emitMsg',{name:"complete",params:{type:"complete",complete:true,id:cid, opts: cfu.instance[cid].opts}})
         cfu.instance[cid].delEventListener('renderComplete')

@@ -1,20 +1,7 @@
 // @ts-nocheck
 /*
- * uCharts (R)
- * 高性能跨平台图表库，支持H5、APP、小程序（微信/支付宝/百度/头条/QQ/360/快手）、Vue、Taro等支持canvas的框架平台
- * Copyright (C) 2018-2022 QIUN (R) 秋云 https://www.ucharts.cn All rights reserved.
- * Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
- * 复制使用请保留本段注释，感谢支持开源！
- * 
- * uCharts (R) 官方网站
- * https://www.uCharts.cn
- * 
- * 开源地址:
- * https://gitee.com/uCharts/uCharts
- * 
- * uni-app插件市场地址：
- * http://ext.dcloud.net.cn/plugin?id=271
- * 
+ * lingyun-ui-charts
+ * 凌云UI 图表引擎。支持 H5、App、微信等小程序的 canvas。
  */
 
 'use strict';
@@ -46,7 +33,7 @@ var config = {
 
 var assign = function(target, ...varArgs) {
   if (target == null) {
-    throw new TypeError('[uCharts] Cannot convert undefined or null to object');
+    throw new TypeError('[lingyun-ui-charts] Cannot convert undefined or null to object');
   }
   if (!varArgs || varArgs.length <= 0) {
     return target;
@@ -124,7 +111,7 @@ function hexToRgb(hexValue, opc) {
 
 function findRange(num, type, limit) {
   if (isNaN(num)) {
-    throw new Error('[uCharts] series数据需为Number格式');
+    throw new Error('[lingyun-ui-charts] series数据需为Number格式');
   }
   limit = limit || 10;
   type = type ? type : 'upper';
@@ -185,12 +172,12 @@ function calValidDistance(self, distance, chartData, config, opts) {
   var validDistance = distance;
   if (distance >= 0) {
     validDistance = 0;
-    self.uevent.trigger('scrollLeft');
+    self.event.trigger('scrollLeft');
     self.scrollOption.position = 'left'
     opts.xAxis.scrollPosition = 'left';
   } else if (Math.abs(distance) >= dataChartWidth - dataChartAreaWidth) {
     validDistance = dataChartAreaWidth - dataChartWidth;
-    self.uevent.trigger('scrollRight');
+    self.event.trigger('scrollRight');
     self.scrollOption.position = 'right'
     opts.xAxis.scrollPosition = 'right';
   } else {
@@ -6785,7 +6772,7 @@ function drawCharts(type, opts, config, context) {
           drawCanvas(opts, context);
         },
         onAnimationFinish: function onAnimationFinish() {
-          _this.uevent.trigger('renderComplete');
+          _this.event.trigger('renderComplete');
         }
       });
       break;
@@ -6793,7 +6780,7 @@ function drawCharts(type, opts, config, context) {
       context.clearRect(0, 0, opts.width, opts.height);
       drawMapDataPoints(series, opts, config, context);
       setTimeout(()=>{
-        this.uevent.trigger('renderComplete');
+        this.event.trigger('renderComplete');
       },50)
       break;
     case 'funnel':
@@ -6811,7 +6798,7 @@ function drawCharts(type, opts, config, context) {
           drawCanvas(opts, context);
         },
         onAnimationFinish: function onAnimationFinish() {
-          _this.uevent.trigger('renderComplete');
+          _this.event.trigger('renderComplete');
         }
       });
       break;
@@ -6842,7 +6829,7 @@ function drawCharts(type, opts, config, context) {
           drawCanvas(opts, context);
         },
         onAnimationFinish: function onAnimationFinish() {
-          _this.uevent.trigger('renderComplete');
+          _this.event.trigger('renderComplete');
         }
       });
       break;
@@ -6873,7 +6860,7 @@ function drawCharts(type, opts, config, context) {
           drawCanvas(opts, context);
         },
         onAnimationFinish: function onAnimationFinish() {
-          _this.uevent.trigger('renderComplete');
+          _this.event.trigger('renderComplete');
         }
       });
       break;
@@ -6904,7 +6891,7 @@ function drawCharts(type, opts, config, context) {
           drawCanvas(opts, context);
         },
         onAnimationFinish: function onAnimationFinish() {
-          _this.uevent.trigger('renderComplete');
+          _this.event.trigger('renderComplete');
         }
       });
       break;
@@ -6935,7 +6922,7 @@ function drawCharts(type, opts, config, context) {
           drawCanvas(opts, context);
         },
         onAnimationFinish: function onAnimationFinish() {
-          _this.uevent.trigger('renderComplete');
+          _this.event.trigger('renderComplete');
         }
       });
       break;
@@ -6966,7 +6953,7 @@ function drawCharts(type, opts, config, context) {
           drawCanvas(opts, context);
         },
         onAnimationFinish: function onAnimationFinish() {
-          _this.uevent.trigger('renderComplete');
+          _this.event.trigger('renderComplete');
         }
       });
       break;
@@ -6997,7 +6984,7 @@ function drawCharts(type, opts, config, context) {
           drawCanvas(opts, context);
         },
         onAnimationFinish: function onAnimationFinish() {
-          _this.uevent.trigger('renderComplete');
+          _this.event.trigger('renderComplete');
         }
       });
       break;
@@ -7028,7 +7015,7 @@ function drawCharts(type, opts, config, context) {
           drawCanvas(opts, context);
         },
         onAnimationFinish: function onAnimationFinish() {
-          _this.uevent.trigger('renderComplete');
+          _this.event.trigger('renderComplete');
         }
       });
       break;
@@ -7059,7 +7046,7 @@ function drawCharts(type, opts, config, context) {
           drawCanvas(opts, context);
         },
         onAnimationFinish: function onAnimationFinish() {
-          _this.uevent.trigger('renderComplete');
+          _this.event.trigger('renderComplete');
         }
       });
       break;
@@ -7078,7 +7065,7 @@ function drawCharts(type, opts, config, context) {
           drawCanvas(opts, context);
         },
         onAnimationFinish: function onAnimationFinish() {
-          _this.uevent.trigger('renderComplete');
+          _this.event.trigger('renderComplete');
         }
       });
       break;
@@ -7097,7 +7084,7 @@ function drawCharts(type, opts, config, context) {
           drawCanvas(opts, context);
         },
         onAnimationFinish: function onAnimationFinish() {
-          _this.uevent.trigger('renderComplete');
+          _this.event.trigger('renderComplete');
         }
       });
       break;
@@ -7116,7 +7103,7 @@ function drawCharts(type, opts, config, context) {
           drawCanvas(opts, context);
         },
         onAnimationFinish: function onAnimationFinish() {
-          _this.uevent.trigger('renderComplete');
+          _this.event.trigger('renderComplete');
         }
       });
       break;
@@ -7135,7 +7122,7 @@ function drawCharts(type, opts, config, context) {
           drawCanvas(opts, context);
         },
         onAnimationFinish: function onAnimationFinish() {
-          _this.uevent.trigger('renderComplete');
+          _this.event.trigger('renderComplete');
         }
       });
       break;
@@ -7152,7 +7139,7 @@ function drawCharts(type, opts, config, context) {
           drawCanvas(opts, context);
         },
         onAnimationFinish: function onAnimationFinish() {
-          _this.uevent.trigger('renderComplete');
+          _this.event.trigger('renderComplete');
         }
       });
       break;
@@ -7169,7 +7156,7 @@ function drawCharts(type, opts, config, context) {
           drawCanvas(opts, context);
         },
         onAnimationFinish: function onAnimationFinish() {
-          _this.uevent.trigger('renderComplete');
+          _this.event.trigger('renderComplete');
         }
       });
       break;
@@ -7204,27 +7191,27 @@ function drawCharts(type, opts, config, context) {
           drawCanvas(opts, context);
         },
         onAnimationFinish: function onAnimationFinish() {
-          _this.uevent.trigger('renderComplete');
+          _this.event.trigger('renderComplete');
         }
       });
       break;
   }
 }
 
-function uChartsEvent() {
+function LingyunUiChartsEvent() {
   this.events = {};
 }
 
-uChartsEvent.prototype.addEventListener = function(type, listener) {
+LingyunUiChartsEvent.prototype.addEventListener = function(type, listener) {
   this.events[type] = this.events[type] || [];
   this.events[type].push(listener);
 };
 
-uChartsEvent.prototype.delEventListener = function(type) {
+LingyunUiChartsEvent.prototype.delEventListener = function(type) {
   this.events[type] = [];
 };
 
-uChartsEvent.prototype.trigger = function() {
+LingyunUiChartsEvent.prototype.trigger = function() {
   for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
     args[_key] = arguments[_key];
   }
@@ -7235,13 +7222,13 @@ uChartsEvent.prototype.trigger = function() {
       try {
         listener.apply(null, params);
       } catch (e) {
-          //console.log('[uCharts] '+e);
+          //console.log('[lingyun-ui-charts] '+e);
       }
     });
   }
 };
 
-var uCharts = function uCharts(opts) {
+var LingyunUiCharts = function LingyunUiCharts(opts) {
   opts.pix = opts.pixelRatio ? opts.pixelRatio : 1;
   opts.fontSize = opts.fontSize ? opts.fontSize : 13;
   opts.fontColor = opts.fontColor ? opts.fontColor : config.fontColor;
@@ -7343,7 +7330,7 @@ var uCharts = function uCharts(opts) {
   config$$1.titleFontSize = config.titleFontSize * opts.pix;
   config$$1.subtitleFontSize = config.subtitleFontSize * opts.pix;
   if(!opts.context){
-    throw new Error('[uCharts] 未获取到context！注意：v2.0版本后，需要自行获取canvas的绘图上下文并传入opts.context！');
+    throw new Error('[lingyun-ui-charts] 未获取到context！注意：v2.0版本后，需要自行获取canvas的绘图上下文并传入opts.context！');
   }
   this.context = opts.context;
   if (!this.context.setTextAlign) {
@@ -7381,7 +7368,7 @@ var uCharts = function uCharts(opts) {
     this.context.setLineDash = function(e) {}
   }
   opts.chartData = {};
-  this.uevent = new uChartsEvent();
+  this.event = new LingyunUiChartsEvent();
   this.scrollOption = {
     currentOffset: 0,
     startTouchX: 0,
@@ -7393,7 +7380,7 @@ var uCharts = function uCharts(opts) {
   drawCharts.call(this, opts.type, opts, config$$1, this.context);
 };
 
-uCharts.prototype.updateData = function() {
+LingyunUiCharts.prototype.updateData = function() {
   let data = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
   this.opts = assign({}, this.opts, data);
   this.opts.updateData = true;
@@ -7434,10 +7421,10 @@ uCharts.prototype.updateData = function() {
   drawCharts.call(this, this.opts.type, this.opts, this.config, this.context);
 };
 
-uCharts.prototype.zoom = function() {
+LingyunUiCharts.prototype.zoom = function() {
   var val = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.opts.xAxis.itemCount;
   if (this.opts.enableScroll !== true) {
-    console.log('[uCharts] 请启用滚动条后使用')
+    console.log('[lingyun-ui-charts] 请启用滚动条后使用')
     return;
   }
   //当前屏幕中间点
@@ -7475,9 +7462,9 @@ uCharts.prototype.zoom = function() {
   drawCharts.call(this, this.opts.type, this.opts, this.config, this.context);
 };
 
-uCharts.prototype.dobuleZoom = function(e) {
+LingyunUiCharts.prototype.dobuleZoom = function(e) {
   if (this.opts.enableScroll !== true) {
-    console.log('[uCharts] 请启用滚动条后使用')
+    console.log('[lingyun-ui-charts] 请启用滚动条后使用')
     return;
   }
   const tcs = e.changedTouches;
@@ -7538,19 +7525,19 @@ uCharts.prototype.dobuleZoom = function(e) {
   drawCharts.call(this, this.opts.type, this.opts, this.config, this.context);
 }
 
-uCharts.prototype.stopAnimation = function() {
+LingyunUiCharts.prototype.stopAnimation = function() {
   this.animationInstance && this.animationInstance.stop();
 };
 
-uCharts.prototype.addEventListener = function(type, listener) {
-  this.uevent.addEventListener(type, listener);
+LingyunUiCharts.prototype.addEventListener = function(type, listener) {
+  this.event.addEventListener(type, listener);
 };
 
-uCharts.prototype.delEventListener = function(type) {
-  this.uevent.delEventListener(type);
+LingyunUiCharts.prototype.delEventListener = function(type) {
+  this.event.delEventListener(type);
 };
 
-uCharts.prototype.getCurrentDataIndex = function(e) {
+LingyunUiCharts.prototype.getCurrentDataIndex = function(e) {
   var touches = null;
   if (e.changedTouches) {
     touches = e.changedTouches[0];
@@ -7604,7 +7591,7 @@ uCharts.prototype.getCurrentDataIndex = function(e) {
   return -1;
 };
 
-uCharts.prototype.getLegendDataIndex = function(e) {
+LingyunUiCharts.prototype.getLegendDataIndex = function(e) {
   var touches = null;
   if (e.changedTouches) {
     touches = e.changedTouches[0];
@@ -7621,7 +7608,7 @@ uCharts.prototype.getLegendDataIndex = function(e) {
   return -1;
 };
 
-uCharts.prototype.touchLegend = function(e) {
+LingyunUiCharts.prototype.touchLegend = function(e) {
   var option = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
   var touches = null;
   if (e.changedTouches) {
@@ -7646,7 +7633,7 @@ uCharts.prototype.touchLegend = function(e) {
 
 };
 
-uCharts.prototype.showToolTip = function(e) {
+LingyunUiCharts.prototype.showToolTip = function(e) {
   var option = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
   var touches = null;
   if (e.changedTouches) {
@@ -7655,7 +7642,7 @@ uCharts.prototype.showToolTip = function(e) {
     touches = e.mp.changedTouches[0];
   }
   if (!touches) {
-    console.log("[uCharts] 未获取到event坐标信息");
+    console.log("[lingyun-ui-charts] 未获取到event坐标信息");
   }
   var _touches$ = getTouches(touches, this.opts, e);
   var currentOffset = this.scrollOption.currentOffset;
@@ -7879,7 +7866,7 @@ uCharts.prototype.showToolTip = function(e) {
   }
 };
 
-uCharts.prototype.translate = function(distance) {
+LingyunUiCharts.prototype.translate = function(distance) {
   this.scrollOption = {
     currentOffset: distance,
     startTouchX: distance,
@@ -7893,7 +7880,7 @@ uCharts.prototype.translate = function(distance) {
   drawCharts.call(this, this.opts.type, opts, this.config, this.context);
 };
 
-uCharts.prototype.scrollStart = function(e) {
+LingyunUiCharts.prototype.scrollStart = function(e) {
   var touches = null;
   if (e.changedTouches) {
     touches = e.changedTouches[0];
@@ -7906,7 +7893,7 @@ uCharts.prototype.scrollStart = function(e) {
   }
 };
 
-uCharts.prototype.scroll = function(e) {
+LingyunUiCharts.prototype.scroll = function(e) {
   if (this.scrollOption.lastMoveTime === 0) {
     this.scrollOption.lastMoveTime = Date.now();
   }
@@ -7939,7 +7926,7 @@ uCharts.prototype.scroll = function(e) {
   }
 };
 
-uCharts.prototype.scrollEnd = function(e) {
+LingyunUiCharts.prototype.scrollEnd = function(e) {
   if (this.opts.enableScroll === true) {
     var _scrollOption = this.scrollOption,
       currentOffset = _scrollOption.currentOffset,
@@ -7950,4 +7937,4 @@ uCharts.prototype.scrollEnd = function(e) {
   }
 };
 
-export default uCharts as new (opts?: any) => any
+export default LingyunUiCharts as new (opts?: any) => any

@@ -29,6 +29,7 @@
 | 气泡图 | `bubble` | [气泡图](./bubble.md) |
 | K 线图 | `candle` | [K 线图](./candle.md) |
 | 词云 | `word` | [词云图](./word.md) |
+| 地图 | `map` | [地图](./map.md) |
 | 时间轴折线 | `tline` | [时间轴折线](./tline.md) |
 | 时间轴区域 | `tarea` | [时间轴区域](./tarea.md) |
 
@@ -71,10 +72,10 @@ const chartOpts = {}
 
 ## 系列色
 
-改色只动 `js_sdk/u-charts/config-colors.ts`。不要在业务 `src/config` 再备一份。
+改色只动 `js_sdk/lingyun-ui-charts/config-colors.ts`。不要在业务 `src/config` 再备一份。
 
 ```ts
-import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/u-charts/config-colors'
+import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/lingyun-ui-charts/config-colors'
 
 const chartOpts = { color: chartColorDark }
 ```

@@ -470,6 +470,13 @@
 			}
 		},
 		{
+			"path": "pages/demo/charts/map",
+			"style": {
+				"navigationBarTitleText": "Map",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/charts/tline",
 			"style": {
 				"navigationBarTitleText": "Time Line",

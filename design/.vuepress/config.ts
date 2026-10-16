@@ -147,6 +147,7 @@ export default defineUserConfig({
               { text: 'bubble · 气泡图', link: '/pages/demo/charts/bubble.md' },
               { text: 'candle · K 线', link: '/pages/demo/charts/candle.md' },
               { text: 'word · 词云', link: '/pages/demo/charts/word.md' },
+              { text: 'map · 地图', link: '/pages/demo/charts/map.md' },
               { text: 'tline · 时间轴折线', link: '/pages/demo/charts/tline.md' },
               { text: 'tarea · 时间轴区域', link: '/pages/demo/charts/tarea.md' },
             ],

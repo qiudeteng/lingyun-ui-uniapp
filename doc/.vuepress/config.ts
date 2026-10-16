@@ -100,6 +100,7 @@ const chartSidebar = [
       { text: '气泡图', link: '/charts/bubble.html' },
       { text: 'K 线图', link: '/charts/candle.html' },
       { text: '词云图', link: '/charts/word.html' },
+      { text: '地图', link: '/charts/map.html' },
       { text: '时间轴折线', link: '/charts/tline.html' },
       { text: '时间轴区域', link: '/charts/tarea.html' },
     ],

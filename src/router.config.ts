@@ -341,6 +341,11 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Word' }
 	},
 	{
+		path: '/pages/demo/charts/map',
+		name: 'pagesDemoChartsMap',
+		meta: { title: 'Map' }
+	},
+	{
 		path: '/pages/demo/charts/tline',
 		name: 'pagesDemoChartsTline',
 		meta: { title: 'Time Line' }

@@ -3,7 +3,7 @@
 ## 1.0.12（2026-10-15）
 - 条状图默认右侧顶端圆角 `barBorderRadius: [6, 6, 0, 0]`；堆积条最右一层同样圆角；Demo / 文档增加堆积条状示例。
 ## 1.0.11（2026-10-15）
-- 抽出堆积算法 `js_sdk/u-charts/stack-series.ts`；折线 / 曲线传原始分层数据，开 `extra.line.stack: true` 即可（引擎内累加并画面积色带）。
+- 抽出堆积算法 `js_sdk/lingyun-ui-charts/stack-series.ts`；折线 / 曲线传原始分层数据，开 `extra.line.stack: true` 即可（引擎内累加并画面积色带）。
 ## 1.0.10（2026-10-15）
 - 区域图支持 `extra.area.stack`：堆积折线 / 曲线按层填色（`y`～`y0`），Y 轴按总和缩放；Demo 与文档改为面积堆积，无需再累加数据。
 ## 1.0.9（2026-10-15）
@@ -25,11 +25,10 @@
 - 图例文字默认白色，点掉隐藏后改为图表文字色。
 - 环图中心标题、副标题超出内圆时按内圆缩小。
 ## 1.0.2（2026-10-10）
-- 组件、图表配置和 uCharts 引擎改为 TypeScript。ECharts 压缩包和 renderjs 仍是 JavaScript。
-- 删除未引用的 `u-charts.min.js`。
+- 组件、图表配置。ECharts 压缩包和 renderjs 仍是 JavaScript。
 ## 1.0.1（2026-10-10）
 
 - 图表包版本从 **1.0.1** 起，按 `1.0.x` 递增。
 - 词云默认不再铺白底，透出卡片背景，与其它图种一致。
 - 使用手册拆成总览与各图种，右侧预览对应 `pages/demo/charts/<type>`。
-- 系列色迁入本包 `js_sdk/u-charts/config-colors.js`。
+- 系列色迁入本包 `js_sdk/lingyun-ui-charts/config-colors.js`。

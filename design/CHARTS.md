@@ -7,9 +7,9 @@
 ## 权威来源
 
 1. 使用手册 [`doc/charts/README.md`](../doc/charts/README.md)（含属性 / 事件 / 方法全文）· 图种 [`doc/charts/`](../doc/charts/)
-2. 系列色 [`config-colors.ts`](../src/uni_modules/lingyun-ui-charts/js_sdk/u-charts/config-colors.ts) · [`COLORS.md`](./COLORS.md) System Accents
+2. 系列色 [`config-colors.ts`](../src/uni_modules/lingyun-ui-charts/js_sdk/lingyun-ui-charts/config-colors.ts) · [`COLORS.md`](./COLORS.md) System Accents
 3. 默认 option：`config-ucharts.ts` / `config-echarts.ts`
-4. 引擎实现：`js_sdk/u-charts/u-charts.ts`（源自 uCharts / qiun-data-charts）
+4. 引擎实现：`js_sdk/lingyun-ui-charts/lingyun-ui-charts.ts`（源自 uCharts / qiun-data-charts）
 
 尺寸 **1pt = 1px**。禁止 `rpx`。
 
@@ -32,7 +32,7 @@
 
 ## 2. 系列色
 
-改色 **只动** `js_sdk/u-charts/config-colors.ts`。`config-ucharts.ts` / `config-echarts.ts` 从这里取默认 `color`。禁止在业务 `src/config` 再备一份。
+改色 **只动** `js_sdk/lingyun-ui-charts/config-colors.ts`。`config-ucharts.ts` / `config-echarts.ts` 从这里取默认 `color`。禁止在业务 `src/config` 再备一份。
 
 顺序对齐 System Accents：**Blue → Green → Yellow → Red → Cyan → Mint → Orange → Purple → Pink**。
 
@@ -42,7 +42,7 @@
 | `chartColorDark` | Dark；暗黑页：`:opts="{ color: chartColorDark }"` |
 
 ```ts
-import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/u-charts/config-colors'
+import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/js_sdk/lingyun-ui-charts/config-colors'
 ```
 
 单系列覆盖：`series[].color`。不要自造非系统强调色。
@@ -173,7 +173,15 @@ legend: {
 { name: '门店 A', data: [35, 36, 31], value: 102, rate: '48%' }
 ```
 
-未做 demo：`map`、`demotype`。属性 / 事件 / 方法见手册 [`doc/charts/README.md`](../doc/charts/README.md)；其余 option 字段以本包 `config-ucharts.ts` 与引擎源码为准。
+### 3.7 地图（GeoJSON 要素）
+
+`map`：`series` 本身是区域数组。每一项要有 `properties.name`、`properties.centroid`（`[经度, 纬度]`）和 `geometry.coordinates`。多边形只放外环：`[[[lon, lat], ...]]`。
+
+不要套 `{ data: [...] }`，也不要只写说明文字。经纬度坐标把 `extra.map.mercator` 设为 `true`。省级图关图例：`legend.show: false`。点选高亮用 `activeBorderColor` / `activeFillColor`。某一块固定填色写在该项的 `color`。
+
+见 `doc/charts/map.md`。Demo 边界在 `src/pages/demo/charts/map-geo.ts`。
+
+未做 demo：`demotype`。属性 / 事件 / 方法见手册 [`doc/charts/README.md`](../doc/charts/README.md)；其余 option 字段以本包 `config-ucharts.ts` 与引擎源码为准。
 
 ---
 
@@ -253,6 +261,7 @@ legend: {
 | `/pages/demo/charts/bubble` | `bubble` | 气泡图 |
 | `/pages/demo/charts/candle` | `candle` | K 线（双指缩放） |
 | `/pages/demo/charts/word` | `word` | 词云（水平 / 横竖混排） |
+| `/pages/demo/charts/map` | `map` | 地图（省级简图 / 指定区域填色） |
 | `/pages/demo/charts/tline` | `tline` | 时间轴折线（矢量坐标 / 秒级时间戳） |
 | `/pages/demo/charts/tarea` | `tarea` | 时间轴区域（矢量轴 / 秒级时间戳） |
 

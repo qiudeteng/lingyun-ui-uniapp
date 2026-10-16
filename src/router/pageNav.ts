@@ -121,6 +121,7 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
       { title: 'Bubble', url: '/pages/demo/charts/bubble', note: '气泡图', icon: 'circle' },
       { title: 'Candle', url: '/pages/demo/charts/candle', note: 'K 线图', icon: 'bars' },
       { title: 'Word', url: '/pages/demo/charts/word', note: '词云图', icon: 'font' },
+      { title: 'Map', url: '/pages/demo/charts/map', note: '地图', icon: 'map' },
       { title: 'Time Line', url: '/pages/demo/charts/tline', note: '时间轴折线', icon: 'calendar' },
       { title: 'Time Area', url: '/pages/demo/charts/tarea', note: '时间轴区域', icon: 'calendar' },
     ],

@@ -1,8 +1,6 @@
 /*
  * lingyun-ui-charts · ECharts 默认 option
  * 主题色：./config-colors.ts
- *
- * 引擎版权：uCharts® QIUN®秋云 https://www.ucharts.cn （Apache-2.0）
  */
 
 import { chartColor as color } from './config-colors'
