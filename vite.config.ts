@@ -5,9 +5,10 @@ import { defineConfig } from 'vite'
 import uni from '@dcloudio/vite-plugin-uni'
 
 import { generateRouter } from '@meng-xi/vite-plugin'
+import { stripDcloudShadowPlugin } from './vite/stripDcloudShadow'
 
 export default defineConfig({
-	plugins: [uni(), generateRouter()],
+	plugins: [uni(), generateRouter(), stripDcloudShadowPlugin()],
 	server: {
 		// 绑所有网卡：真机 / 局域网可直接开 H5，启动日志会打印 Network 地址
 		host: true,
