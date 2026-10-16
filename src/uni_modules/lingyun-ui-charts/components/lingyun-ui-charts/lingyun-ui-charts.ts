@@ -83,18 +83,6 @@ var util = {
   }
 };
 
-//兼容H5点击事件
-function getH5Offset(e) {
-  e.mp = {
-    changedTouches: []
-  };
-  e.mp.changedTouches.push({
-    x: e.offsetX,
-    y: e.offsetY
-  });
-  return e;
-}
-
 // hex 转 rgba
 function hexToRgb(hexValue, opc) {
   var rgx = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
@@ -4150,8 +4138,6 @@ function drawScatterDataPoints(series, opts, config, context) {
           context.lineTo(item.x, item.y - 4.5);
         }
       });
-    } else if (shape === 'triangle') {
-      return;
     }
     context.closePath();
     context.fill();
@@ -5854,17 +5840,6 @@ function lonlat2mercator(longitude, latitude) {
   return mercator;
 }
 
-// 墨卡托转经纬度
-function mercator2lonlat(longitude, latitude) {
-  var lonlat = Array(2)
-  var x = longitude / 20037508.34 * 180;
-  var y = latitude / 20037508.34 * 180;
-  y = 180 / Math.PI * (2 * Math.atan(Math.exp(y * Math.PI / 180)) - Math.PI / 2);
-  lonlat[0] = x;
-  lonlat[1] = y;
-  return lonlat;
-}
-
 function getBoundingBox(data) {
   var bounds = {},coords;
   bounds.xMin = 180;
@@ -6580,21 +6555,24 @@ function Animation(opts) {
   opts.timing = opts.timing || 'easeInOut';
   var delay = 17;
   function createAnimationFrame() {
-    if (typeof setTimeout !== 'undefined') {
-      return function(step, delay) {
-        setTimeout(function() {
-          var timeStamp = +new Date();
-          step(timeStamp);
-        }, delay);
-      };
-    } else if (typeof requestAnimationFrame !== 'undefined') {
-      return requestAnimationFrame;
-    } else {
+    if (typeof requestAnimationFrame === 'function') {
       return function(step) {
-        step(null);
+        return requestAnimationFrame(function(timeStamp) {
+          step(typeof timeStamp === 'number' ? timeStamp : +new Date());
+        });
       };
     }
-  };
+    if (typeof setTimeout !== 'undefined') {
+      return function(step, wait) {
+        setTimeout(function() {
+          step(+new Date());
+        }, wait);
+      };
+    }
+    return function(step) {
+      step(null);
+    };
+  }
   var animationFrame = createAnimationFrame();
   var startTimeStamp = null;
   var _step = function step(timestamp) {

@@ -181,7 +181,7 @@ legend: {
 
 见 `doc/charts/map.md`。Demo 边界在 `src/pages/demo/charts/map-geo.ts`。
 
-未做 demo：`demotype`。属性 / 事件 / 方法见手册 [`doc/charts/README.md`](../doc/charts/README.md)；其余 option 字段以本包 `config.ts` 与引擎源码为准。
+属性 / 事件 / 方法见手册 [`doc/charts/README.md`](../doc/charts/README.md)；其余 option 字段以本包 `config.ts` 与引擎源码为准。
 
 ---
 

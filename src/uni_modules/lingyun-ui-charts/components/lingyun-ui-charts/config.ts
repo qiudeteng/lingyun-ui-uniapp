@@ -65,57 +65,16 @@ const formatDateTime = (timeStamp: number, returnType?: string) => {
 }
 
 const cfu: Record<string, any> = {
-  //demotype为自定义图表类型，一般不需要自定义图表类型，只需要改根节点上对应的类型即可
-	"type":["pie","ring","rose","word","funnel","map","arcbar","line","curve","column","stack","mount","bar","area","radar","gauge","candle","mix","tline","tarea","scatter","bubble","demotype"],
-	"range":["饼状图","圆环图","玫瑰图","词云图","漏斗图","地图","圆弧进度条","折线图","曲线图","柱状图","堆积柱状图","山峰图","条状图","区域图","雷达图","仪表盘","K线图","混合图","时间轴折线","时间轴区域","散点图","气泡图","自定义类型"],
-  //增加自定义图表类型，如果需要categories，请在这里加入您的图表类型，例如最后的"demotype"
-  //自定义类型时需要注意"tline","tarea","scatter","bubble"等时间轴（矢量x轴）类图表，没有categories，不需要加入categories
-	"categories":["line","curve","column","stack","mount","bar","area","radar","gauge","candle","mix","demotype"],
+	"type":["pie","ring","rose","word","funnel","map","arcbar","line","curve","column","stack","mount","bar","area","radar","gauge","candle","mix","tline","tarea","scatter","bubble"],
+	"range":["饼状图","圆环图","玫瑰图","词云图","漏斗图","地图","圆弧进度条","折线图","曲线图","柱状图","堆积柱状图","山峰图","条状图","区域图","雷达图","仪表盘","K线图","混合图","时间轴折线","时间轴区域","散点图","气泡图"],
+	"categories":["line","curve","column","stack","mount","bar","area","radar","gauge","candle","mix"],
   //instance为实例变量承载属性，不要删除
   "instance":{},
   //option为opts承载属性，不要删除
   "option":{},
   //下面是自定义format配置，因除H5端外的其他端无法通过props传递函数，只能通过此属性对应下标的方式来替换
   "formatter":{
-    "yAxisDemo1":function(val: any){return val+'元'},
-    "yAxisDemo2":function(val: any){return val.toFixed(2)},
-    "xAxisDemo1":function(val: any){return val+'年';},
     "xAxisDemo2":function(val: any){return formatDateTime(val,'h:m')},
-    "seriesDemo1":function(val: any){return val+'元'},
-    "tooltipDemo1":function(item: any, category: any, index: any, opts: any){
-      if(index==0){
-      	return '随便用'+item.data+'年'
-      }else{
-      	return '其他我没改'+item.data+'天'
-      }
-    },
-    "pieDemo":function(val: any, index: any, series: any, opts: any){
-      if(index !== undefined){
-        return series[index].name+'：'+series[index].data+'元'
-      }
-    },
-  },
-  //这里演示了自定义您的图表类型的option，可以随意命名，之后在组件上 type="demotype" 后，组件会调用这个花括号里的option，如果组件上还存在opts参数，会将demotype与opts中option合并后渲染图表。
-  "demotype":{
-    //我这里把曲线图当做了自定义图表类型，您可以根据需要随意指定类型或配置
-    "type": "line",
-    "color": color,
-    "padding": [15,10,0,15],
-    "xAxis": {
-      "disableGrid": true,
-    },
-    "yAxis": {
-      "gridType": "dash",
-      "dashLength": 2,
-    },
-    "legend": {
-    },
-    "extra": {
-    	"line": {
-    		"type": "curve",
-    		"width": 2
-    	},
-    }
   },
   //下面是自定义配置，请添加项目所需的通用配置
 	"pie":{

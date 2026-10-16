@@ -4,10 +4,10 @@
  -->
 <template>
   <view class="chartsview" :id="'ChartBoxId'+cid">
-    <view v-if="mixinDatacomLoading" class="chartsview__state">
+    <view v-if="chartLoading" class="chartsview__state">
       <lingyun-activity-indicator />
     </view>
-    <view v-if="mixinDatacomErrorMessage && errorShow" class="chartsview__state" @tap="reloading">
+    <view v-if="chartError && errorShow" class="chartsview__state" @tap="reloading">
       <lingyun-empty fill :title="chartErrorTitle" />
     </view>
     <!-- APP和H5采用renderjs渲染图表 -->
@@ -148,7 +148,9 @@ import {
   isLingyunMpOverlayOpen,
   onLingyunMpOverlayChange,
 } from '@/uni_modules/lingyun-ui/utils/mp-overlay-gate'
+// #ifndef APP-VUE || H5
 import LingyunUiCharts from './lingyun-ui-charts'
+// #endif
 import {
   cfu,
   chartLabelColor,
@@ -180,22 +182,6 @@ function formatterAssign(args: any, formatter: Record<string, any>) {
   return args;
 }
 
-// 时间转换函数，为了匹配uniClinetDB读取出的时间与categories不同
-function getFormatDate(date: Date) {
-	var seperator = "-";
-	var year = date.getFullYear();
-	var month: string | number = date.getMonth() + 1;
-	var strDate: string | number = date.getDate();
-	if (month >= 1 && month <= 9) {
-			month = "0" + month;
-	}
-	if (strDate >= 0 && strDate <= 9) {
-			strDate = "0" + strDate;
-	}
-	var currentdate = year + seperator + month + seperator + strDate;
-	return currentdate;
-}
-
 var lastMoveTime: number | null = null;
 /**
  * 防抖
@@ -213,6 +199,41 @@ var lastMoveTime: number | null = null;
  *   console.log(this.title);
  * }, 1000)
  */
+function stableHash(value: unknown): string {
+  let h = 5381
+  const stack: unknown[] = [value]
+  let n = 0
+  while (stack.length && n < 2000000) {
+    const cur = stack.pop()
+    n += 1
+    if (cur === null || cur === undefined) {
+      h = ((h << 5) + h) ^ 0
+      continue
+    }
+    const kind = typeof cur
+    if (kind !== 'object') {
+      const text = kind === 'string' ? (cur as string) : String(cur)
+      h = ((h << 5) + h) ^ text.length
+      for (let i = 0; i < text.length; i++) h = ((h << 5) + h) ^ text.charCodeAt(i)
+      continue
+    }
+    if (Array.isArray(cur)) {
+      h = ((h << 5) + h) ^ cur.length
+      for (let i = cur.length - 1; i >= 0; i--) stack.push(cur[i])
+      continue
+    }
+    const obj = cur as Record<string, unknown>
+    const keys = Object.keys(obj)
+    h = ((h << 5) + h) ^ keys.length
+    for (let i = keys.length - 1; i >= 0; i--) {
+      const key = keys[i]
+      for (let c = 0; c < key.length; c++) h = ((h << 5) + h) ^ key.charCodeAt(c)
+      stack.push(obj[key])
+    }
+  }
+  return (h >>> 0).toString(36)
+}
+
 function debounce(fn: (this: unknown, ...args: any[]) => void, wait: number) {
   let timer: ReturnType<typeof setTimeout> | false = false;
   return function (this: unknown, ...fnArgs: any[]) {
@@ -226,7 +247,6 @@ function debounce(fn: (this: unknown, ...args: any[]) => void, wait: number) {
 
 export default defineComponent({
   name: 'lingyun-ui-charts',
-  mixins: [uniCloud.mixinDatacom],
   props: {
     type: {
       type: String,
@@ -327,26 +347,6 @@ export default defineComponent({
       type: Object,
       default: undefined
     },
-    startDate: {
-      type: String,
-      default: undefined
-    },
-    endDate: {
-      type: String,
-      default: undefined
-    },
-    textEnum: {
-      type: Array,
-      default () {
-        return []
-      }
-    },
-    groupEnum: {
-      type: Array,
-      default () {
-        return []
-      }
-    },
     pageScrollTop: {
       type: Number,
       default: 0
@@ -354,21 +354,14 @@ export default defineComponent({
     tapLegend: {
       type: Boolean,
       default: true
-    },
-    menus: {
-      type: Array,
-      default () {
-        return []
-      }
     }
   },
   data(): any {
     return {
       cid: 'id',
-      inWx: false,
+      chartLoading: false,
+      chartError: null as string | null,
       inAli: false,
-      inTt: false,
-      inBd: false,
       inH5: false,
       inApp: false,
       inWin: false,
@@ -390,6 +383,7 @@ export default defineComponent({
       _unsubMpOverlay: null as null | (() => void),
       _mpOverlayToken: 0,
       _mpLastShotTimer: 0,
+      _resizeHandler: null as null | ((res: any) => void),
     };
   },
   created(){
@@ -419,7 +413,6 @@ export default defineComponent({
       this.inWin = true;
     }
     // #ifdef MP-WEIXIN
-    this.inWx = true;
     if (this.canvas2d === false || platform === 'windows' || platform === 'mac') {
       this.type2d = false;
     }else{
@@ -438,12 +431,6 @@ export default defineComponent({
     this.inAli = true;
     this.pixel = pixelRatio;
     // #endif
-    // #ifdef MP-BAIDU
-    this.inBd = true;
-    // #endif
-    // #ifdef MP-TOUTIAO
-    this.inTt = true;
-    // #endif
     this.disScroll = this.disableScroll;
   },
   mounted() {
@@ -452,8 +439,8 @@ export default defineComponent({
     // #endif
     // #ifdef APP-NVUE
     this.inApp = true;
-    this.mixinDatacomLoading = false
-    this.mixinDatacomErrorMessage = "暂不支持NVUE"
+    this.chartLoading = false
+    this.chartError = "暂不支持NVUE"
     // #endif
     // #ifdef H5
     this.inH5 = true;
@@ -473,18 +460,17 @@ export default defineComponent({
     // #ifndef MP-ALIPAY || MP-BAIDU || MP-TOUTIAO || APP-VUE
     const time = this.inH5 ? 500 : 200;
     const _this = this;
-    uni.onWindowResize(
-      debounce(function(res) {
-        if (_this.mixinDatacomLoading == true) {
-          return;
-        }
-        let errmsg = _this.mixinDatacomErrorMessage;
-        if (errmsg !== null && errmsg !== 'null' && errmsg !== '') {
-          return;
-        }
-        _this.resizeHandler();
-      }, time)
-    );
+    this._resizeHandler = debounce(function() {
+      if (_this.chartLoading == true) {
+        return;
+      }
+      let errmsg = _this.chartError;
+      if (errmsg !== null && errmsg !== 'null' && errmsg !== '') {
+        return;
+      }
+      _this.resizeHandler();
+    }, time);
+    uni.onWindowResize(this._resizeHandler);
     // #endif
   },
   destroyed(){
@@ -503,70 +489,47 @@ export default defineComponent({
     // #endif
     delete cfu.option[this.cid]
     delete cfu.instance[this.cid]
-    // #ifndef MP-ALIPAY || MP-BAIDU || MP-TOUTIAO
-    uni.offWindowResize(()=>{})
+    // #ifndef MP-ALIPAY || MP-BAIDU || MP-TOUTIAO || APP-VUE
+    if (this._resizeHandler) {
+      uni.offWindowResize(this._resizeHandler)
+      this._resizeHandler = null
+    }
     // #endif
   },
   watch: {
-    chartDataProps: {
-      handler(val, oldval) {
-        if (typeof val === 'object') {
-          if (JSON.stringify(val) !== JSON.stringify(oldval)) {
-            this._clearChart();
-            if (val.series && val.series.length > 0) {
-              this.beforeInit();
-            }else{
-              this.mixinDatacomLoading = true;
-              this.showchart = false;
-              this.mixinDatacomErrorMessage = null;
-            }
-          }
+    chartDataStamp() {
+      const val = this.chartData
+      if (typeof val === 'object' && val != null) {
+        this._clearChart();
+        if (val.series && val.series.length > 0) {
+          this.beforeInit();
         } else {
-          this.mixinDatacomLoading = false;
-          this._clearChart();
+          this.chartLoading = true;
           this.showchart = false;
-          this.mixinDatacomErrorMessage = '参数错误：chartData数据类型错误';
+          this.chartError = null;
         }
-      },
-      immediate: false,
-      deep: true
+      } else {
+        this.chartLoading = false;
+        this._clearChart();
+        this.showchart = false;
+        this.chartError = '参数错误：chartData数据类型错误';
+      }
     },
-    localdata:{
-      handler(val, oldval) {
-        if (JSON.stringify(val) !== JSON.stringify(oldval)) {
-          if (val.length > 0) {
-            this.beforeInit();
-          }else{
-            this.mixinDatacomLoading = true;
-            this._clearChart();
-            this.showchart = false;
-            this.mixinDatacomErrorMessage = null;
-          }
-        }
-      },
-      immediate: false,
-      deep: true
-    },
-    optsProps: {
-      handler(val, oldval) {
-        if (typeof val === 'object') {
-          if (JSON.stringify(val) !== JSON.stringify(oldval) && this.optsWatch == true) {
-            this.checkData(this.drawData);
-          }
-        } else {
-          this.mixinDatacomLoading = false;
-          this._clearChart();
-          this.showchart = false;
-          this.mixinDatacomErrorMessage = '参数错误：opts数据类型错误';
-        }
-      },
-      immediate: false,
-      deep: true
+    optsStamp() {
+      const val = this.opts
+      if (typeof val === 'object' && val != null) {
+        if (this.optsWatch == true) this.checkData(this.drawData);
+      } else {
+        this.chartLoading = false;
+        this._clearChart();
+        this.showchart = false;
+        this.chartError = '参数错误：opts数据类型错误';
+      }
     },
     reshow(val, oldval) {
-      if (val === true && this.mixinDatacomLoading === false) {
+      if (val === true && this.chartLoading === false) {
         setTimeout(() => {
-          this.mixinDatacomErrorMessage = null;
+          this.chartError = null;
           this.checkData(this.drawData);
         }, 200);
       }
@@ -578,11 +541,11 @@ export default defineComponent({
     reload(val, oldval) {
       if (val === true) {
         this.showchart = false;
-        this.mixinDatacomErrorMessage = null;
+        this.chartError = null;
         this.reloading();
       }
     },
-    mixinDatacomErrorMessage(val, oldval) {
+    chartError(val, oldval) {
       if (val) {
         this.emitMsg({name: 'error', params: {type:"error", errorShow: this.errorShow, msg: val, id: this.cid}});
         if(this.errorShow){
@@ -593,11 +556,11 @@ export default defineComponent({
     errorMessage(val, oldval) {
       if (val && this.errorShow && val !== null && val !== 'null' && val !== '') {
         this.showchart = false;
-        this.mixinDatacomLoading = false;
-        this.mixinDatacomErrorMessage = val;
+        this.chartLoading = false;
+        this.chartError = val;
       } else {
         this.showchart = false;
-        this.mixinDatacomErrorMessage = null;
+        this.chartError = null;
         this.reloading();
       }
     }
@@ -611,11 +574,11 @@ export default defineComponent({
     legendTheme(): 'light' | 'dark' {
       return useThemeStore().resolved
     },
-    optsProps() {
-      return JSON.parse(JSON.stringify(this.opts));
+    optsStamp(): string {
+      return stableHash(this.opts)
     },
-    chartDataProps() {
-      return JSON.parse(JSON.stringify(this.chartData));
+    chartDataStamp(): string {
+      return stableHash(this.chartData)
     },
   },
   methods: {
@@ -723,146 +686,24 @@ export default defineComponent({
       })
     },
     beforeInit(){
-      this.mixinDatacomErrorMessage = null;
+      this.chartError = null;
       if (typeof this.chartData === 'object' && this.chartData != null && this.chartData.series !== undefined && this.chartData.series.length > 0) {
         //拷贝一下chartData，为了opts变更后统一数据来源
         this.drawData = deepCloneAssign({}, this.chartData);
-        this.mixinDatacomLoading = false;
+        this.chartLoading = false;
         this.showchart = true;
         this.checkData(this.chartData);
-      }else if(this.localdata.length>0){
-        this.mixinDatacomLoading = false;
-        this.showchart = true;
-        this.localdataInit(this.localdata);
-      }else if(this.collection !== ''){
-        this.mixinDatacomLoading = false;
-        this.getCloudData();
-      }else{
-        this.mixinDatacomLoading = true;
-      }
-    },
-    localdataInit(resdata: any){
-      //替换enum类型为正确的描述
-      if(this.groupEnum.length>0){
-        for (let i = 0; i < resdata.length; i++) {
-          for (let j = 0; j < this.groupEnum.length; j++) {
-            if(resdata[i].group === this.groupEnum[j].value){
-              resdata[i].group = this.groupEnum[j].text
-            }
-          }
-        }
-      }
-      if(this.textEnum.length>0){
-        for (let i = 0; i < resdata.length; i++) {
-          for (let j = 0; j < this.textEnum.length; j++) {
-            if(resdata[i].text === this.textEnum[j].value){
-              resdata[i].text = this.textEnum[j].text
-            }
-          }
-        }
-      }
-      let needCategories = false;
-      let tmpData: { categories: any[]; series: any[] } = {categories:[], series:[]}
-      let tmpcategories: any[] = []
-      let tmpseries: any[] = [];
-      //拼接categories
-      needCategories = cfu.categories.includes(this.type)
-      if(needCategories === true){
-        //如果props中的chartData带有categories，则优先使用chartData的categories
-        if(this.chartData && this.chartData.categories && this.chartData.categories.length>0){
-          tmpcategories = this.chartData.categories
-        }else{
-          //如果是日期类型的数据，不管是本地数据还是云数据，都按起止日期自动拼接categories
-          if(this.startDate && this.endDate){
-            let idate: any = new Date(this.startDate)
-            let edate: any = new Date(this.endDate)
-            while (idate <= edate) {
-            	tmpcategories.push(getFormatDate(idate))
-            	idate = idate.setDate(idate.getDate() + 1)
-            	idate = new Date(idate)
-            }
-          //否则从结果中去重并拼接categories
-          }else{
-            let tempckey: Record<string, any> = {};
-            resdata.map(function(item: any, index: any) {
-              if (item.text != undefined && !tempckey[item.text]) {
-                tmpcategories.push(item.text)
-                tempckey[item.text] = true
-              }
-            });
-          }
-        }
-        tmpData.categories = tmpcategories
-      }
-      //拼接series
-      let tempskey: Record<string, any> = {};
-      resdata.map(function(item: any, index: any) {
-        if (item.group != undefined && !tempskey[item.group]) {
-          tmpseries.push({ name: item.group, data: [] });
-          tempskey[item.group] = true;
-        }
-      });
-      //如果没有获取到分组名称(可能是带categories的数据，也可能是不带的饼图类)
-      if (tmpseries.length == 0) {
-        tmpseries = [{ name: '默认分组', data: [] }];
-        //如果是需要categories的图表类型
-        if(needCategories === true){
-          for (let j = 0; j < tmpcategories.length; j++) {
-            let seriesdata = 0;
-            for (let i = 0; i < resdata.length; i++) {
-              if (resdata[i].text == tmpcategories[j]) {
-                seriesdata = resdata[i].value;
-              }
-            }
-            tmpseries[0].data.push(seriesdata);
-          }
-        //如果是饼图类的图表类型
-        }else{
-          for (let i = 0; i < resdata.length; i++) {
-            tmpseries[0].data.push({"name": resdata[i].text,"value": resdata[i].value});
-          }
-        }
-      //如果有分组名
       } else {
-        for (let k = 0; k < tmpseries.length; k++) {
-          //如果有categories
-          if (tmpcategories.length > 0) {
-            for (let j = 0; j < tmpcategories.length; j++) {
-              let seriesdata = 0;
-              for (let i = 0; i < resdata.length; i++) {
-                if (tmpseries[k].name == resdata[i].group && resdata[i].text == tmpcategories[j]) {
-                  seriesdata = resdata[i].value;
-                }
-              }
-              tmpseries[k].data.push(seriesdata);
-            }
-          //如果传了group而没有传text，即没有categories（正常情况下这种数据是不符合数据要求规范的）
-          } else {
-            for (let i = 0; i < resdata.length; i++) {
-              if (tmpseries[k].name == resdata[i].group) {
-                tmpseries[k].data.push(resdata[i].value);
-              }
-            }
-          }
-        }
+        this.chartLoading = true;
       }
-      tmpData.series = tmpseries
-      //拷贝一下chartData，为了opts变更后统一数据来源
-      this.drawData = deepCloneAssign({}, tmpData);
-      this.checkData(tmpData)
     },
     reloading() {
       if(this.errorReload === false){
         return;
       }
       this.showchart = false;
-      this.mixinDatacomErrorMessage = null;
-      if (this.collection !== '') {
-        this.mixinDatacomLoading = false;
-        this.onMixinDatacomPropsChange(true);
-      } else {
-        this.beforeInit();
-      }
+      this.chartError = null;
+      this.beforeInit();
     },
     checkData(anyData: any) {
       let cid = this.cid
@@ -870,14 +711,14 @@ export default defineComponent({
         cfu.option[cid] = deepCloneAssign({}, cfu[this.type], this.opts);
         cfu.option[cid].canvasId = cid;
       } else {
-        this.mixinDatacomLoading = false;
+        this.chartLoading = false;
         this.showchart = false;
-        this.mixinDatacomErrorMessage = '参数错误：props参数中type类型不正确';
+        this.chartError = '参数错误：props参数中type类型不正确';
       }
       //挂载categories和series
       let newData = deepCloneAssign({}, anyData);
       if (newData.series !== undefined && newData.series.length > 0) {
-        this.mixinDatacomErrorMessage = null;
+        this.chartError = null;
         cfu.option[cid].categories = newData.categories;
         cfu.option[cid].series = newData.series;
         this.$nextTick(()=>{
@@ -905,30 +746,6 @@ export default defineComponent({
           }
         })
         .exec();
-    },
-    getCloudData() {
-      if (this.mixinDatacomLoading == true) {
-        return;
-      }
-      this.mixinDatacomLoading = true;
-      this.mixinDatacomGet()
-        .then((res: any) => {
-          this.mixinDatacomResData = res.result.data;
-          this.localdataInit(this.mixinDatacomResData);
-        })
-        .catch((err: any) => {
-          this.mixinDatacomLoading = false;
-          this.showchart = false;
-          this.mixinDatacomErrorMessage = '请求错误：' + err;
-        });
-    },
-    onMixinDatacomPropsChange(needReset: any, changed: any) {
-      if (needReset == true && this.collection !== '') {
-        this.showchart = false;
-        this.mixinDatacomErrorMessage = null;
-        this._clearChart();
-        this.getCloudData();
-      }
     },
     applyLegendTheme(cid: string) {
       const option = cfu.option[cid]
@@ -984,7 +801,7 @@ export default defineComponent({
         .select('#ChartBoxId'+cid)
         .boundingClientRect((data: any) => {
           if (data.width > 0 && data.height > 0) {
-            this.mixinDatacomLoading = false;
+            this.chartLoading = false;
             this.showchart = true;
             this.lastDrawTime = Date.now();
             this.cWidth = data.width;
@@ -1016,12 +833,20 @@ export default defineComponent({
             //如果是H5或者App端，采用renderjs渲染图表
             if (this.inH5 || this.inApp) {
               cfu.option[cid].rotateLock = cfu.option[cid].rotate;
+              cfu.option[cid].stamp = [
+                this.chartDataStamp,
+                this.optsStamp,
+                this.legendTheme,
+                this.background,
+                data.width,
+                data.height,
+              ].join(':');
               this.chartsOpts = deepCloneAssign({}, cfu.option[cid]);
             // 小程序端用凌云图表引擎渲染
             } else {
               cfu.option[cid] = formatterAssign(cfu.option[cid],cfu.formatter)
-              this.mixinDatacomErrorMessage = null;
-              this.mixinDatacomLoading = false;
+              this.chartError = null;
+              this.chartLoading = false;
               this.showchart = true;
               this.$nextTick(()=>{
                 if (this.type2d === true) {
@@ -1050,7 +875,7 @@ export default defineComponent({
                         }
                       } else {
                         this.showchart = false;
-                        this.mixinDatacomErrorMessage = '参数错误：开启2d模式后，未获取到dom节点，canvas-id:' + cid;
+                        this.chartError = '参数错误：开启2d模式后，未获取到dom节点，canvas-id:' + cid;
                       }
                     });
                 } else {
@@ -1071,10 +896,10 @@ export default defineComponent({
               })
             }
           } else {
-            this.mixinDatacomLoading = false;
+            this.chartLoading = false;
             this.showchart = false;
             if (this.reshow == true) {
-              this.mixinDatacomErrorMessage = '布局错误：未获取到父元素宽高尺寸！canvas-id:' + cid;
+              this.chartError = '布局错误：未获取到父元素宽高尺寸！canvas-id:' + cid;
             }
           }
         })
@@ -1128,7 +953,7 @@ export default defineComponent({
     },
     // #ifndef APP-VUE || H5
     _newChart(cid: any) {
-      if (this.mixinDatacomLoading == true) {
+      if (this.chartLoading == true) {
         return;
       }
       this.showchart = true;
@@ -1291,7 +1116,7 @@ export default defineComponent({
     },
     // #endif
     _error(e: any) {
-      this.mixinDatacomErrorMessage = e.detail.errMsg;
+      this.chartError = e.detail.errMsg;
     },
     emitMsg(msg: any) {
       this.$emit(msg.name, msg.params);
@@ -1310,6 +1135,29 @@ import { cfu } from './config';
 
 var that = {};
 var rootdom = null;
+var lastMoveTime = 0;
+
+function moveLimited(cid) {
+  var now = Date.now();
+  var limit = (cfu.option[cid] && cfu.option[cid].touchMoveLimit) || 24;
+  if (now - lastMoveTime < Math.floor(1000 / limit)) return true;
+  lastMoveTime = now;
+  return false;
+}
+
+function rdClone(value) {
+  if (value === null || typeof value !== 'object') return value
+  if (Array.isArray(value)) {
+    var list = new Array(value.length)
+    for (var i = 0; i < value.length; i++) list[i] = rdClone(value[i])
+    return list
+  }
+  var out = {}
+  for (var key in value) {
+    if (Object.prototype.hasOwnProperty.call(value, key)) out[key] = rdClone(value[key])
+  }
+  return out
+}
 
 function rdformatterAssign(args,formatter) {
   for (let key in args) {
@@ -1345,16 +1193,16 @@ export default {
   methods: {
     //==============以下是图表引擎的方法====================
     ucinit(newVal, oldVal, owner, instance){
-      if(JSON.stringify(newVal) == JSON.stringify(oldVal)){
+      if(!newVal || !newVal.canvasId){
         return;
       }
-      if(!newVal.canvasId){
+      if(oldVal && newVal.stamp && newVal.stamp === oldVal.stamp){
         return;
       }
-      let cid = JSON.parse(JSON.stringify(newVal.canvasId))
+      let cid = newVal.canvasId
       this.rid = cid
       that[cid] = this.$ownerInstance || instance
-      cfu.option[cid] = JSON.parse(JSON.stringify(newVal))
+      cfu.option[cid] = rdClone(newVal)
       cfu.option[cid] = rdformatterAssign(cfu.option[cid],cfu.formatter)
       let canvasdom = document.getElementById(cid)
       if(canvasdom && canvasdom.children[0]){
@@ -1474,6 +1322,7 @@ export default {
       let cid = this.rid
       let ontouch = cfu.option[cid].ontouch
       if(ontouch == false) return;
+      if(moveLimited(cid)) return;
       if(cfu.option[cid].enableScroll === true && e.changedTouches.length == 1){
         cfu.instance[cid].scroll(e);
       }
@@ -1517,6 +1366,7 @@ export default {
       let onmouse = cfu.option[cid].onmouse
       let tooltipShow = cfu.option[cid].tooltipShow
       if(onmouse == false) return;
+      if(moveLimited(cid)) return;
       let rchartdom = document.getElementById('UC'+cid).getBoundingClientRect()
       let tmpe = {}
       tmpe = { x: e.clientX - rchartdom.left, y:e.clientY - rchartdom.top + rootdom.top}

@@ -1,3 +1,7 @@
+## 1.0.15（2026-10-16）
+- H5 / App 不再把图表引擎打进页面脚本。
+- 数据变更改为哈希比较，动画走 `requestAnimationFrame`，鼠标移动按 `touchMoveLimit` 节流。
+- 去掉 uniCloud 取数，以及无引用的示例类型和 formatter。
 ## 1.0.14（2026-10-16）
 - 不再支持 ECharts。配置和引擎收到组件目录。
 - 加载和错误改用凌云UI组件。
