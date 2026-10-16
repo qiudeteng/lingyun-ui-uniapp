@@ -1,6 +1,5 @@
 <!--
  * lingyun-ui-charts 凌云UI 图表组件
- * 基于 uCharts / ECharts（Apache-2.0，QIUN® 秋云 https://www.ucharts.cn）
  * 系列色：js_sdk/lingyun-ui-charts/config-colors.ts
  -->
 <template>

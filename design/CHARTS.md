@@ -2,8 +2,6 @@
 
 > 图表是 **内容层**，不是玻璃控件。独立 `uni_modules` 包，不并入 `lingyun-ui`。  
 > **使用手册** → [`doc/charts/README.md`](../doc/charts/README.md)（总览）· [`doc/charts/`](../doc/charts/)（各图种，`pnpm manual:dev`）  
-> 引擎：小程序 **uCharts**；H5 / App 默认同走 uCharts（`echartsH5` / `echartsApp` 默认 `false`）。源自秋云 [qiun-data-charts](https://ext.dcloud.net.cn/plugin?id=271)（Apache-2.0）。
-
 ## 权威来源
 
 1. 使用手册 [`doc/charts/README.md`](../doc/charts/README.md)（含属性 / 事件 / 方法全文）· 图种 [`doc/charts/`](../doc/charts/)
