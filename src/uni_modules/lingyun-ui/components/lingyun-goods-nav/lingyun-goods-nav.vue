@@ -43,7 +43,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+import { defineComponent, inject, ref, type PropType } from 'vue'
+import { LINGYUN_APP_PAGE_NAV_INSET } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 
 type GoodsNavOption = {
   key?: string | number
@@ -80,6 +81,11 @@ type ResolvedGoodsButton = {
  */
 export default defineComponent({
   name: 'LingyunGoodsNav',
+  setup() {
+    return {
+      pageNavInset: inject(LINGYUN_APP_PAGE_NAV_INSET, ref(0)),
+    }
+  },
   emits: ['click', 'buttonClick'],
   props: {
     options: {
@@ -121,8 +127,10 @@ export default defineComponent({
         .join(' ')
     },
     barStyle() {
-      if (!this.safeArea) return {}
-      return { paddingBottom: `${this.safeBottom}px` }
+      const style: Record<string, string> = {}
+      if (this.safeArea) style.paddingBottom = `${this.safeBottom}px`
+      if (this.fixed) style.left = `${Math.max(0, Number(this.pageNavInset) || 0)}px`
+      return style
     },
     buttons(): ResolvedGoodsButton[] {
       const list = Array.isArray(this.buttonGroup) ? this.buttonGroup : []
@@ -200,7 +208,7 @@ export default defineComponent({
 
   &--fixed {
     position: fixed;
-    left: var(--lingyun-page-nav-width, 0px);
+    left: 0;
     right: 0;
     bottom: 0;
     z-index: 900;

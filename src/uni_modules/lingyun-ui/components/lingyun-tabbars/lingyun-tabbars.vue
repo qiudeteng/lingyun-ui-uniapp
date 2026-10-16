@@ -58,7 +58,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+import { defineComponent, inject, ref, type PropType } from 'vue'
+import { LINGYUN_APP_PAGE_NAV_INSET } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 
 type TabBadgeObject = {
   text?: string | number | boolean | null
@@ -112,6 +113,11 @@ type LensRect = {
  */
 export default defineComponent({
   name: 'LingyunTabbars',
+  setup() {
+    return {
+      pageNavInset: inject(LINGYUN_APP_PAGE_NAV_INSET, ref(0)),
+    }
+  },
   emits: ['change', 'update:modelValue', 'update:value'],
   data() {
     return {
@@ -197,7 +203,8 @@ export default defineComponent({
       return this.resolvedVariant === 'prominent' ? 'lingyun-tabbars__bar--prominent' : ''
     },
     wrapStyle() {
-      return {}
+      const inset = Math.max(0, Number(this.pageNavInset) || 0)
+      return this.fixed ? { left: `calc(${inset}px + (100% - ${inset}px) / 2)` } : {}
     },
     barId() {
       return `${this.instanceId}-bar`

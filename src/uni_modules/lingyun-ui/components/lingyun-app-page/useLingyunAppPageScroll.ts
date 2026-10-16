@@ -26,6 +26,11 @@ export const LINGYUN_APP_PAGE_SCROLL_LOCKED: InjectionKey<Ref<boolean>> = Symbol
   'lingyunAppPageScrollLocked',
 )
 
+/** 固定在视口上的页内控件需要避开的宽屏左栏宽度。 */
+export const LINGYUN_APP_PAGE_NAV_INSET: InjectionKey<Ref<number>> = Symbol(
+  'lingyunAppPageNavInset',
+)
+
 /** 内层 scroll-view 上报滚动，驱动顶栏玻璃渐变 */
 export function useLingyunAppPageScroll(): (scrollTop: number) => void {
   const fromAncestor = inject(LINGYUN_APP_PAGE_REPORT_SCROLL, null)

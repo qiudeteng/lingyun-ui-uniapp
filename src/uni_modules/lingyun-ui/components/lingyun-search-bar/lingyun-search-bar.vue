@@ -74,7 +74,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+import { defineComponent, inject, ref, type PropType } from 'vue'
+import { LINGYUN_APP_PAGE_NAV_INSET } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 
 /**
  * lingyun-search-bar
@@ -100,6 +101,11 @@ type SearchDetailEvent = {
 
 export default defineComponent({
   name: 'LingyunSearchBar',
+  setup() {
+    return {
+      pageNavInset: inject(LINGYUN_APP_PAGE_NAV_INSET, ref(0)),
+    }
+  },
   emits: [
     'update:modelValue',
     'update:value',
@@ -198,6 +204,7 @@ export default defineComponent({
       const style: Record<string, string> = {}
       const pad = String(this.padding || '').trim()
       if (pad) style.padding = pad
+      if (this.fixed) style.left = `${Math.max(0, Number(this.pageNavInset) || 0)}px`
       if (this.fixed && this.keyboardHeight > 0) style.bottom = `${this.keyboardHeight}px`
       return style
     },

@@ -39,8 +39,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
-  import { onUnload } from '@dcloudio/uni-app'
+  import { computed, onUnmounted, ref } from 'vue'
   import { lingyun } from '@/uni_modules/lingyun-ui'
 
   const width = ref(0)
@@ -73,7 +72,7 @@
     uni.onWindowResize(onResize)
   }
 
-  onUnload(() => {
+  onUnmounted(() => {
     if (typeof uni.offWindowResize === 'function') {
       uni.offWindowResize(onResize)
     }

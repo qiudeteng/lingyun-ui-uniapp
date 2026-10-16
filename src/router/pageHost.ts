@@ -4,6 +4,7 @@ import {
   LINGYUN_TOOLBAR_BAR_DESIGN_PX,
 } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
 import { hasLingyunPage, normalizeLingyunPagePath } from '@/router/pageNav'
+import { getLingyunPageView } from '@/router/pageViews'
 
 /** 宽屏小程序侧栏切页时留在当前页，只换右侧内容，侧栏不随 redirectTo 拆掉。 */
 export const pageHostState = reactive({
@@ -11,6 +12,8 @@ export const pageHostState = reactive({
   url: '',
   /** 侧栏高亮。空则跟真实路由。 */
   path: '',
+  /** 实际承载右侧视图的页面。 */
+  host: '',
 })
 
 function currentRoute(): string {
@@ -31,6 +34,7 @@ export function setLingyunPageHost(url: string, highlight?: string): void {
   const full = url.charAt(0) === '/' ? url : `/${url}`
   const path = normalizeLingyunPagePath(full)
   pageHostState.path = normalizeLingyunPagePath(highlight || path)
+  pageHostState.host = getLingyunPageView(path)?.host || ''
   if (path === 'pages/404/404') {
     pageHostState.url = full
     return
@@ -41,6 +45,7 @@ export function setLingyunPageHost(url: string, highlight?: string): void {
 export function clearLingyunPageHost(): void {
   pageHostState.url = ''
   pageHostState.path = ''
+  pageHostState.host = ''
 }
 
 export function hostedPagePath(): string {
@@ -65,17 +70,49 @@ export function hostedFromText(): string {
 }
 
 /**
- * 宽屏小程序：404 和当前页直接留在本页切换。
- * 其它已注册页面返回 false，调用方再走路由。
+ * 宽屏小程序：已注册视图只切换常驻宿主的右侧内容。
+ * 若当前还不是对应宿主页，只替换一次宿主页；后续 Tab 切换不再走页面路由。
  */
 export function openLingyunHostedPage(url: string, highlight?: string): boolean {
   // #ifdef MP-WEIXIN
   if (!isLingyunWideNav()) return false
-  if (!hasLingyunPage(url)) return false
   const path = normalizeLingyunPagePath(url)
-  if (path !== 'pages/404/404' && path !== currentRoute()) return false
+  const view = getLingyunPageView(path)
+  if (!hasLingyunPage(url) && !view) return false
+  if (!view && path === currentRoute()) {
+    clearLingyunPageHost()
+    return true
+  }
+  if (path !== 'pages/404/404' && !view) return false
   setLingyunPageHost(url, highlight)
+  const host = view?.host || ''
+  if (host && normalizeLingyunPagePath(host) !== currentRoute()) {
+    uni.redirectTo({
+      url: host,
+      fail: () => {
+        clearLingyunPageHost()
+        uni.redirectTo({ url })
+      },
+    })
+  }
   return true
+  // #endif
+  // #ifndef MP-WEIXIN
+  return false
+  // #endif
+}
+
+/**
+ * 宽屏直接进入内容页时，立即归并到它登记的常驻宿主页。
+ * 这样用户第一次点击左栏前就已经进入 Tab 容器。
+ */
+export function ensureLingyunWidePageHost(): boolean {
+  // #ifdef MP-WEIXIN
+  if (!isLingyunWideNav()) return false
+  const route = currentRoute()
+  const view = getLingyunPageView(route)
+  if (!view || normalizeLingyunPagePath(view.host) === route) return false
+  return openLingyunHostedPage(`/${route}`, `/${route}`)
   // #endif
   // #ifndef MP-WEIXIN
   return false

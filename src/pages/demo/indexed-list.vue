@@ -37,6 +37,7 @@
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-    height: 100vh;
+    height: 100%;
+    min-height: 100%;
   }
 </style>

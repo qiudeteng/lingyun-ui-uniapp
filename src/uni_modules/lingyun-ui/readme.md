@@ -1,6 +1,6 @@
 # 凌云UI
 
-凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.27**，变更见 [`changelog.md`](./changelog.md)。
+凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.28**，变更见 [`changelog.md`](./changelog.md)。
 
 📖 [使用手册](https://lingyun.xinyicanyin.com/)（组件用法、属性、示例；右侧手机框实时预览）
 
@@ -54,9 +54,11 @@ const { confirm } = await uni.showLingyunAlert({ title: '删除？', showCancel:
 | 端 | 行为 |
 |----|------|
 | H5 | `app.use(lingyunUi)` 把侧栏挂到 `body`，只创建一次。换页不闪，滚动位置保持 |
-| 微信小程序 | 侧栏留在 `lingyun-app-page` 里。换页记住选中项和滚动位置 |
+| 微信小程序 | 侧栏常驻，右侧像 Tab 一样切换已登记组件，不增加页面栈 |
 
 关掉某一页：`<lingyun-app-page :show-nav="false">`。Sheet / 带 Grabber 的页不显示这列。
+
+后台菜单要在宽屏右侧直接加载，先用 `registerLingyunPageView` 登记路径，并在业务工程的 `app-page-view-outlet.vue` 静态导入组件；微信不支持从服务端 URL 动态加载组件。
 
 默认目录来自业务工程 `src/router/pageNav.ts`（与首页列表共用）。要换目录，传 `nav-sections`。
 
@@ -107,7 +109,7 @@ const { confirm } = await uni.showLingyunAlert({ title: '删除？', showCancel:
 
 ```
 lingyun-ui/
-├── package.json          # 1.0.27
+├── package.json          # 1.0.28
 ├── readme.md
 ├── changelog.md
 ├── index.ts              # app.use(lingyunUi)

@@ -1,3 +1,5 @@
+## 1.0.28（2026-10-16）
+- 微信宽屏侧栏改为常驻 Tab，右侧直接切换组件。
 ## 1.0.27（2026-10-16）
 - `lingyun-alert` 支持 `uni.showLingyunAlert`。
 - `lingyun-table` 宽屏筛选改为 Popover，分组行可收起，加载遮罩盖住整表。

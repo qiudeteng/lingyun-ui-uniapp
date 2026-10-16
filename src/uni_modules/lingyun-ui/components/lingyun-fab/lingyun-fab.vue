@@ -51,8 +51,9 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+import { defineComponent, inject, ref, type PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import { LINGYUN_APP_PAGE_NAV_INSET } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 
 type FabContent = {
   key?: string | number
@@ -95,6 +96,11 @@ const GAP = 16
 
 export default defineComponent({
   name: 'LingyunFab',
+  setup() {
+    return {
+      pageNavInset: inject(LINGYUN_APP_PAGE_NAV_INSET, ref(0)),
+    }
+  },
   emits: ['fabClick', 'trigger', 'update:show'],
   props: {
     horizontal: { type: String, default: 'right' },
@@ -163,7 +169,9 @@ export default defineComponent({
         width: `${BTN}px`,
         height: `${BTN}px`,
       }
-      if (this.horizontal === 'left') style.left = `${gap}px`
+      if (this.horizontal === 'left') {
+        style.left = `${Math.max(0, Number(this.pageNavInset) || 0) + gap}px`
+      }
       else style.right = `${gap}px`
       if (this.vertical === 'top') style.top = `${gap}px`
       else style.bottom = `${gap + bottomExtra}px`

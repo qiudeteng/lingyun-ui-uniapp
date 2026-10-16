@@ -1,6 +1,14 @@
 <template>
-  <lingyun-app-page title="首页" :show-back="false">
-    <view class="page">
+  <lingyun-app-page
+    :title="hostedView?.title || '首页'"
+    :show-back="false"
+    :body-scroll="hostedView?.bodyScroll ?? true"
+    :page-scroll="hostedView?.pageScroll ?? true"
+  >
+    <!-- #ifdef MP-WEIXIN -->
+    <app-page-view-host v-if="pageHostState.path" />
+    <!-- #endif -->
+    <view v-if="showHome" class="page">
       <lingyun-list header="开发" header-type="nested">
         <lingyun-list-item
           title="组件 Demo"
@@ -31,11 +39,15 @@
 <script setup lang="ts">
   import { computed } from 'vue'
   import { getLingyunPageNavSections, resolveLingyunPageUrl } from '@/router/pageNav'
-  import { openLingyunHostedPage } from '@/router/pageHost'
+  import { openLingyunHostedPage, pageHostState } from '@/router/pageHost'
+  import { getLingyunPageView } from '@/router/pageViews'
 
   const sections = computed(() => getLingyunPageNavSections())
+  const hostedView = computed(() => getLingyunPageView(pageHostState.path))
+  const showHome = computed(() => !pageHostState.path)
 
   function go(url: string): void {
+    if (openLingyunHostedPage(url, url)) return
     const next = resolveLingyunPageUrl(url)
     if (!next) return
     if (openLingyunHostedPage(next, url)) return

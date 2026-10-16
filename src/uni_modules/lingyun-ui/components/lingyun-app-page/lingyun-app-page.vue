@@ -2,7 +2,7 @@
   <view class="lingyun-app-page" :class="rootClass" :style="pageVars">
     <!-- 小程序宽屏侧栏留在页面里。H5 由 lingyunUi 挂到 body，避免换页拆掉侧栏。 -->
     <!-- #ifndef H5 -->
-    <view v-if="showPageNav" class="lingyun-app-page__nav">
+    <view v-if="!embedded && showPageNav" class="lingyun-app-page__nav">
       <lingyun-page-nav :sections="navSections">
         <template v-if="$slots['nav-avatar']" #avatar>
           <slot name="nav-avatar" />
@@ -18,7 +18,7 @@
     <!-- #endif -->
 
     <lingyun-toolbars
-      v-if="showToolbar"
+      v-if="!embedded && showToolbar"
       class="lingyun-app-page__toolbar"
       :title="displayTitle"
       :subtitle="hostedMiss ? '' : subtitle"
@@ -46,20 +46,24 @@
 
     <!-- H5 侧栏在 body 上，顶部插槽传送进那一列 -->
     <!-- #ifdef H5 -->
-    <teleport v-if="navHeaderReady && $slots['nav-avatar']" to="#ly-nav-slot-avatar">
+    <teleport v-if="!embedded && navHeaderReady && $slots['nav-avatar']" to="#ly-nav-slot-avatar">
       <slot name="nav-avatar" />
     </teleport>
-    <teleport v-if="navHeaderReady && $slots['nav-name']" to="#ly-nav-slot-name">
+    <teleport v-if="!embedded && navHeaderReady && $slots['nav-name']" to="#ly-nav-slot-name">
       <slot name="nav-name" />
     </teleport>
-    <teleport v-if="navHeaderReady && $slots['nav-subtitle']" to="#ly-nav-slot-subtitle">
+    <teleport v-if="!embedded && navHeaderReady && $slots['nav-subtitle']" to="#ly-nav-slot-subtitle">
       <slot name="nav-subtitle" />
     </teleport>
     <!-- #endif -->
 
     <!-- 默认形态：页面级滚动。玻璃进度由顶部哨兵的露出比例驱动（无 @scroll 可用） -->
-    <view v-if="usePageScroll" class="lingyun-app-page__sentinel" :style="sentinelStyle" />
-    <view v-if="usePageScroll" class="lingyun-app-page__pad">
+    <view v-if="embedded" class="lingyun-app-page__embedded">
+      <slot />
+    </view>
+
+    <view v-if="!embedded && usePageScroll" class="lingyun-app-page__sentinel" :style="sentinelStyle" />
+    <view v-if="!embedded && usePageScroll" class="lingyun-app-page__pad">
       <view v-if="hostedMiss" class="lingyun-app-page__hosted">
         <lingyun-page-miss :from="hostedFrom" @home="onHostHome" />
       </view>
@@ -68,7 +72,7 @@
 
     <!-- 逃生口：需要 scroll-y 锁（横向 swipe）等场景仍可用内层 scroll-view -->
     <scroll-view
-      v-if="useInnerScroll"
+      v-if="!embedded && useInnerScroll"
       class="lingyun-app-page__scroller"
       :scroll-y="bodyScrollY"
       :scroll-with-animation="true"
@@ -86,7 +90,7 @@
     </scroll-view>
 
     <!-- bodyScroll=false：页面自管内层滚动，用 useLingyunAppPageScroll 上报 -->
-    <view v-if="!bodyScroll" class="lingyun-app-page__body">
+    <view v-if="!embedded && !bodyScroll" class="lingyun-app-page__body">
       <view class="lingyun-app-page__pad">
         <view v-if="hostedMiss" class="lingyun-app-page__hosted">
           <lingyun-page-miss :from="hostedFrom" @home="onHostHome" />
@@ -96,9 +100,9 @@
     </view>
 
     <!-- 命令式 Toast/HUD：须在页面树内（mp-weixin 的 App.vue 模板不会盖到页面上） -->
-    <lingyun-feedback-host />
+    <lingyun-feedback-host v-if="!embedded" />
     <!-- demo 页悬浮主题开关：非 demo 路由自己不显示 -->
-    <demo-theme-switch />
+    <demo-theme-switch v-if="!embedded" />
   </view>
 </template>
 
@@ -107,9 +111,11 @@ import { defineComponent, getCurrentInstance, inject, provide, ref, type PropTyp
 import { onResize } from '@dcloudio/uni-app'
 import {
   LINGYUN_APP_PAGE_BIND_SCROLL,
+  LINGYUN_APP_PAGE_NAV_INSET,
   LINGYUN_APP_PAGE_REPORT_SCROLL,
   LINGYUN_APP_PAGE_SCROLL_LOCK,
   LINGYUN_APP_PAGE_SCROLL_LOCKED,
+  type LingyunAppPageScrollLock,
 } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 import {
   coerceTriFlag,
@@ -130,7 +136,12 @@ import {
   setLingyunPageNavIntent,
   type LingyunPageNavSection,
 } from '@/router/pageNav'
-import { clearLingyunPageHost, hostedFromText, hostedPagePath, openLingyunHostedPage } from '@/router/pageHost'
+import {
+  ensureLingyunWidePageHost,
+  hostedFromText,
+  hostedPagePath,
+  openLingyunHostedPage,
+} from '@/router/pageHost'
 // #ifdef H5
 import { setLingyunH5PageNavAllowed } from '@/uni_modules/lingyun-ui/components/lingyun-page-nav/mountLingyunPageNav'
 // #endif
@@ -160,6 +171,8 @@ type MpGlassObserver = {
 type MpComponentScope = {
   createIntersectionObserver?: (options: object) => MpGlassObserver
 }
+
+const LINGYUN_APP_PAGE_EMBEDDED = Symbol('lingyun-app-page-embedded')
 
 export default defineComponent({
   name: 'LingyunAppPage',
@@ -218,8 +231,19 @@ export default defineComponent({
   },
   setup() {
     const instance = getCurrentInstance()
-    const scrollLocked = ref(false)
+    const embedded = inject<boolean>(LINGYUN_APP_PAGE_EMBEDDED, false)
+    provide(LINGYUN_APP_PAGE_EMBEDDED, true)
+    const inheritedScrollLocked = inject(LINGYUN_APP_PAGE_SCROLL_LOCKED, null)
+    const inheritedNavInset = inject(LINGYUN_APP_PAGE_NAV_INSET, null)
+    const inheritedScrollReport = inject(LINGYUN_APP_PAGE_REPORT_SCROLL, null)
+    const inheritedScrollLock = inject<LingyunAppPageScrollLock | null>(
+      LINGYUN_APP_PAGE_SCROLL_LOCK,
+      null,
+    )
+    const scrollLocked = embedded && inheritedScrollLocked ? inheritedScrollLocked : ref(false)
+    const navInsetPx = embedded && inheritedNavInset ? inheritedNavInset : ref(0)
     provide(LINGYUN_APP_PAGE_SCROLL_LOCKED, scrollLocked)
+    provide(LINGYUN_APP_PAGE_NAV_INSET, navInsetPx)
     onResize((res) => {
       const proxy = (instance && instance.proxy) as
         | { syncNavLayout?: (windowWidth?: number) => void }
@@ -230,6 +254,10 @@ export default defineComponent({
     })
     return {
       bindScroll: inject(LINGYUN_APP_PAGE_BIND_SCROLL, null),
+      embedded,
+      inheritedScrollLock,
+      inheritedScrollReport,
+      navInsetPx,
       scrollLocked,
     }
   },
@@ -247,6 +275,8 @@ export default defineComponent({
     this._navSlotClaim = 0
   },
   mounted() {
+    if (this.embedded) return
+    if (ensureLingyunWidePageHost()) return
     this.syncNavLayout()
     this.syncNavHeaderSlots()
     this.syncH5PageNavHost()
@@ -261,7 +291,6 @@ export default defineComponent({
     }
   },
   beforeUnmount() {
-    clearLingyunPageHost()
     this.releaseNavHeaderSlots()
     this.clearScrollSettle()
     this.teardownGlassObserver()
@@ -273,6 +302,12 @@ export default defineComponent({
     },
     navDocked() {
       this.syncH5PageNavHost()
+    },
+    usePageScroll(enabled: boolean) {
+      this.$nextTick(() => {
+        if (enabled) this.setupGlassObserver()
+        else this.teardownGlassObserver()
+      })
     },
   },
   computed: {
@@ -301,6 +336,7 @@ export default defineComponent({
     },
     /** 宽屏需要为顶栏让出左侧。H5 的列在 body 上，这里只留宽度。 */
     navDocked() {
+      if (this.embedded) return false
       if (pageRequiresLogin()) return false
       if (!coerceTriFlag(this.showNav, true)) return false
       if (this.placement === 'sheet' || this.showGrabberEffective) return false
@@ -364,6 +400,7 @@ export default defineComponent({
         this.themeRootClass,
         `lingyun-app-page--${this.titleStyle || 'title'}`,
         {
+          'lingyun-app-page--embedded': this.embedded,
           'lingyun-app-page--safe': this.safeArea,
           'lingyun-app-page--sheet': this.placement === 'sheet' || this.showGrabberEffective,
           'lingyun-app-page--page-scroll': this.usePageScroll,
@@ -375,14 +412,20 @@ export default defineComponent({
   },
   provide() {
     return {
-      [LINGYUN_APP_PAGE_REPORT_SCROLL]: (scrollTop: number) => {
-        this.applyScrollTop(scrollTop)
-        this.scheduleScrollSettle(scrollTop)
-      },
-      [LINGYUN_APP_PAGE_SCROLL_LOCK]: {
-        lock: () => this.lockBodyScroll(),
-        unlock: () => this.unlockBodyScroll(),
-      },
+      [LINGYUN_APP_PAGE_REPORT_SCROLL]:
+        this.embedded && this.inheritedScrollReport
+          ? this.inheritedScrollReport
+          : (scrollTop: number) => {
+              this.applyScrollTop(scrollTop)
+              this.scheduleScrollSettle(scrollTop)
+            },
+      [LINGYUN_APP_PAGE_SCROLL_LOCK]:
+        this.embedded && this.inheritedScrollLock
+          ? this.inheritedScrollLock
+          : {
+              lock: () => this.lockBodyScroll(),
+              unlock: () => this.unlockBodyScroll(),
+            },
     }
   },
   methods: {
@@ -466,6 +509,9 @@ export default defineComponent({
       this.largeExtraPx = layout.largeExtra
       this.title2LineLargeExtraPx = layout.title2LineLargeExtra
       this.regular = !!layout.regular
+      if (!this.embedded) {
+        this.navInsetPx = this.navDocked ? LINGYUN_PAGE_NAV_WIDTH : 0
+      }
       this.syncH5PageNavHost()
     },
     syncNavHeaderSlots() {
@@ -661,6 +707,20 @@ export default defineComponent({
   height: 0;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+}
+
+.lingyun-app-page--embedded {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  background: transparent;
+}
+
+.lingyun-app-page__embedded {
+  width: 100%;
+  min-height: 100%;
   box-sizing: border-box;
 }
 

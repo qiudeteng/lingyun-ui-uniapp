@@ -554,31 +554,12 @@ export default defineComponent({
       this._navScrollSettled = true
       setLingyunPageNavScrollTop(y)
     },
-    onNavTap(url: string) {
-      const rawTarget = normalizeLingyunPagePath(url)
-      if (!rawTarget) return
-      const next = resolveLingyunPageUrl(url)
-      const target = normalizeLingyunPagePath(next)
-      if (!target) return
-      if (pageHostState.path === rawTarget && pageHostState.url === next) return
-      if (!pageHostState.path && target === this.currentPath && target === rawTarget) return
-      if (pageHostState.path && target !== 'pages/404/404') clearLingyunPageHost()
-      this.currentPath = rawTarget
-      if (openLingyunHostedPage(next, rawTarget)) return
-      const highlight = target === 'pages/404/404' ? rawTarget : target
-      this.currentPath = highlight
-      setLingyunPageNavIntent(highlight)
-      this._expectPath = target
-      this.pullRoute()
+    replacePage(url: string) {
       uni.redirectTo({
-        url: next,
-        animationType: 'none',
-        animationDuration: 0,
+        url,
         fail: () => {
           uni.navigateTo({
-            url: next,
-            animationType: 'none',
-            animationDuration: 0,
+            url,
             fail: () => {
               clearLingyunPageNavIntent()
               this._expectPath = ''
@@ -587,6 +568,30 @@ export default defineComponent({
           })
         },
       })
+    },
+    onNavTap(url: string) {
+      const rawTarget = normalizeLingyunPagePath(url)
+      if (!rawTarget) return
+      if (openLingyunHostedPage(url, rawTarget)) {
+        this.currentPath = rawTarget
+        return
+      }
+      const next = resolveLingyunPageUrl(url)
+      const target = normalizeLingyunPagePath(next)
+      if (!target) return
+      if (pageHostState.path === rawTarget && pageHostState.url === next) return
+      if (!pageHostState.path && target === this.currentPath && target === rawTarget) return
+      if (openLingyunHostedPage(next, rawTarget)) {
+        this.currentPath = rawTarget
+        return
+      }
+      if (pageHostState.path) clearLingyunPageHost()
+      const highlight = target === 'pages/404/404' ? rawTarget : target
+      this.currentPath = highlight
+      setLingyunPageNavIntent(highlight)
+      this._expectPath = target
+      this.pullRoute()
+      this.replacePage(next)
     },
   },
 })

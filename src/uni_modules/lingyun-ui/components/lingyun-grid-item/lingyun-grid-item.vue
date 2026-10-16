@@ -294,6 +294,7 @@ export default defineComponent({
     openLink() {
       const raw = String(this.link || '').trim()
       if (!raw) return
+      if (openLingyunHostedPage(raw, raw)) return
       const next = resolveLingyunPageUrl(raw)
       if (!next) return
       if (openLingyunHostedPage(next, raw)) return

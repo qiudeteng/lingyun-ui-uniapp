@@ -1,6 +1,13 @@
 <template>
-  <lingyun-app-page title="凌云UI">
-    <view class="page">
+  <lingyun-app-page
+    :title="hostedView?.title || '凌云UI'"
+    :body-scroll="hostedView?.bodyScroll ?? true"
+    :page-scroll="hostedView?.pageScroll ?? true"
+  >
+    <!-- #ifdef MP-WEIXIN -->
+    <app-page-view-host v-if="pageHostState.path" />
+    <!-- #endif -->
+    <view v-if="showDirectory" class="page">
       <view class="hero">
         <text class="hero__title">欢迎来到 凌云UI</text>
         <text class="hero__desc">一套对齐 Apple Liquid Glass 的 uni-app 多端组件库</text>
@@ -35,10 +42,13 @@
   import { useThemeStore } from '@/stores/theme'
   import type { ThemePreference } from '@/utils/theme'
   import { LINGYUN_PAGE_NAV, resolveLingyunPageUrl } from '@/router/pageNav'
-  import { openLingyunHostedPage } from '@/router/pageHost'
+  import { openLingyunHostedPage, pageHostState } from '@/router/pageHost'
+  import { getLingyunPageView } from '@/router/pageViews'
 
   const themeStore = useThemeStore()
   const sections = LINGYUN_PAGE_NAV
+  const hostedView = computed(() => getLingyunPageView(pageHostState.path))
+  const showDirectory = computed(() => !pageHostState.path)
 
   const themeOptions = [
     { key: 'light', text: '浅色' },
@@ -60,6 +70,7 @@
   )
 
   function go(url: string): void {
+    if (openLingyunHostedPage(url, url)) return
     const next = resolveLingyunPageUrl(url)
     if (!next) return
     if (openLingyunHostedPage(next, url)) return
