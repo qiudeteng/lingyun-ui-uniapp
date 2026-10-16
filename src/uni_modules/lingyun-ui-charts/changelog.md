@@ -1,9 +1,9 @@
+## 1.0.14（2026-10-16）
+- 不再支持 ECharts。配置和引擎收到组件目录。
+- 加载和错误改用凌云UI组件。
+- 暗黑模式：可滚动图表两侧遮罩跟随卡片底色，地图标签加描边。
 ## 1.0.13（2026-10-16）
 - 柱状图顶部、条状图右侧圆角按 `pixelRatio` 放大。小程序画布是物理像素，原来 6 像素圆角在高分屏上几乎看不出来。
-- 引擎和配置收进 `components/lingyun-ui-charts/`，去掉 `js_sdk`。
-- 系列色和默认 option 合并为 `components/lingyun-ui-charts/config.ts`。
-- 加载和错误改为 `lingyun-activity-indicator`、`lingyun-empty`，删除图表包内的加载 / 错误组件。
-- 不再支持 ECharts：删除压缩包、配置和 `echartsH5` / `echartsApp` / `eopts`。
 ## 1.0.12（2026-10-15）
 - 条状图默认右侧顶端圆角 `barBorderRadius: [6, 6, 0, 0]`；堆积条最右一层同样圆角；Demo / 文档增加堆积条状示例。
 ## 1.0.11（2026-10-15）

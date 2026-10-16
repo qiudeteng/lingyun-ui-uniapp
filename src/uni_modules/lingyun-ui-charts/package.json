@@ -1,7 +1,7 @@
 {
   "id": "lingyun-ui-charts",
   "displayName": "凌云UI Charts",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "凌云UI 图表组件。系列色见 components/lingyun-ui-charts/config.ts。",
   "keywords": [
     "lingyun-ui",

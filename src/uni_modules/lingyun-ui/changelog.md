@@ -1,3 +1,7 @@
+## 1.0.27（2026-10-16）
+- `lingyun-alert` 支持 `uni.showLingyunAlert`。
+- `lingyun-table` 宽屏筛选改为 Popover，分组行可收起，加载遮罩盖住整表。
+- `lingyun-popover` 箭头对准触发器。
 ## 1.0.26（2026-10-15）
 - `lingyun-alert` 新增 JS 调用：`uni.showLingyunAlert(options)` / `uni.hideLingyunAlert()`（也挂在 `this.$showLingyunAlert`），和 Toast 一样由 `lingyun-app-page` 里的反馈宿主渲染，不用在页面放组件。返回 Promise，关闭时给出 `{ confirm, cancel, index, action, values }`；不传 `actions` 时用 `confirmText` / `cancelText` / `showCancel` 生成按钮。原来的组件写法不变。
 - `lingyun-table` 筛选面板在窗口宽 690 及以上改为箭头指向筛选图标的 Popover，底部「取消 / 确定」；窄屏仍是底部 Sheet。面板内容拆到新组件 `lingyun-table-filter-form`。
