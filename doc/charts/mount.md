@@ -23,7 +23,7 @@
 
 渐变：`linearType: "custom"` 用引擎内置渐变色；`linearType: "opacity"` 从峰顶透明过渡到系列色，透明度看 `linearOpacity`。描边用 `borderWidth`，`0` 为无边。
 
-横向滚动：`enableScroll: true`，`xAxis.itemCount` 小于类目数，`xAxis.scrollShow: true`，组件上打开 `ontouch`。
+横向滚动：`enableScroll: true`，`xAxis.itemCount` 小于类目数，`xAxis.scrollShow: true`。
 
 标记线：`enableMarkLine: true`，线写在 `extra.markLine.data`。右侧标签要留白时把 `padding` 右侧加大（示例用 `[15, 40, 0, 15]`）。
 
@@ -33,12 +33,8 @@
 <view class="chart-box">
   <lingyun-ui-charts
     type="mount"
-    canvasId="lychart-mount"
     :chartData="chartData"
     :opts="chartOpts"
-    :canvas2d="true"
-    :inScrollView="true"
-    :ontouch="true"
   />
 </view>
 ```

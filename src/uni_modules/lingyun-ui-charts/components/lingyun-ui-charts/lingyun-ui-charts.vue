@@ -81,61 +81,32 @@
       class="chartsview__shot chartsview__shot--empty"
       :style="{ width: cWidth + 'px', height: cHeight + 'px', background: background }"
     />
-    <block v-if="type2d">
-      <view v-if="ontouch" @tap="_tap">
-        <canvas
-          :id="cid"
-          :canvasId="cid"
-          :style="{ width: cWidth + 'px', height: cHeight + 'px', background: background }"
-          type="2d"
-          :disable-scroll="disScroll"
-          :hidden="mpOverlayCover || !showchart"
-          @touchstart="_touchStart"
-          @touchmove="_touchMove"
-          @touchend="_touchEnd"
-          @error="_error"
-        />
-      </view>
-      <view v-if="!ontouch" @tap="_tap">
-        <canvas
-          :id="cid"
-          :canvasId="cid"
-          :style="{ width: cWidth + 'px', height: cHeight + 'px', background: background }"
-          type="2d"
-          :disable-scroll="disScroll"
-          :hidden="mpOverlayCover || !showchart"
-          @error="_error"
-        />
-      </view>
-    </block>
-    <block v-if="!type2d">
-      <view v-if="ontouch" @tap="_tap">
-        <canvas
-          :id="cid"
-          :canvasId="cid"
-          :style="{ width: cWidth + 'px', height: cHeight + 'px', background: background }"
-          @touchstart="_touchStart"
-          @touchmove="_touchMove"
-          @touchend="_touchEnd"
-          :disable-scroll="disScroll"
-          :hidden="mpOverlayCover"
-          @error="_error"
-          v-if="showchart"
-        />
-      </view>
-      <view v-if="!ontouch" >
-        <canvas
-          :id="cid"
-          :canvasId="cid"
-          :style="{ width: cWidth + 'px', height: cHeight + 'px', background: background }"
-          :disable-scroll="disScroll"
-          :hidden="mpOverlayCover"
-          @tap="_tap"
-          @error="_error"
-          v-if="showchart"
-        />
-      </view>
-    </block>
+    <view v-if="ontouch" @tap="_tap">
+      <canvas
+        v-if="showchart"
+        :id="cid"
+        :canvasId="cid"
+        :style="{ width: cWidth + 'px', height: cHeight + 'px', background: background }"
+        @touchstart="_touchStart"
+        @touchmove="_touchMove"
+        @touchend="_touchEnd"
+        :disable-scroll="disScroll"
+        :hidden="mpOverlayCover"
+        @error="_error"
+      />
+    </view>
+    <view v-if="!ontouch">
+      <canvas
+        v-if="showchart"
+        :id="cid"
+        :canvasId="cid"
+        :style="{ width: cWidth + 'px', height: cHeight + 'px', background: background }"
+        :disable-scroll="disScroll"
+        :hidden="mpOverlayCover"
+        @tap="_tap"
+        @error="_error"
+      />
+    </view>
     <!-- #endif -->
   </view>
 </template>
@@ -183,6 +154,14 @@ function formatterAssign(args: any, formatter: Record<string, any>) {
 }
 
 var lastMoveTime: number | null = null;
+let chartCanvasSequence = 0
+const chartCanvasPrefix = `lychart-${Date.now().toString(36)}`
+
+function createChartCanvasId(): string {
+  chartCanvasSequence += 1
+  return `${chartCanvasPrefix}-${chartCanvasSequence.toString(36)}`
+}
+
 /**
  * 防抖
  *
@@ -254,11 +233,7 @@ export default defineComponent({
     },
     canvasId: {
       type: String,
-      default: 'id'
-    },
-    canvas2d: {
-      type: Boolean,
-      default: false
+      default: ''
     },
     background: {
       type: String,
@@ -297,7 +272,7 @@ export default defineComponent({
     },
     inScrollView: {
       type: Boolean,
-      default: false
+      default: true
     },
     reshow: {
       type: Boolean,
@@ -325,7 +300,7 @@ export default defineComponent({
     },
     ontouch: {
       type: Boolean,
-      default: false
+      default: true
     },
     onmouse: {
       type: Boolean,
@@ -365,7 +340,6 @@ export default defineComponent({
       inH5: false,
       inApp: false,
       inWin: false,
-      type2d: true,
       disScroll: false,
       openmouse: false,
       pixel: 1,
@@ -387,16 +361,7 @@ export default defineComponent({
     };
   },
   created(){
-    this.cid = this.canvasId
-    if (this.canvasId == 'id' || this.canvasId == '') {
-      let t = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
-      let len = t.length
-      let id = ''
-      for (let i = 0; i < 32; i++) {
-        id += t.charAt(Math.floor(Math.random() * len))
-      }
-      this.cid = id
-    }
+    this.cid = String(this.canvasId || '').trim() || createChartCanvasId()
     let platform = ''
     let pixelRatio = 1
     if (typeof uni.getDeviceInfo === 'function' && typeof uni.getWindowInfo === 'function') {
@@ -412,21 +377,6 @@ export default defineComponent({
     if(platform === 'windows' || platform === 'mac'){
       this.inWin = true;
     }
-    // #ifdef MP-WEIXIN
-    if (this.canvas2d === false || platform === 'windows' || platform === 'mac') {
-      this.type2d = false;
-    }else{
-      this.type2d = true;
-      this.pixel = pixelRatio;
-    }
-    // #endif
-    //非微信小程序端强制关闭canvas2d模式
-    // #ifndef MP-WEIXIN
-    this.type2d = false;
-    // #endif
-    // #ifdef  MP-TOUTIAO || MP-LARK || MP-ALIPAY
-    this.type2d = this.canvas2d;
-    // #endif
     // #ifdef MP-ALIPAY
     this.inAli = true;
     this.pixel = pixelRatio;
@@ -648,33 +598,6 @@ export default defineComponent({
           finish('')
           return
         }
-        if (this.type2d) {
-          const query = (uni.createSelectorQuery() as any).in(this)
-          query
-            .select('#' + this.cid)
-            .fields({ node: true, size: true })
-            .exec((res: any) => {
-              const canvas = res && res[0] && res[0].node
-              if (!canvas) {
-                finish('')
-                return
-              }
-              uni.canvasToTempFilePath({
-                canvas,
-                success: (file: { tempFilePath?: string }) => finish(file.tempFilePath || ''),
-                fail: () => {
-                  try {
-                    const dataUrl =
-                      typeof canvas.toDataURL === 'function' ? canvas.toDataURL('image/png') : ''
-                    finish(dataUrl || '')
-                  } catch {
-                    finish('')
-                  }
-                },
-              } as any)
-            })
-          return
-        }
         uni.canvasToTempFilePath(
           {
             canvasId: this.cid,
@@ -814,7 +737,6 @@ export default defineComponent({
               cfu.option[cid].background = (this.type === 'word' || !transparentBackground)
                 ? this.background
                 : (this.legendTheme === 'dark' ? '#1c1c1e' : '#FFFFFF');
-              cfu.option[cid].canvas2d = this.type2d;
               cfu.option[cid].pixelRatio = this.pixel;
               cfu.option[cid].animation = this.animation;
               cfu.option[cid].width = data.width * this.pixel;
@@ -849,49 +771,18 @@ export default defineComponent({
               this.chartLoading = false;
               this.showchart = true;
               this.$nextTick(()=>{
-                if (this.type2d === true) {
-                  const query = (uni.createSelectorQuery() as any).in(this)
-                  query
-                    .select('#' + cid)
-                    .fields({ node: true, size: true })
-                    .exec((res: any) => {
-                      if (res[0]) {
-                        const canvas = res[0].node;
-                        const ctx = canvas.getContext('2d');
-                        cfu.option[cid].context = ctx;
-                        cfu.option[cid].rotateLock = cfu.option[cid].rotate;
-                        if(cfu.instance[cid] && cfu.option[cid] && cfu.option[cid].update === true){
-                          this._updataUChart(cid)
-                        }else{
-                          canvas.width = data.width * this.pixel;
-                          canvas.height = data.height * this.pixel;
-                          canvas._width = data.width * this.pixel;
-                          canvas._height = data.height * this.pixel;
-                          setTimeout(()=>{
-                            cfu.option[cid].context.restore();
-                            cfu.option[cid].context.save();
-                            this._newChart(cid)
-                          },100)
-                        }
-                      } else {
-                        this.showchart = false;
-                        this.chartError = '参数错误：开启2d模式后，未获取到dom节点，canvas-id:' + cid;
-                      }
-                    });
+                if(this.inAli){
+                  cfu.option[cid].rotateLock = cfu.option[cid].rotate;
+                }
+                cfu.option[cid].context = uni.createCanvasContext(cid, this);
+                if(cfu.instance[cid] && cfu.option[cid] && cfu.option[cid].update === true){
+                  this._updataUChart(cid)
                 } else {
-                  if(this.inAli){
-                    cfu.option[cid].rotateLock = cfu.option[cid].rotate;
-                  }
-                  cfu.option[cid].context = uni.createCanvasContext(cid, this);
-                  if(cfu.instance[cid] && cfu.option[cid] && cfu.option[cid].update === true){
-                    this._updataUChart(cid)
-                  }else{
-                    setTimeout(()=>{
-                      cfu.option[cid].context.restore();
-                      cfu.option[cid].context.save();
-                      this._newChart(cid)
-                    },100)
-                  }
+                  setTimeout(()=>{
+                    cfu.option[cid].context.restore();
+                    cfu.option[cid].context.save();
+                    this._newChart(cid)
+                  },100)
                 }
               })
             }
@@ -931,25 +822,12 @@ export default defineComponent({
     	},this);
     },
     getImage(){
-      if(this.type2d == false){
-        uni.canvasToTempFilePath({
-          canvasId: this.cid,
-          success: res=>{
-            this.emitMsg({name: 'getImage', params: {type:"getImage", base64: res.tempFilePath}});
-          }
-        },this);
-      }else{
-        const query = (uni.createSelectorQuery() as any).in(this)
-        query
-          .select('#' + this.cid)
-          .fields({ node: true, size: true })
-          .exec((res: any) => {
-            if (res[0]) {
-              const canvas = res[0].node;
-              this.emitMsg({name: 'getImage', params: {type:"getImage", base64: canvas.toDataURL('image/png')}});
-            }
-          });
-      }
+      uni.canvasToTempFilePath({
+        canvasId: this.cid,
+        success: res=>{
+          this.emitMsg({name: 'getImage', params: {type:"getImage", base64: res.tempFilePath}});
+        }
+      },this);
     },
     // #ifndef APP-VUE || H5
     _newChart(cid: any) {

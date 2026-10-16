@@ -27,12 +27,8 @@ Demo 的省级边界在 `src/pages/demo/charts/map-geo.ts`（DataV GeoAtlas 抽�
 <view class="chart-box">
   <lingyun-ui-charts
     type="map"
-    canvasId="lychart-map"
     :chartData="chartData"
     :opts="chartOpts"
-    :canvas2d="true"
-    :inScrollView="true"
-    :ontouch="true"
   />
 </view>
 ```

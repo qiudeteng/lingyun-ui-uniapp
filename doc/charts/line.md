@@ -18,7 +18,7 @@
 | `onShadow` | 为 `true` 且该条有 `setShadow: [x, y, blur, color]` 时画阴影 |
 | `animation` | `vertical` 自下而上（默认）；`horizontal` 从左画入 |
 
-横向滚动：`opts.enableScroll: true`，`xAxis.itemCount` 为可视类目数，`xAxis.scrollShow: true` 画出滚动条。组件须 `ontouch`。
+横向滚动：`opts.enableScroll: true`，`xAxis.itemCount` 为可视类目数，`xAxis.scrollShow: true` 画出滚动条。
 
 ## 示例
 
@@ -26,12 +26,8 @@
 <view class="chart-box">
   <lingyun-ui-charts
     type="line"
-    canvasId="lychart-line"
     :chartData="chartData"
     :opts="chartOpts"
-    :canvas2d="true"
-    :inScrollView="true"
-    :ontouch="true"
   />
 </view>
 ```

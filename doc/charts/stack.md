@@ -34,12 +34,8 @@ const chartData = {
 ```vue
 <lingyun-ui-charts
   type="stack"
-  canvasId="lychart-stack"
   :chartData="chartData"
   :opts="{}"
-  :canvas2d="true"
-  :inScrollView="true"
-  :ontouch="true"
 />
 ```
 
@@ -51,23 +47,15 @@ const chartData = {
 <!-- 堆积折线 -->
 <lingyun-ui-charts
   type="line"
-  canvasId="lychart-stack-line"
   :chartData="chartData"
   :opts="lineOpts"
-  :canvas2d="true"
-  :inScrollView="true"
-  :ontouch="true"
 />
 
 <!-- 堆积曲线 -->
 <lingyun-ui-charts
   type="curve"
-  canvasId="lychart-stack-curve"
   :chartData="chartData"
   :opts="curveOpts"
-  :canvas2d="true"
-  :inScrollView="true"
-  :ontouch="true"
 />
 ```
 

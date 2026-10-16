@@ -10,11 +10,7 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="area"
-            canvasId="lychart-area-straight"
             :chartData="lineData"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -23,12 +19,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="area"
-            canvasId="lychart-area-curve"
             :chartData="lineData"
             :opts="curveOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -37,12 +29,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="area"
-            canvasId="lychart-area-step"
             :chartData="lineData"
             :opts="stepOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -51,12 +39,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="tarea"
-            canvasId="lychart-area-time"
             :chartData="timeData"
             :opts="timeOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -65,12 +49,8 @@
         <view class="chart-box" :class="{ 'chart-box--legend-bottom': legendAtBottom }">
           <lingyun-ui-charts
             type="area"
-            canvasId="lychart-area-legend"
             :chartData="legendData"
             :opts="legendOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>

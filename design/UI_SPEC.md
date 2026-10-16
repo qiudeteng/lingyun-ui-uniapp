@@ -354,7 +354,7 @@ Liquid Glass 是 **控件与导航功能层** 的材质，不是整页皮肤。
 - [ ] Sheet 改动已对照 `SHEETS.md` / Sketch Sheets（底部 Modal、medium/large、Grabber、玻璃）
 - [ ] Action Sheet 改动已对照 `ACTIONSHEETS.md`（两组玻璃卡、Cancel、§6.2-A.1）
 - [ ] Text Field 改动已对照 `TEXTFIELDS.md` / Sketch Text Fields（Fill Tertiary、52 高、圆角 26）
-- [ ] Charts 改动已对照 `CHARTS.md`（数据形状、系列色、canvas 高度、mp canvas2d；浮层打开时 canvas 不挡 Sheet/Picker）
+- [ ] Charts 改动已对照 `CHARTS.md`（数据形状、系列色、canvas 高度；浮层打开时 canvas 不挡 Sheet/Picker）
 - [ ] Goods Nav 改动已对照 `GOODS_NAV.md`（玻璃图标胶囊 + 系统蓝按钮，非渐变实心条）
 - [ ] Grid 改动已对照 `GRID.md`（分组卡片、方形格、分割线不画成灰表格）
 - [ ] Indexed List 改动已对照 `INDEXED_LIST.md`（分组卡片、字母条、玻璃气泡）

@@ -26,12 +26,8 @@
 <view class="chart-box">
   <lingyun-ui-charts
     type="column"
-    canvasId="lychart-column"
     :chartData="chartData"
     :opts="chartOpts"
-    :canvas2d="true"
-    :inScrollView="true"
-    :ontouch="true"
   />
 </view>
 ```

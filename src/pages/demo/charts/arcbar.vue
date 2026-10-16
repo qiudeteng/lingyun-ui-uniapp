@@ -10,12 +10,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="arcbar"
-            canvasId="lychart-arcbar-gradient"
             :chartData="singleData"
             :opts="gradientOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -24,12 +20,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="arcbar"
-            canvasId="lychart-arcbar-multi"
             :chartData="multiData"
             :opts="multiCircleOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -38,12 +30,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="arcbar"
-            canvasId="lychart-arcbar-ccw"
             :chartData="singleData"
             :opts="ccwArcOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -52,12 +40,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="arcbar"
-            canvasId="lychart-arcbar-multi-ccw"
             :chartData="multiData"
             :opts="multiCcwOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -66,12 +50,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="arcbar"
-            canvasId="lychart-arcbar-round"
             :chartData="singleData"
             :opts="roundCircleOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -80,12 +60,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="arcbar"
-            canvasId="lychart-arcbar-butt"
             :chartData="singleData"
             :opts="buttCircleOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>

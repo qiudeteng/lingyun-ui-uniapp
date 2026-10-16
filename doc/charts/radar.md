@@ -30,12 +30,8 @@
 <view class="chart-box">
   <lingyun-ui-charts
     type="radar"
-    canvasId="lychart-radar"
     :chartData="chartData"
     :opts="chartOpts"
-    :canvas2d="true"
-    :inScrollView="true"
-    :ontouch="true"
   />
 </view>
 ```

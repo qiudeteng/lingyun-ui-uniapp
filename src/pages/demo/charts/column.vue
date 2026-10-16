@@ -10,12 +10,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="column"
-            canvasId="lychart-column-basic"
             :chartData="basicData"
             :opts="basicOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -24,12 +20,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="column"
-            canvasId="lychart-column-stack"
             :chartData="stackData"
             :opts="stackOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -38,12 +30,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="column"
-            canvasId="lychart-column-gradient"
             :chartData="basicData"
             :opts="gradientOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -52,12 +40,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="column"
-            canvasId="lychart-column-meter"
             :chartData="basicData"
             :opts="meterOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -66,12 +50,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="column"
-            canvasId="lychart-column-meter-round"
             :chartData="basicData"
             :opts="meterRoundOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -80,12 +60,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="column"
-            canvasId="lychart-column-negative"
             :chartData="negativeData"
             :opts="negativeOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -94,12 +70,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="column"
-            canvasId="lychart-column-scroll"
             :chartData="scrollData"
             :opts="scrollOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -108,12 +80,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="column"
-            canvasId="lychart-column-markline"
             :chartData="markLineData"
             :opts="markLineOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -122,12 +90,8 @@
         <view class="chart-box chart-box--legend">
           <lingyun-ui-charts
             type="column"
-            canvasId="lychart-column-legend"
             :chartData="legendData"
             :opts="legendOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>

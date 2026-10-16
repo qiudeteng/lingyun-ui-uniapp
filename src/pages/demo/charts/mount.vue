@@ -10,12 +10,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="mount"
-            canvasId="lychart-mount-round"
             :chartData="mountData"
             :opts="roundOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -24,12 +20,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="mount"
-            canvasId="lychart-mount-sharp"
             :chartData="mountData"
             :opts="sharpOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -38,12 +30,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="mount"
-            canvasId="lychart-mount-triangle"
             :chartData="mountData"
             :opts="triangleOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -52,12 +40,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="mount"
-            canvasId="lychart-mount-bar"
             :chartData="mountData"
             :opts="barOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -66,12 +50,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="mount"
-            canvasId="lychart-mount-signed"
             :chartData="signedData"
             :opts="signedOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -80,12 +60,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="mount"
-            canvasId="lychart-mount-scroll"
             :chartData="mountData"
             :opts="scrollOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -94,12 +70,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="mount"
-            canvasId="lychart-mount-mark"
             :chartData="mountData"
             :opts="markOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -108,12 +80,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="mount"
-            canvasId="lychart-mount-capsule"
             :chartData="mountData"
             :opts="capsuleOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>

@@ -12,12 +12,8 @@
 <view class="chart-box">
   <lingyun-ui-charts
     type="scatter"
-    canvasId="lychart-scatter"
     :chartData="chartData"
     :opts="chartOpts"
-    :canvas2d="true"
-    :inScrollView="true"
-    :ontouch="true"
   />
 </view>
 ```

@@ -7302,8 +7302,6 @@ var LingyunUiCharts = function LingyunUiCharts(opts) {
   opts.rotate = opts.rotate ? true : false;
   opts.animation = opts.animation ? true : false;
   opts.rotate = opts.rotate ? true : false;
-  opts.canvas2d = opts.canvas2d ? true : false;
-  
   let config$$1 = assign({}, config);
   config$$1.color = opts.color ? opts.color : config$$1.color;
   if (opts.type == 'pie') {

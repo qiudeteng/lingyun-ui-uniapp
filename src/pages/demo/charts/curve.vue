@@ -10,11 +10,7 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="curve"
-            canvasId="lychart-curve-basic"
             :chartData="curveData"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -23,12 +19,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="curve"
-            canvasId="lychart-curve-gradient"
             :chartData="gradientData"
             :opts="gradientOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -37,12 +29,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="curve"
-            canvasId="lychart-curve-shadow"
             :chartData="shadowData"
             :opts="shadowOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -51,12 +39,8 @@
         <view class="chart-box" :class="{ 'chart-box--legend-bottom': legendAtBottom }">
           <lingyun-ui-charts
             type="curve"
-            canvasId="lychart-curve-legend"
             :chartData="legendData"
             :opts="legendOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>

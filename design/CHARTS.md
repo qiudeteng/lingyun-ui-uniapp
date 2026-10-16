@@ -86,7 +86,7 @@ import { chartColorDark } from '@/uni_modules/lingyun-ui-charts/components/lingy
 
 图例表见下文 **§3.6**。饼类的格子写在 `series[0].data` 的每一项上。
 
-`mount` 的峰形在 `extra.mount.type`：`mount` 圆角（默认）、`sharp` 尖角、`triangle` 三角、`bar` 直角柱。`widthRatio` 为峰宽相对类目间距，0–2，默认 1.5。`linearType` 为 `custom`（内置渐变）或 `opacity`（顶透）。正负值要把 `yAxis.data[0]` 的 `min` / `max` 设成能包住数据的范围（默认 `min: 0` 会裁掉负值）。横向滚动：`enableScroll` + `xAxis.itemCount` + 组件 `ontouch`。标记线：`enableMarkLine` + `extra.markLine`。见 `doc/charts/mount.md`。
+`mount` 的峰形在 `extra.mount.type`：`mount` 圆角（默认）、`sharp` 尖角、`triangle` 三角、`bar` 直角柱。`widthRatio` 为峰宽相对类目间距，0–2，默认 1.5。`linearType` 为 `custom`（内置渐变）或 `opacity`（顶透）。正负值要把 `yAxis.data[0]` 的 `min` / `max` 设成能包住数据的范围（默认 `min: 0` 会裁掉负值）。横向滚动：`enableScroll` + `xAxis.itemCount`。标记线：`enableMarkLine` + `extra.markLine`。见 `doc/charts/mount.md`。
 
 ### 3.3 时间轴（无 categories）
 
@@ -191,12 +191,8 @@ legend: {
 <view class="chart-box">
   <lingyun-ui-charts
     type="column"
-    canvasId="lychart-column"
     :chartData="chartData"
     :opts="opts"
-    :canvas2d="true"
-    :inScrollView="true"
-    :ontouch="true"
   />
 </view>
 ```
@@ -213,10 +209,9 @@ legend: {
 | `type` | — | 图种，见 §3 |
 | `chartData` | `{ categories, series }` | 数据；形状见 §3 |
 | `opts` | `{}` | 与 `config.ts` 里 `cfu` 对应 type 深合并 |
-| `canvasId` | `id` | 同页多图必须不同 |
-| `canvas2d` | `false` | **微信小程序建议 `true`** |
-| `inScrollView` | `false` | 页面在滚动容器内时 `true`（`lingyun-app-page` 内要开） |
-| `ontouch` | `false` | 需要滑动/提示时 `true` |
+| `canvasId` | 自动生成 | 非必传；缺省自动生成全局唯一 ID |
+| `inScrollView` | `true` | 是否位于页面滚动容器内 |
+| `ontouch` | `true` | 手势 / tooltip |
 | `animation` | `true` | 动画 |
 
 不支持 ECharts，也不要再接第二套图表库。Demo 统一走 `chart-demo-block`。
@@ -272,6 +267,6 @@ legend: {
 - [ ] 数据形状与 `type` 一致（尤其 word 扁平、时间轴秒级时间戳）
 - [ ] 系列色来自 `config.ts`，未在业务侧另备一份
 - [ ] 画布容器有明确宽高；时间轴右侧未裁字、Y 轴未顶破
-- [ ] 微信：`canvas2d` + 滚动内 `inScrollView`；`pnpm dev:mp-weixin` 可编译
+- [ ] 微信：`pnpm dev:mp-weixin` 可编译
 - [ ] 微信：打开 Sheet / Picker 时图表不穿透浮层
 - [ ] 未给图表套玻璃 mixin；尺寸为 `px`

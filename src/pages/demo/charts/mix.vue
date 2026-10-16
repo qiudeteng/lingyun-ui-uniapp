@@ -10,12 +10,8 @@
         <view class="chart-box chart-box--tall">
           <lingyun-ui-charts
             type="mix"
-            canvasId="lychart-mix"
             :chartData="mixData"
             :opts="mixOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -24,12 +20,8 @@
         <view class="chart-box" :class="{ 'chart-box--legend-bottom': legendAtBottom }">
           <lingyun-ui-charts
             type="mix"
-            canvasId="lychart-mix-legend"
             :chartData="legendData"
             :opts="legendOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>

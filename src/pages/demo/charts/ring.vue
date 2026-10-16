@@ -10,12 +10,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="ring"
-            canvasId="lychart-ring-basic"
             :chartData="baseData"
             :opts="basicOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -24,12 +20,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="ring"
-            canvasId="lychart-ring-gradient"
             :chartData="baseData"
             :opts="gradientOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -38,12 +30,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="ring"
-            canvasId="lychart-ring-label"
             :chartData="labelData"
             :opts="widthOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -52,12 +40,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="ring"
-            canvasId="lychart-ring-hide"
             :chartData="hiddenData"
             :opts="widthOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -66,12 +50,8 @@
         <view class="chart-box" :class="{ 'chart-box--legend-bottom': legendAtBottom }">
           <lingyun-ui-charts
             type="ring"
-            canvasId="lychart-ring-legend"
             :chartData="legendData"
             :opts="legendOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>

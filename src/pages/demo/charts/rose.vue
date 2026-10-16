@@ -10,11 +10,7 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="rose"
-            canvasId="lychart-rose-area"
             :chartData="baseData"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -23,12 +19,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="rose"
-            canvasId="lychart-rose-radius"
             :chartData="baseData"
             :opts="radiusOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -37,11 +29,7 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="rose"
-            canvasId="lychart-rose-label"
             :chartData="labelData"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -50,11 +38,7 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="rose"
-            canvasId="lychart-rose-hide"
             :chartData="hiddenData"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -63,12 +47,8 @@
         <view class="chart-box" :class="{ 'chart-box--legend-bottom': legendAtBottom }">
           <lingyun-ui-charts
             type="rose"
-            canvasId="lychart-rose-legend"
             :chartData="legendData"
             :opts="legendOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>

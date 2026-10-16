@@ -10,12 +10,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="stack"
-            canvasId="lychart-stack-column"
             :chartData="stackData"
             :opts="columnOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -24,12 +20,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="line"
-            canvasId="lychart-stack-line"
             :chartData="stackData"
             :opts="lineOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -38,12 +30,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="curve"
-            canvasId="lychart-stack-curve"
             :chartData="stackData"
             :opts="curveOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>

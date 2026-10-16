@@ -10,11 +10,7 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="funnel"
-            canvasId="lychart-funnel-basic"
             :chartData="baseData"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -23,12 +19,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="funnel"
-            canvasId="lychart-funnel-label"
             :chartData="labelData"
             :opts="labelOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -37,12 +29,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="funnel"
-            canvasId="lychart-funnel-triangle"
             :chartData="baseData"
             :opts="triangleOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -51,12 +39,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="funnel"
-            canvasId="lychart-funnel-pyramid"
             :chartData="baseData"
             :opts="pyramidOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -65,12 +49,8 @@
         <view class="chart-box" :class="{ 'chart-box--legend-bottom': legendAtBottom }">
           <lingyun-ui-charts
             type="funnel"
-            canvasId="lychart-funnel-legend"
             :chartData="legendData"
             :opts="legendOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>

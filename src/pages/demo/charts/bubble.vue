@@ -10,11 +10,7 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="bubble"
-            canvasId="lychart-bubble"
             :chartData="bubbleData"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -23,12 +19,8 @@
         <view class="chart-box" :class="{ 'chart-box--legend-bottom': legendAtBottom }">
           <lingyun-ui-charts
             type="bubble"
-            canvasId="lychart-bubble-legend"
             :chartData="legendData"
             :opts="legendOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>

@@ -10,12 +10,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="gauge"
-            canvasId="lychart-gauge-default"
             :chartData="defaultData"
             :opts="defaultOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -24,12 +20,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="gauge"
-            canvasId="lychart-gauge-progress"
             :chartData="progressData"
             :opts="progressOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>

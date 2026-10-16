@@ -10,12 +10,8 @@
         <view class="chart-box chart-box--tall">
           <lingyun-ui-charts
             type="candle"
-            canvasId="lychart-candle"
             :chartData="candleData"
             :opts="candleOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
             :onzoom="true"
             :disableScroll="true"
           />
@@ -26,12 +22,8 @@
         <view class="chart-box" :class="{ 'chart-box--legend-bottom': legendAtBottom }">
           <lingyun-ui-charts
             type="candle"
-            canvasId="lychart-candle-legend"
             :chartData="legendData"
             :opts="legendOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>

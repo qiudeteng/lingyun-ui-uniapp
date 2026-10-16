@@ -10,12 +10,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="bar"
-            canvasId="lychart-bar-group"
             :chartData="groupData"
             :opts="groupOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -24,12 +20,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="bar"
-            canvasId="lychart-bar-stack"
             :chartData="meterData"
             :opts="stackOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -38,12 +30,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="bar"
-            canvasId="lychart-bar-round"
             :chartData="meterData"
             :opts="roundOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -52,12 +40,8 @@
         <view class="chart-box" :class="{ 'chart-box--legend-bottom': legendAtBottom }">
           <lingyun-ui-charts
             type="bar"
-            canvasId="lychart-bar-legend"
             :chartData="legendData"
             :opts="resolvedLegendOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>

@@ -9,12 +9,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             :type="type"
-            :canvasId="canvasId"
             :chartData="chartData"
             :opts="opts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -22,12 +18,8 @@
         <view class="chart-box" :class="{ 'chart-box--legend-bottom': legendAtBottom }">
           <lingyun-ui-charts
             :type="type"
-            :canvasId="extraCanvasId"
             :chartData="extraChartData"
             :opts="resolvedExtraOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -105,8 +97,6 @@
     return { ...base, legend }
   })
 
-  const canvasId = computed(() => `lychart-${props.type}`)
-  const extraCanvasId = computed(() => `lychart-${props.type}-legend`)
 </script>
 
 <style lang="scss">

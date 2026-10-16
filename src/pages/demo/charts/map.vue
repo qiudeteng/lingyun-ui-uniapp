@@ -10,12 +10,8 @@
         <view class="chart-box chart-box--map">
           <lingyun-ui-charts
             type="map"
-            canvasId="lychart-map-basic"
             :chartData="baseData"
             :opts="baseOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -24,12 +20,8 @@
         <view class="chart-box chart-box--map">
           <lingyun-ui-charts
             type="map"
-            canvasId="lychart-map-marked"
             :chartData="markedData"
             :opts="baseOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>

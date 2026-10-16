@@ -2,7 +2,7 @@
 
 图表。独立包 `lingyun-ui-charts`，当前版本 **{{ chartsVersion }}**。easycom 可用，不必 `import`。只使用本包引擎，**不支持 ECharts**（没有 `echartsH5`、`echartsApp`、`eopts`）。
 
-容器必须有明确高度。放在 `lingyun-app-page` 滚动区内时打开 `canvas2d`、`inScrollView`、`ontouch`。同页多图的 `canvasId` 不能重复。
+容器必须有明确高度。`inScrollView`、`ontouch` 默认开启；`canvasId` 缺省时自动生成全局唯一 ID。
 
 每种图的数据形状不一样，**按图种看下面的专页**，不要把饼图的 `series` 套到柱状图上。右侧预览对应 `src/pages/demo/charts/<type>.vue`。
 
@@ -39,12 +39,8 @@
 <view class="chart-box">
   <lingyun-ui-charts
     type="column"
-    canvasId="lychart-column"
     :chartData="chartData"
     :opts="chartOpts"
-    :canvas2d="true"
-    :inScrollView="true"
-    :ontouch="true"
   />
 </view>
 ```
@@ -140,10 +136,9 @@ const chartOpts = {
 | `type` | 图种，见上表 | — |
 | `chartData` | `{ categories?, series }`，有 series 才绘制 | `{ categories: [], series: [] }` |
 | `opts` | 默认 option 深合并 | `{}` |
-| `canvasId` | 画布 id，同页多图必须不同 | id |
-| `canvas2d` | 微信建议打开 | false |
-| `inScrollView` | 在页面滚动容器内打开 | false |
-| `ontouch` | 手势 / tooltip | false |
+| `canvasId` | 画布 id，非必传；缺省自动生成全局唯一 ID | 自动生成 |
+| `inScrollView` | 是否位于页面滚动容器内 | true |
+| `ontouch` | 手势 / tooltip | true |
 | `ontap` | 点击 | true |
 | `onmouse` | H5 鼠标 | true |
 | `onmovetip` | 移动即出 tooltip | false |
@@ -199,11 +194,8 @@ const chartOpts = {
 <lingyun-ui-charts
   ref="chartRef"
   type="line"
-  canvasId="lychart-line"
   :chartData="chartData"
   :opts="chartOpts"
-  :canvas2d="true"
-  :ontouch="true"
   @complete="onComplete"
   @getIndex="onGetIndex"
   @getImage="onGetImage"
@@ -218,7 +210,7 @@ function exportPng() {
 }
 
 function onGetImage(e: { base64?: string }) {
-  // e.base64：非 2d 为临时路径，canvas2d 多为 dataURL
+  // e.base64：导出的图片数据
   console.log(e.base64)
 }
 ```
@@ -236,14 +228,14 @@ const chartOpts = {
   enableScroll: true,
   xAxis: { itemCount: 5, scrollShow: true },
 }
-// 模板另开 :ontouch="true" :onzoom="true"
+// 模板另开 :onzoom="true"
 ```
 
 ### 组件 ref
 
 | 方法 | 说明 |
 | --- | --- |
-| `getImage()` | 导出当前画布，经 `@getImage` 回传 `base64`（路径或 dataURL） |
+| `getImage()` | 导出当前画布，经 `@getImage` 回传图片数据 |
 | `saveImage()` | H5 触发下载；App / 小程序尝试写入相册 |
 
 ### 引擎方法
@@ -379,4 +371,4 @@ chart.dobuleZoom(e)
 
 弹层里的图第一次可能量不到宽高，打开后再把 `reshow` 置 `true`。
 
-微信：`canvas2d` + 滚动内 `inScrollView`；formatter 只传名字不要传函数。尺寸用 `px`，不要 `rpx`。
+微信：formatter 只传名字不要传函数。尺寸用 `px`，不要 `rpx`。

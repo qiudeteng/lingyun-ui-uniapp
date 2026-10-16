@@ -29,12 +29,8 @@
 <view class="chart-box">
   <lingyun-ui-charts
     type="arcbar"
-    canvasId="lychart-arcbar"
     :chartData="chartData"
     :opts="chartOpts"
-    :canvas2d="true"
-    :inScrollView="true"
-    :ontouch="true"
   />
 </view>
 ```

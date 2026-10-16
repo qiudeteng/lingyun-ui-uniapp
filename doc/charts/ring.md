@@ -16,12 +16,8 @@
 <view class="chart-box">
   <lingyun-ui-charts
     type="ring"
-    canvasId="lychart-ring"
     :chartData="chartData"
     :opts="chartOpts"
-    :canvas2d="true"
-    :inScrollView="true"
-    :ontouch="true"
   />
 </view>
 ```

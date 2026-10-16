@@ -10,12 +10,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="word"
-            canvasId="lychart-word-normal"
             :chartData="wordData"
             :opts="normalOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -24,12 +20,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="word"
-            canvasId="lychart-word-vertical"
             :chartData="wordData"
             :opts="verticalOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>

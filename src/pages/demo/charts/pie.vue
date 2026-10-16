@@ -10,12 +10,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="pie"
-            canvasId="lychart-pie-basic"
             :chartData="baseData"
             :opts="basicOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -24,12 +20,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="pie"
-            canvasId="lychart-pie-gradient"
             :chartData="baseData"
             :opts="gradientOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -38,11 +30,7 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="pie"
-            canvasId="lychart-pie-label"
             :chartData="labelData"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -51,11 +39,7 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="pie"
-            canvasId="lychart-pie-hide"
             :chartData="hiddenData"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -64,12 +48,8 @@
         <view class="chart-box" :class="{ 'chart-box--legend-bottom': legendAtBottom }">
           <lingyun-ui-charts
             type="pie"
-            canvasId="lychart-pie-legend"
             :chartData="legendData"
             :opts="legendOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>

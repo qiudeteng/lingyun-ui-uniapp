@@ -10,12 +10,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="tarea"
-            canvasId="lychart-tarea-vector"
             :chartData="vectorData"
             :opts="vectorOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -24,12 +20,8 @@
         <view class="chart-box">
           <lingyun-ui-charts
             type="tarea"
-            canvasId="lychart-tarea-unix"
             :chartData="unixData"
             :opts="unixOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>
@@ -38,12 +30,8 @@
         <view class="chart-box" :class="{ 'chart-box--legend-bottom': legendAtBottom }">
           <lingyun-ui-charts
             type="tarea"
-            canvasId="lychart-tarea-legend"
             :chartData="legendData"
             :opts="legendOpts"
-            :canvas2d="true"
-            :inScrollView="true"
-            :ontouch="true"
           />
         </view>
       </lingyun-section>

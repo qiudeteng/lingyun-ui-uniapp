@@ -12,12 +12,8 @@ K 线 / 蜡烛图。`type="candle"`。Demo 页：`/pages/demo/charts/candle`（�
 <view class="chart-box">
   <lingyun-ui-charts
     type="candle"
-    canvasId="lychart-candle"
     :chartData="chartData"
     :opts="chartOpts"
-    :canvas2d="true"
-    :inScrollView="true"
-    :ontouch="true"
   />
 </view>
 ```
