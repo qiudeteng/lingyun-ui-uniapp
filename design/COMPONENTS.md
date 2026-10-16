@@ -55,7 +55,7 @@
 | ✅ | `lingyun-row` / `lingyun-col` | 24 分栏。间隔、偏移、对齐、五档响应式 | demo [`layout`](../src/pages/demo/layout.vue) |
 | ✅ | `lingyun-section` | Demo / 区块布局容器 | demo [`sections`](../src/pages/demo/sections.vue) |
 | ✅ | `lingyun-feedback-host` | 命令式 Toast/HUD 宿主 | [`TOASTS.md`](./TOASTS.md) |
-| ✅ | `lingyun-ui-charts` | 图表 | [`CHARTS.md`](./CHARTS.md) |
+| ✅ | `lingyun-ui-charts` | 图表（不支持 ECharts） | [`CHARTS.md`](./CHARTS.md) |
 
 ### 底座 ✅
 

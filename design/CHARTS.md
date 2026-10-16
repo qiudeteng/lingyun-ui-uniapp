@@ -1,12 +1,12 @@
 # Charts 规范（强制 · lingyun-ui-charts）
 
-> 图表是 **内容层**，不是玻璃控件。独立 `uni_modules` 包，不并入 `lingyun-ui`。  
+> 图表是 **内容层**，不是玻璃控件。独立 `uni_modules` 包，不并入 `lingyun-ui`。只使用本包引擎，**不支持 ECharts**。  
 > **使用手册** → [`doc/charts/README.md`](../doc/charts/README.md)（总览）· [`doc/charts/`](../doc/charts/)（各图种，`pnpm manual:dev`）  
 ## 权威来源
 
 1. 使用手册 [`doc/charts/README.md`](../doc/charts/README.md)（含属性 / 事件 / 方法全文）· 图种 [`doc/charts/`](../doc/charts/)
 2. 系列色 [`config.ts`](../src/uni_modules/lingyun-ui-charts/components/lingyun-ui-charts/config.ts) · [`COLORS.md`](./COLORS.md) System Accents
-3. 默认 option：`config.ts` 里的 `cfu` / `cfe`
+3. 默认 option：`config.ts` 里的 `cfu`
 4. 引擎实现：`components/lingyun-ui-charts/lingyun-ui-charts.ts`
 
 尺寸 **1pt = 1px**。禁止 `rpx`。
@@ -20,6 +20,7 @@
 | 包 | `src/uni_modules/lingyun-ui-charts`（独立于凌云UI 单包） |
 | 标签 | `<lingyun-ui-charts />`（easycom） |
 | 加载 / 错误 | `lingyun-activity-indicator` · `lingyun-empty` |
+| 引擎 | 仅 `lingyun-ui-charts.ts`。不支持 ECharts，没有 `echartsH5`、`echartsApp`、`eopts` |
 | 语言 | 组件、配置和引擎为 TypeScript，与 `lingyun-ui-charts.vue` 同目录。renderjs 保持 JavaScript |
 | Demo | `src/pages/demo/charts/<type>.vue` · 页壳 `chart-demo-block` |
 
@@ -151,7 +152,7 @@ opts: {
 | `column` `stack` `bar` `line` `curve` `area` `mix` `radar` `scatter` `bubble` `tline` `tarea` | 一条序列 | 与 `name`、`data` 同级 |
 | `candle` | 开了均线时每条均线；否则那一条 K 线 | 写在对应序列上 |
 
-`word`、`map`、`arcbar`、`gauge` 不画图例。ECharts 不走这套列。
+`word`、`map`、`arcbar`、`gauge` 不画图例。
 
 ```ts
 legend: {
@@ -214,10 +215,9 @@ legend: {
 | `canvas2d` | `false` | **微信小程序建议 `true`** |
 | `inScrollView` | `false` | 页面在滚动容器内时 `true`（`lingyun-app-page` 内要开） |
 | `ontouch` | `false` | 需要滑动/提示时 `true` |
-| `echartsH5` / `echartsApp` | `false` | 默认走本组件引擎。打开后只使用页面上已有的 `window.echarts` |
 | `animation` | `true` | 动画 |
 
-业务页不要散落第二套图表库。Demo 统一走 `chart-demo-block`。
+不支持 ECharts，也不要再接第二套图表库。Demo 统一走 `chart-demo-block`。
 
 ---
 

@@ -1,6 +1,6 @@
 # lingyun-ui-charts
 
-图表。独立包 `lingyun-ui-charts`，当前版本 **{{ chartsVersion }}**。easycom 可用，不必 `import`。
+图表。独立包 `lingyun-ui-charts`，当前版本 **{{ chartsVersion }}**。easycom 可用，不必 `import`。只使用本包引擎，**不支持 ECharts**（没有 `echartsH5`、`echartsApp`、`eopts`）。
 
 容器必须有明确高度。放在 `lingyun-app-page` 滚动区内时打开 `canvas2d`、`inScrollView`、`ontouch`。同页多图的 `canvasId` 不能重复。
 
@@ -106,7 +106,7 @@ const chartOpts = { color: chartColorDark }
 | `column` `stack` `bar` `line` `curve` `area` `mix` `radar` `scatter` `bubble` `tline` `tarea` | 一条序列 | 和 `name`、`data` 同级，不要写进每个点 |
 | `candle` | 开了均线时每条均线一行；否则那一条 K 线 | 写在对应序列上 |
 
-`word`、`map`、`arcbar`、`gauge` 不画图例。ECharts（`echartsH5` / `echartsApp`）不走这套列。
+`word`、`map`、`arcbar`、`gauge` 不画图例。
 
 ```ts
 const chartOpts = {
@@ -140,7 +140,6 @@ const chartOpts = {
 | `type` | 图种，见上表 | — |
 | `chartData` | `{ categories?, series }`，有 series 才绘制 | `{ categories: [], series: [] }` |
 | `opts` | 默认 option 深合并 | `{}` |
-| `eopts` | 仅开启 ECharts 时 | `{}` |
 | `canvasId` | 画布 id，同页多图必须不同 | id |
 | `canvas2d` | 微信建议打开 | false |
 | `inScrollView` | 在页面滚动容器内打开 | false |
@@ -151,7 +150,6 @@ const chartOpts = {
 | `onzoom` | 缩放 | false |
 | `animation` | 动画 | true |
 | `background` | 画布底 | rgba(0,0,0,0) |
-| `echartsH5` / `echartsApp` | 改走页面上已有的 `window.echarts` | false |
 | `tooltipShow` | 提示窗 | true |
 | `tooltipFormat` | `formatter` 里的名字 | — |
 | `tapLegend` | 点图例显隐系列 | true |
@@ -168,7 +166,7 @@ const chartOpts = {
 
 | 事件 | 说明 |
 | --- | --- |
-| `@complete` | 渲染完成。返回 `{ complete: true, id, type: "complete", opts }`。可用返回的 `id`（canvasId）从 `config.ts` 的 `cfu` / `cfe` 取实例再调引擎方法 |
+| `@complete` | 渲染完成。返回 `{ complete: true, id, type: "complete", opts }`。可用返回的 `id`（canvasId）从 `config.ts` 的 `cfu` 取实例再调引擎方法 |
 | `@getIndex` | 点击数据索引。返回 `{ type: "getIndex", currentIndex: { group, index }, legendIndex, id, event: { x, y }, opts }`；未命中时 index / legendIndex 为 `-1` |
 | `@error` | 组件出错。返回 `{ type: "error", errorShow, msg, id }`（`errorShow` 为 props 状态） |
 | `@getTouchStart` | 拖动开始。返回 `{ type: "touchStart", event: { x, y }, id, opts }` |

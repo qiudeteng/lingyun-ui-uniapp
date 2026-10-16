@@ -1,8 +1,9 @@
 ## 1.0.13（2026-10-16）
 - 柱状图顶部、条状图右侧圆角按 `pixelRatio` 放大。小程序画布是物理像素，原来 6 像素圆角在高分屏上几乎看不出来。
-- 引擎和配置收进 `components/lingyun-ui-charts/`，去掉 `js_sdk` 与未使用的 ECharts `static`。
-- 系列色、默认 option、ECharts option 合并为 `components/lingyun-ui-charts/config.ts`。
+- 引擎和配置收进 `components/lingyun-ui-charts/`，去掉 `js_sdk`。
+- 系列色和默认 option 合并为 `components/lingyun-ui-charts/config.ts`。
 - 加载和错误改为 `lingyun-activity-indicator`、`lingyun-empty`，删除图表包内的加载 / 错误组件。
+- 不再支持 ECharts：删除压缩包、配置和 `echartsH5` / `echartsApp` / `eopts`。
 ## 1.0.12（2026-10-15）
 - 条状图默认右侧顶端圆角 `barBorderRadius: [6, 6, 0, 0]`；堆积条最右一层同样圆角；Demo / 文档增加堆积条状示例。
 ## 1.0.11（2026-10-15）
@@ -28,7 +29,7 @@
 - 图例文字默认白色，点掉隐藏后改为图表文字色。
 - 环图中心标题、副标题超出内圆时按内圆缩小。
 ## 1.0.2（2026-10-10）
-- 组件、图表配置。ECharts 压缩包和 renderjs 仍是 JavaScript。
+- 组件、图表配置改为 TypeScript。renderjs 保持 JavaScript。
 ## 1.0.1（2026-10-10）
 
 - 图表包版本从 **1.0.1** 起，按 `1.0.x` 递增。

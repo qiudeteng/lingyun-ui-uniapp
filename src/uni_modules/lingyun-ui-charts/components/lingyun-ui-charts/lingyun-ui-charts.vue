@@ -12,20 +12,6 @@
     </view>
     <!-- APP和H5采用renderjs渲染图表 -->
     <!-- #ifdef APP-VUE || H5 -->
-    <block v-if="echarts">
-      <view
-        :style="{ background: background }"
-        style="width: 100%;height: 100%;"
-        :data-directory="directory"
-        :id="'EC'+cid" 
-        :prop="echartsOpts" 
-        :change:prop="rdcharts.ecinit" 
-        :resize="echartsResize"
-        :change:resize="rdcharts.ecresize"
-        v-show="showchart"
-      />
-    </block>
-    <block v-else>
       <view
         v-on:tap="rdcharts.tap"
         v-on:mousemove="rdcharts.mouseMove"
@@ -47,7 +33,6 @@
           v-show="showchart"
         />
       </view>
-    </block>
     <!-- #endif -->
     <!-- 支付宝小程序 -->
     <!-- #ifdef MP-ALIPAY -->
@@ -171,9 +156,6 @@ import {
   chartLabelSecondaryColor,
   chartLabelSecondaryColorDark,
 } from './config'
-// #ifdef APP-VUE || H5
-import { cfe } from './config'
-// #endif
 
 function deepCloneAssign(origin: Record<string, any> = {}, ...args: any[]): Record<string, any> {
   for (let i in args) {
@@ -281,12 +263,6 @@ export default defineComponent({
         return {};
       }
     },
-    eopts: {
-      type: Object,
-      default() {
-        return {};
-      }
-    },
     errorShow: {
       type: Boolean,
       default: true
@@ -339,14 +315,6 @@ export default defineComponent({
       type: Boolean,
       default: false
     },
-    echartsH5: {
-      type: Boolean,
-      default: false
-    },
-    echartsApp: {
-      type: Boolean,
-      default: false
-    },
     tooltipShow: {
       type: Boolean,
       default: true
@@ -383,10 +351,6 @@ export default defineComponent({
       type: Number,
       default: 0
     },
-    directory: {
-      type: String,
-      default: '/'
-    },
     tapLegend: {
       type: Boolean,
       default: true
@@ -415,12 +379,7 @@ export default defineComponent({
       cWidth: 375,
       cHeight: 250,
       showchart: false,
-      echarts: false,
-      echartsResize:{
-        state:false
-      },
       chartsOpts: {},
-      echartsOpts: {},
       drawData:{},
       lastDrawTime:null,
       /** 微信：浮层打开时 hidden canvas，截图占位 */
@@ -490,10 +449,6 @@ export default defineComponent({
   mounted() {
     // #ifdef APP-VUE
     this.inApp = true;
-    if (this.echartsApp === true) {
-      this.echarts = true;
-      this.openmouse = false;
-    }
     // #endif
     // #ifdef APP-NVUE
     this.inApp = true;
@@ -504,9 +459,6 @@ export default defineComponent({
     this.inH5 = true;
     if(this.inWin === true){
       this.openmouse = this.onmouse;
-    }
-    if (this.echartsH5 === true) {
-      this.echarts = true;
     }
     // #endif
     this.$nextTick(()=>{
@@ -530,11 +482,7 @@ export default defineComponent({
         if (errmsg !== null && errmsg !== 'null' && errmsg !== '') {
           return;
         }
-        if (_this.echarts) {
-          _this.echartsResize.state = !_this.echartsResize.state;
-        } else {
-          _this.resizeHandler();
-        }
+        _this.resizeHandler();
       }, time)
     );
     // #endif
@@ -553,13 +501,8 @@ export default defineComponent({
     this.mpOverlayShot = ''
     this.mpLastShot = ''
     // #endif
-    if(this.echarts === true){
-      delete cfe.option[this.cid]
-      delete cfe.instance[this.cid]
-    }else{
-      delete cfu.option[this.cid]
-      delete cfu.instance[this.cid]
-    }
+    delete cfu.option[this.cid]
+    delete cfu.instance[this.cid]
     // #ifndef MP-ALIPAY || MP-BAIDU || MP-TOUTIAO
     uni.offWindowResize(()=>{})
     // #endif
@@ -607,7 +550,7 @@ export default defineComponent({
     optsProps: {
       handler(val, oldval) {
         if (typeof val === 'object') {
-          if (JSON.stringify(val) !== JSON.stringify(oldval) && this.echarts === false && this.optsWatch == true) {
+          if (JSON.stringify(val) !== JSON.stringify(oldval) && this.optsWatch == true) {
             this.checkData(this.drawData);
           }
         } else {
@@ -620,32 +563,16 @@ export default defineComponent({
       immediate: false,
       deep: true
     },
-    eoptsProps: {
-      handler(val, oldval) {
-        if (typeof val === 'object') {
-          if (JSON.stringify(val) !== JSON.stringify(oldval) && this.echarts === true) {
-            this.checkData(this.drawData);
-          }
-        } else {
-          this.mixinDatacomLoading = false;
-          this.showchart = false;
-          this.mixinDatacomErrorMessage = '参数错误：eopts数据类型错误';
-        }
-      },
-      immediate: false,
-      deep: true
-    },
     reshow(val, oldval) {
       if (val === true && this.mixinDatacomLoading === false) {
         setTimeout(() => {
           this.mixinDatacomErrorMessage = null;
-          this.echartsResize.state = !this.echartsResize.state;
           this.checkData(this.drawData);
         }, 200);
       }
     },
     legendTheme() {
-      if (this.echarts === true || !this.drawData || !this.drawData.series) return
+      if (!this.drawData || !this.drawData.series) return
       this.checkData(this.drawData)
     },
     reload(val, oldval) {
@@ -686,9 +613,6 @@ export default defineComponent({
     },
     optsProps() {
       return JSON.parse(JSON.stringify(this.opts));
-    },
-    eoptsProps() {
-      return JSON.parse(JSON.stringify(this.eopts));
     },
     chartDataProps() {
       return JSON.parse(JSON.stringify(this.chartData));
@@ -842,11 +766,7 @@ export default defineComponent({
       let tmpcategories: any[] = []
       let tmpseries: any[] = [];
       //拼接categories
-      if(this.echarts === true){
-        needCategories = cfe.categories.includes(this.type)
-      }else{
-        needCategories = cfu.categories.includes(this.type)
-      }
+      needCategories = cfu.categories.includes(this.type)
       if(needCategories === true){
         //如果props中的chartData带有categories，则优先使用chartData的categories
         if(this.chartData && this.chartData.categories && this.chartData.categories.length>0){
@@ -946,37 +866,23 @@ export default defineComponent({
     },
     checkData(anyData: any) {
       let cid = this.cid
-      //复位opts或eopts
-      if(this.echarts === true){
-        cfe.option[cid] = deepCloneAssign({}, this.eopts);
-        cfe.option[cid].id = cid;
-        cfe.option[cid].type = this.type;
-      }else{
-        if (this.type && cfu.type.includes(this.type)) {
-          cfu.option[cid] = deepCloneAssign({}, cfu[this.type], this.opts);
-          cfu.option[cid].canvasId = cid;
-        } else {
-          this.mixinDatacomLoading = false;
-          this.showchart = false;
-          this.mixinDatacomErrorMessage = '参数错误：props参数中type类型不正确';
-        }
+      if (this.type && cfu.type.includes(this.type)) {
+        cfu.option[cid] = deepCloneAssign({}, cfu[this.type], this.opts);
+        cfu.option[cid].canvasId = cid;
+      } else {
+        this.mixinDatacomLoading = false;
+        this.showchart = false;
+        this.mixinDatacomErrorMessage = '参数错误：props参数中type类型不正确';
       }
       //挂载categories和series
       let newData = deepCloneAssign({}, anyData);
       if (newData.series !== undefined && newData.series.length > 0) {
         this.mixinDatacomErrorMessage = null;
-        if (this.echarts === true) {
-          cfe.option[cid].chartData = newData;
-          this.$nextTick(()=>{
-            this.init()
-          })
-        }else{
-          cfu.option[cid].categories = newData.categories;
-          cfu.option[cid].series = newData.series;
-          this.$nextTick(()=>{
-            this.init()
-          })
-        }
+        cfu.option[cid].categories = newData.categories;
+        cfu.option[cid].series = newData.series;
+        this.$nextTick(()=>{
+          this.init()
+        })
       }
     },
     resizeHandler() {
@@ -1047,7 +953,7 @@ export default defineComponent({
     },
     _clearChart() {
       let cid = this.cid
-      if (this.echarts !== true && cfu.option[cid] && cfu.option[cid].context) {
+      if (cfu.option[cid] && cfu.option[cid].context) {
         const ctx = cfu.option[cid].context;
         if(typeof ctx === "object" && !!!cfu.option[cid].update){
           ctx.clearRect(0, 0, this.cWidth*this.pixel, this.cHeight*this.pixel);
@@ -1069,8 +975,7 @@ export default defineComponent({
             this.lastDrawTime = Date.now();
             this.cWidth = data.width;
             this.cHeight = data.height;
-            if(this.echarts !== true){
-              this.applyLegendTheme(cid)
+            this.applyLegendTheme(cid)
               // 其它图种用白底给空心点/Y 轴遮挡；词云会铺满画布，默认透明才能透出卡片底，和其它图一致
               cfu.option[cid].background = (this.type === 'word' || this.background != 'rgba(0,0,0,0)')
                 ? this.background
@@ -1091,21 +996,10 @@ export default defineComponent({
               cfu.option[cid].inScrollView = this.inScrollView;
               cfu.option[cid].lastDrawTime = this.lastDrawTime;
               cfu.option[cid].tapLegend = this.tapLegend;
-            }
             //如果是H5或者App端，采用renderjs渲染图表
             if (this.inH5 || this.inApp) {
-              if (this.echarts == true) {
-                cfe.option[cid].ontap = this.ontap;
-                cfe.option[cid].onmouse = this.openmouse;
-                cfe.option[cid].tooltipShow = this.tooltipShow;
-                cfe.option[cid].tooltipFormat = this.tooltipFormat;
-                cfe.option[cid].tooltipCustom = this.tooltipCustom;
-                cfe.option[cid].lastDrawTime = this.lastDrawTime;
-                this.echartsOpts = deepCloneAssign({}, cfe.option[cid]);
-              } else {
-                cfu.option[cid].rotateLock = cfu.option[cid].rotate;
-                this.chartsOpts = deepCloneAssign({}, cfu.option[cid]);
-              }
+              cfu.option[cid].rotateLock = cfu.option[cid].rotate;
+              this.chartsOpts = deepCloneAssign({}, cfu.option[cid]);
             // 小程序端用凌云图表引擎渲染
             } else {
               cfu.option[cid] = formatterAssign(cfu.option[cid],cfu.formatter)
@@ -1385,12 +1279,6 @@ export default defineComponent({
     emitMsg(msg: any) {
       this.$emit(msg.name, msg.params);
     },
-    getRenderType() {
-      //防止如果开启echarts且父元素为v-if的情况renderjs监听不到prop变化的问题
-      if(this.echarts===true && this.mixinDatacomLoading===false){
-        this.beforeInit()
-      }
-    },
     toJSON(){
       return this
     }
@@ -1401,22 +1289,10 @@ export default defineComponent({
 <!-- #ifdef APP-VUE || H5 -->
 <script module="rdcharts" lang="renderjs">
 import LingyunUiChartsRD from './lingyun-ui-charts';
-import { cfu, cfe } from './config';
+import { cfu } from './config';
 
 var that = {};
 var rootdom = null;
-
-function rddeepCloneAssign(origin = {}, ...args) {
-  for (let i in args) {
-    if (args[i] == null) continue
-    for (let key in args[i]) {
-      if (args[i].hasOwnProperty(key)) {
-        origin[key] = args[i][key] && typeof args[i][key] === 'object' ? rddeepCloneAssign(Array.isArray(args[i][key]) ? [] : {}, origin[key], args[i][key]) : args[i][key];
-      }
-    }
-  }
-  return origin;
-}
 
 function rdformatterAssign(args,formatter) {
   for (let key in args) {
@@ -1444,136 +1320,12 @@ export default {
     }
     rootdom = {top:dm.offsetTop,left:dm.offsetLeft}
     // #endif
-    setTimeout(()=>{
-      if(this.rid === null){
-        this.$ownerInstance && this.$ownerInstance.callMethod('getRenderType')
-      }
-    },200)
   },
   destroyed(){
     delete cfu.option[this.rid]
     delete cfu.instance[this.rid]
-    delete cfe.option[this.rid]
-    delete cfe.instance[this.rid]
   },
   methods: {
-    //==============以下是ECharts的方法====================
-    ecinit(newVal, oldVal, owner, instance){
-      let cid = JSON.stringify(newVal.id)
-      this.rid = cid
-      that[cid] = this.$ownerInstance || instance
-      let eopts = JSON.parse(JSON.stringify(newVal))
-      let type = eopts.type;
-      //载入并覆盖默认配置
-      if (type && cfe.type.includes(type)) {
-        cfe.option[cid] = rddeepCloneAssign({}, cfe[type], eopts);
-      }else{
-        cfe.option[cid] = rddeepCloneAssign({}, eopts);
-      }
-      let newData = eopts.chartData;
-      if(newData){
-        //挂载categories和series
-        if(cfe.option[cid].xAxis && cfe.option[cid].xAxis.type && cfe.option[cid].xAxis.type === 'category'){
-          cfe.option[cid].xAxis.data = newData.categories
-        }
-        if(cfe.option[cid].yAxis && cfe.option[cid].yAxis.type && cfe.option[cid].yAxis.type === 'category'){
-          cfe.option[cid].yAxis.data = newData.categories
-        }
-        cfe.option[cid].series = []
-        for (var i = 0; i < newData.series.length; i++) {
-          cfe.option[cid].seriesTemplate = cfe.option[cid].seriesTemplate ? cfe.option[cid].seriesTemplate : {}
-          let Template = rddeepCloneAssign({},cfe.option[cid].seriesTemplate,newData.series[i])
-          cfe.option[cid].series.push(Template)
-        }
-      }
-      
-      if (typeof window.echarts === 'object') {
-          this.newEChart()
-      }
-    },
-    ecresize(newVal, oldVal, owner, instance){
-      if(cfe.instance[this.rid]){
-        cfe.instance[this.rid].resize()
-      }
-    },
-    newEChart(){
-      let cid = this.rid
-      if(cfe.instance[cid] === undefined){
-        cfe.instance[cid] = echarts.init(that[cid].$el.children[0])
-        //ontap开启后才触发click事件
-        if(cfe.option[cid].ontap === true){
-          cfe.instance[cid].on('click', resdata => {
-            let event = JSON.parse(JSON.stringify({
-              x:resdata.event.offsetX,y:resdata.event.offsetY
-            }))
-            that[cid].callMethod('emitMsg',{name:"getIndex", params:{type:"getIndex", event:event, currentIndex:resdata.dataIndex, value:resdata.data, seriesName: resdata.seriesName,id:cid}})
-          })
-          // 增加ECharts的highlight消息，实现按下移动返回索引功能。add by onefish 创建于 2021-12-11 09:50
-          cfe.instance[cid].on('highlight', resdata => {
-            that[cid].callMethod('emitMsg',{name:"getHighlight", params:{type:"highlight", res:resdata, id:cid}})
-          })
-        }
-        this.updataEChart(cid,cfe.option[cid])
-      }else{
-        this.updataEChart(cid,cfe.option[cid])
-      }
-    },
-    updataEChart(cid,option){
-      //替换option内format属性为formatter的预定义方法
-      option = rdformatterAssign(option,cfe.formatter)
-      if(option.tooltip){
-        option.tooltip.show = option.tooltipShow?true:false;
-        option.tooltip.position = this.tooltipPosition()
-        //tooltipFormat方法，替换组件的tooltipFormat为config.ts内对应的方法
-        if (typeof option.tooltipFormat === 'string' && cfe.formatter[option.tooltipFormat]) {
-          option.tooltip.formatter = option.tooltip.formatter ? option.tooltip.formatter : cfe.formatter[option.tooltipFormat]
-        }
-      }
-      // 颜色渐变添加的方法
-      if (option.series) {
-      	for (let i in option.series) {
-      		let linearGradient = option.series[i].linearGradient
-      		if (linearGradient) {
-      			option.series[i].color = new echarts.graphic.LinearGradient(linearGradient[0],linearGradient[1],linearGradient[2],linearGradient[3],linearGradient[4])
-      		}
-      	}
-      }
-      cfe.instance[cid].setOption(option, option.notMerge)
-      cfe.instance[cid].on('finished', function(){
-        that[cid].callMethod('emitMsg',{name:"complete",params:{type:"complete",complete:true,id:cid}})
-        if(cfe.instance[cid]){
-          cfe.instance[cid].off('finished')
-        }
-      });
-
-      //修复init初始化实例获取宽高不正确问题
-      if(
-        typeof that[cid].$el.children[0].clientWidth != 'undefined' &&
-          (
-            Math.abs( that[cid].$el.children[0].clientWidth - cfe.instance[cid].getWidth() )>3 ||
-            Math.abs( that[cid].$el.children[0].clientHeight - cfe.instance[cid].getHeight() )>3
-          )
-      ){this.ecresize();}
-    },
-    tooltipPosition(){
-      return (point, params, dom, rect, size) => {
-      	let x = point[0]
-      	let y = point[1]
-      	let viewWidth = size.viewSize[0]
-      	let viewHeight = size.viewSize[1]
-      	let boxWidth = size.contentSize[0]
-      	let boxHeight = size.contentSize[1]
-      	let posX = x + 30 
-      	let posY = y + 30 
-      	if (posX + boxWidth > viewWidth) { 
-      		posX = x - boxWidth - 30
-      	}
-      	if (posY + boxHeight > viewHeight) {
-      		posY = y - boxHeight - 30
-      	}
-      	return [posX, posY]
-      }
-    },
     //==============以下是图表引擎的方法====================
     ucinit(newVal, oldVal, owner, instance){
       if(JSON.stringify(newVal) == JSON.stringify(oldVal)){
