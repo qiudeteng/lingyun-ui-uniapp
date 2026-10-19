@@ -7,9 +7,13 @@
 <script setup lang="ts">
   import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
   import { onHide, onShow } from '@dcloudio/uni-app'
+  import router from '@/router'
   import { useThemeStore } from '@/stores/theme'
   import type { ThemePreference } from '@/utils/theme'
   import { demoThemeSwitchOwners } from './owners'
+
+  /** H5 的 uni.navigateTo 走 history.pushState，不触发 hashchange，须订阅路由实例 */
+  let stopRouteChange: (() => void) | null = null
 
   const items = [
     { key: 'light', text: '浅色' },
@@ -38,20 +42,19 @@
   ))
 
   function currentRoute(): string {
+    /* #ifdef H5 */
+    // H5 路由变化时 getCurrentPages() 可能还是旧页面，优先读地址栏
+    const hash = String(window.location.hash || '').replace(/^#\/?/, '').split('?')[0]
+    if (hash) return hash
+    /* #endif */
     const pages = getCurrentPages()
     const cur = pages[pages.length - 1] as { route?: string } | undefined
-    const route = String(cur?.route || '').replace(/^\//, '')
-    if (route) return route
-    /* #ifdef H5 */
-    return String(window.location.hash || '').replace(/^#\/?/, '').split('?')[0]
-    /* #endif */
-    /* #ifndef H5 */
-    return ''
-    /* #endif */
+    return String(cur?.route || '').replace(/^\//, '')
   }
 
-  function syncRoute(): void {
-    if (!currentRoute().startsWith('pages/demo/')) {
+  function syncRoute(route = currentRoute()): void {
+    const path = String(route || '').replace(/^\//, '').split('?')[0]
+    if (!path.startsWith('pages/demo/')) {
       release()
       return
     }
@@ -74,24 +77,35 @@
     /* #endif */
   }
 
-  function onH5RouteChange(): void {
-    syncRoute()
+  function applyRoute(route?: string): void {
+    syncRoute(route || currentRoute())
     nextTick(syncH5Top)
   }
 
+  /** 路由事件触发时地址栏 hash 可能还没更新，新路由直接用 to.path */
+  function onRouterRouteChange(to: { path?: string }): void {
+    applyRoute(to?.path)
+  }
+
+  function onHashChange(): void {
+    applyRoute()
+  }
+
   onMounted(() => {
-    syncRoute()
-    nextTick(syncH5Top)
+    applyRoute()
+    stopRouteChange = router.onRouteChange(onRouterRouteChange)
     /* #ifdef H5 */
-    window.addEventListener('hashchange', onH5RouteChange)
+    window.addEventListener('hashchange', onHashChange)
     window.addEventListener('resize', syncH5Top)
     /* #endif */
   })
   onShow(syncRoute)
   onHide(release)
   onBeforeUnmount(() => {
+    stopRouteChange?.()
+    stopRouteChange = null
     /* #ifdef H5 */
-    window.removeEventListener('hashchange', onH5RouteChange)
+    window.removeEventListener('hashchange', onHashChange)
     window.removeEventListener('resize', syncH5Top)
     /* #endif */
     release()
