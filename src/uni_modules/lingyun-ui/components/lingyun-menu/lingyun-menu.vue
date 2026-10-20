@@ -7,17 +7,14 @@
     :placement="placement"
     :mask-closable="maskClosable"
     :mask="mask"
+    :mask-transparent="maskTransparent"
     :z-index="zIndex"
     @close="onClose"
   >
     <template #trigger="{ show, toggle }">
       <slot name="trigger" :show="show" :toggle="toggle" />
     </template>
-    <view
-      class="lingyun-menu"
-      @mouseenter="$emit('hover-enter')"
-      @mouseleave="$emit('hover-leave')"
-    >
+    <view class="lingyun-menu">
       <view
         v-for="(action, index) in normalizedActions"
         :key="action.key || index"
@@ -92,7 +89,7 @@ import {
  */
 export default defineComponent({
   name: 'LingyunMenu',
-  emits: ['update:show', 'update:modelValue', 'select', 'close', 'hover-enter', 'hover-leave'],
+  emits: ['update:show', 'update:modelValue', 'select', 'close'],
   props: {
     show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
     modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
@@ -100,6 +97,7 @@ export default defineComponent({
     placement: { type: String, default: 'bottom' },
     maskClosable: { type: Boolean, default: true },
     mask: { type: Boolean, default: true },
+    maskTransparent: { type: Boolean, default: false },
     zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
   },
   computed: {

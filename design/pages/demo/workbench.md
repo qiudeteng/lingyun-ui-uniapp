@@ -16,4 +16,4 @@
 - [`design/GRID.md`](../../GRID.md)
 - [`design/UI_SPEC.md`](../../UI_SPEC.md)
 
-PC 宽屏的左侧二级菜单在护栏项上 hover 时用 `lingyun-menu` 浮层展示，不进入本页；本页主要承接窄屏、Duo 和刷新/直达。
+宽屏左侧（Web / 小程序一致）的二级菜单在点击父项时用 `lingyun-menu` 浮层展示，不进入本页；本页主要承接窄屏、Duo 和刷新/直达。

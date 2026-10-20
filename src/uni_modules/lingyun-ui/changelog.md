@@ -1,5 +1,5 @@
 ## 1.0.31（2026-10-20）
-- 全局 tabs 支持 `children` 二级菜单：PC 宽屏在左侧父项 hover 时用 `lingyun-menu` 弹出（`mask=false` + hover 事件）；底部 / Duo 点击带 children 的父项进入固定工作台页，没有 children 直接进 `url`。新增 `workspaceUrl` 配置，子项路径自动归父 Tab 高亮。
+- 全局 tabs 支持 `children` 二级菜单：宽屏左侧（Web / 小程序一致）点击父项用 `lingyun-menu` 弹出（透明遮罩，点击外部关闭）；底部 / Duo 点击带 children 的父项进入固定工作台页，没有 children 直接进 `url`。新增 `workspaceUrl` 配置，子项路径自动归父 Tab 高亮。
 - 新增设备形态 `formFactor` 与 Duo 姿态 `duoPose`；宿主可通过 `configureLingyunLayout({ getFormFactor, getDuoPose })` 接入已有型号判断，未接入时用机型 + fold 状态兜底。
 - iPad / PC 配置全局 tabs 后，左侧导航改为 **84** 悬浮玻璃窄栏（图标上、文字下）：玻璃栏通高、四周各留 8，页面内容背景经左侧安全区铺满整屏并从玻璃下方透出。演示页 `.page` 已内置安全区；其他内容根节点加 `.lingyun-page-safe-left`（需在 `lingyun-app-page` 内），也可将背景配在 `lingyun-app-page` 根节点。未配置 tabs 的完整目录仍为 220。
 - P1 支持 iPhone Duo 内屏竖屏：84 高 `lingyun-duo-toolbar` + 95 高底部 Duo Tab（玻璃条 62、Tab 77×54、图标 22、文字 10/12）；半折时屏幕中心显示 40 横向折痕安全带。

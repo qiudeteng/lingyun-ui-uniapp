@@ -43,6 +43,14 @@
   box-sizing: border-box;
 }
 
+// 二级菜单触发器包裹层：popover 默认 inline-flex，会把导航项压成内容宽度。
+// 必须写全局：popover 在子组件里，导航组件的 scoped 选择器打不到它。
+.lingyun-page-nav__menu,
+.lingyun-page-nav__menu .lingyun-popover__trigger {
+  display: block !important;
+  width: 100% !important;
+}
+
 // 宽屏左侧导航：内容根节点加 .lingyun-page-safe-left 后，背景铺满整屏并让出安全区。
 // 不用插槽首子选择器 / calc(var(...))：微信下首子与变量继承都不稳定。
 // 左侧导航为 220（完整目录）或 84（全局 tabs 窄栏）。

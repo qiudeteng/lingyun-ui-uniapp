@@ -67,7 +67,7 @@ H5 侧栏只挂一次，页面上的 `sections` 到不了它。全局菜单用 `
 }
 ```
 
-- PC 宽屏：鼠标移到左侧父项，右侧用 `lingyun-menu` 弹出二级项；移入浮层不关闭。
-- 窄屏 / Duo / 微信：点击父项进入固定工作台页（`workspaceUrl?tab=<key>`），由工作台展示二级入口。
+- 宽屏左侧（Web / 小程序一致）：点击左侧父项，右侧用 `lingyun-menu` 弹出二级项；再次点击父项或点击外部关闭。
+- 窄屏 / Duo：点击父项进入固定工作台页（`workspaceUrl?tab=<key>`），由工作台展示二级入口。
 - `workspaceUrl` 可配在全局 `setLingyunPageConfig`，也可配在单个 Tab；没有配置时仍直接进 `url`。
 - 子项路径自动归入父 Tab 高亮。

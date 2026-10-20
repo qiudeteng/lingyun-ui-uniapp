@@ -118,6 +118,8 @@ export default defineComponent({
     maskClosable: { type: Boolean, default: true },
     /** 是否显示遮罩；hover 子菜单等场景关闭，避免挡住鼠标 */
     mask: { type: Boolean, default: true },
+    /** 遮罩透明但仍拦截点击；用于点击外部关闭、不加暗色 */
+    maskTransparent: { type: Boolean, default: false },
     zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
     /** menu：Sketch Menus 面板（圆角 32、内边距 10），给 lingyun-menu 用 */
     variant: { type: String, default: '' },
@@ -166,6 +168,7 @@ export default defineComponent({
         this.variant === 'menu' ? 'lingyun-popover--menu' : '',
         this.showArrow ? 'lingyun-popover--arrow' : '',
         !this.mask ? 'lingyun-popover--no-mask' : '',
+        this.maskTransparent ? 'lingyun-popover--mask-transparent' : '',
       ]
         .filter(Boolean)
         .join(' ')
@@ -558,6 +561,12 @@ export default defineComponent({
 
 .lingyun-popover--no-mask .lingyun-popover__lift {
   pointer-events: auto;
+}
+
+/* 点击外部关闭但不压暗页面（需覆盖 theme-dark 的遮罩底色） */
+.lingyun-popover--mask-transparent .lingyun-popover__mask,
+.lingyun-popover--mask-transparent.theme-dark .lingyun-popover__mask {
+  background-color: transparent !important;
 }
 
 /* 量面板高度用：不可见、不吃点击；勿改成 opacity（玻璃节点） */

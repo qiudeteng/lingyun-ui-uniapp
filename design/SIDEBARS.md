@@ -111,8 +111,8 @@ const sections = [
 
 一级 Tab 可配置 `children`：
 
-- **PC 宽屏**：鼠标移到左侧父项，右侧弹出 `lingyun-menu` 玻璃浮层（`placement="right"`、无遮罩），移出约 180ms 关闭；移入浮层保持打开，选子项进入。
-- **窄屏 / Duo / 微信**：点击父项进入固定工作台页（`workspaceUrl?tab=<key>`），工作台展示二级入口；父 Tab 保持选中。
+- **宽屏左侧（Web / 小程序一致）**：点击父项，右侧弹出 `lingyun-menu` 玻璃浮层（`placement="right"`、透明遮罩），再点父项或点击外部关闭；选择子项进入。
+- **窄屏 / Duo**：点击父项进入固定工作台页（`workspaceUrl?tab=<key>`），工作台展示二级入口；父 Tab 保持选中。
 - 有 `children` 的父项不再直接进入 `url`；子项路径自动归入父 Tab 高亮。
 - 浮层不改变左侧栏宽度，也不给内容区加遮罩。
 

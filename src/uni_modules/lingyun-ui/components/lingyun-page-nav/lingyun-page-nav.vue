@@ -142,20 +142,16 @@
             v-for="(item, itemIndex) in section.items"
             :key="item.url + '-' + itemIndex"
             class="lingyun-page-nav__menu-cell"
-            @mouseenter="onChildMenuEnter(item)"
-            @mouseleave="onChildMenuLeave(item)"
+            @click="onNavItemTap(item)"
           >
             <lingyun-menu
               class="lingyun-page-nav__menu"
               placement="right"
               :show="!!(item.children && item.children.length) && childMenuKey === item.key"
               :actions="childMenuActions(item)"
-              :mask="false"
-              :mask-closable="false"
+              :mask-transparent="true"
               @update:show="onChildMenuShow(item, $event)"
               @select="onChildMenuSelect(item, $event)"
-              @hover-enter="onChildMenuHoverEnter"
-              @hover-leave="onChildMenuHoverLeave(item)"
             >
               <template #trigger>
                 <view
@@ -165,7 +161,6 @@
                   hover-class="lingyun-page-nav__item--hover"
                   :hover-start-time="20"
                   :hover-stay-time="70"
-                  @click="onNavItemTap(item)"
                 >
                   <image
                     v-if="item.iconSrc"
@@ -239,7 +234,6 @@ import {
   getLingyunPageConfig,
   getLingyunWorkspaceTabKey,
   isLingyunWorkspacePath,
-  setLingyunWorkspaceTabKey,
   useLingyunWorkspaceTabKey,
 } from '../../utils/pageConfig'
 import {
@@ -298,9 +292,8 @@ export default defineComponent({
       indicatorHeight: 0,
       indicatorVisible: false,
       indicatorReady: false,
-      /** 窄栏 hover 二级菜单 */
+      /** 窄栏点击二级菜单 */
       childMenuKey: '',
-      _childMenuTimer: null as ReturnType<typeof setTimeout> | null,
       _onHashChange: null as (() => void) | null,
       _expectPath: '',
       _routeSeen: '',
@@ -532,7 +525,6 @@ export default defineComponent({
   },
   beforeUnmount() {
     this._navMounted = false
-    this.clearChildMenuTimer()
     clearTimeout(this._routeTimer ?? undefined)
     // #ifdef H5
     if (typeof window !== 'undefined' && this._onHashChange) {
@@ -799,58 +791,20 @@ export default defineComponent({
         icon: child.icon,
       }))
     },
-    clearChildMenuTimer() {
-      if (this._childMenuTimer) {
-        clearTimeout(this._childMenuTimer)
-        this._childMenuTimer = null
-      }
-    },
-    scheduleChildMenuClose(item: LingyunPageNavItem) {
-      this.clearChildMenuTimer()
-      this._childMenuTimer = setTimeout(() => {
-        if (this.childMenuKey === item.key) this.childMenuKey = ''
-        this._childMenuTimer = null
-      }, 180)
-    },
-    onChildMenuEnter(item: LingyunPageNavItem) {
-      if (!this.railMode || !item.children || !item.children.length) return
-      this.clearChildMenuTimer()
-      this.childMenuKey = item.key || ''
-    },
-    onChildMenuLeave(item: LingyunPageNavItem) {
-      if (!this.railMode || !item.children || !item.children.length) return
-      this.scheduleChildMenuClose(item)
-    },
-    onChildMenuHoverEnter() {
-      if (!this.railMode) return
-      this.clearChildMenuTimer()
-    },
-    onChildMenuHoverLeave(item: LingyunPageNavItem) {
-      if (!this.railMode) return
-      this.scheduleChildMenuClose(item)
-    },
     onChildMenuShow(item: LingyunPageNavItem, show: boolean) {
       if (!show && this.childMenuKey === item.key) this.childMenuKey = ''
     },
     onChildMenuSelect(item: LingyunPageNavItem, payload: { key?: string }) {
       const child = (item.children || []).find((entry) => entry.key === payload?.key)
-      this.clearChildMenuTimer()
       this.childMenuKey = ''
       if (child) this.onNavTap(child.url)
     },
     onNavItemTap(item: LingyunPageNavItem) {
-      this.clearChildMenuTimer()
+      const wasOpen = this.childMenuKey === item.key
       this.childMenuKey = ''
-      if (
-        this.railMode &&
-        item.key &&
-        item.workspaceUrl &&
-        item.children &&
-        item.children.length
-      ) {
-        setLingyunWorkspaceTabKey(item.key)
-        const joiner = item.workspaceUrl.includes('?') ? '&' : '?'
-        this.onNavTap(`${item.workspaceUrl}${joiner}tab=${encodeURIComponent(item.key)}`)
+      /* 宽屏左侧（Web 与小程序一致）：有二级菜单点击只弹 menu，再点关闭 */
+      if (this.railMode && item.children && item.children.length) {
+        this.childMenuKey = wasOpen ? '' : item.key || ''
         return
       }
       this.onNavTap(item.url)
@@ -1198,12 +1152,10 @@ export default defineComponent({
   transition: background-color 0.2s ease;
 }
 
-/* 二级菜单包一层不改变导航项布局的重置 */
-.lingyun-page-nav__menu-cell,
-.lingyun-page-nav__menu,
-.lingyun-page-nav__menu .lingyun-popover__trigger {
-  display: block !important;
-  width: 100% !important;
+/* 二级菜单包一层不改变导航项布局的重置（触发器整宽见全局 _app-page-layout.scss） */
+.lingyun-page-nav__menu-cell {
+  display: block;
+  width: 100%;
 }
 
 .lingyun-page-nav__item--hover {
