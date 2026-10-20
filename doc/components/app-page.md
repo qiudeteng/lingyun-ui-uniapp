@@ -84,7 +84,7 @@ setLingyunPageConfig({
 - 优先级：props > `pages[path]` 页面覆盖 > `layout` > 宽度自动规则。
 - 窄屏点击 `reLaunch`；微信宽屏优先走 `openLingyunHostedPage`，不增加页面栈。
 - 壳自动为底部 Tab 留白，写入 `--lingyun-app-page-inset-bottom` 与 `LINGYUN_APP_PAGE_BOTTOM_INSET`。页面不要再手写 `padding-bottom`；已有手写值时设 `:auto-bottom-inset="false"`。
-- `reLaunch` 本身没有页面动画：壳会在换页后让内容淡入；Tab 切换时指示器还会从上一项滑入。左侧菜单换页同样走内容淡入。
+- `reLaunch` 本身没有页面动画：壳会在换页后让内容按方向滑入。Tab 切换按 Tab 顺序左右滑入，左侧菜单按菜单上下顺序上下滑入；Tab 指示器也会从上一项滑入。
 - 带商品底栏 / 底部搜索条的页面请配置 `pages[path].hideTabbar = true`。
 
 不传左栏顶部插槽、也不调用 `setLingyunPageNavProfile` 时，宽屏左栏显示「凌云UI」和介绍「一套对齐 Apple Liquid Glass 的 uni-app 多端组件库」。传入自定义名称且不传副标题时，不显示这句介绍。

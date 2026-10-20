@@ -604,13 +604,34 @@ export default defineComponent({
         },
       })
     },
+    /** 目标在下方时内容从底部滑入，在上方时从顶部滑入 */
+    navDirection(from: string, to: string): 'top' | 'bottom' {
+      const flat = [
+        { url: this.navHome },
+        ...(this.pageNavSections || []).flatMap((section) => section.items || []),
+      ]
+      const fromPath = normalizeLingyunPagePath(from)
+      const toPath = normalizeLingyunPagePath(to)
+      const fromIndex = flat.findIndex(
+        (item) => normalizeLingyunPagePath(item.url) === fromPath,
+      )
+      const toIndex = flat.findIndex(
+        (item) => normalizeLingyunPagePath(item.url) === toPath,
+      )
+      if (fromIndex < 0 || toIndex < 0 || toIndex === fromIndex) return 'bottom'
+      return toIndex > fromIndex ? 'bottom' : 'top'
+    },
     onNavTap(url: string) {
       const rawTarget = normalizeLingyunPagePath(url)
       if (!rawTarget) return
       const fromPath = normalizeLingyunPagePath(
         getLingyunHostedPath() || this.currentPath,
       )
-      beginLingyunNavTransition(fromPath, rawTarget)
+      beginLingyunNavTransition(
+        fromPath,
+        rawTarget,
+        this.navDirection(fromPath, rawTarget),
+      )
       if (openLingyunHostedPage(url, rawTarget)) {
         this.currentPath = rawTarget
         return
@@ -640,7 +661,11 @@ export default defineComponent({
       setLingyunPageNavIntent(highlight)
       this._expectPath = target
       this.pullRoute()
-      beginLingyunNavTransition(fromPath, target)
+      beginLingyunNavTransition(
+        fromPath,
+        target,
+        this.navDirection(fromPath, target),
+      )
       this.replacePage(next)
     },
   },

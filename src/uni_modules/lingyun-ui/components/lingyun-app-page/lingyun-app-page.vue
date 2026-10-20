@@ -275,6 +275,8 @@ export default defineComponent({
       tabbarFromKey: '',
       /** Tab / 左侧菜单换页后内容淡入 */
       pageEntering: false,
+      /** 内容滑入方向：left / right / top / bottom */
+      pageEnterFrom: '' as '' | 'left' | 'right' | 'top' | 'bottom',
       /** 横向 swipe 确认后临时关 scroll-y，避免 iOS 斜滑带动页面上下晃 */
       bodyScrollY: true,
       /** H5：顶部插槽目标节点出现后再传送 */
@@ -360,8 +362,9 @@ export default defineComponent({
     if (this.pageEntering) {
       this._pageEnterTimer = setTimeout(() => {
         this.pageEntering = false
+        this.pageEnterFrom = ''
         this._pageEnterTimer = null
-      }, 280)
+      }, 300)
     }
     if (this.embedded) return
     if (ensureLingyunWidePageHost()) return
@@ -592,6 +595,8 @@ export default defineComponent({
           'lingyun-app-page--nav': this.navDocked,
           'lingyun-app-page--tabbar': this.tabbarVisible,
           'lingyun-app-page--page-enter': this.pageEntering,
+          [`lingyun-app-page--enter-from-${this.pageEnterFrom || 'right'}`]:
+            this.pageEntering,
           'lingyun-app-page--auth-hold': this.authHold,
         },
       ]
@@ -749,17 +754,36 @@ export default defineComponent({
       this._onHashChange = null
       // #endif
     },
-    /** 消费一次换页过渡：Tab 指示器滑入，或左侧菜单换页后内容淡入 */
+    /** 消费一次换页过渡：Tab 指示器滑入，或左侧菜单换页后内容滑入 */
     applyPageTransition() {
+      const reduce = this.prefersReducedMotion()
       const tabTransition = consumeLingyunTabTransition(this.activeTabKey)
       if (tabTransition) {
         this.tabbarFromKey = tabTransition.fromKey
-        this.pageEntering = true
+        const tabs = this.pageConfig.tabs || []
+        const fromIndex = tabs.findIndex(
+          (entry: LingyunPageTab) => entry.key === tabTransition.fromKey,
+        )
+        const toIndex = tabs.findIndex(
+          (entry: LingyunPageTab) => entry.key === this.activeTabKey,
+        )
+        this.pageEnterFrom =
+          fromIndex >= 0 && toIndex >= 0 && toIndex < fromIndex ? 'left' : 'right'
+        this.pageEntering = !reduce
         return
       }
       const navTransition = consumeLingyunNavTransition(this.effectivePagePath)
       this.tabbarFromKey = ''
-      this.pageEntering = !!navTransition
+      this.pageEnterFrom = navTransition ? navTransition.direction : ''
+      this.pageEntering = !!navTransition && !reduce
+    },
+    prefersReducedMotion(): boolean {
+      // #ifdef H5
+      if (typeof window !== 'undefined' && window.matchMedia) {
+        return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      }
+      // #endif
+      return false
     },
     onTabbarChange(item: { key?: string | number }) {
       const key = item && item.key != null ? String(item.key) : ''
@@ -1037,10 +1061,37 @@ export default defineComponent({
   height: 100%;
 }
 
-/* Tab / 左侧菜单换页：内容淡入；导航本身不移动 */
+/* Tab / 左侧菜单换页：内容与顶栏按方向滑入；Tab 栏和侧栏本身不移动 */
 .lingyun-app-page--page-enter .lingyun-app-page__pad,
-.lingyun-app-page--page-enter .lingyun-app-page__body {
-  animation: lingyun-app-page-enter 0.24s cubic-bezier(0.32, 0.72, 0, 1) both;
+.lingyun-app-page--page-enter .lingyun-app-page__body,
+.lingyun-app-page--page-enter .lingyun-app-page__toolbar {
+  animation-duration: 0.26s;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  animation-fill-mode: both;
+}
+
+.lingyun-app-page--enter-from-right .lingyun-app-page__pad,
+.lingyun-app-page--enter-from-right .lingyun-app-page__body,
+.lingyun-app-page--enter-from-right .lingyun-app-page__toolbar {
+  animation-name: lingyun-app-page-enter-right;
+}
+
+.lingyun-app-page--enter-from-left .lingyun-app-page__pad,
+.lingyun-app-page--enter-from-left .lingyun-app-page__body,
+.lingyun-app-page--enter-from-left .lingyun-app-page__toolbar {
+  animation-name: lingyun-app-page-enter-left;
+}
+
+.lingyun-app-page--enter-from-bottom .lingyun-app-page__pad,
+.lingyun-app-page--enter-from-bottom .lingyun-app-page__body,
+.lingyun-app-page--enter-from-bottom .lingyun-app-page__toolbar {
+  animation-name: lingyun-app-page-enter-bottom;
+}
+
+.lingyun-app-page--enter-from-top .lingyun-app-page__pad,
+.lingyun-app-page--enter-from-top .lingyun-app-page__body,
+.lingyun-app-page--enter-from-top .lingyun-app-page__toolbar {
+  animation-name: lingyun-app-page-enter-top;
 }
 
 /* bodyScroll=false 时 __body 已动画，避免内层 __pad 再叠一次 */
@@ -1048,10 +1099,43 @@ export default defineComponent({
   animation: none;
 }
 
-@keyframes lingyun-app-page-enter {
+@keyframes lingyun-app-page-enter-right {
   from {
-    opacity: 0;
-    transform: translateY(6px);
+    opacity: 0.6;
+    transform: translateX(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes lingyun-app-page-enter-left {
+  from {
+    opacity: 0.6;
+    transform: translateX(-32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes lingyun-app-page-enter-bottom {
+  from {
+    opacity: 0.6;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lingyun-app-page-enter-top {
+  from {
+    opacity: 0.6;
+    transform: translateY(-28px);
   }
   to {
     opacity: 1;

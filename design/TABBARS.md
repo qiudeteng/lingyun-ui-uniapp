@@ -114,6 +114,7 @@
 - 窗口宽度 **≥ 690**：Tab 隐藏，导航切到左侧停靠列（分组实底，见 `SIDEBARS.md` §4）。
 - `--fill` 断点为 **689**，与 690 宽屏门槛严格互斥；iPad 及以上整组居中、不拉满。
 - 使用 `lingyun-goods-nav` / `lingyun-search-bar` 的页面配置 `pages[path].hideTabbar = true`，不要叠两层底栏。
+- 切换过渡：Tab 按 Tab 顺序左右滑入，左侧菜单按菜单上下顺序上下滑入；内容与顶栏一起动，Tab 栏和侧栏保持不动。
 
 ---
 
