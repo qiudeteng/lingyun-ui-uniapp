@@ -94,7 +94,14 @@
     >
       <view class="lingyun-page-nav__body">
         <view
+          v-if="indicatorVisible"
+          class="lingyun-page-nav__indicator"
+          :class="{ 'lingyun-page-nav__indicator--ready': indicatorReady }"
+          :style="indicatorStyle"
+        />
+        <view
           v-if="showHome"
+          :id="navItemId(navHome)"
           class="lingyun-page-nav__item"
           :class="{ 'lingyun-page-nav__item--selected': isNavCurrent(navHome) }"
           hover-class="lingyun-page-nav__item--hover"
@@ -113,6 +120,7 @@
           <text v-if="section.title" class="lingyun-page-nav__section-title">{{ section.title }}</text>
           <view
             v-for="(item, itemIndex) in section.items"
+            :id="navItemId(item.url)"
             :key="item.url + '-' + itemIndex"
             class="lingyun-page-nav__item"
             :class="{ 'lingyun-page-nav__item--selected': isNavItemCurrent(item) }"
@@ -235,11 +243,17 @@ export default defineComponent({
       currentPath: getLingyunPageNavIntent(),
       navScrollTop: getLingyunPageNavScrollTop(),
       avatarFailed: false,
+      /** 选中项滑动胶囊 */
+      indicatorTop: 0,
+      indicatorHeight: 0,
+      indicatorVisible: false,
+      indicatorReady: false,
       _onHashChange: null as (() => void) | null,
       _expectPath: '',
       _routeSeen: '',
       _routeTimer: null as ReturnType<typeof setTimeout> | null,
       _navScrollSettled: false,
+      _navMounted: false,
     }
   },
   setup() {
@@ -265,6 +279,12 @@ export default defineComponent({
     /** 未登录时「首页」进组件演示，登录后仍进业务首页。 */
     navHome(): string {
       return getLingyunPageNavHome(isLingyunPageNavLoggedIn())
+    },
+    indicatorStyle() {
+      return {
+        top: `${this.indicatorTop}px`,
+        height: `${this.indicatorHeight}px`,
+      }
     },
     themeRootClass() {
       try {
@@ -368,17 +388,33 @@ export default defineComponent({
     profileAvatar() {
       this.avatarFailed = false
     },
+    currentPath() {
+      this.syncIndicator(true)
+    },
+    pageNavSections() {
+      this.syncIndicator(false)
+    },
+    navHome() {
+      this.syncIndicator(false)
+    },
+    showHome() {
+      this.syncIndicator(false)
+    },
   },
   created() {
     this.syncLayout()
     this.syncRoute()
   },
   mounted() {
+    this._navMounted = true
     this.syncLayout()
     this.syncRoute()
     // 刷新不会走 hashchange。侧栏往往比路由更早挂上，404 的 from 要等路由就绪再写进选中项。
     this._routeSeen = ''
     this.pullRoute(40)
+    this.$nextTick(() => {
+      setTimeout(() => this.syncIndicator(false), 30)
+    })
     // #ifdef H5
     this._onHashChange = () => {
       clearTimeout(this._routeTimer ?? undefined)
@@ -411,6 +447,7 @@ export default defineComponent({
     // #endif
   },
   beforeUnmount() {
+    this._navMounted = false
     clearTimeout(this._routeTimer ?? undefined)
     // #ifdef H5
     if (typeof window !== 'undefined' && this._onHashChange) {
@@ -547,6 +584,63 @@ export default defineComponent({
       }
       return next
     },
+    navItemId(url: string): string {
+      const path = normalizeLingyunPagePath(url)
+      return `ly-nav-${path.replace(/[^a-zA-Z0-9_-]/g, '-')}`
+    },
+    selectedNavUrl(): string {
+      if (this.showHome && this.isNavCurrent(this.navHome)) return this.navHome
+      for (const section of this.pageNavSections || []) {
+        for (const item of section.items || []) {
+          if (this.isNavItemCurrent(item)) return item.url
+        }
+      }
+      return ''
+    },
+    /** 选中胶囊：首次落位不动画，之后上下滑动 */
+    syncIndicator(animate = true): void {
+      if (!this._navMounted) return
+      const url = this.selectedNavUrl()
+      if (!url) {
+        this.indicatorVisible = false
+        this.indicatorReady = false
+        return
+      }
+      this.$nextTick(() => {
+        uni
+          .createSelectorQuery()
+          .in(this)
+          .select('.lingyun-page-nav__body')
+          .boundingClientRect()
+          .select(`#${this.navItemId(url)}`)
+          .boundingClientRect()
+          .exec((res) => {
+            const body = res && res[0]
+            const item = res && res[1]
+            if (!body || !item || !item.height) return
+            this.indicatorTop = item.top - body.top
+            this.indicatorHeight = item.height
+            if (!this.indicatorVisible) {
+              this.indicatorVisible = true
+              this.indicatorReady = false
+              this.$nextTick(() => {
+                setTimeout(() => {
+                  this.indicatorReady = true
+                }, 20)
+              })
+              return
+            }
+            if (!animate) {
+              this.indicatorReady = false
+              this.$nextTick(() => {
+                setTimeout(() => {
+                  this.indicatorReady = true
+                }, 20)
+              })
+            }
+          })
+      })
+    },
     isNavCurrent(url: string) {
       const selected = getLingyunHostedPath() || this.currentPath
       return normalizeLingyunPagePath(url) === selected
@@ -604,34 +698,13 @@ export default defineComponent({
         },
       })
     },
-    /** 目标在下方时内容从底部滑入，在上方时从顶部滑入 */
-    navDirection(from: string, to: string): 'top' | 'bottom' {
-      const flat = [
-        { url: this.navHome },
-        ...(this.pageNavSections || []).flatMap((section) => section.items || []),
-      ]
-      const fromPath = normalizeLingyunPagePath(from)
-      const toPath = normalizeLingyunPagePath(to)
-      const fromIndex = flat.findIndex(
-        (item) => normalizeLingyunPagePath(item.url) === fromPath,
-      )
-      const toIndex = flat.findIndex(
-        (item) => normalizeLingyunPagePath(item.url) === toPath,
-      )
-      if (fromIndex < 0 || toIndex < 0 || toIndex === fromIndex) return 'bottom'
-      return toIndex > fromIndex ? 'bottom' : 'top'
-    },
     onNavTap(url: string) {
       const rawTarget = normalizeLingyunPagePath(url)
       if (!rawTarget) return
       const fromPath = normalizeLingyunPagePath(
         getLingyunHostedPath() || this.currentPath,
       )
-      beginLingyunNavTransition(
-        fromPath,
-        rawTarget,
-        this.navDirection(fromPath, rawTarget),
-      )
+      beginLingyunNavTransition(fromPath, rawTarget)
       if (openLingyunHostedPage(url, rawTarget)) {
         this.currentPath = rawTarget
         return
@@ -661,11 +734,7 @@ export default defineComponent({
       setLingyunPageNavIntent(highlight)
       this._expectPath = target
       this.pullRoute()
-      beginLingyunNavTransition(
-        fromPath,
-        target,
-        this.navDirection(fromPath, target),
-      )
+      beginLingyunNavTransition(fromPath, target)
       this.replacePage(next)
     },
   },
@@ -917,8 +986,32 @@ export default defineComponent({
 }
 
 .lingyun-page-nav__body {
+  position: relative;
   padding-bottom: 24px;
   box-sizing: border-box;
+}
+
+/* 选中项滑动胶囊：跟随菜单上下移动 */
+.lingyun-page-nav__indicator {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  z-index: 0;
+  border-radius: 12px;
+  background-color: rgba(120, 120, 128, 0.16);
+  pointer-events: none;
+  will-change: top;
+}
+
+.lingyun-page-nav__indicator--ready {
+  transition:
+    top 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    height 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.lingyun-page-nav.theme-dark .lingyun-page-nav__indicator,
+.theme-dark .lingyun-page-nav__indicator {
+  background-color: rgba(120, 120, 128, 0.32);
 }
 
 .lingyun-page-nav__section {
@@ -935,6 +1028,8 @@ export default defineComponent({
 }
 
 .lingyun-page-nav__item {
+  position: relative;
+  z-index: 1;
   min-height: 44px;
   margin: 0 8px;
   padding: 0 12px;
@@ -944,15 +1039,6 @@ export default defineComponent({
   align-items: center;
   border-radius: 12px;
   transition: background-color 0.2s ease;
-}
-
-.lingyun-page-nav__item--selected {
-  background-color: rgba(120, 120, 128, 0.16);
-}
-
-.lingyun-page-nav.theme-dark .lingyun-page-nav__item--selected,
-.theme-dark .lingyun-page-nav__item--selected {
-  background-color: rgba(120, 120, 128, 0.32);
 }
 
 .lingyun-page-nav__item--hover {

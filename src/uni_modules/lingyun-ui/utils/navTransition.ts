@@ -4,12 +4,9 @@
  */
 import { normalizeLingyunPagePath } from './pageNavAdapter'
 
-export type LingyunNavDirection = 'top' | 'bottom' | 'left' | 'right'
-
 export interface LingyunNavTransition {
   from: string
   to: string
-  direction: LingyunNavDirection
   at: number
 }
 
@@ -17,18 +14,14 @@ const TRANSITION_TTL = 1500
 
 let pending: LingyunNavTransition | null = null
 
-export function beginLingyunNavTransition(
-  from: string,
-  to: string,
-  direction: LingyunNavDirection = 'bottom',
-): void {
+export function beginLingyunNavTransition(from: string, to: string): void {
   const fromPath = normalizeLingyunPagePath(from)
   const toPath = normalizeLingyunPagePath(to)
   if (!fromPath || !toPath || fromPath === toPath) {
     pending = null
     return
   }
-  pending = { from: fromPath, to: toPath, direction, at: Date.now() }
+  pending = { from: fromPath, to: toPath, at: Date.now() }
 }
 
 /** 消费一次；超时或目标路径不匹配时丢弃 */
