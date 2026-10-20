@@ -3,7 +3,6 @@
     class="lingyun-page-nav"
     :class="[themeRootClass, { 'lingyun-page-nav--rail': railMode }]"
   >
-    <view v-if="railMode" class="lingyun-page-nav__rail-bg" />
     <view class="lingyun-page-nav__head" :style="navHeadStyle">
       <view class="lingyun-page-nav__bar" :style="navBarStyle">
         <view v-if="windowControls && !railMode" class="lingyun-page-nav__windows" aria-hidden="true">
@@ -98,6 +97,11 @@
       @scroll="onNavScroll"
     >
       <view class="lingyun-page-nav__body">
+        <view
+          v-if="railMode && railCapsuleVisible"
+          class="lingyun-page-nav__rail-capsule"
+          :style="railCapsuleStyle"
+        />
         <view
           v-if="indicatorVisible"
           class="lingyun-page-nav__indicator"
@@ -254,6 +258,10 @@ export default defineComponent({
       indicatorHeight: 0,
       indicatorVisible: false,
       indicatorReady: false,
+      /** 窄栏悬浮玻璃胶囊：只包住 Tab 项，不铺满整列 */
+      railCapsuleTop: 0,
+      railCapsuleHeight: 0,
+      railCapsuleVisible: false,
       _onHashChange: null as (() => void) | null,
       _expectPath: '',
       _routeSeen: '',
@@ -290,6 +298,12 @@ export default defineComponent({
       return {
         top: `${this.indicatorTop}px`,
         height: `${this.indicatorHeight}px`,
+      }
+    },
+    railCapsuleStyle() {
+      return {
+        top: `${this.railCapsuleTop}px`,
+        height: `${this.railCapsuleHeight}px`,
       }
     },
     themeRootClass() {
@@ -406,7 +420,10 @@ export default defineComponent({
       immediate: true,
       handler() {
         this.$nextTick(() => {
-          setTimeout(() => this.syncIndicator(false), 30)
+          setTimeout(() => {
+            this.syncIndicator(false)
+            this.syncRailCapsule()
+          }, 30)
         })
       },
     },
@@ -415,12 +432,14 @@ export default defineComponent({
     },
     pageNavSections() {
       this.syncIndicator(false)
+      this.syncRailCapsule()
     },
     navHome() {
       this.syncIndicator(false)
     },
     showHome() {
       this.syncIndicator(false)
+      this.syncRailCapsule()
     },
   },
   created() {
@@ -435,7 +454,10 @@ export default defineComponent({
     this._routeSeen = ''
     this.pullRoute(40)
     this.$nextTick(() => {
-      setTimeout(() => this.syncIndicator(false), 30)
+      setTimeout(() => {
+        this.syncIndicator(false)
+        this.syncRailCapsule()
+      }, 30)
     })
     // #ifdef H5
     this._onHashChange = () => {
@@ -666,6 +688,49 @@ export default defineComponent({
                 }, 20)
               })
             }
+          })
+      })
+    },
+    /** 窄栏悬浮胶囊：只包住全部 Tab 项，四周留出页面背景（安全区） */
+    syncRailCapsule(retry = 0): void {
+      if (!this._navMounted || !this.railMode) {
+        this.railCapsuleVisible = false
+        return
+      }
+      this.$nextTick(() => {
+        uni
+          .createSelectorQuery()
+          .in(this)
+          .select('.lingyun-page-nav__body')
+          .boundingClientRect()
+          .selectAll('.lingyun-page-nav__item')
+          .boundingClientRect()
+          .exec((res) => {
+            const body = res && res[0]
+            const items = res && res[1]
+            if (!body || typeof body.top !== 'number' || !Array.isArray(items) || !items.length) {
+              /* H5 宿主初始 display:none，等侧栏显示后再测量 */
+              if (retry < 10) {
+                setTimeout(() => this.syncRailCapsule(retry + 1), 50)
+              }
+              return
+            }
+            let top = Infinity
+            let bottom = -Infinity
+            items.forEach((item: { top?: number; height?: number }) => {
+              if (!item || typeof item.top !== 'number' || typeof item.height !== 'number') return
+              top = Math.min(top, item.top)
+              bottom = Math.max(bottom, item.top + item.height)
+            })
+            if (!Number.isFinite(top) || !Number.isFinite(bottom) || bottom <= top) {
+              if (retry < 10) {
+                setTimeout(() => this.syncRailCapsule(retry + 1), 50)
+              }
+              return
+            }
+            this.railCapsuleTop = top - body.top - 4
+            this.railCapsuleHeight = bottom - top + 8
+            this.railCapsuleVisible = true
           })
       })
     },
@@ -1111,16 +1176,15 @@ export default defineComponent({
   border-right: 0;
 }
 
-.lingyun-page-nav--rail .lingyun-page-nav__rail-bg {
+/* 窄栏悬浮玻璃胶囊：只包住 Tab 组，四周露出页面背景 */
+.lingyun-page-nav--rail .lingyun-page-nav__rail-capsule {
   position: absolute;
-  top: 8px;
-  right: 6px;
-  bottom: 8px;
-  left: 6px;
+  right: 8px;
+  left: 8px;
   z-index: 0;
   border-radius: 28px;
   pointer-events: none;
-  @include lingyun-glass-surface;
+  @include lingyun-glass-control;
   border-radius: 28px;
 }
 
@@ -1182,7 +1246,7 @@ export default defineComponent({
   justify-content: center;
   gap: 4px;
   min-height: 60px;
-  margin: 0 6px;
+  margin: 0 12px;
   padding: 6px 2px;
 }
 
@@ -1204,7 +1268,7 @@ export default defineComponent({
 }
 
 .lingyun-page-nav--rail .lingyun-page-nav__indicator {
-  left: 6px;
-  right: 6px;
+  left: 12px;
+  right: 12px;
 }
 </style>

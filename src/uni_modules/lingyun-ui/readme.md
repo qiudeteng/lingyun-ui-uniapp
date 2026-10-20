@@ -49,7 +49,7 @@ const { confirm } = await uni.showLingyunAlert({ title: '删除？', showCancel:
 
 ## 宽屏
 
-窗口宽度 **≥ 690** 时，页面左侧停靠导航。未配置全局 tabs 时完整目录宽 **220**；配置 tabs 后（iPad / PC）收窄为 **84** 浮动玻璃窄栏，图标在上、文字在下。手机仍用底部 Tab。折叠屏展开（如 OPPO Find 692、717×781）走 iPad/PC 窄栏；手机竖屏仍是单栏。顶栏和内容区跟随 `--lingyun-page-nav-width`，不会压住导航。
+窗口宽度 **≥ 690** 时，页面左侧停靠导航。未配置全局 tabs 时完整目录宽 **220**；配置 tabs 后（iPad / PC）收窄为 **84** 浮动玻璃窄栏，图标在上、文字在下，整列保持页面底色、玻璃胶囊只包住 Tab 组。手机仍用底部 Tab。折叠屏展开（如 OPPO Find 692、717×781）走 iPad/PC 窄栏；手机竖屏仍是单栏。顶栏和内容区跟随 `--lingyun-page-nav-width`，不会压住导航。
 
 | 端 | 行为 |
 |----|------|

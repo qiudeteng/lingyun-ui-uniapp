@@ -1,6 +1,6 @@
 ## 1.0.31（2026-10-20）
 - 新增设备形态 `formFactor` 与 Duo 姿态 `duoPose`；宿主可通过 `configureLingyunLayout({ getFormFactor, getDuoPose })` 接入已有型号判断，未接入时用机型 + fold 状态兜底。
-- iPad / PC 配置全局 tabs 后，左侧导航改为 **84** 浮动玻璃窄栏（图标上、文字下）；未配置 tabs 的完整目录仍为 220。
+- iPad / PC 配置全局 tabs 后，左侧导航改为 **84** 浮动玻璃窄栏（图标上、文字下）：整列保持页面底色，玻璃只做包住 Tab 组的悬浮胶囊（左右各留 8，圆角 28）；未配置 tabs 的完整目录仍为 220。
 - P1 支持 iPhone Duo 内屏竖屏：84 高 `lingyun-duo-toolbar` + 95 高底部 Duo Tab（玻璃条 62、Tab 77×54、图标 22、文字 10/12）；半折时屏幕中心显示 40 横向折痕安全带。
 - P2 支持 Duo 外屏竖屏 / 外屏横屏 / 内屏横屏右侧全高栏：84 宽，工具组 48×164、Tab 组 48×210（4×48）、搜索 48、选中胶囊 44×58；外屏横屏工具自动收进「…」溢出。
 - `lingyun-app-page` 新增 `duo-tools` 插槽与 `duo-search` / `duo-overflow` 事件；新增 `lingyun-duo-rail` 组件。
