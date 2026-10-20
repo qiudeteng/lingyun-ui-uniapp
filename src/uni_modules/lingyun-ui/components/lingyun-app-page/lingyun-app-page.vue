@@ -261,9 +261,13 @@ import {
   type LingyunPageNavSection,
 } from '../../utils/pageNavAdapter'
 import {
+  buildLingyunPageTabWorkspaceUrl,
   getLingyunPageConfig,
   getLingyunPageOverride,
+  getLingyunWorkspaceTabKey,
+  isLingyunWorkspacePath,
   matchLingyunPageTab,
+  setLingyunWorkspaceTabKey,
 } from '../../utils/pageConfig'
 import {
   resolveLingyunPageLayout,
@@ -645,6 +649,10 @@ export default defineComponent({
       )
     },
     activeTabKey() {
+      if (isLingyunWorkspacePath(this.effectivePagePath)) {
+        const workspaceKey = getLingyunWorkspaceTabKey()
+        if (workspaceKey) return workspaceKey
+      }
       const tab = matchLingyunPageTab(this.pageConfig.tabs || [], this.effectivePagePath)
       return tab ? tab.key : ''
     },
@@ -949,15 +957,26 @@ export default defineComponent({
         (entry: LingyunPageTab) => entry.key === key,
       )
       if (!tab) return
-      const raw = normalizeLingyunPagePath(tab.url)
+      const workspaceUrl =
+        Array.isArray(tab.children) && tab.children.length
+          ? buildLingyunPageTabWorkspaceUrl(tab)
+          : ''
+      const targetUrl = workspaceUrl || tab.url
+      const raw = normalizeLingyunPagePath(targetUrl)
       const currentPath = normalizeLingyunPagePath(this.effectivePagePath)
-      if (!raw || raw === currentPath) return
+      if (!raw) return
+      if (workspaceUrl) {
+        if (raw === currentPath && getLingyunWorkspaceTabKey() === tab.key) return
+      } else if (raw === currentPath) {
+        return
+      }
       /* 必须在 setLingyunPageNavIntent 之前记录，否则意图会先把 activeTabKey 改成目标项 */
       const fromKey = this.activeTabKey
       this.$emit('tab-change', { key: tab.key, tab })
-      if (openLingyunHostedPage(tab.url, raw)) return
+      if (workspaceUrl) setLingyunWorkspaceTabKey(tab.key)
+      if (openLingyunHostedPage(targetUrl, raw)) return
       setLingyunPageNavIntent(raw)
-      const next = resolveLingyunPageUrl(tab.url)
+      const next = resolveLingyunPageUrl(targetUrl)
       if (!next) return
       beginLingyunTabTransition(fromKey, tab.key)
       uni.reLaunch({

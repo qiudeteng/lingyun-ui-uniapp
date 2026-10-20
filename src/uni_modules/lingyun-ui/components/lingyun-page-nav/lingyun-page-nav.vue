@@ -138,39 +138,56 @@
           class="lingyun-page-nav__section"
         >
           <text v-if="section.title" class="lingyun-page-nav__section-title">{{ section.title }}</text>
-          <view
+          <lingyun-menu
             v-for="(item, itemIndex) in section.items"
-            :id="navItemId(item.url)"
             :key="item.url + '-' + itemIndex"
-            class="lingyun-page-nav__item"
-            :class="{ 'lingyun-page-nav__item--selected': isNavItemCurrent(item) }"
-            hover-class="lingyun-page-nav__item--hover"
-            :hover-start-time="20"
-            :hover-stay-time="70"
-            @click="onNavTap(item.url)"
+            class="lingyun-page-nav__menu"
+            placement="right"
+            :show="!!(item.children && item.children.length) && childMenuKey === item.key"
+            :actions="childMenuActions(item)"
+            :mask="false"
+            :mask-closable="false"
+            @update:show="onChildMenuShow(item, $event)"
+            @select="onChildMenuSelect(item, $event)"
+            @hover-enter="onChildMenuHoverEnter"
+            @hover-leave="onChildMenuHoverLeave(item)"
           >
-            <image
-              v-if="item.iconSrc"
-              class="lingyun-page-nav__glyph"
-              :src="item.iconSrc"
-              mode="aspectFit"
-            />
-            <lingyun-icon
-              v-else
-              :type="item.icon || 'circle'"
-              :size="railMode ? 28 : 22"
-              color="var(--lingyun-label, #000)"
-            />
-            <text class="lingyun-page-nav__label">{{ item.title }}</text>
-            <view v-if="hasItemBadge(item)" class="lingyun-page-nav__badge">
-              <lingyun-badge
-                :text="itemBadgeText(item)"
-                :color="itemBadgeColor(item)"
-                :dot="itemBadgeDot(item)"
-                :max="itemBadgeMax(item)"
-              />
-            </view>
-          </view>
+            <template #trigger>
+              <view
+                :id="navItemId(item.url)"
+                class="lingyun-page-nav__item"
+                :class="{ 'lingyun-page-nav__item--selected': isNavItemCurrent(item) }"
+                hover-class="lingyun-page-nav__item--hover"
+                :hover-start-time="20"
+                :hover-stay-time="70"
+                @click="onNavItemTap(item)"
+                @mouseenter="onChildMenuEnter(item)"
+                @mouseleave="onChildMenuLeave(item)"
+              >
+                <image
+                  v-if="item.iconSrc"
+                  class="lingyun-page-nav__glyph"
+                  :src="item.iconSrc"
+                  mode="aspectFit"
+                />
+                <lingyun-icon
+                  v-else
+                  :type="item.icon || 'circle'"
+                  :size="railMode ? 28 : 22"
+                  color="var(--lingyun-label, #000)"
+                />
+                <text class="lingyun-page-nav__label">{{ item.title }}</text>
+                <view v-if="hasItemBadge(item)" class="lingyun-page-nav__badge">
+                  <lingyun-badge
+                    :text="itemBadgeText(item)"
+                    :color="itemBadgeColor(item)"
+                    :dot="itemBadgeDot(item)"
+                    :max="itemBadgeMax(item)"
+                  />
+                </view>
+              </view>
+            </template>
+          </lingyun-menu>
         </view>
       </view>
     </scroll-view>
@@ -183,6 +200,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { useLingyunTheme } from '../../utils/theme'
 import LingyunIcon from '../lingyun-icon/lingyun-icon.vue'
 import LingyunAvatar from '../lingyun-avatar/lingyun-avatar.vue'
+import LingyunMenu from '../lingyun-menu/lingyun-menu.vue'
 import {
   getLingyunNavLayout,
   LINGYUN_TOOLBAR_BAR_DESIGN_PX,
@@ -215,6 +233,10 @@ import {
 import {
   buildLingyunPageTabSections,
   getLingyunPageConfig,
+  getLingyunWorkspaceTabKey,
+  isLingyunWorkspacePath,
+  setLingyunWorkspaceTabKey,
+  useLingyunWorkspaceTabKey,
 } from '../../utils/pageConfig'
 import {
   beginLingyunNavTransition,
@@ -237,7 +259,7 @@ const LINGYUN_PAGE_NAV_SUBTITLE = '一套对齐 Apple Liquid Glass 的 uni-app �
  */
 export default defineComponent({
   name: 'LingyunPageNav',
-  components: { LingyunIcon, LingyunAvatar },
+  components: { LingyunIcon, LingyunAvatar, LingyunMenu },
   inject: {
     pageScrollLocked: {
       from: LINGYUN_APP_PAGE_SCROLL_LOCKED,
@@ -272,6 +294,9 @@ export default defineComponent({
       indicatorHeight: 0,
       indicatorVisible: false,
       indicatorReady: false,
+      /** 窄栏 hover 二级菜单 */
+      childMenuKey: '',
+      _childMenuTimer: null as ReturnType<typeof setTimeout> | null,
       _onHashChange: null as (() => void) | null,
       _expectPath: '',
       _routeSeen: '',
@@ -289,6 +314,10 @@ export default defineComponent({
       if (!proxy) return
       proxy.currentPath = value
       proxy._routeSeen = value
+    })
+    watch(useLingyunWorkspaceTabKey(), () => {
+      const proxy = instance?.proxy as { syncIndicator?: (animate?: boolean) => void } | null | undefined
+      proxy?.syncIndicator?.(false)
     })
     onShow(() => {
       const proxy = instance?.proxy as
@@ -333,7 +362,11 @@ export default defineComponent({
       if (Array.isArray(this.sections)) return this.sections
       const config = getLingyunPageConfig()
       if (config.tabs && config.tabs.length) {
-        return buildLingyunPageTabSections(config.tabs, config.sidebarTitle || '')
+        return buildLingyunPageTabSections(
+          config.tabs,
+          config.sidebarTitle || '',
+          config.workspaceUrl || '',
+        )
       }
       return getLingyunPageNavSections()
     },
@@ -495,6 +528,7 @@ export default defineComponent({
   },
   beforeUnmount() {
     this._navMounted = false
+    this.clearChildMenuTimer()
     clearTimeout(this._routeTimer ?? undefined)
     // #ifdef H5
     if (typeof window !== 'undefined' && this._onHashChange) {
@@ -701,6 +735,9 @@ export default defineComponent({
     isNavItemCurrent(item: LingyunPageNavItem) {
       if (this.isNavCurrent(item.url)) return true
       const selected = normalizeLingyunPagePath(getLingyunHostedPath() || this.currentPath)
+      if (isLingyunWorkspacePath(selected)) {
+        return !!item.key && item.key === getLingyunWorkspaceTabKey()
+      }
       const matches = Array.isArray(item.match) ? item.match : item.match ? [item.match] : []
       return matches.some((match) => normalizeLingyunPagePath(match) === selected)
     },
@@ -750,6 +787,69 @@ export default defineComponent({
           })
         },
       })
+    },
+    childMenuActions(item: LingyunPageNavItem) {
+      return (item.children || []).map((child) => ({
+        key: child.key,
+        label: child.title,
+        icon: child.icon,
+      }))
+    },
+    clearChildMenuTimer() {
+      if (this._childMenuTimer) {
+        clearTimeout(this._childMenuTimer)
+        this._childMenuTimer = null
+      }
+    },
+    scheduleChildMenuClose(item: LingyunPageNavItem) {
+      this.clearChildMenuTimer()
+      this._childMenuTimer = setTimeout(() => {
+        if (this.childMenuKey === item.key) this.childMenuKey = ''
+        this._childMenuTimer = null
+      }, 180)
+    },
+    onChildMenuEnter(item: LingyunPageNavItem) {
+      if (!this.railMode || !item.children || !item.children.length) return
+      this.clearChildMenuTimer()
+      this.childMenuKey = item.key || ''
+    },
+    onChildMenuLeave(item: LingyunPageNavItem) {
+      if (!this.railMode || !item.children || !item.children.length) return
+      this.scheduleChildMenuClose(item)
+    },
+    onChildMenuHoverEnter() {
+      if (!this.railMode) return
+      this.clearChildMenuTimer()
+    },
+    onChildMenuHoverLeave(item: LingyunPageNavItem) {
+      if (!this.railMode) return
+      this.scheduleChildMenuClose(item)
+    },
+    onChildMenuShow(item: LingyunPageNavItem, show: boolean) {
+      if (!show && this.childMenuKey === item.key) this.childMenuKey = ''
+    },
+    onChildMenuSelect(item: LingyunPageNavItem, payload: { key?: string }) {
+      const child = (item.children || []).find((entry) => entry.key === payload?.key)
+      this.clearChildMenuTimer()
+      this.childMenuKey = ''
+      if (child) this.onNavTap(child.url)
+    },
+    onNavItemTap(item: LingyunPageNavItem) {
+      this.clearChildMenuTimer()
+      this.childMenuKey = ''
+      if (
+        this.railMode &&
+        item.key &&
+        item.workspaceUrl &&
+        item.children &&
+        item.children.length
+      ) {
+        setLingyunWorkspaceTabKey(item.key)
+        const joiner = item.workspaceUrl.includes('?') ? '&' : '?'
+        this.onNavTap(`${item.workspaceUrl}${joiner}tab=${encodeURIComponent(item.key)}`)
+        return
+      }
+      this.onNavTap(item.url)
     },
     onNavTap(url: string) {
       const rawTarget = normalizeLingyunPagePath(url)
@@ -1092,6 +1192,13 @@ export default defineComponent({
   align-items: center;
   border-radius: 12px;
   transition: background-color 0.2s ease;
+}
+
+/* 二级菜单包一层不改变导航项布局的重置 */
+.lingyun-page-nav__menu,
+.lingyun-page-nav__menu .lingyun-popover__trigger {
+  display: block;
+  width: 100%;
 }
 
 .lingyun-page-nav__item--hover {

@@ -41,6 +41,12 @@
 
 事件：`select` · `close`
 
+`lingyun-menu` 作为左侧栏 hover 二级菜单时：
+
+- 传 `placement="right"`、`:mask="false"`，面板贴着父项右侧弹出，不加遮罩、不改内容区；
+- 监听 `hover-enter` / `hover-leave`，配合触发项自身的 `mouseenter` / `mouseleave` 做延迟关闭；
+- `mask` 默认 `true`，普通点击菜单不受影响。
+
 ## 4. Context Menu（lingyun-context-menu）
 
 长按弹出同一套行。面板同样 250 / 圆角 32 / 内边距 10。

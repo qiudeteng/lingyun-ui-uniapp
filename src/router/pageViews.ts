@@ -86,3 +86,9 @@ registerLingyunPageViews(
     })),
   ),
 )
+
+registerLingyunPageView({
+  path: '/pages/demo/workbench',
+  title: '工作台',
+  host: DEMO_HOST,
+})

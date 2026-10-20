@@ -107,7 +107,17 @@
     { key: 'buttons', text: '按钮', icon: 'star', url: '/pages/demo/buttons' },
     { key: 'lists', text: '列表', icon: 'list', url: '/pages/demo/lists' },
     { key: 'alerts', text: '弹窗', icon: 'info', url: '/pages/demo/alerts', badge: 2 },
-    { key: 'charts', text: '图表', icon: 'bars', url: '/pages/demo/charts/column' },
+    {
+      key: 'charts',
+      text: '图表',
+      icon: 'bars',
+      url: '/pages/demo/charts/column',
+      children: [
+        { key: 'column', text: '柱状图', icon: 'bars', url: '/pages/demo/charts/column' },
+        { key: 'line', text: '折线图', icon: 'list', url: '/pages/demo/charts/line' },
+        { key: 'pie', text: '饼图', icon: 'circle', url: '/pages/demo/charts/pie' },
+      ],
+    },
   ]
 
   const navModeItems = [
@@ -170,6 +180,7 @@
       if (enabled) {
         setLingyunPageConfig({
           tabs: SAMPLE_TABS,
+          workspaceUrl: '/pages/demo/workbench',
           layout: { navMode: 'auto' },
         })
       } else {

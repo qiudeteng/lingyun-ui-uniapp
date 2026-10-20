@@ -13,7 +13,7 @@
         :style="rootStyle"
         @touchmove.stop
       >
-        <view class="lingyun-popover__mask" @click="onMask" @touchmove.stop.prevent />
+        <view v-if="mask" class="lingyun-popover__mask" @click="onMask" @touchmove.stop.prevent />
         <view class="lingyun-popover__lift" :style="liftStyle">
           <view v-if="showArrow" class="lingyun-popover__arrow" :style="arrowStyle">
             <view class="lingyun-popover__arrow-fill" />
@@ -37,7 +37,7 @@
         :style="rootStyle"
         @touchmove.stop
       >
-        <view class="lingyun-popover__mask" @click="onMask" @touchmove.stop.prevent />
+        <view v-if="mask" class="lingyun-popover__mask" @click="onMask" @touchmove.stop.prevent />
         <view class="lingyun-popover__lift" :style="liftStyle">
           <view v-if="showArrow" class="lingyun-popover__arrow" :style="arrowStyle">
             <view class="lingyun-popover__arrow-fill" />
@@ -116,6 +116,8 @@ export default defineComponent({
     /** 箭头落在面板哪一侧（面板随之偏移），箭头始终指向触发器：auto / middle 居中，leading 靠前，trailing 靠后 */
     arrowAlign: { type: String, default: 'auto' },
     maskClosable: { type: Boolean, default: true },
+    /** 是否显示遮罩；hover 子菜单等场景关闭，避免挡住鼠标 */
+    mask: { type: Boolean, default: true },
     zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
     /** menu：Sketch Menus 面板（圆角 32、内边距 10），给 lingyun-menu 用 */
     variant: { type: String, default: '' },
@@ -163,6 +165,7 @@ export default defineComponent({
         `lingyun-popover--place-${this.resolvedPlace}`,
         this.variant === 'menu' ? 'lingyun-popover--menu' : '',
         this.showArrow ? 'lingyun-popover--arrow' : '',
+        !this.mask ? 'lingyun-popover--no-mask' : '',
       ]
         .filter(Boolean)
         .join(' ')
@@ -546,6 +549,15 @@ export default defineComponent({
   top: 0;
   bottom: 0;
   z-index: 1100;
+}
+
+/* hover 菜单：根层不吃鼠标，只有面板本身可交互 */
+.lingyun-popover--no-mask {
+  pointer-events: none;
+}
+
+.lingyun-popover--no-mask .lingyun-popover__lift {
+  pointer-events: auto;
 }
 
 /* 量面板高度用：不可见、不吃点击；勿改成 opacity（玻璃节点） */

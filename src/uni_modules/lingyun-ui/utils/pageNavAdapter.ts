@@ -14,7 +14,18 @@ export function setLingyunPageNavRail(value: boolean): void {
   lingyunPageNavRail.value = !!value
 }
 
+export interface LingyunPageNavChild {
+  key: string
+  title: string
+  icon?: string
+  url: string
+  badge?: LingyunPageBadge
+  match?: string | string[]
+}
+
 export interface LingyunPageNavItem {
+  /** 全局 tabs 驱动的项带 key */
+  key?: string
   title: string
   url: string
   note?: string
@@ -23,6 +34,10 @@ export interface LingyunPageNavItem {
   badge?: LingyunPageBadge
   /** 详情页归入当前项高亮的额外路径 */
   match?: string | string[]
+  /** 二级菜单 */
+  children?: LingyunPageNavChild[]
+  /** 有二级菜单时的固定工作台页 */
+  workspaceUrl?: string
 }
 
 export interface LingyunPageNavSection {

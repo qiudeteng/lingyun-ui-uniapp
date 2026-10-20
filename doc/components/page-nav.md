@@ -49,3 +49,25 @@ H5 侧栏只挂一次，页面上的 `sections` 到不了它。全局菜单用 `
 页面上请用 `lingyun-app-page` 的 `nav-avatar`、`nav-name`、`nav-subtitle`，三个可以只传一部分。
 
 窗口宽度小于 690 时页面壳不会显示这一列。完整宽度 220；全局 tabs 驱动时（iPad / PC，≥690）收窄为 **84** 悬浮玻璃窄栏，图标在上、文字在下；不再区分平板与 PC。玻璃栏通高、四周各留 8，页面背景从下方透出。页面内容背景会通过左侧安全区铺满整屏：演示页 `.page` 已内置；其他内容根节点加 `.lingyun-page-safe-left`（需在 `lingyun-app-page` 内）；也可以直接把背景配在 `lingyun-app-page` 根节点。未配置 tabs 时仍为 220 行布局。
+
+## 二级菜单
+
+全局 tabs 的每一项可加 `children`：
+
+```ts
+{
+  key: 'charts',
+  text: '图表',
+  icon: 'bars',
+  url: '/pages/demo/charts/column',
+  children: [
+    { key: 'column', text: '柱状图', url: '/pages/demo/charts/column' },
+    { key: 'line', text: '折线图', url: '/pages/demo/charts/line' },
+  ],
+}
+```
+
+- PC 宽屏：鼠标移到左侧父项，右侧用 `lingyun-menu` 弹出二级项；移入浮层不关闭。
+- 窄屏 / Duo / 微信：点击父项进入固定工作台页（`workspaceUrl?tab=<key>`），由工作台展示二级入口。
+- `workspaceUrl` 可配在全局 `setLingyunPageConfig`，也可配在单个 Tab；没有配置时仍直接进 `url`。
+- 子项路径自动归入父 Tab 高亮。

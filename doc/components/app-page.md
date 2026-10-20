@@ -82,6 +82,7 @@ setLingyunPageConfig({
 
 - 选中态从当前路由推导；详情页可用 `match` 归入某个 Tab。
 - iPad（690–1199）与 PC（≥1200）配置全局 tabs 后，左侧导航收窄为 **84** 悬浮玻璃窄栏，图标在上、文字在下；玻璃栏通高、四周各留 8。页面内容背景会通过左侧安全区铺满整屏：演示页 `.page` 已内置；其他内容根节点加 `.lingyun-page-safe-left`（需在 `lingyun-app-page` 内）；也可以直接把背景配在 `lingyun-app-page` 根节点。未配置 tabs 的完整目录仍为 220。
+- Tab 支持 `children` 二级菜单：PC 宽屏在左侧父项 hover 时用 `lingyun-menu` 弹出；底部 Tab / Duo Tab 点击有 children 的父项进入固定工作台页（`workspaceUrl?tab=<key>`），没有 children 直接进 `url`。子项路径自动归入父 Tab 高亮。
 - 优先级：props > `pages[path]` 页面覆盖 > `layout` > 宽度自动规则。
 - 窄屏点击 `reLaunch`；微信宽屏优先走 `openLingyunHostedPage`，不增加页面栈。
 - 壳自动为底部 Tab 留白，写入 `--lingyun-app-page-inset-bottom` 与 `LINGYUN_APP_PAGE_BOTTOM_INSET`。页面不要再手写 `padding-bottom`；已有手写值时设 `:auto-bottom-inset="false"`。

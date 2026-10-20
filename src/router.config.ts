@@ -101,6 +101,11 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'App Page' }
 	},
 	{
+		path: '/pages/demo/workbench',
+		name: 'pagesDemoWorkbench',
+		meta: { title: '工作台' }
+	},
+	{
 		path: '/pages/demo/layout',
 		name: 'pagesDemoLayout',
 		meta: { title: 'Layout' }

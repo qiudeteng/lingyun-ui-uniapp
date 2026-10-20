@@ -134,6 +134,13 @@
 			}
 		},
 		{
+			"path": "pages/demo/workbench",
+			"style": {
+				"navigationBarTitleText": "工作台",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/layout",
 			"style": {
 				"navigationBarTitleText": "Layout",

@@ -123,6 +123,7 @@ export default defineUserConfig({
           { text: 'demo / search-bar', link: '/pages/demo/search-bar.md' },
           { text: 'demo / tabbars', link: '/pages/demo/tabbars.md' },
           { text: 'demo / app-page', link: '/pages/demo/app-page.md' },
+          { text: 'demo / workbench', link: '/pages/demo/workbench.md' },
           { text: 'demo / text-fields', link: '/pages/demo/text-fields.md' },
           { text: 'demo / alerts', link: '/pages/demo/alerts.md' },
           { text: 'demo / sheets', link: '/pages/demo/sheets.md' },

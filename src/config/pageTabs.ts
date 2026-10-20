@@ -9,11 +9,22 @@ export const DEMO_PAGE_TABS: LingyunPageTab[] = [
   { key: 'controls', text: '控件', icon: 'star', url: '/pages/demo/buttons' },
   { key: 'forms', text: '表单', icon: 'compose', url: '/pages/demo/forms' },
   { key: 'content', text: '列表', icon: 'list', url: '/pages/demo/lists' },
-  { key: 'charts', text: '图表', icon: 'bars', url: '/pages/demo/charts/column' },
+  {
+    key: 'charts',
+    text: '图表',
+    icon: 'bars',
+    url: '/pages/demo/charts/column',
+    children: [
+      { key: 'column', text: '柱状图', icon: 'bars', url: '/pages/demo/charts/column' },
+      { key: 'line', text: '折线图', icon: 'list', url: '/pages/demo/charts/line' },
+      { key: 'pie', text: '饼图', icon: 'circle', url: '/pages/demo/charts/pie' },
+    ],
+  },
 ]
 
 export const DEMO_PAGE_CONFIG: Partial<LingyunPageConfig> = {
   tabs: DEMO_PAGE_TABS,
+  workspaceUrl: '/pages/demo/workbench',
   layout: { navMode: 'auto' },
   pages: {
     '/pages/login/login': { hideTabbar: true, hideNav: true },

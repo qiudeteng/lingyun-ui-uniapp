@@ -62,17 +62,33 @@ export type LingyunPageBadge =
       max?: number | string
     }
 
+export interface LingyunPageTabChild {
+  /** 唯一 key，二级菜单选中与埋点用 */
+  key: string
+  text: string
+  icon?: string
+  url: string
+  note?: string
+  badge?: LingyunPageBadge
+  /** 详情页归入当前二级项高亮的额外路径 */
+  match?: string | string[]
+}
+
 export interface LingyunPageTab {
   /** 唯一 key，Tab 选中态与埋点用 */
   key: string
   text: string
   /** lingyun-icon 的 type。iconMode='icon' 时生效 */
   icon?: string
-  /** 一级路由 */
+  /** 一级路由；有 children 且配置了工作台时，仅作为无二级菜单时的兜底 */
   url: string
   badge?: LingyunPageBadge
   /** 详情页归入某个 Tab 的额外高亮路径 */
   match?: string | string[]
+  /** 二级菜单 */
+  children?: LingyunPageTabChild[]
+  /** 有二级菜单时进入的工作台页；优先于全局 workspaceUrl */
+  workspaceUrl?: string
 }
 
 export interface LingyunPageOverride {
@@ -87,6 +103,8 @@ export interface LingyunPageConfig {
   tabs: LingyunPageTab[]
   /** tabs 映射为宽屏侧栏时的分组标题 */
   sidebarTitle?: string
+  /** 有二级菜单的一级 Tab 默认进入的工作台页 */
+  workspaceUrl?: string
   layout?: {
     navMode?: LingyunPageNavMode
   }
