@@ -138,56 +138,60 @@
           class="lingyun-page-nav__section"
         >
           <text v-if="section.title" class="lingyun-page-nav__section-title">{{ section.title }}</text>
-          <lingyun-menu
+          <view
             v-for="(item, itemIndex) in section.items"
             :key="item.url + '-' + itemIndex"
-            class="lingyun-page-nav__menu"
-            placement="right"
-            :show="!!(item.children && item.children.length) && childMenuKey === item.key"
-            :actions="childMenuActions(item)"
-            :mask="false"
-            :mask-closable="false"
-            @update:show="onChildMenuShow(item, $event)"
-            @select="onChildMenuSelect(item, $event)"
-            @hover-enter="onChildMenuHoverEnter"
-            @hover-leave="onChildMenuHoverLeave(item)"
+            class="lingyun-page-nav__menu-cell"
+            @mouseenter="onChildMenuEnter(item)"
+            @mouseleave="onChildMenuLeave(item)"
           >
-            <template #trigger>
-              <view
-                :id="navItemId(item.url)"
-                class="lingyun-page-nav__item"
-                :class="{ 'lingyun-page-nav__item--selected': isNavItemCurrent(item) }"
-                hover-class="lingyun-page-nav__item--hover"
-                :hover-start-time="20"
-                :hover-stay-time="70"
-                @click="onNavItemTap(item)"
-                @mouseenter="onChildMenuEnter(item)"
-                @mouseleave="onChildMenuLeave(item)"
-              >
-                <image
-                  v-if="item.iconSrc"
-                  class="lingyun-page-nav__glyph"
-                  :src="item.iconSrc"
-                  mode="aspectFit"
-                />
-                <lingyun-icon
-                  v-else
-                  :type="item.icon || 'circle'"
-                  :size="railMode ? 28 : 22"
-                  color="var(--lingyun-label, #000)"
-                />
-                <text class="lingyun-page-nav__label">{{ item.title }}</text>
-                <view v-if="hasItemBadge(item)" class="lingyun-page-nav__badge">
-                  <lingyun-badge
-                    :text="itemBadgeText(item)"
-                    :color="itemBadgeColor(item)"
-                    :dot="itemBadgeDot(item)"
-                    :max="itemBadgeMax(item)"
+            <lingyun-menu
+              class="lingyun-page-nav__menu"
+              placement="right"
+              :show="!!(item.children && item.children.length) && childMenuKey === item.key"
+              :actions="childMenuActions(item)"
+              :mask="false"
+              :mask-closable="false"
+              @update:show="onChildMenuShow(item, $event)"
+              @select="onChildMenuSelect(item, $event)"
+              @hover-enter="onChildMenuHoverEnter"
+              @hover-leave="onChildMenuHoverLeave(item)"
+            >
+              <template #trigger>
+                <view
+                  :id="navItemId(item.url)"
+                  class="lingyun-page-nav__item"
+                  :class="{ 'lingyun-page-nav__item--selected': isNavItemCurrent(item) }"
+                  hover-class="lingyun-page-nav__item--hover"
+                  :hover-start-time="20"
+                  :hover-stay-time="70"
+                  @click="onNavItemTap(item)"
+                >
+                  <image
+                    v-if="item.iconSrc"
+                    class="lingyun-page-nav__glyph"
+                    :src="item.iconSrc"
+                    mode="aspectFit"
                   />
+                  <lingyun-icon
+                    v-else
+                    :type="item.icon || 'circle'"
+                    :size="railMode ? 28 : 22"
+                    color="var(--lingyun-label, #000)"
+                  />
+                  <text class="lingyun-page-nav__label">{{ item.title }}</text>
+                  <view v-if="hasItemBadge(item)" class="lingyun-page-nav__badge">
+                    <lingyun-badge
+                      :text="itemBadgeText(item)"
+                      :color="itemBadgeColor(item)"
+                      :dot="itemBadgeDot(item)"
+                      :max="itemBadgeMax(item)"
+                    />
+                  </view>
                 </view>
-              </view>
-            </template>
-          </lingyun-menu>
+              </template>
+            </lingyun-menu>
+          </view>
         </view>
       </view>
     </scroll-view>
@@ -1195,10 +1199,11 @@ export default defineComponent({
 }
 
 /* 二级菜单包一层不改变导航项布局的重置 */
+.lingyun-page-nav__menu-cell,
 .lingyun-page-nav__menu,
 .lingyun-page-nav__menu .lingyun-popover__trigger {
-  display: block;
-  width: 100%;
+  display: block !important;
+  width: 100% !important;
 }
 
 .lingyun-page-nav__item--hover {
