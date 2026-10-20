@@ -61,6 +61,13 @@
       </lingyun-section>
     </view>
 
+    <template #split-detail>
+      <view class="split-detail">
+        <text class="split-detail__title">详情 / 辅助</text>
+        <text class="split-detail__text">右侧由页面的 split-detail 插槽提供。</text>
+      </view>
+    </template>
+
     <template #duo-tools>
       <view class="duo-tool">
         <lingyun-icon type="compose" :size="22" color="label" />
@@ -115,6 +122,7 @@
     { key: 'duo-outer-portrait', text: '外屏竖' },
     { key: 'duo-outer-landscape', text: '外屏横' },
     { key: 'duo-inner-landscape', text: '内屏横' },
+    { key: 'duo-inner-landscape-folded', text: '内屏横半折' },
   ]
 
   const navMode = ref('auto')
@@ -126,6 +134,7 @@
     'duo-outer-portrait': 'outer-portrait',
     'duo-outer-landscape': 'outer-landscape',
     'duo-inner-landscape': 'inner-landscape',
+    'duo-inner-landscape-folded': 'inner-landscape-folded',
   }
   const existingOverride = getLingyunLayoutOverride()
   const deviceMode = ref(
@@ -212,6 +221,7 @@
   })
 
   const navLabel = computed(() => {
+    if (layout.value.splitView) return 'Split View'
     if (layout.value.navMode === 'tabbar') return '底部 Tab'
     if (layout.value.navMode === 'sidebar') {
       return layout.value.navSide === 'right' ? '右侧导航' : '左侧导航'
@@ -306,6 +316,29 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .split-detail {
+    box-sizing: border-box;
+    padding: 24px 20px;
+    min-height: 100%;
+    background: var(--lingyun-bg-grouped-primary, #f2f2f7);
+  }
+
+  .split-detail__title {
+    display: block;
+    font-size: 20px;
+    line-height: 26px;
+    font-weight: 700;
+    color: var(--lingyun-label, #1c1c1e);
+  }
+
+  .split-detail__text {
+    display: block;
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--lingyun-label-secondary, #6a6a6a);
   }
 
   .line {

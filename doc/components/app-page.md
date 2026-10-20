@@ -94,7 +94,8 @@ setLingyunPageConfig({
 - 内屏竖屏：顶部使用 `lingyun-duo-toolbar`（84 高），底部使用 `lingyun-tabbars size="duo"`（95 高，玻璃条 62，Tab 77×54，图标 22，文字 10/12）。
 - 半折：屏幕中心显示 40px 横向折痕安全带；交互控件应避开，滚动内容可跨越。
 - 外屏竖屏 / 外屏横屏 / 内屏横屏：右侧 `lingyun-duo-rail`（84 宽，工具组、4 个仅图标 Tab、搜索；外屏横屏工具收进「…」溢出）。页面用 `duo-tools` 插槽放工具按钮，监听 `duo-search` / `duo-overflow`。
-- 内屏横屏折叠/半折的 Split View 在后续版本接入；微信小程序暂按标准宽度布局。
+- 内屏横屏折叠/半折：Split View（左主栏 / 40 折痕避让带 / 右详情栏），顶部 84 高 Duo Toolbar，右侧 84 返回列，Tab 隐藏。页面用 `split-primary` / `split-detail` 插槽；右侧返回触发 `back`。
+- 微信小程序暂按标准宽度布局。
 
 不传左栏顶部插槽、也不调用 `setLingyunPageNavProfile` 时，宽屏左栏显示「凌云UI」和介绍「一套对齐 Apple Liquid Glass 的 uni-app 多端组件库」。传入自定义名称且不传副标题时，不显示这句介绍。
 

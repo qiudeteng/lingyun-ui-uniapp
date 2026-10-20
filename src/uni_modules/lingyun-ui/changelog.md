@@ -4,7 +4,7 @@
 - P1 支持 iPhone Duo 内屏竖屏：84 高 `lingyun-duo-toolbar` + 95 高底部 Duo Tab（玻璃条 62、Tab 77×54、图标 22、文字 10/12）；半折时屏幕中心显示 40 横向折痕安全带。
 - P2 支持 Duo 外屏竖屏 / 外屏横屏 / 内屏横屏右侧全高栏：84 宽，工具组 48×164、Tab 组 48×210（4×48）、搜索 48、选中胶囊 44×58；外屏横屏工具自动收进「…」溢出。
 - `lingyun-app-page` 新增 `duo-tools` 插槽与 `duo-search` / `duo-overflow` 事件；新增 `lingyun-duo-rail` 组件。
-- Duo 内屏横屏折叠/半折 Split View 在后续版本接入。
+- P3 支持 Duo 内屏横屏折叠/半折 Split View：顶部 84 高 Duo Toolbar、右侧 84 返回列、左主栏 456 + 40 折痕避让带 + 右详情栏 371；Split View 隐藏 Tab。新增 `lingyun-split-view` 与 `split-primary` / `split-detail` 插槽。
 ## 1.0.30（2026-10-20）
 - `lingyun-app-page` 支持数据驱动的一级导航：`setLingyunPageConfig({ tabs })` 一次配置，窄屏渲染底部 Tab、宽屏渲染左侧停靠导航，默认按窗口宽度 690 切换。
 - 新增页面级覆盖 `pages[path].hideTabbar / hideNav / navMode`，以及 props `nav-mode / show-tabbar / auto-bottom-inset`。

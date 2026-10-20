@@ -18,10 +18,10 @@
     <!-- #endif -->
 
     <lingyun-duo-toolbar
-      v-if="!embedded && showToolbar && isDuoTopBottom"
+      v-if="!embedded && showToolbar && (isDuoTopBottom || isDuoSplit)"
       class="lingyun-app-page__toolbar"
       :title="displayTitle"
-      :show-back="showBackEffective"
+      :show-back="isDuoSplit ? false : showBackEffective"
       :right-inset="duoTopRightInset"
       @back="onBack"
     >
@@ -87,6 +87,16 @@
       <view v-if="hostedMiss" class="lingyun-app-page__hosted">
         <lingyun-page-miss :from="hostedFrom" @home="onHostHome" />
       </view>
+      <lingyun-split-view v-else-if="isDuoSplit">
+        <template #primary>
+          <slot name="split-primary">
+            <slot />
+          </slot>
+        </template>
+        <template #detail>
+          <slot name="split-detail" />
+        </template>
+      </lingyun-split-view>
       <slot v-else />
     </view>
 
@@ -105,6 +115,16 @@
         <view v-if="hostedMiss" class="lingyun-app-page__hosted">
           <lingyun-page-miss :from="hostedFrom" @home="onHostHome" />
         </view>
+        <lingyun-split-view v-else-if="isDuoSplit">
+          <template #primary>
+            <slot name="split-primary">
+              <slot />
+            </slot>
+          </template>
+          <template #detail>
+            <slot name="split-detail" />
+          </template>
+        </lingyun-split-view>
         <slot v-else />
       </view>
     </scroll-view>
@@ -119,6 +139,16 @@
         <view v-if="hostedMiss" class="lingyun-app-page__hosted">
           <lingyun-page-miss :from="hostedFrom" @home="onHostHome" />
         </view>
+        <lingyun-split-view v-else-if="isDuoSplit">
+          <template #primary>
+            <slot name="split-primary">
+              <slot />
+            </slot>
+          </template>
+          <template #detail>
+            <slot name="split-detail" />
+          </template>
+        </lingyun-split-view>
         <slot v-else />
       </view>
     </view>
@@ -140,9 +170,25 @@
       </template>
     </lingyun-duo-rail>
 
+    <!-- Duo Split View：右侧 84 状态/返回列；内容在左侧双栏 -->
+    <view v-if="!embedded && isDuoSplit" class="lingyun-app-page__duo-split-rail">
+      <view class="lingyun-app-page__duo-split-status" />
+      <view
+        class="lingyun-app-page__duo-split-back"
+        hover-class="lingyun-app-page__duo-split-back--hover"
+        :hover-start-time="20"
+        :hover-stay-time="70"
+        role="button"
+        aria-label="Back"
+        @click="onBack"
+      >
+        <lingyun-icon type="left" :size="28" color="label" />
+      </view>
+    </view>
+
     <!-- 全局一级导航：窄屏底部 Tab；宽屏由左侧 nav 承担 -->
     <view
-      v-if="!embedded && pageLayout.foldBand !== 'none'"
+      v-if="!embedded && pageLayout.foldBand !== 'none' && !isDuoSplit"
       class="lingyun-app-page__fold-band"
       :class="`lingyun-app-page__fold-band--${pageLayout.foldBand}`"
       :style="foldBandStyle"
@@ -231,6 +277,7 @@ import {
 } from '../../utils/tabTransition'
 import { consumeLingyunNavTransition } from '../../utils/navTransition'
 import {
+  LINGYUN_DUO_RAIL_WIDTH,
   LINGYUN_DUO_TOP_BAR_HEIGHT,
   LINGYUN_DUO_TOP_RIGHT_RESERVED,
 } from '../../utils/duoMetrics'
@@ -497,9 +544,11 @@ export default defineComponent({
         '--lingyun-app-page-bar': `${this.toolbarStackPx}px`,
         '--lingyun-app-page-inset-top': this.insetTop,
         '--lingyun-page-nav-width': `${navWidth}px`,
-        '--lingyun-app-page-inset-right': this.duoRailVisible
-          ? `${this.pageLayout.railWidth}px`
-          : '0px',
+        '--lingyun-app-page-inset-right': this.isDuoSplit
+          ? `${LINGYUN_DUO_RAIL_WIDTH}px`
+          : this.duoRailVisible
+            ? `${this.pageLayout.railWidth}px`
+            : '0px',
         '--lingyun-app-page-inset-bottom': `${this.pageLayout.bottomInsetPx}px`,
         '--lingyun-app-page-tabbar-height': `${this.pageLayout.tabbarHeightPx}px`,
       }
@@ -538,10 +587,6 @@ export default defineComponent({
         duoPose: env.duoPose,
       }
       const plan = resolveLingyunPageLayout(input)
-      if (plan.chrome === 'duo-split') {
-        /* P1/P2 暂用标准宽度布局；P3 接入 Split View */
-        return resolveLingyunPageLayout({ ...input, formFactor: undefined, duoPose: '' })
-      }
       return plan
     },
     isDuoTopBottom() {
@@ -567,7 +612,9 @@ export default defineComponent({
       return this.isDuoTopBottom ? 'duo' : 'default'
     },
     duoTopRightInset() {
-      return LINGYUN_DUO_TOP_RIGHT_RESERVED
+      return this.isDuoSplit
+        ? LINGYUN_DUO_RAIL_WIDTH
+        : LINGYUN_DUO_TOP_RIGHT_RESERVED
     },
     foldBandStyle() {
       const size = this.pageLayout.foldBandSize
@@ -711,8 +758,7 @@ export default defineComponent({
           'lingyun-app-page--page-enter': this.pageEntering,
           'lingyun-app-page--duo-top-bottom': this.isDuoTopBottom,
           'lingyun-app-page--duo-right-rail': this.duoRailVisible,
-          'lingyun-app-page--duo-split': this.isDuoSplit,
-          'lingyun-app-page--fold-horizontal': this.pageLayout.foldBand === 'horizontal',
+          'lingyun-app-page--duo-split': this.isDuoSplit,          'lingyun-app-page--fold-horizontal': this.pageLayout.foldBand === 'horizontal',
           'lingyun-app-page--fold-vertical': this.pageLayout.foldBand === 'vertical',
           'lingyun-app-page--auth-hold': this.authHold,
         },
@@ -1172,6 +1218,48 @@ export default defineComponent({
 .lingyun-app-page--duo-right-rail {
   padding-right: var(--lingyun-app-page-inset-right, 0px);
   box-sizing: border-box;
+}
+
+/* Duo Split View：内容让出右侧返回列 */
+.lingyun-app-page--duo-split {
+  padding-right: var(--lingyun-app-page-inset-right, 0px);
+  box-sizing: border-box;
+}
+
+.lingyun-app-page__duo-split-rail {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  width: 84px;
+  box-sizing: border-box;
+  padding: 24px 24px 24px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.lingyun-app-page__duo-split-status {
+  width: 48px;
+  height: 83px;
+}
+
+.lingyun-app-page__duo-split-back {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  @include lingyun-glass-control;
+}
+
+.lingyun-app-page__duo-split-back--hover {
+  transform: scale(0.96);
 }
 
 .lingyun-app-page--auth-hold {

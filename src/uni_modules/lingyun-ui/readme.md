@@ -108,7 +108,7 @@ configureLingyunLayout({
 
 - P1 支持内屏竖屏：顶部 `lingyun-duo-toolbar`（84 高）+ 底部 Duo Tab（95 高）；半折时屏幕中心显示 40px 横向折痕安全带。
 - P2 支持外屏竖屏 / 外屏横屏 / 内屏横屏：右侧 `lingyun-duo-rail`（84 宽，工具组、仅图标 Tab、搜索；外屏横屏自动用「…」溢出）。页面用 `duo-tools` 插槽放工具按钮，监听 `duo-search` / `duo-overflow`。
-- Duo 内屏横屏折叠/半折 Split View 在后续版本接入。
+- P3 支持内屏横屏折叠/半折 Split View：顶部 84 高 Duo Toolbar、右侧 84 返回列、左主栏 + 40 折痕带 + 右详情栏；Tab 隐藏。页面用 `split-primary` / `split-detail` 插槽，右侧返回触发 `back`。
 - 微信小程序暂按标准宽度布局，不进入 Duo 分支。
 
 ## 屏幕
