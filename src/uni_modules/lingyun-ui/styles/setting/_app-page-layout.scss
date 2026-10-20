@@ -4,8 +4,7 @@
 // 微信：view；H5：uni-view / div。禁止 `*`。
 
 .lingyun-app-page__pad > view:first-child,
-.lingyun-app-page__pad > uni-view:first-child,
-.lingyun-app-page__pad > div:first-child {
+.lingyun-app-page__pad > uni-view:first-child {
   box-sizing: border-box;
   padding-top: var(--lingyun-app-page-inset-top, 60px) !important;
 }
@@ -13,8 +12,7 @@
 // 微信宽屏 Tab 宿主：目标页的 app-page 会降级为嵌入容器，
 // 仍由目标页首子承接顶栏占位，保证内容背景延伸到状态栏下方。
 .lingyun-app-page__embedded > view:first-child,
-.lingyun-app-page__embedded > uni-view:first-child,
-.lingyun-app-page__embedded > div:first-child {
+.lingyun-app-page__embedded > uni-view:first-child {
   box-sizing: border-box;
   padding-top: var(--lingyun-app-page-inset-top, 60px) !important;
 }
@@ -22,8 +20,7 @@
 // 页面级滚动下根节点高度随内容，页面自带的 min-height: 100% 会退化为 auto，
 // 短页底部会露出根底色形成断层 → 这里把首子撑到满屏。
 .lingyun-app-page--page-scroll .lingyun-app-page__pad > view:first-child,
-.lingyun-app-page--page-scroll .lingyun-app-page__pad > uni-view:first-child,
-.lingyun-app-page--page-scroll .lingyun-app-page__pad > div:first-child {
+.lingyun-app-page--page-scroll .lingyun-app-page__pad > uni-view:first-child {
   min-height: 100vh;
 }
 
@@ -32,10 +29,7 @@
   > view:first-child,
 .lingyun-app-page--embedded.lingyun-app-page--page-scroll
   .lingyun-app-page__embedded
-  > uni-view:first-child,
-.lingyun-app-page--embedded.lingyun-app-page--page-scroll
-  .lingyun-app-page__embedded
-  > div:first-child {
+  > uni-view:first-child {
   min-height: 100vh;
 }
 

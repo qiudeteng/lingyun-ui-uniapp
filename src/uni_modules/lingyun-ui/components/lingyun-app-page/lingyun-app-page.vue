@@ -1285,9 +1285,7 @@ export default defineComponent({
  * 微信自定义组件节点不参与，避免整页背景跟着闪烁。
  */
 .lingyun-app-page--page-enter .lingyun-app-page__pad > view:first-child > view,
-.lingyun-app-page--page-enter .lingyun-app-page__pad > uni-view:first-child > uni-view,
-.lingyun-app-page--page-enter .lingyun-app-page__pad > uni-view:first-child > div,
-.lingyun-app-page--page-enter .lingyun-app-page__pad > div:first-child > div {
+.lingyun-app-page--page-enter .lingyun-app-page__pad > uni-view:first-child > uni-view {
   animation: lingyun-app-page-enter 0.24s ease both;
 }
 
