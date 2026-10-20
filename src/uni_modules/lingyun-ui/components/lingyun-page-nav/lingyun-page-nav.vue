@@ -12,39 +12,40 @@
           <view class="lingyun-page-nav__window lingyun-page-nav__window--zoom" />
         </view>
         <view v-if="railMode || showProfile" class="lingyun-page-nav__profile">
-          <view
-            v-if="railMode || showAvatar"
-            class="lingyun-page-nav__avatar"
-            :class="{ 'lingyun-page-nav__avatar--mark': showStorePicker && !railMode }"
-          >
-            <template v-if="railMode">
-              <slot v-if="useAvatarSlot" name="avatar" />
-              <!-- #ifdef H5 -->
-              <view v-if="useAvatarSlot" id="ly-nav-slot-avatar" class="lingyun-page-nav__slot" />
-              <!-- #endif -->
-              <lingyun-avatar
-                v-if="!useAvatarSlot"
-                size="md"
-                :src="profileAvatar && !avatarFailed ? profileAvatar : ''"
-                :text="profileName || railBrand"
-                @error="onAvatarError"
-              />
-            </template>
-            <template v-else>
-              <image
-                v-if="profileAvatar && !useAvatarSlot && !avatarFailed"
-                class="lingyun-page-nav__avatar-img"
-                :style="avatarImgStyle"
-                :src="profileAvatar"
-                mode="aspectFill"
-                @error="onAvatarError"
-              />
-              <text v-else-if="!useAvatarSlot" class="lingyun-page-nav__avatar-fallback">{{ avatarInitial }}</text>
+          <template v-if="railMode">
+            <view v-if="useAvatarSlot" class="lingyun-page-nav__rail-avatar-slot">
               <slot name="avatar" />
               <!-- #ifdef H5 -->
-              <view v-if="useAvatarSlot" id="ly-nav-slot-avatar" class="lingyun-page-nav__slot" />
+              <view id="ly-nav-slot-avatar" class="lingyun-page-nav__slot" />
               <!-- #endif -->
-            </template>
+            </view>
+            <lingyun-avatar
+              v-else
+              class="lingyun-page-nav__rail-avatar"
+              size="md"
+              :src="profileAvatar && !avatarFailed ? profileAvatar : ''"
+              :text="profileName || railBrand"
+              @error="onAvatarError"
+            />
+          </template>
+          <view
+            v-else-if="showAvatar"
+            class="lingyun-page-nav__avatar"
+            :class="{ 'lingyun-page-nav__avatar--mark': showStorePicker }"
+          >
+            <image
+              v-if="profileAvatar && !useAvatarSlot && !avatarFailed"
+              class="lingyun-page-nav__avatar-img"
+              :style="avatarImgStyle"
+              :src="profileAvatar"
+              mode="aspectFill"
+              @error="onAvatarError"
+            />
+            <text v-else-if="!useAvatarSlot" class="lingyun-page-nav__avatar-fallback">{{ avatarInitial }}</text>
+            <slot name="avatar" />
+            <!-- #ifdef H5 -->
+            <view v-if="useAvatarSlot" id="ly-nav-slot-avatar" class="lingyun-page-nav__slot" />
+            <!-- #endif -->
           </view>
           <view v-if="!railMode" class="lingyun-page-nav__meta">
             <view
@@ -288,7 +289,11 @@ export default defineComponent({
       proxy._routeSeen = value
     })
     onShow(() => {
-      const proxy = instance?.proxy as { syncRoute?: () => void } | null | undefined
+      const proxy = instance?.proxy as
+        | { syncRoute?: () => void; syncLayout?: () => void }
+        | null
+        | undefined
+      proxy?.syncLayout?.()
       proxy?.syncRoute?.()
     })
     return {}
@@ -340,7 +345,9 @@ export default defineComponent({
       return !!getLingyunNavLayout(LINGYUN_TOOLBAR_BAR_DESIGN_PX).windowControls
     },
     navHeadStyle() {
-      return { paddingTop: `${this.statusBarPx}px` }
+      /* 小程序补状态栏；窄栏再留 8px，让头像落在玻璃面板内 */
+      const railPad = this.railMode ? 8 : 0
+      return { paddingTop: `${this.statusBarPx + railPad}px` }
     },
     profile() {
       return getLingyunPageNavProfile()
@@ -1147,7 +1154,6 @@ export default defineComponent({
 }
 
 .lingyun-page-nav--rail .lingyun-page-nav__head {
-  padding-top: 8px;
   padding-left: 4px;
   padding-right: 4px;
 }
@@ -1155,6 +1161,19 @@ export default defineComponent({
 /* 滚动内容收在玻璃栏的安全区内 */
 .lingyun-page-nav--rail .lingyun-page-nav__scroll {
   margin-bottom: 8px;
+}
+
+.lingyun-page-nav--rail .lingyun-page-nav__rail-avatar {
+  margin: 0 auto;
+}
+
+.lingyun-page-nav--rail .lingyun-page-nav__rail-avatar-slot {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .lingyun-page-nav--rail .lingyun-page-nav__bar {
@@ -1170,32 +1189,6 @@ export default defineComponent({
   width: 100%;
   justify-content: center;
   gap: 0;
-}
-
-.lingyun-page-nav--rail .lingyun-page-nav__avatar {
-  width: 48px;
-  height: 48px;
-  margin: 0 auto;
-  padding: 4px;
-  box-sizing: border-box;
-  border-radius: 24px;
-  overflow: hidden;
-  @include lingyun-glass-control;
-  border-radius: 24px;
-}
-
-.lingyun-page-nav--rail .lingyun-page-nav__avatar .lingyun-avatar {
-  width: 40px;
-  height: 40px;
-}
-
-.lingyun-page-nav--rail .lingyun-page-nav__avatar .lingyun-page-nav__slot {
-  width: 40px;
-  height: 40px;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .lingyun-page-nav--rail .lingyun-page-nav__section {

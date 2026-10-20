@@ -122,6 +122,9 @@ function isWeixinPc(): boolean {
   try {
     const sys =
       typeof uni.getDeviceInfo === 'function' ? uni.getDeviceInfo() : uni.getSystemInfoSync()
+    const deviceType = String((sys as { deviceType?: string }).deviceType || '').toLowerCase()
+    /* 开发者工具在 Windows 上模拟手机/平板时 platform 仍是 windows，不能当 PC；按设备类型排除 */
+    if (deviceType === 'phone' || deviceType === 'pad') return false
     const platform = String((sys as { platform?: string }).platform || '').toLowerCase()
     return platform === 'windows' || platform === 'mac' || platform === 'macos'
   } catch {
