@@ -512,6 +512,8 @@ export default defineComponent({
     pageNavRail: {
       immediate: true,
       handler(value: boolean) {
+        /* 宽屏宿主的嵌入页也会挂 app-page，但它自己不渲染左侧导航，不能覆盖外层宿主的窄栏状态 */
+        if (this.embedded) return
         setLingyunPageNavRail(value)
       },
     },
@@ -754,6 +756,7 @@ export default defineComponent({
           'lingyun-app-page--sheet': this.placement === 'sheet' || this.showGrabberEffective,
           'lingyun-app-page--page-scroll': this.usePageScroll,
           'lingyun-app-page--nav': this.navDocked,
+          'lingyun-app-page--nav-rail': this.navDocked && this.pageNavRail,
           'lingyun-app-page--tabbar': this.tabbarVisible,
           'lingyun-app-page--page-enter': this.pageEntering,
           'lingyun-app-page--duo-top-bottom': this.isDuoTopBottom,

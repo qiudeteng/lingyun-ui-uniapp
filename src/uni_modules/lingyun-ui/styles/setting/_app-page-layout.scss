@@ -49,21 +49,17 @@
   box-sizing: border-box;
 }
 
-// 宽屏左侧导航：内容首子承接左侧安全区，背景铺满整屏。
-// 与顶部占位一样必须在全局样式：组件样式打不到插槽节点。
-.lingyun-app-page--nav .lingyun-app-page__pad > view:first-child,
-.lingyun-app-page--nav .lingyun-app-page__pad > uni-view:first-child,
-.lingyun-app-page--nav .lingyun-app-page__pad > div:first-child {
-  width: calc(100% + var(--lingyun-page-nav-width, 0px));
-  margin-left: calc(-1 * var(--lingyun-page-nav-width, 0px));
-  padding-left: var(--lingyun-page-nav-width, 0px) !important;
+// 宽屏左侧导航：内容根节点加 .lingyun-page-safe-left 后，背景铺满整屏并让出安全区。
+// 不用插槽首子选择器 / calc(var(...))：微信下首子与变量继承都不稳定。
+// 左侧导航为 220（完整目录）或 84（全局 tabs 窄栏）。
+.lingyun-app-page--nav .lingyun-page-safe-left {
+  width: auto;
+  margin-left: -220px;
+  padding-left: 220px !important;
   box-sizing: border-box;
 }
 
-// 内容根节点不是首子（或一页多个根节点）时，给需要让位的节点手动加这个类。
-.lingyun-page-safe-left {
-  width: calc(100% + var(--lingyun-page-nav-width, 0px));
-  margin-left: calc(-1 * var(--lingyun-page-nav-width, 0px));
-  padding-left: var(--lingyun-page-nav-width, 0px) !important;
-  box-sizing: border-box;
+.lingyun-app-page--nav.lingyun-app-page--nav-rail .lingyun-page-safe-left {
+  margin-left: -84px;
+  padding-left: 84px !important;
 }

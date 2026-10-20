@@ -36,6 +36,22 @@
     color: var(--lingyun-label, $lingyun-main-color);
   }
 
+  /*
+   * 演示页内容根节点：背景铺满整屏，同时让出左侧导航安全区。
+   * 微信 WXSS 对插槽首子选择器和 calc(var(...)) 不稳定，这里用 .page 类和固定宽度。
+   */
+  .lingyun-app-page--nav .page {
+    width: auto;
+    margin-left: -220px;
+    padding-left: 220px !important;
+    box-sizing: border-box;
+  }
+
+  .lingyun-app-page--nav.lingyun-app-page--nav-rail .page {
+    margin-left: -84px;
+    padding-left: 84px !important;
+  }
+
   button::after {
     border: none;
   }
