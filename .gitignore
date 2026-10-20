@@ -16,6 +16,11 @@ unpackage/
 .env
 .env.*
 !.env.example
+.figma-token
+
+# Design tooling temp
+.tmp-figma/
+.tmp-figma-tools/
 
 # Logs & cache
 logs/

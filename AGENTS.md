@@ -113,6 +113,32 @@ pnpm docs:build          # 文档站静态产物 → design/.vuepress/dist
 
 > 文档站搜索在 dev 模式下依赖 Service Worker，仅 `localhost` 可用（局域网裸 HTTP 非安全上下文）；要在手机上验搜索请用 `docs:build` 后的产物。
 
+### 4.1 设计稿读取（Figma）
+
+- Token 文件：项目根目录 `.figma-token`（已加入 `.gitignore`）。**不要提交、不要贴到文档或日志。**
+- 设计文件：`iOS and iPadOS 27 (Community)`，file key `9MZLLWBxbU2bZSmyQ2vKJU`。
+- Duo Standard 组件节点：
+  - Outer Portrait `12892:62244`
+  - Outer Landscape `12892:62245`
+  - Inner Portrait `12892:62246`
+  - Inner Portrait Folded `13035:1050`
+  - Inner Landscape `12892:62247`
+  - Inner Landscape Folded（Split View）`13035:902`
+- 只读用法：
+
+```bash
+TOKEN=$(cat .figma-token)
+# 节点 JSON
+curl -H "X-Figma-Token: $TOKEN" \
+  "https://api.figma.com/v1/files/9MZLLWBxbU2bZSmyQ2vKJU/nodes?ids=12892%3A62244"
+# 节点 PNG（返回 images 映射，再下载其中的 URL）
+curl -H "X-Figma-Token: $TOKEN" \
+  "https://api.figma.com/v1/images/9MZLLWBxbU2bZSmyQ2vKJU?ids=12892%3A62244&format=png&scale=2"
+```
+
+- 约束：Token 仅用于读取设计；不得写入或修改 Figma。下载的节点 JSON / PNG 放在 `.tmp-figma/`（已忽略），不要提交。
+- 设备矩阵与尺寸以本仓库 `src/uni_modules/lingyun-ui/utils/pageLayout.ts` / `design/SIDEBARS.md` 为准；读取设计后先更新方案文档，再改代码。
+
 H5 界面改完后，用 Cursor 内置浏览器验收，地址是 `http://localhost:5175/#/pages/...`（hash 路由，端口固定 5175）。调用顺序和卡死时怎么停，见始终生效的 [`.cursor/rules/cursor-browser.mdc`](.cursor/rules/cursor-browser.mdc)。微信小程序仍走开发者工具，不进这个浏览器。
 
 ## 5. 红线（Hard rules）
