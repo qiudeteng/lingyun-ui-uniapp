@@ -36,7 +36,7 @@ export default defineComponent({
   props: {
     src: { type: String, default: '' },
     text: { type: String, default: '' },
-    size: { type: String, default: 'md' }, // sm | md | lg
+    size: { type: String, default: 'md' }, // sm | md | ml | lg
     /**
      * 显示形式：square 直角 · rounded 圆角 · circle 圆形
      * 默认圆形，与原来的头像一致
@@ -48,7 +48,7 @@ export default defineComponent({
   },
   computed: {
     sizeClass() {
-      const s = this.size === 'sm' || this.size === 'lg' ? this.size : 'md'
+      const s = this.size === 'sm' || this.size === 'ml' || this.size === 'lg' ? this.size : 'md'
       return `lingyun-avatar--${s}`
     },
     resolvedShape() {
@@ -118,6 +118,11 @@ export default defineComponent({
   height: 40px;
 }
 
+.lingyun-avatar--ml {
+  width: 52px;
+  height: 52px;
+}
+
 .lingyun-avatar--lg {
   width: 64px;
   height: 64px;
@@ -140,6 +145,10 @@ export default defineComponent({
 
 .lingyun-avatar--md .lingyun-avatar__text {
   font-size: 14px;
+}
+
+.lingyun-avatar--ml .lingyun-avatar__text {
+  font-size: 18px;
 }
 
 .lingyun-avatar--lg .lingyun-avatar__text {

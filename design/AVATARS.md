@@ -30,6 +30,7 @@
 |--------|-----|
 | `sm` | 28 |
 | `md`（默认） | 40 |
+| `ml` | 52 |
 | `lg` | 64 |
 
 ## 4. `radius`（仅 rounded）
@@ -61,7 +62,7 @@
 |------|------|------|
 | `src` | `''` | 图片地址 |
 | `text` | `''` | 无图时缩写（取首字母） |
-| `size` | `md` | sm=28 / md=40 / lg=64（px） |
+| `size` | `md` | sm=28 / md=40 / ml=52 / lg=64（px） |
 | `shape` | `circle` | `square` \| `rounded` \| `circle` |
 | `radius` | `2xl` | 仅 rounded。`2xl` 为 26px |
 | `backgroundColor` | 淡蓝 | 底色 |

@@ -22,7 +22,7 @@
             <lingyun-avatar
               v-else
               class="lingyun-page-nav__rail-avatar"
-              size="lg"
+              size="ml"
               :src="profileAvatar && !avatarFailed ? profileAvatar : ''"
               :text="profileName || railBrand"
               @error="onAvatarError"
@@ -1171,8 +1171,8 @@ export default defineComponent({
 }
 
 .lingyun-page-nav--rail .lingyun-page-nav__rail-avatar-slot {
-  width: 64px;
-  height: 64px;
+  width: 52px;
+  height: 52px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -1180,8 +1180,8 @@ export default defineComponent({
 }
 
 .lingyun-page-nav--rail .lingyun-page-nav__rail-avatar-slot .lingyun-page-nav__slot {
-  width: 64px;
-  height: 64px;
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
