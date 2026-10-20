@@ -186,6 +186,10 @@ import {
   buildLingyunPageTabSections,
   getLingyunPageConfig,
 } from '../../utils/pageConfig'
+import {
+  beginLingyunNavTransition,
+  clearLingyunNavTransition,
+} from '../../utils/navTransition'
 import { LINGYUN_APP_PAGE_SCROLL_LOCKED } from '../lingyun-app-page/useLingyunAppPageScroll'
 
 type NavPage = {
@@ -603,16 +607,29 @@ export default defineComponent({
     onNavTap(url: string) {
       const rawTarget = normalizeLingyunPagePath(url)
       if (!rawTarget) return
+      const fromPath = normalizeLingyunPagePath(
+        getLingyunHostedPath() || this.currentPath,
+      )
+      beginLingyunNavTransition(fromPath, rawTarget)
       if (openLingyunHostedPage(url, rawTarget)) {
         this.currentPath = rawTarget
         return
       }
       const next = resolveLingyunPageUrl(url)
       const target = normalizeLingyunPagePath(next)
-      if (!target) return
+      if (!target) {
+        clearLingyunNavTransition()
+        return
+      }
       const hostedPath = getLingyunHostedPath()
-      if (hostedPath === rawTarget && getLingyunHostedUrl() === next) return
-      if (!hostedPath && target === this.currentPath && target === rawTarget) return
+      if (hostedPath === rawTarget && getLingyunHostedUrl() === next) {
+        clearLingyunNavTransition()
+        return
+      }
+      if (!hostedPath && target === this.currentPath && target === rawTarget) {
+        clearLingyunNavTransition()
+        return
+      }
       if (openLingyunHostedPage(next, rawTarget)) {
         this.currentPath = rawTarget
         return
@@ -623,6 +640,7 @@ export default defineComponent({
       setLingyunPageNavIntent(highlight)
       this._expectPath = target
       this.pullRoute()
+      beginLingyunNavTransition(fromPath, target)
       this.replacePage(next)
     },
   },
@@ -900,6 +918,7 @@ export default defineComponent({
   flex-direction: row;
   align-items: center;
   border-radius: 12px;
+  transition: background-color 0.2s ease;
 }
 
 .lingyun-page-nav__item--selected {
@@ -932,6 +951,7 @@ export default defineComponent({
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  transition: color 0.2s ease;
 }
 
 .lingyun-page-nav__item--selected .lingyun-page-nav__label {

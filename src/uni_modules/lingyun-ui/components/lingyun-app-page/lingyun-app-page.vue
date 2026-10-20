@@ -186,6 +186,7 @@ import {
   clearLingyunTabTransition,
   consumeLingyunTabTransition,
 } from '../../utils/tabTransition'
+import { consumeLingyunNavTransition } from '../../utils/navTransition'
 // #ifdef H5
 import { setLingyunH5PageNavAllowed } from '../lingyun-page-nav/mountLingyunPageNav'
 // #endif
@@ -272,8 +273,8 @@ export default defineComponent({
       currentPagePath: '',
       /** 跨页切换时 Tab 指示器的起始 key */
       tabbarFromKey: '',
-      /** 新页面内容淡入 */
-      tabEntering: false,
+      /** Tab / 左侧菜单换页后内容淡入 */
+      pageEntering: false,
       /** 横向 swipe 确认后临时关 scroll-y，避免 iOS 斜滑带动页面上下晃 */
       bodyScrollY: true,
       /** H5：顶部插槽目标节点出现后再传送 */
@@ -288,7 +289,7 @@ export default defineComponent({
       _onWindowResize: null as ((res?: unknown) => void) | null,
       _stopRouteChange: null as (() => void) | null,
       _onHashChange: null as (() => void) | null,
-      _tabEnterTimer: null as ReturnType<typeof setTimeout> | null,
+      _pageEnterTimer: null as ReturnType<typeof setTimeout> | null,
     }
   },
   setup() {
@@ -348,7 +349,7 @@ export default defineComponent({
       })
     }
     this.syncPageChrome()
-    this.applyTabTransition()
+    this.applyPageTransition()
     this.syncNavLayout()
     this._scrollSettleTimer = null
     this._scrollLockCount = 0
@@ -356,6 +357,12 @@ export default defineComponent({
     this._navSlotClaim = 0
   },
   mounted() {
+    if (this.pageEntering) {
+      this._pageEnterTimer = setTimeout(() => {
+        this.pageEntering = false
+        this._pageEnterTimer = null
+      }, 280)
+    }
     if (this.embedded) return
     if (ensureLingyunWidePageHost()) return
     this.syncNavLayout()
@@ -363,12 +370,6 @@ export default defineComponent({
     this.syncH5PageNavHost()
     this.bindResize()
     this.bindPageRoute()
-    if (this.tabEntering) {
-      this._tabEnterTimer = setTimeout(() => {
-        this.tabEntering = false
-        this._tabEnterTimer = null
-      }, 280)
-    }
     if (this.usePageScroll) {
       this.$nextTick(() => this.setupGlassObserver())
     }
@@ -384,9 +385,9 @@ export default defineComponent({
     this.teardownGlassObserver()
     this.unbindResize()
     this.unbindPageRoute()
-    if (this._tabEnterTimer) {
-      clearTimeout(this._tabEnterTimer)
-      this._tabEnterTimer = null
+    if (this._pageEnterTimer) {
+      clearTimeout(this._pageEnterTimer)
+      this._pageEnterTimer = null
     }
   },
   watch: {
@@ -590,7 +591,7 @@ export default defineComponent({
           'lingyun-app-page--page-scroll': this.usePageScroll,
           'lingyun-app-page--nav': this.navDocked,
           'lingyun-app-page--tabbar': this.tabbarVisible,
-          'lingyun-app-page--tab-enter': this.tabEntering,
+          'lingyun-app-page--page-enter': this.pageEntering,
           'lingyun-app-page--auth-hold': this.authHold,
         },
       ]
@@ -748,11 +749,17 @@ export default defineComponent({
       this._onHashChange = null
       // #endif
     },
-    /** 消费一次跨页过渡：Tab 指示器从上一项滑入，内容淡入 */
-    applyTabTransition() {
-      const transition = consumeLingyunTabTransition(this.activeTabKey)
-      this.tabbarFromKey = transition ? transition.fromKey : ''
-      this.tabEntering = !!transition
+    /** 消费一次换页过渡：Tab 指示器滑入，或左侧菜单换页后内容淡入 */
+    applyPageTransition() {
+      const tabTransition = consumeLingyunTabTransition(this.activeTabKey)
+      if (tabTransition) {
+        this.tabbarFromKey = tabTransition.fromKey
+        this.pageEntering = true
+        return
+      }
+      const navTransition = consumeLingyunNavTransition(this.effectivePagePath)
+      this.tabbarFromKey = ''
+      this.pageEntering = !!navTransition
     },
     onTabbarChange(item: { key?: string | number }) {
       const key = item && item.key != null ? String(item.key) : ''
@@ -1030,18 +1037,18 @@ export default defineComponent({
   height: 100%;
 }
 
-/* 一级 Tab 跨页：内容淡入；Tab 栏本身不移动 */
-.lingyun-app-page--tab-enter .lingyun-app-page__pad,
-.lingyun-app-page--tab-enter .lingyun-app-page__body {
-  animation: lingyun-app-page-tab-enter 0.24s cubic-bezier(0.32, 0.72, 0, 1) both;
+/* Tab / 左侧菜单换页：内容淡入；导航本身不移动 */
+.lingyun-app-page--page-enter .lingyun-app-page__pad,
+.lingyun-app-page--page-enter .lingyun-app-page__body {
+  animation: lingyun-app-page-enter 0.24s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
 /* bodyScroll=false 时 __body 已动画，避免内层 __pad 再叠一次 */
-.lingyun-app-page--tab-enter .lingyun-app-page__body .lingyun-app-page__pad {
+.lingyun-app-page--page-enter .lingyun-app-page__body .lingyun-app-page__pad {
   animation: none;
 }
 
-@keyframes lingyun-app-page-tab-enter {
+@keyframes lingyun-app-page-enter {
   from {
     opacity: 0;
     transform: translateY(6px);

@@ -27,6 +27,8 @@ H5 侧栏只挂一次，页面上的 `sections` 到不了它。全局菜单用 `
 
 数据源优先级：组件 `sections` > 全局 `setLingyunPageConfig({ tabs })` > `setLingyunPageNavSections`。使用全局 tabs 时不显示内置「首页」行；`badge` 渲染角标，`match` 让详情页继续高亮所属项。宽屏常驻导航仍是分组实底，不是浮动玻璃侧栏。
 
+切换页面时选中项背景做 200ms 过渡，右侧内容区淡入；小程序宽屏的常驻宿主切换同样适用。
+
 ## 属性
 
 | 属性 | 说明 | 默认值 |
