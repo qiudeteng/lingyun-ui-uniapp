@@ -22,7 +22,7 @@
             <lingyun-avatar
               v-else
               class="lingyun-page-nav__rail-avatar"
-              size="md"
+              size="lg"
               :src="profileAvatar && !avatarFailed ? profileAvatar : ''"
               :text="profileName || railBrand"
               @error="onAvatarError"
@@ -129,7 +129,7 @@
           :hover-stay-time="70"
           @click="onNavTap(navHome)"
         >
-          <lingyun-icon type="home" :size="railMode ? 24 : 22" color="var(--lingyun-label, #000)" />
+          <lingyun-icon type="home" :size="railMode ? 28 : 22" color="var(--lingyun-label, #000)" />
           <text class="lingyun-page-nav__label">首页</text>
         </view>
         <view
@@ -158,7 +158,7 @@
             <lingyun-icon
               v-else
               :type="item.icon || 'circle'"
-              :size="railMode ? 24 : 22"
+              :size="railMode ? 28 : 22"
               color="var(--lingyun-label, #000)"
             />
             <text class="lingyun-page-nav__label">{{ item.title }}</text>
@@ -251,6 +251,8 @@ export default defineComponent({
     },
     /** 顶部头像地址。有 #avatar 插槽时不用这张图。 */
     avatar: { type: String, default: '' },
+    /** 宿主已为导航预留的状态栏安全区；-1 表示由导航自己处理 */
+    hostSafeTop: { type: Number, default: -1 },
     /** 顶部名称。有 #name 插槽时不用这段文字。 */
     name: { type: String, default: '' },
     /** 顶部副标题。有 #subtitle 插槽时不用这段文字。 */
@@ -345,9 +347,10 @@ export default defineComponent({
       return !!getLingyunNavLayout(LINGYUN_TOOLBAR_BAR_DESIGN_PX).windowControls
     },
     navHeadStyle() {
-      /* 小程序补状态栏；窄栏再留 8px，让头像落在玻璃面板内 */
+      /* 宿主已按状态栏留安全区时这里不再重复；窄栏内部再留 8px */
       const railPad = this.railMode ? 8 : 0
-      return { paddingTop: `${this.statusBarPx + railPad}px` }
+      const status = this.hostSafeTop >= 0 ? 0 : this.statusBarPx
+      return { paddingTop: `${status + railPad}px` }
     },
     profile() {
       return getLingyunPageNavProfile()
@@ -1168,9 +1171,17 @@ export default defineComponent({
 }
 
 .lingyun-page-nav--rail .lingyun-page-nav__rail-avatar-slot {
-  width: 40px;
-  height: 40px;
+  width: 64px;
+  height: 64px;
   margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lingyun-page-nav--rail .lingyun-page-nav__rail-avatar-slot .lingyun-page-nav__slot {
+  width: 64px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1197,19 +1208,24 @@ export default defineComponent({
 
 .lingyun-page-nav--rail .lingyun-page-nav__section-title {
   padding: 10px 4px 2px;
-  font-size: 10px;
-  line-height: 13px;
+  font-size: 11px;
+  line-height: 16px;
   text-align: center;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
+.lingyun-page-nav--rail .lingyun-page-nav__glyph {
+  width: 28px;
+  height: 28px;
+}
+
 .lingyun-page-nav--rail .lingyun-page-nav__item {
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
-  min-height: 60px;
+  gap: 5px;
+  min-height: 68px;
   margin: 0 12px;
   padding: 6px 2px;
 }
@@ -1219,8 +1235,8 @@ export default defineComponent({
   margin-left: 0;
   margin-top: 2px;
   max-width: 100%;
-  font-size: 11px;
-  line-height: 14px;
+  font-size: 13px;
+  line-height: 18px;
   text-align: center;
 }
 

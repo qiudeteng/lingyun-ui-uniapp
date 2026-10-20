@@ -3,7 +3,7 @@
     <!-- 小程序宽屏侧栏留在页面里。H5 由 lingyunUi 挂到 body，避免换页拆掉侧栏。 -->
     <!-- #ifndef H5 -->
     <view v-if="!embedded && showPageNav" class="lingyun-app-page__nav">
-      <lingyun-page-nav :sections="navSections">
+      <lingyun-page-nav :sections="navSections" :host-safe-top="statusBarPx">
         <template v-if="$slots['nav-avatar']" #avatar>
           <slot name="nav-avatar" />
         </template>
@@ -546,6 +546,7 @@ export default defineComponent({
         '--lingyun-app-page-bar': `${this.toolbarStackPx}px`,
         '--lingyun-app-page-inset-top': this.insetTop,
         '--lingyun-page-nav-width': `${navWidth}px`,
+        '--lingyun-page-nav-safe-top': `${this.statusBarPx}px`,
         '--lingyun-app-page-inset-right': this.isDuoSplit
           ? `${LINGYUN_DUO_RAIL_WIDTH}px`
           : this.duoRailVisible
@@ -1277,6 +1278,9 @@ export default defineComponent({
   z-index: 90;
   width: var(--lingyun-page-nav-width, 220px);
   height: 100%;
+  box-sizing: border-box;
+  /* 窄栏/完整目录都从状态栏下方开始，安全区加在整列外部 */
+  padding-top: var(--lingyun-page-nav-safe-top, 0px);
 }
 
 /*
