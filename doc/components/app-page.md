@@ -81,6 +81,7 @@ setLingyunPageConfig({
 ```
 
 - 选中态从当前路由推导；详情页可用 `match` 归入某个 Tab。
+- PC（≥1200）由全局 tabs 驱动时，左侧导航收窄到 **84**，图标在上、文字在下；平板档（690–1199）保持 **220** 完整列表。
 - 优先级：props > `pages[path]` 页面覆盖 > `layout` > 宽度自动规则。
 - 窄屏点击 `reLaunch`；微信宽屏优先走 `openLingyunHostedPage`，不增加页面栈。
 - 壳自动为底部 Tab 留白，写入 `--lingyun-app-page-inset-bottom` 与 `LINGYUN_APP_PAGE_BOTTOM_INSET`。页面不要再手写 `padding-bottom`；已有手写值时设 `:auto-bottom-inset="false"`。

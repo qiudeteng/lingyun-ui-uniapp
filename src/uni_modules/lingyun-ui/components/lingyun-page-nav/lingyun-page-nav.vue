@@ -1,13 +1,16 @@
 <template>
-  <view class="lingyun-page-nav" :class="themeRootClass">
+  <view
+    class="lingyun-page-nav"
+    :class="[themeRootClass, { 'lingyun-page-nav--rail': railMode }]"
+  >
     <view class="lingyun-page-nav__head" :style="navHeadStyle">
       <view class="lingyun-page-nav__bar" :style="navBarStyle">
-        <view v-if="windowControls" class="lingyun-page-nav__windows" aria-hidden="true">
+        <view v-if="windowControls && !railMode" class="lingyun-page-nav__windows" aria-hidden="true">
           <view class="lingyun-page-nav__window lingyun-page-nav__window--close" />
           <view class="lingyun-page-nav__window lingyun-page-nav__window--min" />
           <view class="lingyun-page-nav__window lingyun-page-nav__window--zoom" />
         </view>
-        <view v-if="showProfile" class="lingyun-page-nav__profile">
+        <view v-if="railMode ? showAvatar : showProfile" class="lingyun-page-nav__profile">
           <view
             v-if="showAvatar"
             class="lingyun-page-nav__avatar"
@@ -27,7 +30,7 @@
             <view v-if="useAvatarSlot" id="ly-nav-slot-avatar" class="lingyun-page-nav__slot" />
             <!-- #endif -->
           </view>
-          <view class="lingyun-page-nav__meta">
+          <view v-if="!railMode" class="lingyun-page-nav__meta">
             <view
               v-if="showName"
               class="lingyun-page-nav__name"
@@ -56,9 +59,10 @@
             </view>
           </view>
         </view>
+        <text v-else-if="railMode" class="lingyun-page-nav__rail-brand">{{ railBrand }}</text>
         <text v-else class="lingyun-page-nav__title">凌云UI</text>
       </view>
-      <view v-if="showStorePicker" class="lingyun-page-nav__store">
+      <view v-if="showStorePicker && !railMode" class="lingyun-page-nav__store">
         <lingyun-picker
           class="lingyun-page-nav__store-picker"
           :model-value="storeIndex"
@@ -109,7 +113,7 @@
           :hover-stay-time="70"
           @click="onNavTap(navHome)"
         >
-          <lingyun-icon type="home" :size="22" color="var(--lingyun-label, #000)" />
+          <lingyun-icon type="home" :size="railMode ? 24 : 22" color="var(--lingyun-label, #000)" />
           <text class="lingyun-page-nav__label">首页</text>
         </view>
         <view
@@ -138,7 +142,7 @@
             <lingyun-icon
               v-else
               :type="item.icon || 'circle'"
-              :size="22"
+              :size="railMode ? 24 : 22"
               color="var(--lingyun-label, #000)"
             />
             <text class="lingyun-page-nav__label">{{ item.title }}</text>
@@ -180,6 +184,7 @@ import {
   getLingyunPageNavStoreName,
   getLingyunPageNavStoreOptions,
   isLingyunPageNavLoggedIn,
+  lingyunPageNavRail,
   normalizeLingyunPagePath,
   openLingyunHostedPage,
   resolveLingyunPageUrl,
@@ -293,6 +298,14 @@ export default defineComponent({
         return 'theme-light'
       }
     },
+    /** 由 lingyun-app-page 统一决定：PC + 全局 tabs 时窄栏 */
+    railMode(): boolean {
+      return lingyunPageNavRail.value
+    },
+    railBrand(): string {
+      const name = (this.profileName || '').trim()
+      return name ? name.slice(0, 1) : '凌'
+    },
     pageNavSections(): LingyunPageNavSection[] {
       if (Array.isArray(this.sections)) return this.sections
       const config = getLingyunPageConfig()
@@ -387,6 +400,14 @@ export default defineComponent({
   watch: {
     profileAvatar() {
       this.avatarFailed = false
+    },
+    railMode: {
+      immediate: true,
+      handler() {
+        this.$nextTick(() => {
+          setTimeout(() => this.syncIndicator(false), 30)
+        })
+      },
     },
     currentPath() {
       this.syncIndicator(true)
@@ -598,7 +619,7 @@ export default defineComponent({
       return ''
     },
     /** 选中胶囊：首次落位不动画，之后上下滑动 */
-    syncIndicator(animate = true): void {
+    syncIndicator(animate = true, retry = 0): void {
       if (!this._navMounted) return
       const url = this.selectedNavUrl()
       if (!url) {
@@ -617,7 +638,13 @@ export default defineComponent({
           .exec((res) => {
             const body = res && res[0]
             const item = res && res[1]
-            if (!body || !item || !item.height) return
+            if (!body || !item || !item.height) {
+              /* H5 宿主初始 display:none，等侧栏显示后再测量 */
+              if (retry < 10) {
+                setTimeout(() => this.syncIndicator(animate, retry + 1), 50)
+              }
+              return
+            }
             this.indicatorTop = item.top - body.top
             this.indicatorHeight = item.height
             if (!this.indicatorVisible) {
@@ -1074,5 +1101,84 @@ export default defineComponent({
   margin-left: 8px;
   display: flex;
   align-items: center;
+}
+
+/* 全局 tabs 驱动的窄侧栏：图标在上、文字在下 */
+.lingyun-page-nav--rail .lingyun-page-nav__head {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.lingyun-page-nav--rail .lingyun-page-nav__bar {
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.lingyun-page-nav--rail .lingyun-page-nav__profile {
+  flex: none;
+  width: 100%;
+  justify-content: center;
+  gap: 0;
+}
+
+.lingyun-page-nav--rail .lingyun-page-nav__avatar {
+  margin: 0 auto;
+}
+
+.lingyun-page-nav--rail .lingyun-page-nav__rail-brand {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 22px;
+  text-align: center;
+  color: var(--lingyun-label, #{$lingyun-label});
+}
+
+.lingyun-page-nav--rail .lingyun-page-nav__section {
+  padding: 2px 0 6px;
+}
+
+.lingyun-page-nav--rail .lingyun-page-nav__section-title {
+  padding: 10px 4px 2px;
+  font-size: 10px;
+  line-height: 13px;
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.lingyun-page-nav--rail .lingyun-page-nav__item {
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-height: 60px;
+  margin: 0 6px;
+  padding: 6px 2px;
+}
+
+.lingyun-page-nav--rail .lingyun-page-nav__label {
+  flex: none;
+  margin-left: 0;
+  margin-top: 2px;
+  max-width: 100%;
+  font-size: 11px;
+  line-height: 14px;
+  text-align: center;
+}
+
+.lingyun-page-nav--rail .lingyun-page-nav__badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  margin-left: 0;
+}
+
+.lingyun-page-nav--rail .lingyun-page-nav__indicator {
+  left: 6px;
+  right: 6px;
 }
 </style>

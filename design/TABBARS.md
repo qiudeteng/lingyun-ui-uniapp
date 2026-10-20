@@ -111,7 +111,7 @@
 `lingyun-app-page` 配置全局 `tabs` 后：
 
 - 窗口宽度 **< 690**：显示底部 Tab；页面壳自动为内容加底部留白（`safeArea` 时 **99**，否则 **78**），并写入 `--lingyun-app-page-inset-bottom`。
-- 窗口宽度 **≥ 690**：Tab 隐藏，导航切到左侧停靠列（分组实底，见 `SIDEBARS.md` §4）。
+- 窗口宽度 **≥ 690**：Tab 隐藏，导航切到左侧停靠列（分组实底，见 `SIDEBARS.md` §4）。PC（≥1200）由全局 tabs 驱动时该列收窄为 **84**，图标在上、文字在下；平板档与完整目录仍为 220。
 - `--fill` 断点为 **689**，与 690 宽屏门槛严格互斥；iPad 及以上整组居中、不拉满。
 - 使用 `lingyun-goods-nav` / `lingyun-search-bar` 的页面配置 `pages[path].hideTabbar = true`，不要叠两层底栏。
 - 切换过渡：底部 Tab 指示器按 Tab 顺序左右滑动，左侧菜单选中胶囊按菜单顺序上下滑动；内容区保持淡入，Tab 栏和侧栏本身不移动。

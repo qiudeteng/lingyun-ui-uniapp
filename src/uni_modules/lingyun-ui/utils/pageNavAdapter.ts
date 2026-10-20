@@ -2,8 +2,17 @@ import { ref, type Ref } from 'vue'
 import type { LingyunPageBadge } from './pageLayout'
 
 export const LINGYUN_PAGE_NAV_WIDTH = 220
+/** 全局 tabs 驱动的窄侧栏：图标在上、文字在下 */
+export const LINGYUN_PAGE_NAV_RAIL_WIDTH = 84
 export const LINGYUN_PAGE_NAV_HOME = '/pages/index/index'
 export const LINGYUN_PAGE_NAV_GUEST_HOME = '/pages/demo/demo'
+
+/** H5 常驻侧栏宿主据此切换宽度；页面内导航直接读组件 computed */
+export const lingyunPageNavRail = ref(false)
+
+export function setLingyunPageNavRail(value: boolean): void {
+  lingyunPageNavRail.value = !!value
+}
 
 export interface LingyunPageNavItem {
   title: string

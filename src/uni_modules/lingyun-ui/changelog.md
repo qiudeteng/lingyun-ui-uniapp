@@ -2,6 +2,7 @@
 - `lingyun-app-page` 支持数据驱动的一级导航：`setLingyunPageConfig({ tabs })` 一次配置，窄屏渲染底部 Tab、宽屏渲染左侧停靠导航，默认按窗口宽度 690 切换。
 - 新增页面级覆盖 `pages[path].hideTabbar / hideNav / navMode`，以及 props `nav-mode / show-tabbar / auto-bottom-inset`。
 - 新增 `--lingyun-app-page-inset-bottom` 与 `LINGYUN_APP_PAGE_BOTTOM_INSET`：三种滚动模式自动为底部 Tab 留白；`lingyun-fab` 自动上移避开 Tab 栏。
+- PC（≥1200）由全局 tabs 驱动的左侧导航改为 **84** 窄栏：图标在上、文字在下，选中胶囊上下滑动；平板档（690–1199）与完整目录保持 220。
 - `lingyun-tabbars` 新增 `iconMode="icon"`（用 `lingyun-icon` 渲染图标）、`fallbackFirst`（无匹配项时是否高亮第一项）与 `fromKey`（跨页时指示器从上一项滑入）；`--fill` 断点由 743 对齐到 689，修复窄屏 Tab 整体右移。
 - `lingyun-app-page` 一级 Tab 切换增加内容淡入过渡；`reLaunch` 换页时 Tab 指示器从上一项滑入，避免动画丢失。左侧菜单选中胶囊在菜单项之间上下滑动，内容区淡入。
 - `lingyun-page-nav` 可由全局 tabs 驱动，支持 `badge` 角标与 `match` 详情页高亮；使用全局 tabs 时隐藏内置「首页」行。

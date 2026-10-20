@@ -1,6 +1,12 @@
-import { h, render, type App, type AppContext } from 'vue'
+import { h, render, watch, type App, type AppContext } from 'vue'
 import LingyunPageNav from './lingyun-page-nav.vue'
-import { LINGYUN_PAGE_NAV_WIDTH } from '../../utils/pageNavAdapter'
+import {
+  LINGYUN_PAGE_NAV_RAIL_WIDTH,
+  LINGYUN_PAGE_NAV_WIDTH,
+  lingyunPageNavRail,
+} from '../../utils/pageNavAdapter'
+import { getLingyunPageConfig } from '../../utils/pageConfig'
+import { LINGYUN_SCREEN_PC_MIN } from '../../utils/screenResolve'
 import { LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH } from '../lingyun-toolbars/getLingyunNavSafeInset'
 
 let booted = false
@@ -47,11 +53,22 @@ function mountHost(appContext: AppContext): void {
   host.style.top = '0'
   host.style.bottom = '0'
   host.style.left = '0'
-  host.style.width = `${LINGYUN_PAGE_NAV_WIDTH}px`
   host.style.zIndex = '90'
   host.style.display = 'none'
   host.style.flexDirection = 'column'
   document.body.appendChild(host)
+
+  const applyWidth = (): void => {
+    host.style.width = `${
+      lingyunPageNavRail.value ? LINGYUN_PAGE_NAV_RAIL_WIDTH : LINGYUN_PAGE_NAV_WIDTH
+    }px`
+  }
+  /* 宿主比组件更早创建，先按 PC + 全局 tabs 判断一次，避免首帧宽度闪一下 */
+  lingyunPageNavRail.value =
+    window.innerWidth >= LINGYUN_SCREEN_PC_MIN &&
+    (getLingyunPageConfig().tabs || []).length > 0
+  applyWidth()
+  watch(lingyunPageNavRail, applyWidth)
 
   const vnode = h(LingyunPageNav)
   vnode.appContext = appContext

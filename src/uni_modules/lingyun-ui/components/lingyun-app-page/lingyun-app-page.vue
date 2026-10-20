@@ -151,6 +151,7 @@ import {
 } from '../lingyun-toolbars/getLingyunNavSafeInset'
 import { useLingyunTheme } from '../../utils/theme'
 import {
+  LINGYUN_PAGE_NAV_RAIL_WIDTH,
   LINGYUN_PAGE_NAV_WIDTH,
   claimLingyunPageNavHeaderSlots,
   clearLingyunPageNavIntent,
@@ -166,6 +167,7 @@ import {
   releaseLingyunPageNavHeaderSlots,
   resolveLingyunPageUrl,
   setLingyunPageNavIntent,
+  setLingyunPageNavRail,
   subscribeLingyunPageRoute,
   useLingyunHostedPath,
   useLingyunPageNavIntent,
@@ -187,6 +189,7 @@ import {
   consumeLingyunTabTransition,
 } from '../../utils/tabTransition'
 import { consumeLingyunNavTransition } from '../../utils/navTransition'
+import { LINGYUN_SCREEN_PC_MIN } from '../../utils/screenResolve'
 // #ifdef H5
 import { setLingyunH5PageNavAllowed } from '../lingyun-page-nav/mountLingyunPageNav'
 // #endif
@@ -415,6 +418,12 @@ export default defineComponent({
     autoBottomInset() {
       this.applyPageLayout()
     },
+    pageNavRail: {
+      immediate: true,
+      handler(value: boolean) {
+        setLingyunPageNavRail(value)
+      },
+    },
     usePageScroll(enabled: boolean) {
       this.$nextTick(() => {
         if (enabled) this.setupGlassObserver()
@@ -439,7 +448,7 @@ export default defineComponent({
       return h
     },
     pageVars() {
-      const navWidth = this.navDocked ? LINGYUN_PAGE_NAV_WIDTH : 0
+      const navWidth = this.pageNavWidth
       return {
         '--lingyun-app-page-bar': `${this.toolbarStackPx}px`,
         '--lingyun-app-page-inset-top': this.insetTop,
@@ -524,6 +533,23 @@ export default defineComponent({
     /** 宽屏需要为顶栏让出左侧。H5 的列在 body 上，这里只留宽度。 */
     navDocked() {
       return !this.embedded && this.pageLayout.sidebarVisible
+    },
+    /** 全局 tabs 驱动且到 PC 档时用窄栏；平板与显式目录保持 220 */
+    pageNavRail() {
+      if (!this.navDocked) return false
+      if (this.windowWidth < LINGYUN_SCREEN_PC_MIN) return false
+      // #ifdef H5
+      /* H5 侧栏是 body 上的单例，页面级 navSections 到不了它 */
+      return (this.pageConfig.tabs || []).length > 0
+      // #endif
+      // #ifndef H5
+      if (Array.isArray(this.navSections)) return false
+      return (this.pageConfig.tabs || []).length > 0
+      // #endif
+    },
+    pageNavWidth() {
+      if (!this.navDocked) return 0
+      return this.pageNavRail ? LINGYUN_PAGE_NAV_RAIL_WIDTH : LINGYUN_PAGE_NAV_WIDTH
     },
     /** 未登录的受保护页先藏起来，避免冷启动先画出首页和侧栏再跳登录 */
     authHold() {
@@ -703,7 +729,7 @@ export default defineComponent({
     },
     applyPageLayout() {
       if (this.embedded) return
-      this.navInsetPx = this.navDocked ? LINGYUN_PAGE_NAV_WIDTH : 0
+      this.navInsetPx = this.pageNavWidth
       this.bottomInsetPx = this.pageLayout.bottomInsetPx
       this.syncH5PageNavHost()
     },
