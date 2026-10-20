@@ -1276,15 +1276,16 @@ export default defineComponent({
   height: 100%;
 }
 
-/* Tab / 左侧菜单换页：内容淡入；Tab 栏和侧栏本身不移动 */
-.lingyun-app-page--page-enter .lingyun-app-page__pad,
-.lingyun-app-page--page-enter .lingyun-app-page__body {
+/*
+ * 换页过渡只淡入内容块：背景色（含左侧安全区）保持稳定，不参与渐变。
+ * H5 首子内容块为 uni-view / div；微信为 view。
+ * 微信自定义组件节点不参与，避免整页背景跟着闪烁。
+ */
+.lingyun-app-page--page-enter .lingyun-app-page__pad > view:first-child > view,
+.lingyun-app-page--page-enter .lingyun-app-page__pad > uni-view:first-child > uni-view,
+.lingyun-app-page--page-enter .lingyun-app-page__pad > uni-view:first-child > div,
+.lingyun-app-page--page-enter .lingyun-app-page__pad > div:first-child > div {
   animation: lingyun-app-page-enter 0.24s ease both;
-}
-
-/* bodyScroll=false 时 __body 已动画，避免内层 __pad 再叠一次 */
-.lingyun-app-page--page-enter .lingyun-app-page__body .lingyun-app-page__pad {
-  animation: none;
 }
 
 @keyframes lingyun-app-page-enter {
