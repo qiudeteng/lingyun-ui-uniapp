@@ -114,6 +114,7 @@ type LensRect = {
  * @property {String|Number} modelValue / value 当前选中 key
  * @property {String} variant = [default|prominent] Sketch：Default / Prominent Tab
  * @property {String} iconMode = [text|icon] text 直接显示字形；icon 用 lingyun-icon 渲染
+ * @property {Boolean} fallbackFirst 无匹配项时高亮第一项（默认 true）
  * @property {Boolean} safeArea 预留底部 Home Indicator（默认 true）
  * @property {Boolean} fixed 固定底部悬浮（默认 true）
  * @event {Function} change / update:modelValue
@@ -169,6 +170,11 @@ export default defineComponent({
     iconMode: {
       type: String,
       default: 'text',
+    },
+    /** 没有匹配项时是否把第一项当作选中；页面壳自动导航传 false */
+    fallbackFirst: {
+      type: Boolean,
+      default: true,
     },
     safeArea: {
       type: Boolean,
@@ -424,7 +430,7 @@ export default defineComponent({
     isActive(item: TabItem | null | undefined) {
       if (!item) return false
       if (this.current === undefined || this.current === null || this.current === '') {
-        return this.mainItems[0] && this.mainItems[0].key === item.key
+        return this.fallbackFirst && this.mainItems[0] && this.mainItems[0].key === item.key
       }
       return String(this.current) === String(item.key)
     },

@@ -115,6 +115,7 @@
       :model-value="activeTabKey"
       :safe-area="tabbarSafeArea"
       :variant="tabbarVariant"
+      :fallback-first="false"
       icon-mode="icon"
       :fixed="true"
       @change="onTabbarChange"

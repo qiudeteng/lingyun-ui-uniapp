@@ -1,5 +1,9 @@
 import { toRef } from 'vue'
-import { configureLingyunPageNav } from '@/uni_modules/lingyun-ui'
+import {
+  configureLingyunPageNav,
+  setLingyunPageConfig,
+} from '@/uni_modules/lingyun-ui'
+import { DEMO_PAGE_CONFIG } from './pageTabs'
 import router from '@/router'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
@@ -56,4 +60,5 @@ export function configureLingyunUi(): void {
     onRouteChange: (cb) => router.onRouteChange((to) => cb(to.path)),
     useHostedPath: () => toRef(pageHostState, 'path'),
   })
+  setLingyunPageConfig(DEMO_PAGE_CONFIG)
 }
