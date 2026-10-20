@@ -54,8 +54,37 @@
 | `pageScroll` | 页面级滚动。有输入框时必须保持 true | true |
 | `showNav` | 宽屏（窗口 ≥ 690）是否显示左侧导航 | true |
 | `showToolbar` | 是否显示头部顶栏。关掉后不再预留顶栏高度 | true |
-| `navSections` | 只覆盖当前页的微信内嵌列。H5 常驻侧栏和首页列表用 `setLingyunPageNavSections`。组件演示列表是 `/pages/demo/demo` | null |
+| `navSections` | 显式分组目录，优先级高于全局 tabs 与宿主目录。只影响当前这次渲染；H5 常驻侧栏请用 `setLingyunPageConfig` 或 `setLingyunPageNavSections` | null |
+| `showTabbar` | 全局 tabs 的底部 Tab 栏。`auto` 时窄屏显示；显式 `false` 永远隐藏 | auto |
+| `navMode` | `auto / tabbar / sidebar / none`。页面级最高优先 | auto |
+| `autoBottomInset` | 自动为底部 Tab 留白。关掉后组件不再加 padding，但 CSS 变量与注入仍给出真实值 | true |
 | `glassDistance` | 滚动多少 px 后顶栏玻璃铺满 | 56 |
+
+## 一级导航（数据驱动）
+
+一次配置，窄屏渲染底部玻璃 Tab，宽屏（≥690）渲染左侧停靠导航：
+
+```ts
+import { setLingyunPageConfig } from '@/uni_modules/lingyun-ui'
+
+setLingyunPageConfig({
+  tabs: [
+    { key: 'home', text: '首页', icon: 'home', url: '/pages/index/index' },
+    { key: 'orders', text: '订单', icon: 'list', url: '/pages/orders/orders', badge: 3 },
+  ],
+  sidebarTitle: '主导航',
+  layout: { navMode: 'auto' },
+  pages: {
+    '/pages/login/login': { hideTabbar: true, hideNav: true },
+  },
+})
+```
+
+- 选中态从当前路由推导；详情页可用 `match` 归入某个 Tab。
+- 优先级：props > `pages[path]` 页面覆盖 > `layout` > 宽度自动规则。
+- 窄屏点击 `reLaunch`；微信宽屏优先走 `openLingyunHostedPage`，不增加页面栈。
+- 壳自动为底部 Tab 留白，写入 `--lingyun-app-page-inset-bottom` 与 `LINGYUN_APP_PAGE_BOTTOM_INSET`。页面不要再手写 `padding-bottom`；已有手写值时设 `:auto-bottom-inset="false"`。
+- 带商品底栏 / 底部搜索条的页面请配置 `pages[path].hideTabbar = true`。
 
 不传左栏顶部插槽、也不调用 `setLingyunPageNavProfile` 时，宽屏左栏显示「凌云UI」和介绍「一套对齐 Apple Liquid Glass 的 uni-app 多端组件库」。传入自定义名称且不传副标题时，不显示这句介绍。
 
@@ -78,5 +107,6 @@ H5 侧栏在页面外面，这三个插槽会送进那一列。微信小程序�
 | `back` | 点返回 |
 | `close` | 点关闭 |
 | `trailing` | 点右侧按钮 |
+| `tab-change` | 点底部 Tab，参数 `{ key, tab }` |
 
 含文本输入的页面不要设 `:page-scroll="false"`。横向滑动行需要锁竖向滚动时才关。

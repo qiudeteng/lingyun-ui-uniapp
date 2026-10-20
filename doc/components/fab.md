@@ -28,6 +28,9 @@
 | `icon` | 主钮图标 | plusempty |
 | `safeArea` | 避开底部安全区 | true |
 | `closeOnSelect` | 选中后收起 | true |
+
+在 `lingyun-app-page` 内且底部一级 Tab 可见时，`vertical="bottom"` 会自动上移，浮在 Tab 栏之上（注入 `LINGYUN_APP_PAGE_BOTTOM_INSET`，无需页面手算）。
+
 ## 事件
 
 | 事件 | 说明 |

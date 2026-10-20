@@ -25,11 +25,13 @@ setLingyunPageNavProfile({
 
 H5 侧栏只挂一次，页面上的 `sections` 到不了它。全局菜单用 `setLingyunPageNavSections`，首页列表读的是同一份。组件演示列表是 `/pages/demo/demo`，不读这份运行时菜单。
 
+数据源优先级：组件 `sections` > 全局 `setLingyunPageConfig({ tabs })` > `setLingyunPageNavSections`。使用全局 tabs 时不显示内置「首页」行；`badge` 渲染角标，`match` 让详情页继续高亮所属项。宽屏常驻导航仍是分组实底，不是浮动玻璃侧栏。
+
 ## 属性
 
 | 属性 | 说明 | 默认值 |
 | --- | --- | --- |
-| `sections` | 分组目录。每组 `{ title, items: [{ title, url, note, icon }] }`。只影响当前这次渲染；H5 常驻侧栏请用 `setLingyunPageNavSections` | 默认目录 |
+| `sections` | 分组目录。每组 `{ title, items: [{ title, url, note, icon, badge, match }] }`。显式传入时优先级最高；只影响当前这次渲染。H5 常驻侧栏请用 `setLingyunPageConfig` 或 `setLingyunPageNavSections` | 默认目录 |
 | `avatar` | 顶部头像地址。有头像插槽时不用这张图 | '' |
 | `name` | 顶部名称。有名称插槽时不用这段文字 | 凌云UI |
 | `subtitle` | 顶部副标题。有副标题插槽时不用这段文字。传入自定义名称且不传副标题时，不显示默认介绍 | 一套对齐 Apple Liquid Glass 的 uni-app 多端组件库 |

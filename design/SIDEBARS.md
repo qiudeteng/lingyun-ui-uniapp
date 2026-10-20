@@ -108,6 +108,7 @@ const sections = [
 | `setLingyunPageNavProfile({ avatar, name, subtitle })` | 全局默认头像、名称、副标题。插槽盖过对应的一项 |
 | `useUserStore().selectStore(id)` | 切换当前门店。`storeId`、`storeInfo`、`storeName` 同步更新 |
 | `setLingyunPageNavSections` | 全局菜单。H5 侧栏与首页目录都读这份 |
+| `setLingyunPageConfig({ tabs })` | 全局一级导航。窄屏同一份数据渲染底部 Tab，宽屏渲染这一列；优先级高于 `setLingyunPageNavSections`。支持 `badge` 与 `match`，使用时隐藏内置「首页」行 |
 | `:nav-sections` | 只覆盖当前页的微信内嵌列 |
 
 - [ ] 有门店时：圆角矩形头像 + 标题，标题下是用户类型；门店胶囊浅色 Gray 5、暗黑 Gray 5，文字为 Label

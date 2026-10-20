@@ -19,13 +19,17 @@
 
 | 属性 | 说明 | 默认值 |
 | --- | --- | --- |
-| `items` | 项：`{ key, text, icon, role }`。`role: search` 为搜索钮 | [] |
+| `items` | 项：`{ key, text, icon, badge, role }`。`role: search` 为搜索钮；`badge` 支持数字 / 文本 / `{ text, color, dot, max }` | [] |
 | `modelValue` | 当前 key | — |
 | `variant` | 外观 | default |
-| `safeArea` | 底部安全区 | true |
+| `iconMode` | `text` 直接显示 `icon` 字形；`icon` 用 `lingyun-icon` 渲染 | text |
+| `safeArea` | 底部安全区。开启时整条高 99，关闭时 78 | true |
 | `fixed` | 固定在底部 | true |
 ## 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `update:modelValue` | 切换项 |
+| `change` | 切换项，参数为完整 item |
+
+在 `lingyun-app-page` 内使用时，页面壳会自动为 Tab 栏留出底部空间，并随窗口宽度在 Tab 与左侧导航之间切换。窄屏 `--fill` 断点为 **689**，与页面壳的 **690** 宽屏门槛互斥。

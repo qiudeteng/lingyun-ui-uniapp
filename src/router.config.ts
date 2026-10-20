@@ -96,6 +96,11 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Mobile / PC' }
 	},
 	{
+		path: '/pages/demo/app-page',
+		name: 'pagesDemoAppPage',
+		meta: { title: 'App Page' }
+	},
+	{
 		path: '/pages/demo/layout',
 		name: 'pagesDemoLayout',
 		meta: { title: 'Layout' }

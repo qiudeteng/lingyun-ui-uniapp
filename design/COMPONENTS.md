@@ -50,7 +50,7 @@
 | ✅ | `lingyun-goods-nav` | 商品底栏（对齐 uni-goods-nav） | [`GOODS_NAV.md`](./GOODS_NAV.md) |
 | ✅ | `lingyun-grid` / `lingyun-grid-item` | 宫格（对齐 uni-grid） | [`GRID.md`](./GRID.md) |
 | ✅ | `lingyun-indexed-list` | 索引列表（对齐 uni-indexed-list） | [`INDEXED_LIST.md`](./INDEXED_LIST.md) |
-| ✅ | `lingyun-app-page` | 页面壳（顶栏 + 滚动 + 主题 class；宽屏左侧导航，顶部可带头像 / 名称 / 副标题） | [`TOOLBARS.md`](./TOOLBARS.md) · [`SIDEBARS.md`](./SIDEBARS.md) §4 |
+| ✅ | `lingyun-app-page` | 页面壳（顶栏 + 滚动 + 主题 class；宽屏左侧导航，顶部可带头像 / 名称 / 副标题）。1.0.30 起支持全局 `tabs` 数据驱动：窄屏底部 Tab、宽屏左侧导航自动切换 | [`TOOLBARS.md`](./TOOLBARS.md) · [`SIDEBARS.md`](./SIDEBARS.md) §4 · [`TABBARS.md`](./TABBARS.md) §3.1 |
 | ✅ | `lingyun-mobile` / `lingyun-pc` | 窄屏与平板、电脑分开展示。宽度小于 690 / 达到 690 | demo [`responsive`](../src/pages/demo/responsive.vue) |
 | ✅ | `lingyun-row` / `lingyun-col` | 24 分栏。间隔、偏移、对齐、五档响应式 | demo [`layout`](../src/pages/demo/layout.vue) |
 | ✅ | `lingyun-section` | Demo / 区块布局容器 | demo [`sections`](../src/pages/demo/sections.vue) |
@@ -117,6 +117,7 @@
 
 | 日期 | 说明 |
 |------|------|
+| 2026-10-20 | 凌云UI 1.0.30：`lingyun-app-page` 支持全局 `tabs` 数据驱动，窄屏底部 Tab / 宽屏左侧导航自动切换；自动底部留白与安全区；`lingyun-tabbars` 支持 `iconMode` |
 | 2026-10-16 | 图表：新增地图 Demo / 文档（`type="map"`，省级简图） |
 | 2026-10-15 | 凌云UI 1.0.26：Alert 支持 JS 调用 `uni.showLingyunAlert`；Popover 箭头定位重做、与面板融为一体，新增 `anchor`；表格宽屏筛选改为 Popover，分组可收起，加载遮罩覆盖整表 |
 | 2026-10-15 | 图表 1.0.9：新增堆积图 `stack`（柱状原生；折线/曲线累加示例） |

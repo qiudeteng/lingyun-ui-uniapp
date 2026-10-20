@@ -94,6 +94,7 @@
     >
       <view class="lingyun-page-nav__body">
         <view
+          v-if="showHome"
           class="lingyun-page-nav__item"
           :class="{ 'lingyun-page-nav__item--selected': isNavCurrent(navHome) }"
           hover-class="lingyun-page-nav__item--hover"
@@ -114,7 +115,7 @@
             v-for="(item, itemIndex) in section.items"
             :key="item.url + '-' + itemIndex"
             class="lingyun-page-nav__item"
-            :class="{ 'lingyun-page-nav__item--selected': isNavCurrent(item.url) }"
+            :class="{ 'lingyun-page-nav__item--selected': isNavItemCurrent(item) }"
             hover-class="lingyun-page-nav__item--hover"
             :hover-start-time="20"
             :hover-stay-time="70"
@@ -133,6 +134,14 @@
               color="var(--lingyun-label, #000)"
             />
             <text class="lingyun-page-nav__label">{{ item.title }}</text>
+            <view v-if="hasItemBadge(item)" class="lingyun-page-nav__badge">
+              <lingyun-badge
+                :text="itemBadgeText(item)"
+                :color="itemBadgeColor(item)"
+                :dot="itemBadgeDot(item)"
+                :max="itemBadgeMax(item)"
+              />
+            </view>
           </view>
         </view>
       </view>
@@ -170,8 +179,13 @@ import {
   setLingyunPageNavIntent,
   setLingyunPageNavScrollTop,
   useLingyunPageNavIntent,
+  type LingyunPageNavItem,
   type LingyunPageNavSection,
 } from '../../utils/pageNavAdapter'
+import {
+  buildLingyunPageTabSections,
+  getLingyunPageConfig,
+} from '../../utils/pageConfig'
 import { LINGYUN_APP_PAGE_SCROLL_LOCKED } from '../lingyun-app-page/useLingyunAppPageScroll'
 
 type NavPage = {
@@ -256,7 +270,18 @@ export default defineComponent({
       }
     },
     pageNavSections(): LingyunPageNavSection[] {
-      return Array.isArray(this.sections) ? this.sections : getLingyunPageNavSections()
+      if (Array.isArray(this.sections)) return this.sections
+      const config = getLingyunPageConfig()
+      if (config.tabs && config.tabs.length) {
+        return buildLingyunPageTabSections(config.tabs, config.sidebarTitle || '')
+      }
+      return getLingyunPageNavSections()
+    },
+    /** 全局一级导航已包含首页时，不再渲染内置「首页」行 */
+    showHome(): boolean {
+      if (Array.isArray(this.sections)) return true
+      const config = getLingyunPageConfig()
+      return !(config.tabs && config.tabs.length)
     },
     windowControls() {
       return !!getLingyunNavLayout(LINGYUN_TOOLBAR_BAR_DESIGN_PX).windowControls
@@ -521,6 +546,35 @@ export default defineComponent({
     isNavCurrent(url: string) {
       const selected = getLingyunHostedPath() || this.currentPath
       return normalizeLingyunPagePath(url) === selected
+    },
+    isNavItemCurrent(item: LingyunPageNavItem) {
+      if (this.isNavCurrent(item.url)) return true
+      const selected = normalizeLingyunPagePath(getLingyunHostedPath() || this.currentPath)
+      const matches = Array.isArray(item.match) ? item.match : item.match ? [item.match] : []
+      return matches.some((match) => normalizeLingyunPagePath(match) === selected)
+    },
+    hasItemBadge(item: LingyunPageNavItem): boolean {
+      const badge = item.badge
+      return badge !== undefined && badge !== null && badge !== false && badge !== ''
+    },
+    itemBadgeText(item: LingyunPageNavItem): string | number {
+      const badge = item.badge
+      if (badge && typeof badge === 'object') {
+        return badge.text != null ? badge.text : ''
+      }
+      return typeof badge === 'boolean' ? '' : (badge ?? '')
+    },
+    itemBadgeColor(item: LingyunPageNavItem): string | undefined {
+      const badge = item.badge
+      return badge && typeof badge === 'object' ? badge.color : undefined
+    },
+    itemBadgeDot(item: LingyunPageNavItem): boolean {
+      const badge = item.badge
+      return badge === true || (!!badge && typeof badge === 'object' && !!badge.dot)
+    },
+    itemBadgeMax(item: LingyunPageNavItem): number | string | undefined {
+      const badge = item.badge
+      return badge && typeof badge === 'object' ? badge.max : undefined
     },
     onNavScroll(event: { detail?: { scrollTop?: number } }) {
       const y = Number(event && event.detail && event.detail.scrollTop)
@@ -882,5 +936,12 @@ export default defineComponent({
 
 .lingyun-page-nav__item--selected .lingyun-page-nav__label {
   font-weight: 600;
+}
+
+.lingyun-page-nav__badge {
+  flex-shrink: 0;
+  margin-left: 8px;
+  display: flex;
+  align-items: center;
 }
 </style>

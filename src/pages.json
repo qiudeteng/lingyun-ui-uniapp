@@ -127,6 +127,13 @@
 			}
 		},
 		{
+			"path": "pages/demo/app-page",
+			"style": {
+				"navigationBarTitleText": "App Page",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/layout",
 			"style": {
 				"navigationBarTitleText": "Layout",

@@ -18,6 +18,7 @@
   <toolbars-page v-else-if="currentPath === 'pages/demo/toolbars'" />
   <screen-page v-else-if="currentPath === 'pages/demo/screen'" />
   <responsive-page v-else-if="currentPath === 'pages/demo/responsive'" />
+  <app-page-page v-else-if="currentPath === 'pages/demo/app-page'" />
   <tabbars-page v-else-if="currentPath === 'pages/demo/tabbars'" />
   <sidebars-page v-else-if="currentPath === 'pages/demo/sidebars'" />
   <search-bar-page v-else-if="currentPath === 'pages/demo/search-bar'" />
@@ -92,6 +93,7 @@ import DateTimePickersPage from '@/pages/demo/date-time-pickers.vue'
 import ToolbarsPage from '@/pages/demo/toolbars.vue'
 import ScreenPage from '@/pages/demo/screen.vue'
 import ResponsivePage from '@/pages/demo/responsive.vue'
+import AppPagePage from '@/pages/demo/app-page.vue'
 import TabbarsPage from '@/pages/demo/tabbars.vue'
 import SidebarsPage from '@/pages/demo/sidebars.vue'
 import SearchBarPage from '@/pages/demo/search-bar.vue'

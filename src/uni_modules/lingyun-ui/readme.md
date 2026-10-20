@@ -1,6 +1,6 @@
 # 凌云UI
 
-凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.28**，变更见 [`changelog.md`](./changelog.md)。
+凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.30**，变更见 [`changelog.md`](./changelog.md)。
 
 📖 [使用手册](https://lingyun.xinyicanyin.com/)（组件用法、属性、示例；右侧手机框实时预览）
 
@@ -65,6 +65,32 @@ const { confirm } = await uni.showLingyunAlert({ title: '删除？', showCancel:
 ```vue
 <lingyun-app-page title="订单" :nav-sections="sections" />
 ```
+
+## 一级导航（数据驱动）
+
+一次配置，窄屏渲染底部玻璃 Tab，宽屏渲染左侧停靠导航。默认按窗口宽度 **690** 切换；手机横屏达到 690 也走侧栏。
+
+```ts
+import { setLingyunPageConfig } from '@/uni_modules/lingyun-ui'
+
+setLingyunPageConfig({
+  tabs: [
+    { key: 'home', text: '首页', icon: 'home', url: '/pages/index/index' },
+    { key: 'orders', text: '订单', icon: 'list', url: '/pages/orders/orders', badge: 3 },
+  ],
+  sidebarTitle: '主导航',
+  pages: {
+    '/pages/login/login': { hideTabbar: true, hideNav: true },
+  },
+})
+```
+
+- 选中态从当前路由推导；详情页可用 `match` 归入某个 Tab。
+- 窄屏点击 `reLaunch`；微信宽屏优先走常驻宿主切换，不增加页面栈。
+- 优先级：组件 props > `pages[path]` 页面覆盖 > `layout` > 宽度自动规则。可用 `nav-mode`、`show-tabbar`、`show-nav` 覆盖。
+- 壳会自动为底部 Tab 留白，并写入 `--lingyun-app-page-inset-bottom`；页面不要再手写 `padding-bottom`，否则设 `:auto-bottom-inset="false"`。
+- 带商品底栏 / 底部搜索条的页面请配置 `pages[path].hideTabbar = true`。
+- 小程序 Tab 指向内嵌视图时仍须静态登记，见上面的 `registerLingyunPageView`。
 
 ## 屏幕
 

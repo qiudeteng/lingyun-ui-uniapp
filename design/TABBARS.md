@@ -91,6 +91,7 @@
 | `items` | array | `[]` | `{ key, text?, icon?, badge?, role?: 'search' }`；`badge` 为数字/字符串，或 `{ text, color?, dot?, max? }`，内部用 `lingyun-badge` |
 | `modelValue` / `value` | string\|number | — | 当前选中 `key` |
 | `variant` | string | `default` | `default` \| `prominent`（Sketch Default / Prominent Tab） |
+| `iconMode` | string | `text` | `text` 直接显示字形；`icon` 用 `lingyun-icon` 渲染 |
 | `safeArea` | boolean | `true` | 预留 Home Indicator |
 | `fixed` | boolean | `true` | 底部 fixed 悬浮 |
 
@@ -100,6 +101,17 @@
 | `change` | 参数为整项 `item` |
 
 插槽：`icon-{key}`、`search-icon`。
+
+---
+
+## 3.1 页面壳自动布局（1.0.30）
+
+`lingyun-app-page` 配置全局 `tabs` 后：
+
+- 窗口宽度 **< 690**：显示底部 Tab；页面壳自动为内容加底部留白（`safeArea` 时 **99**，否则 **78**），并写入 `--lingyun-app-page-inset-bottom`。
+- 窗口宽度 **≥ 690**：Tab 隐藏，导航切到左侧停靠列（分组实底，见 `SIDEBARS.md` §4）。
+- `--fill` 断点为 **689**，与 690 宽屏门槛严格互斥；iPad 及以上整组居中、不拉满。
+- 使用 `lingyun-goods-nav` / `lingyun-search-bar` 的页面配置 `pages[path].hideTabbar = true`，不要叠两层底栏。
 
 ---
 

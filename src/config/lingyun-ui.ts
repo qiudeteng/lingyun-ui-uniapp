@@ -1,4 +1,6 @@
+import { toRef } from 'vue'
 import { configureLingyunPageNav } from '@/uni_modules/lingyun-ui'
+import router from '@/router'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import { pageRequiresLogin } from '@/router/guards'
@@ -51,5 +53,7 @@ export function configureLingyunUi(): void {
     useIntent: useLingyunPageNavIntent,
     getScrollTop: getLingyunPageNavScrollTop,
     setScrollTop: setLingyunPageNavScrollTop,
+    onRouteChange: (cb) => router.onRouteChange((to) => cb(to.path)),
+    useHostedPath: () => toRef(pageHostState, 'path'),
   })
 }
