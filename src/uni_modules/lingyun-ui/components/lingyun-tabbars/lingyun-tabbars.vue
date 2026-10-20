@@ -19,7 +19,13 @@
       >
         <view class="lingyun-tabbars__icon-wrap">
           <slot :name="`icon-${item.key}`" :item="item" :active="isActive(item)">
-            <text class="lingyun-tabbars__icon">{{ item.icon || '●' }}</text>
+            <lingyun-icon
+              v-if="iconMode === 'icon' && item.icon"
+              :type="item.icon"
+              :size="25"
+              :color="isActive(item) ? 'var(--lingyun-system-blue, #0088ff)' : 'var(--lingyun-label-glass, #1a1a1a)'"
+            />
+            <text v-else class="lingyun-tabbars__icon">{{ item.icon || '●' }}</text>
           </slot>
           <view v-if="hasBadge(item)" class="lingyun-tabbars__badge">
             <lingyun-badge
@@ -107,6 +113,7 @@ type LensRect = {
  *   角标渲染为 lingyun-badge（Sketch App Icons / Badge）
  * @property {String|Number} modelValue / value 当前选中 key
  * @property {String} variant = [default|prominent] Sketch：Default / Prominent Tab
+ * @property {String} iconMode = [text|icon] text 直接显示字形；icon 用 lingyun-icon 渲染
  * @property {Boolean} safeArea 预留底部 Home Indicator（默认 true）
  * @property {Boolean} fixed 固定底部悬浮（默认 true）
  * @event {Function} change / update:modelValue
@@ -159,6 +166,10 @@ export default defineComponent({
       type: String,
       default: 'default',
     },
+    iconMode: {
+      type: String,
+      default: 'text',
+    },
     safeArea: {
       type: Boolean,
       default: true,
@@ -204,7 +215,10 @@ export default defineComponent({
     },
     wrapStyle() {
       const inset = Math.max(0, Number(this.pageNavInset) || 0)
-      return this.fixed ? { left: `calc(${inset}px + (100% - ${inset}px) / 2)` } : {}
+      /* inset=0 交给 CSS：窄屏 --fill 需要 left:0，内联 left 会覆盖它 */
+      return this.fixed && inset > 0
+        ? { left: `calc(${inset}px + (100% - ${inset}px) / 2)` }
+        : {}
     },
     barId() {
       return `${this.instanceId}-bar`
@@ -513,13 +527,13 @@ $ly-tab-item-w: 68px;
 
   /* iPhone：无搜索 4/5 项占满整行；有搜索的 3+1 / 4+1 左侧胶囊占满圆钮左侧 */
   &--fill {
-    @media (max-width: 743px) {
+    @media (max-width: 689px) {
       width: 100%;
     }
   }
 
   &--fixed#{&}--fill {
-    @media (max-width: 743px) {
+    @media (max-width: 689px) {
       left: 0;
       right: 0;
       width: 100%;
@@ -527,14 +541,14 @@ $ly-tab-item-w: 68px;
     }
   }
   &--with-search {
-    @media (max-width: 743px) {
+    @media (max-width: 689px) {
       width: 100%;
       justify-content: space-between;
     }
   }
 
   &--fixed#{&}--with-search {
-    @media (max-width: 743px) {
+    @media (max-width: 689px) {
       left: 0;
       right: 0;
       width: 100%;
@@ -613,14 +627,14 @@ $ly-tab-item-w: 68px;
   }
 
   &--fill &__bar {
-    @media (max-width: 743px) {
+    @media (max-width: 689px) {
       flex: 1;
       width: auto;
     }
   }
 
   &--fill &__item {
-    @media (max-width: 743px) {
+    @media (max-width: 689px) {
       flex: 1 1 0;
       width: auto;
       min-width: 0;

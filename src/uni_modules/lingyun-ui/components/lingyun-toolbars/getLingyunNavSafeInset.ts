@@ -98,6 +98,11 @@ function readWindow(): { statusBarHeight: number; windowWidth: number } {
   }
 }
 
+/** 当前窗口宽度（读不到时为 0），供页面壳布局解析用 */
+export function readLingyunWindowWidth(): number {
+  return readWindow().windowWidth
+}
+
 /** 折叠屏 / 旋转回调里的新宽度。getWindowInfo 在展开当下经常还是旧值。 */
 export function readLingyunResizeWidth(res?: unknown): number {
   if (!res || typeof res !== 'object') return 0

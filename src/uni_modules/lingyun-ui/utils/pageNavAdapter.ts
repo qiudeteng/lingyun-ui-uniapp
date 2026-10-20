@@ -1,4 +1,5 @@
 import { ref, type Ref } from 'vue'
+import type { LingyunPageBadge } from './pageLayout'
 
 export const LINGYUN_PAGE_NAV_WIDTH = 220
 export const LINGYUN_PAGE_NAV_HOME = '/pages/index/index'
@@ -10,6 +11,9 @@ export interface LingyunPageNavItem {
   note?: string
   icon?: string
   iconSrc?: string
+  badge?: LingyunPageBadge
+  /** 详情页归入当前项高亮的额外路径 */
+  match?: string | string[]
 }
 
 export interface LingyunPageNavSection {
@@ -56,6 +60,10 @@ export interface LingyunPageNavAdapter {
   useIntent?: () => Ref<string>
   getScrollTop?: () => number
   setScrollTop?: (value: number) => void
+  /** 订阅路由变化；返回取消订阅函数 */
+  onRouteChange?: (cb: (path: string) => void) => (() => void) | void
+  /** 小程序宽屏右侧内容路径（pageHostState.path） */
+  useHostedPath?: () => Ref<string> | null
 }
 
 const fallbackIntent = ref('')
@@ -195,4 +203,38 @@ export function getLingyunPageNavScrollTop(): number {
 export function setLingyunPageNavScrollTop(value: number): void {
   if (adapter.setScrollTop) adapter.setScrollTop(value)
   else fallbackScrollTop = Math.max(0, Number(value) || 0)
+}
+
+/** 订阅路由变化；宿主未接线时返回 no-op 退订函数 */
+export function subscribeLingyunPageRoute(cb: (path: string) => void): () => void {
+  const off = adapter.onRouteChange?.(cb)
+  return typeof off === 'function' ? off : () => {}
+}
+
+/** 小程序宽屏右侧内容路径；未接线时返回 null */
+export function useLingyunHostedPath(): Ref<string> | null {
+  return adapter.useHostedPath?.() || null
+}
+
+/** 当前页面路径：页面栈 → 启动路径 → H5 hash */
+export function readLingyunCurrentPagePath(): string {
+  try {
+    const pages = getCurrentPages()
+    const cur = pages[pages.length - 1] as { route?: string } | undefined
+    const route = normalizeLingyunPagePath(cur?.route || '')
+    if (route) return route
+    const launch = uni.getLaunchOptionsSync?.()
+    const launchPath = normalizeLingyunPagePath(launch?.path || '')
+    if (launchPath) return launchPath
+  } catch {
+    /* ignore */
+  }
+  // #ifdef H5
+  if (typeof window !== 'undefined') {
+    return normalizeLingyunPagePath(
+      String(window.location.hash || '').replace(/^#\/?/, ''),
+    )
+  }
+  // #endif
+  return ''
 }

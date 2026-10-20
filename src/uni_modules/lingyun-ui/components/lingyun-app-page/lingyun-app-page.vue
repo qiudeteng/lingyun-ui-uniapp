@@ -28,7 +28,7 @@
       :show-close="showCloseEffective"
       :show-grabber="showGrabberEffective"
       :show-trailing="showTrailing"
-      :show-window-controls="navDocked ? false : 'auto'"
+      :show-window-controls="navDocked || tabbarVisible ? false : 'auto'"
       :fixed="true"
       :safe-area="safeArea"
       :glass-progress="glassProgress"
@@ -63,7 +63,11 @@
     </view>
 
     <view v-if="!embedded && usePageScroll" class="lingyun-app-page__sentinel" :style="sentinelStyle" />
-    <view v-if="!embedded && usePageScroll" class="lingyun-app-page__pad">
+    <view
+      v-if="!embedded && usePageScroll"
+      class="lingyun-app-page__pad"
+      :style="bottomInsetStyle"
+    >
       <view v-if="hostedMiss" class="lingyun-app-page__hosted">
         <lingyun-page-miss :from="hostedFrom" @home="onHostHome" />
       </view>
@@ -81,7 +85,7 @@
       @scroll="onBodyScroll"
       @scrolltoupper="onScrollToUpper"
     >
-      <view class="lingyun-app-page__pad">
+      <view class="lingyun-app-page__pad" :style="bottomInsetStyle">
         <view v-if="hostedMiss" class="lingyun-app-page__hosted">
           <lingyun-page-miss :from="hostedFrom" @home="onHostHome" />
         </view>
@@ -90,7 +94,11 @@
     </scroll-view>
 
     <!-- bodyScroll=false：页面自管内层滚动，用 useLingyunAppPageScroll 上报 -->
-    <view v-if="!embedded && !bodyScroll" class="lingyun-app-page__body">
+    <view
+      v-if="!embedded && !bodyScroll"
+      class="lingyun-app-page__body"
+      :style="bottomInsetStyle"
+    >
       <view class="lingyun-app-page__pad">
         <view v-if="hostedMiss" class="lingyun-app-page__hosted">
           <lingyun-page-miss :from="hostedFrom" @home="onHostHome" />
@@ -99,6 +107,19 @@
       </view>
     </view>
 
+    <!-- 全局一级导航：窄屏底部 Tab；宽屏由左侧 nav 承担 -->
+    <lingyun-tabbars
+      v-if="tabbarVisible"
+      class="lingyun-app-page__tabbar"
+      :items="tabbarItems"
+      :model-value="activeTabKey"
+      :safe-area="tabbarSafeArea"
+      :variant="tabbarVariant"
+      icon-mode="icon"
+      :fixed="true"
+      @change="onTabbarChange"
+    />
+
     <!-- 命令式 Toast/HUD：须在页面树内（mp-weixin 的 App.vue 模板不会盖到页面上） -->
     <lingyun-feedback-host v-if="!embedded" />
   </view>
@@ -106,9 +127,10 @@
 
 <script lang="ts">
 import { defineComponent, getCurrentInstance, inject, provide, ref, type PropType } from 'vue'
-import { onResize } from '@dcloudio/uni-app'
+import { onResize, onShow } from '@dcloudio/uni-app'
 import {
   LINGYUN_APP_PAGE_BIND_SCROLL,
+  LINGYUN_APP_PAGE_BOTTOM_INSET,
   LINGYUN_APP_PAGE_NAV_INSET,
   LINGYUN_APP_PAGE_REPORT_SCROLL,
   LINGYUN_APP_PAGE_SCROLL_LOCK,
@@ -123,21 +145,40 @@ import {
   LINGYUN_TOOLBAR_BAR_DESIGN_PX,
   LINGYUN_TOOLBAR_LARGE_EXTRA_PX,
   readLingyunResizeWidth,
+  readLingyunWindowWidth,
 } from '../lingyun-toolbars/getLingyunNavSafeInset'
 import { useLingyunTheme } from '../../utils/theme'
 import {
   LINGYUN_PAGE_NAV_WIDTH,
   claimLingyunPageNavHeaderSlots,
+  clearLingyunPageNavIntent,
   ensureLingyunWidePageHost,
   getLingyunPageNavHome,
+  getLingyunPageNavIntent,
   hostedFromText,
   hostedPagePath,
   lingyunPageRequiresLogin,
+  normalizeLingyunPagePath,
   openLingyunHostedPage,
+  readLingyunCurrentPagePath,
   releaseLingyunPageNavHeaderSlots,
+  resolveLingyunPageUrl,
   setLingyunPageNavIntent,
+  subscribeLingyunPageRoute,
+  useLingyunHostedPath,
+  useLingyunPageNavIntent,
   type LingyunPageNavSection,
 } from '../../utils/pageNavAdapter'
+import {
+  getLingyunPageConfig,
+  getLingyunPageOverride,
+  matchLingyunPageTab,
+} from '../../utils/pageConfig'
+import {
+  resolveLingyunPageLayout,
+  type LingyunPageLayoutResult,
+  type LingyunPageTab,
+} from '../../utils/pageLayout'
 // #ifdef H5
 import { setLingyunH5PageNavAllowed } from '../lingyun-page-nav/mountLingyunPageNav'
 // #endif
@@ -152,7 +193,10 @@ import { setLingyunH5PageNavAllowed } from '../lingyun-page-nav/mountLingyunPage
  * @property {String} title / subtitle
  * @property {String} titleStyle / placement
  * @property {Boolean} showBack / showClose / showGrabber / showTrailing / safeArea / bodyScroll / pageScroll / showNav / showToolbar
- * @property {Array} navSections 只覆盖当前页（微信内嵌列）。全局菜单用 setLingyunPageNavSections
+ * @property {Boolean|String} showTabbar 底部 Tab；'auto' 时窄屏显示，false 永远隐藏
+ * @property {String} navMode auto / tabbar / sidebar / none，页面级最高优先
+ * @property {Boolean} autoBottomInset 自动为底部 Tab 留白
+ * @property {Array} navSections 显式目录，优先于全局 tabs 与宿主目录
  * 插槽 nav-avatar / nav-name / nav-subtitle：宽屏左栏顶部。不传则显示「凌云UI」和默认介绍
  * @property {Number} glassDistance 滚过多少 px 达到满玻璃
  * @event back / close / trailing / scroll
@@ -172,7 +216,7 @@ const LINGYUN_APP_PAGE_EMBEDDED = Symbol('lingyun-app-page-embedded')
 
 export default defineComponent({
   name: 'LingyunAppPage',
-  emits: ['back', 'close', 'trailing', 'scroll'],
+  emits: ['back', 'close', 'trailing', 'scroll', 'tab-change'],
   props: {
     title: { type: String, default: '' },
     subtitle: { type: String, default: '' },
@@ -195,11 +239,17 @@ export default defineComponent({
     showNav: { default: true },
     /** 头部顶栏。false 时不渲染，也不再为顶栏预留高度 */
     showToolbar: { type: Boolean, default: true },
-    /** 覆盖默认目录；null 使用 LINGYUN_PAGE_NAV */
+    /** 覆盖默认目录；null 使用全局 tabs 或 LINGYUN_PAGE_NAV */
     navSections: {
       type: Array as PropType<LingyunPageNavSection[] | null>,
       default: null,
     },
+    /** 全局 tabs 的底部 Tab 栏。'auto' 时窄屏显示；显式 false 永远隐藏 */
+    showTabbar: { default: 'auto' },
+    /** auto / tabbar / sidebar / none。页面级优先级最高 */
+    navMode: { type: String, default: 'auto' },
+    /** 关掉后壳不加底部留白，但 CSS 变量与注入仍给出真实值 */
+    autoBottomInset: { type: Boolean, default: true },
     glassDistance: { type: Number, default: 56 },
   },
   data() {
@@ -209,7 +259,10 @@ export default defineComponent({
       barHeightPx: LINGYUN_TOOLBAR_BAR_DESIGN_PX,
       largeExtraPx: LINGYUN_TOOLBAR_LARGE_EXTRA_PX,
       title2LineLargeExtraPx: LINGYUN_TOOLBAR_2LINE_LARGE_EXTRA_PX,
-      regular: false,
+      /** 页面壳布局的唯一宽度来源（来自自身 resize 监听） */
+      windowWidth: readLingyunWindowWidth(),
+      /** 当前真实页面路径，用于推导 Tab 选中态 */
+      currentPagePath: '',
       /** 横向 swipe 确认后临时关 scroll-y，避免 iOS 斜滑带动页面上下晃 */
       bodyScrollY: true,
       /** H5：顶部插槽目标节点出现后再传送 */
@@ -222,6 +275,8 @@ export default defineComponent({
       _lastReportedTop: undefined as number | undefined,
       _navSlotTimer: null as ReturnType<typeof setTimeout> | null,
       _onWindowResize: null as ((res?: unknown) => void) | null,
+      _stopRouteChange: null as (() => void) | null,
+      _onHashChange: null as (() => void) | null,
     }
   },
   setup() {
@@ -231,6 +286,7 @@ export default defineComponent({
     const inheritedScrollLocked = inject(LINGYUN_APP_PAGE_SCROLL_LOCKED, null)
     const inheritedNavInset = inject(LINGYUN_APP_PAGE_NAV_INSET, null)
     const inheritedTopInset = inject(LINGYUN_APP_PAGE_TOP_INSET, null)
+    const inheritedBottomInset = inject(LINGYUN_APP_PAGE_BOTTOM_INSET, null)
     const inheritedScrollReport = inject(LINGYUN_APP_PAGE_REPORT_SCROLL, null)
     const inheritedScrollLock = inject<LingyunAppPageScrollLock | null>(
       LINGYUN_APP_PAGE_SCROLL_LOCK,
@@ -239,9 +295,11 @@ export default defineComponent({
     const scrollLocked = embedded && inheritedScrollLocked ? inheritedScrollLocked : ref(false)
     const navInsetPx = embedded && inheritedNavInset ? inheritedNavInset : ref(0)
     const topInsetPx = embedded && inheritedTopInset ? inheritedTopInset : ref(0)
+    const bottomInsetPx = embedded && inheritedBottomInset ? inheritedBottomInset : ref(0)
     provide(LINGYUN_APP_PAGE_SCROLL_LOCKED, scrollLocked)
     provide(LINGYUN_APP_PAGE_NAV_INSET, navInsetPx)
     provide(LINGYUN_APP_PAGE_TOP_INSET, topInsetPx)
+    provide(LINGYUN_APP_PAGE_BOTTOM_INSET, bottomInsetPx)
     onResize((res) => {
       const proxy = (instance && instance.proxy) as
         | { syncNavLayout?: (windowWidth?: number) => void }
@@ -250,14 +308,24 @@ export default defineComponent({
         proxy.syncNavLayout(readLingyunResizeWidth(res))
       }
     })
+    onShow(() => {
+      if (embedded) return
+      const proxy = (instance && instance.proxy) as
+        | { syncPageChrome?: () => void }
+        | null
+      proxy?.syncPageChrome?.()
+    })
     return {
       bindScroll: inject(LINGYUN_APP_PAGE_BIND_SCROLL, null),
       embedded,
       inheritedScrollLock,
       inheritedScrollReport,
       navInsetPx,
+      bottomInsetPx,
       scrollLocked,
       topInsetPx,
+      hostedPathRef: useLingyunHostedPath(),
+      pageIntentRef: useLingyunPageNavIntent(),
     }
   },
   created() {
@@ -267,6 +335,7 @@ export default defineComponent({
         this.scheduleScrollSettle(scrollTop)
       })
     }
+    this.syncPageChrome()
     this.syncNavLayout()
     this._scrollSettleTimer = null
     this._scrollLockCount = 0
@@ -280,6 +349,7 @@ export default defineComponent({
     this.syncNavHeaderSlots()
     this.syncH5PageNavHost()
     this.bindResize()
+    this.bindPageRoute()
     if (this.usePageScroll) {
       this.$nextTick(() => this.setupGlassObserver())
     }
@@ -294,6 +364,7 @@ export default defineComponent({
     this.clearScrollSettle()
     this.teardownGlassObserver()
     this.unbindResize()
+    this.unbindPageRoute()
   },
   watch: {
     safeArea() {
@@ -313,6 +384,12 @@ export default defineComponent({
     },
     navDocked() {
       this.syncH5PageNavHost()
+    },
+    pageLayout() {
+      this.applyPageLayout()
+    },
+    autoBottomInset() {
+      this.applyPageLayout()
     },
     usePageScroll(enabled: boolean) {
       this.$nextTick(() => {
@@ -343,15 +420,86 @@ export default defineComponent({
         '--lingyun-app-page-bar': `${this.toolbarStackPx}px`,
         '--lingyun-app-page-inset-top': this.insetTop,
         '--lingyun-page-nav-width': `${navWidth}px`,
+        '--lingyun-app-page-inset-bottom': `${this.pageLayout.bottomInsetPx}px`,
+        '--lingyun-app-page-tabbar-height': `${this.pageLayout.tabbarHeightPx}px`,
       }
+    },
+    pageConfig() {
+      return getLingyunPageConfig()
+    },
+    pageOverride() {
+      return getLingyunPageOverride(this.effectivePagePath)
+    },
+    /** 小程序宽屏右侧内容路径优先，其次导航意图，最后真实路由 */
+    effectivePagePath() {
+      const hosted = this.hostedPathRef
+      if (hosted) return normalizeLingyunPagePath(hosted)
+      const intent = this.pageIntentRef
+      if (intent) return normalizeLingyunPagePath(intent)
+      return normalizeLingyunPagePath(
+        this.currentPagePath || readLingyunCurrentPagePath(),
+      )
+    },
+    pageLayout(): LingyunPageLayoutResult {
+      return resolveLingyunPageLayout({
+        width: this.windowWidth,
+        config: this.pageConfig,
+        pageOverride: this.pageOverride,
+        embedded: this.embedded,
+        placement: this.placement,
+        grabber: this.showGrabberEffective,
+        authHold: this.authHold,
+        showNav: this.showNav,
+        showTabbar: this.showTabbar,
+        navMode: this.navMode,
+        safeArea: this.safeArea,
+      })
+    },
+    tabbarItems() {
+      return (this.pageConfig.tabs || []).map((tab: LingyunPageTab) => ({
+        key: tab.key,
+        text: tab.text,
+        icon: tab.icon,
+        badge: tab.badge,
+      }))
+    },
+    tabbarVisible() {
+      return (
+        !this.embedded &&
+        this.pageLayout.tabbarVisible &&
+        this.tabbarItems.length > 0
+      )
+    },
+    activeTabKey() {
+      const tab = matchLingyunPageTab(this.pageConfig.tabs || [], this.effectivePagePath)
+      return tab ? tab.key : ''
+    },
+    isTabRoot() {
+      const tab = matchLingyunPageTab(this.pageConfig.tabs || [], this.effectivePagePath)
+      if (!tab) return false
+      return (
+        normalizeLingyunPagePath(tab.url) ===
+        normalizeLingyunPagePath(this.effectivePagePath)
+      )
+    },
+    tabbarSafeArea() {
+      return (
+        this.pageConfig.tabbar?.safeArea !== false &&
+        this.pageOverride?.tabbarSafeArea !== false &&
+        this.safeArea !== false
+      )
+    },
+    tabbarVariant() {
+      return this.pageConfig.tabbar?.variant || 'default'
+    },
+    /** 壳实际加到内容上的底部留白 */
+    bottomInsetStyle() {
+      const inset = this.autoBottomInset ? this.pageLayout.bottomInsetPx : 0
+      return inset > 0 ? { paddingBottom: `${inset}px` } : null
     },
     /** 宽屏需要为顶栏让出左侧。H5 的列在 body 上，这里只留宽度。 */
     navDocked() {
-      if (this.embedded) return false
-      if (lingyunPageRequiresLogin()) return false
-      if (!coerceTriFlag(this.showNav, true)) return false
-      if (this.placement === 'sheet' || this.showGrabberEffective) return false
-      return this.regular
+      return !this.embedded && this.pageLayout.sidebarVisible
     },
     /** 未登录的受保护页先藏起来，避免冷启动先画出首页和侧栏再跳登录 */
     authHold() {
@@ -397,8 +545,10 @@ export default defineComponent({
       return { height: `${Math.max(1, Number(this.glassDistance) || 56)}px` }
     },
     showBackEffective() {
-      /* 宽屏停靠左侧导航时用侧栏切页，auto 不再显示返回；显式 true 仍可开 */
-      return coerceTriFlag(this.showBack, !this.navDocked)
+      /* 宽屏停靠左侧导航时用侧栏切页，auto 不再显示返回；
+         一级 Tab 根页也不显示返回；显式 true 仍可开 */
+      const auto = !this.navDocked && !(this.tabbarVisible && this.isTabRoot)
+      return coerceTriFlag(this.showBack, auto)
     },
     showCloseEffective() {
       return coerceTriFlag(this.showClose, false)
@@ -416,6 +566,7 @@ export default defineComponent({
           'lingyun-app-page--sheet': this.placement === 'sheet' || this.showGrabberEffective,
           'lingyun-app-page--page-scroll': this.usePageScroll,
           'lingyun-app-page--nav': this.navDocked,
+          'lingyun-app-page--tabbar': this.tabbarVisible,
           'lingyun-app-page--auth-hold': this.authHold,
         },
       ]
@@ -511,20 +662,88 @@ export default defineComponent({
     },
     syncNavLayout(windowWidth?: number) {
       const width = Number(windowWidth)
+      const hasWidth = Number.isFinite(width) && width > 0
+      const actualWidth = hasWidth ? width : readLingyunWindowWidth()
+      this.windowWidth = actualWidth
       const layout = getLingyunNavLayout(
         LINGYUN_TOOLBAR_BAR_DESIGN_PX,
-        Number.isFinite(width) && width > 0 ? width : undefined,
+        actualWidth > 0 ? actualWidth : undefined,
       )
       this.statusBarPx = this.safeArea ? layout.statusBarHeight : 0
       this.barHeightPx = layout.barHeight
       this.largeExtraPx = layout.largeExtra
       this.title2LineLargeExtraPx = layout.title2LineLargeExtra
-      this.regular = !!layout.regular
-      if (!this.embedded) {
-        this.navInsetPx = this.navDocked ? LINGYUN_PAGE_NAV_WIDTH : 0
-      }
       this.syncTopInset()
+      this.applyPageLayout()
+    },
+    applyPageLayout() {
+      if (this.embedded) return
+      this.navInsetPx = this.navDocked ? LINGYUN_PAGE_NAV_WIDTH : 0
+      this.bottomInsetPx = this.pageLayout.bottomInsetPx
       this.syncH5PageNavHost()
+    },
+    syncPageChrome() {
+      if (this.embedded) return
+      this.currentPagePath = readLingyunCurrentPagePath()
+      this.settlePageIntent()
+    },
+    /** 导航意图与真实路径一致后清掉，避免侧栏高亮一直停在旧项 */
+    settlePageIntent() {
+      const intent = normalizeLingyunPagePath(getLingyunPageNavIntent())
+      if (!intent) return
+      const current = normalizeLingyunPagePath(
+        this.hostedPathRef || this.currentPagePath,
+      )
+      if (intent === current) clearLingyunPageNavIntent()
+    },
+    onPageRouteChange(path: string) {
+      const next = normalizeLingyunPagePath(path)
+      if (next) this.currentPagePath = next
+      this.settlePageIntent()
+    },
+    bindPageRoute() {
+      this._stopRouteChange = subscribeLingyunPageRoute(this.onPageRouteChange)
+      // #ifdef H5
+      this._onHashChange = () => {
+        this.syncPageChrome()
+      }
+      if (typeof window !== 'undefined') {
+        window.addEventListener('hashchange', this._onHashChange)
+      }
+      // #endif
+    },
+    unbindPageRoute() {
+      if (this._stopRouteChange) {
+        this._stopRouteChange()
+        this._stopRouteChange = null
+      }
+      // #ifdef H5
+      if (this._onHashChange && typeof window !== 'undefined') {
+        window.removeEventListener('hashchange', this._onHashChange)
+      }
+      this._onHashChange = null
+      // #endif
+    },
+    onTabbarChange(item: { key?: string | number }) {
+      const key = item && item.key != null ? String(item.key) : ''
+      if (!key) return
+      const tab = (this.pageConfig.tabs || []).find(
+        (entry: LingyunPageTab) => entry.key === key,
+      )
+      if (!tab) return
+      const raw = normalizeLingyunPagePath(tab.url)
+      if (!raw || raw === normalizeLingyunPagePath(this.effectivePagePath)) return
+      this.$emit('tab-change', { key: tab.key, tab })
+      if (openLingyunHostedPage(tab.url, raw)) return
+      setLingyunPageNavIntent(raw)
+      const next = resolveLingyunPageUrl(tab.url)
+      if (!next) return
+      uni.reLaunch({
+        url: next,
+        fail: () => {
+          uni.redirectTo({ url: next })
+        },
+      })
     },
     syncTopInset() {
       const status = this.safeArea ? this.statusBarPx : 0

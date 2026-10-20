@@ -36,6 +36,11 @@ export const LINGYUN_APP_PAGE_TOP_INSET: InjectionKey<Ref<number>> = Symbol(
   'lingyunAppPageTopInset',
 )
 
+/** 底部一级 Tab 栏占用的高度（含设计安全内边距），固定控件据此上移。 */
+export const LINGYUN_APP_PAGE_BOTTOM_INSET: InjectionKey<Ref<number>> = Symbol(
+  'lingyunAppPageBottomInset',
+)
+
 /** 内层 scroll-view 上报滚动，驱动顶栏玻璃渐变 */
 export function useLingyunAppPageScroll(): (scrollTop: number) => void {
   const fromAncestor = inject(LINGYUN_APP_PAGE_REPORT_SCROLL, null)

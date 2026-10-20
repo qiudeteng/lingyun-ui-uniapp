@@ -53,7 +53,10 @@
 <script lang="ts">
 import { defineComponent, inject, ref, type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
-import { LINGYUN_APP_PAGE_NAV_INSET } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
+import {
+  LINGYUN_APP_PAGE_BOTTOM_INSET,
+  LINGYUN_APP_PAGE_NAV_INSET,
+} from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 
 type FabContent = {
   key?: string | number
@@ -99,6 +102,7 @@ export default defineComponent({
   setup() {
     return {
       pageNavInset: inject(LINGYUN_APP_PAGE_NAV_INSET, ref(0)),
+      pageBottomInset: inject(LINGYUN_APP_PAGE_BOTTOM_INSET, ref(0)),
     }
   },
   emits: ['fabClick', 'trigger', 'update:show'],
@@ -163,7 +167,14 @@ export default defineComponent({
     },
     anchorStyle(): Record<string, string | number> {
       const gap = Math.max(0, Number(this.gap) || GAP)
-      const bottomExtra = this.vertical !== 'top' && this.safeArea ? this.safeBottom : 0
+      const pageBottom =
+        this.vertical !== 'top' ? Math.max(0, Number(this.pageBottomInset) || 0) : 0
+      const bottomExtra =
+        pageBottom > 0
+          ? pageBottom
+          : this.vertical !== 'top' && this.safeArea
+            ? this.safeBottom
+            : 0
       const style: Record<string, string | number> = {
         zIndex: Number(this.zIndex) || 200,
         width: `${BTN}px`,

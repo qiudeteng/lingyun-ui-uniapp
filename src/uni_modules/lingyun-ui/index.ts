@@ -11,12 +11,21 @@ import { installLingyunPageNav } from './components/lingyun-page-nav/mountLingyu
 
 export * from './utils/feedback'
 export * from './utils/pageNavAdapter'
+export * from './utils/pageConfig'
+export * from './utils/pageLayout'
 export * from './utils/theme'
 export {
   isLingyunWideScreen,
   lingyun,
   refreshLingyunScreen,
 } from './utils/screen'
+export {
+  LINGYUN_TABBAR_CONTENT_HEIGHT_PX,
+  LINGYUN_TABBAR_HEIGHT_PX,
+  LINGYUN_TABBAR_HEIGHT_SAFE_PX,
+  LINGYUN_TABBAR_PAD_BOTTOM_PX,
+  LINGYUN_TABBAR_PAD_TOP_PX,
+} from './components/lingyun-tabbars/tabbarMetrics'
 export type {
   LingyunDevice,
   LingyunEnv,
