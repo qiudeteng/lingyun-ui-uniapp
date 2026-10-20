@@ -1,6 +1,6 @@
 # 凌云UI
 
-凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.30**，变更见 [`changelog.md`](./changelog.md)。
+凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.31**，变更见 [`changelog.md`](./changelog.md)。
 
 📖 [使用手册](https://lingyun.xinyicanyin.com/)（组件用法、属性、示例；右侧手机框实时预览）
 
@@ -49,7 +49,7 @@ const { confirm } = await uni.showLingyunAlert({ title: '删除？', showCancel:
 
 ## 宽屏
 
-窗口宽度 **≥ 690** 时，页面左侧停靠导航。完整目录宽 **220**；配置了全局 tabs 且窗口达到 **1200**（PC 档）时收窄为 **84**，图标在上、文字在下。平板档（690–1199）与未配置 tabs 时仍用 220 完整侧栏。折叠屏展开（如 OPPO Find 692、717×781）走平板档；手机竖屏仍是单栏。顶栏和内容区跟随 `--lingyun-page-nav-width`，不会压住导航。
+窗口宽度 **≥ 690** 时，页面左侧停靠导航。未配置全局 tabs 时完整目录宽 **220**；配置 tabs 后（iPad / PC）收窄为 **84** 浮动玻璃窄栏，图标在上、文字在下。手机仍用底部 Tab。折叠屏展开（如 OPPO Find 692、717×781）走 iPad/PC 窄栏；手机竖屏仍是单栏。顶栏和内容区跟随 `--lingyun-page-nav-width`，不会压住导航。
 
 | 端 | 行为 |
 |----|------|
@@ -91,6 +91,24 @@ setLingyunPageConfig({
 - 壳会自动为底部 Tab 留白，并写入 `--lingyun-app-page-inset-bottom`；页面不要再手写 `padding-bottom`，否则设 `:auto-bottom-inset="false"`。
 - 带商品底栏 / 底部搜索条的页面请配置 `pages[path].hideTabbar = true`。
 - 小程序 Tab 指向内嵌视图时仍须静态登记，见上面的 `registerLingyunPageView`。
+
+## iPhone Duo
+
+- 设备识别：`lingyun.formFactor === 'duo'`，姿态见 `lingyun.duoPose`（外屏/内屏、横竖、半折）。
+- 接入宿主已有型号判断：
+
+```ts
+import { configureLingyunLayout } from '@/uni_modules/lingyun-ui'
+
+configureLingyunLayout({
+  getFormFactor: () => yourFormFactor(),
+  getDuoPose: () => yourDuoPose(),
+})
+```
+
+- P1 支持内屏竖屏：顶部 `lingyun-duo-toolbar`（84 高）+ 底部 Duo Tab（95 高）；半折时屏幕中心显示 40px 横向折痕安全带。
+- Duo 外屏右侧全高栏、内屏横屏单栏与 Split View 在后续版本接入。
+- 微信小程序暂按标准宽度布局，不进入 Duo 分支。
 
 ## 屏幕
 

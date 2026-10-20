@@ -3,6 +3,7 @@
     class="lingyun-page-nav"
     :class="[themeRootClass, { 'lingyun-page-nav--rail': railMode }]"
   >
+    <view v-if="railMode" class="lingyun-page-nav__rail-bg" />
     <view class="lingyun-page-nav__head" :style="navHeadStyle">
       <view class="lingyun-page-nav__bar" :style="navBarStyle">
         <view v-if="windowControls && !railMode" class="lingyun-page-nav__windows" aria-hidden="true">
@@ -1104,6 +1105,31 @@ export default defineComponent({
 }
 
 /* 全局 tabs 驱动的窄侧栏：图标在上、文字在下 */
+.lingyun-page-nav--rail {
+  position: relative;
+  background-color: transparent;
+  border-right: 0;
+}
+
+.lingyun-page-nav--rail .lingyun-page-nav__rail-bg {
+  position: absolute;
+  top: 8px;
+  right: 6px;
+  bottom: 8px;
+  left: 6px;
+  z-index: 0;
+  border-radius: 28px;
+  pointer-events: none;
+  @include lingyun-glass-surface;
+  border-radius: 28px;
+}
+
+.lingyun-page-nav--rail .lingyun-page-nav__head,
+.lingyun-page-nav--rail .lingyun-page-nav__scroll {
+  position: relative;
+  z-index: 1;
+}
+
 .lingyun-page-nav--rail .lingyun-page-nav__head {
   padding-left: 4px;
   padding-right: 4px;

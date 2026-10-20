@@ -13,9 +13,11 @@ import {
 
 export type {
   LingyunDevice,
+  LingyunDuoPose,
   LingyunEnv,
   LingyunFold,
   LingyunFoldable,
+  LingyunFormFactor,
   LingyunOs,
   LingyunScreen,
 } from './screenResolve'
@@ -26,6 +28,8 @@ export const lingyun = reactive<LingyunEnv>({
   foldable: '',
   fold: '',
   device: '',
+  formFactor: '',
+  duoPose: '',
 })
 
 /** 当前窗口是否已到平板或电脑档（宽度 ≥ 690）。还没读到窗口时为 false。 */
@@ -158,6 +162,8 @@ export function refreshLingyunScreen(resize?: unknown): void {
   lingyun.foldable = next.foldable
   lingyun.fold = next.fold
   lingyun.device = next.device
+  lingyun.formFactor = next.formFactor
+  lingyun.duoPose = next.duoPose
 }
 
 /** 挂到模板全局与 `uni.lingyun`，并监听窗口尺寸变化。 */

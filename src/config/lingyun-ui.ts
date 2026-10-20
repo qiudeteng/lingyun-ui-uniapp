@@ -32,6 +32,13 @@ import {
 
 /** 把宿主工程的业务状态与路由能力注入 lingyun-ui；组件包本身不反向依赖这些文件。 */
 export function configureLingyunUi(): void {
+  /*
+   * 接入已有型号判断时在这里注入（未接入时页面壳使用 lingyun.formFactor / duoPose 兜底）：
+   * configureLingyunLayout({
+   *   getFormFactor: () => detectFormFactor(),
+   *   getDuoPose: () => detectDuoPose(),
+   * })
+   */
   configureLingyunPageNav({
     home: LINGYUN_PAGE_NAV_HOME,
     guestHome: LINGYUN_PAGE_NAV_GUEST_HOME,

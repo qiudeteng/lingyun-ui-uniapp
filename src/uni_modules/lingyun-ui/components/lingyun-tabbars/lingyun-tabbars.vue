@@ -22,7 +22,7 @@
             <lingyun-icon
               v-if="iconMode === 'icon' && item.icon"
               :type="item.icon"
-              :size="25"
+              :size="iconSize"
               :color="isActive(item) ? 'var(--lingyun-system-blue, #0088ff)' : 'var(--lingyun-label-glass, #1a1a1a)'"
             />
             <text v-else class="lingyun-tabbars__icon">{{ item.icon || '●' }}</text>
@@ -55,7 +55,7 @@
           v-else
           class="lingyun-tabbars__search-icon"
           type="search"
-          :size="25"
+          :size="iconSize"
           :color="isActive(searchItem) ? 'var(--lingyun-system-blue, #0088ff)' : 'var(--lingyun-label-glass, #1a1a1a)'"
         />
       </slot>
@@ -172,6 +172,11 @@ export default defineComponent({
       type: String,
       default: 'text',
     },
+    /** default = iPhone 99 高；duo = iPhone Duo 内屏 95 高、77×54 Tab */
+    size: {
+      type: String,
+      default: 'default',
+    },
     /** 没有匹配项时是否把第一项当作选中；页面壳自动导航传 false */
     fallbackFirst: {
       type: Boolean,
@@ -207,11 +212,15 @@ export default defineComponent({
     resolvedVariant() {
       return this.variant === 'prominent' ? 'prominent' : 'default'
     },
+    iconSize(): number {
+      return this.size === 'duo' ? 22 : 25
+    },
     rootClass() {
       return [
         `lingyun-tabbars--${this.resolvedVariant}`,
         this.fixed ? 'lingyun-tabbars--fixed' : '',
         this.safeArea ? 'lingyun-tabbars--safe' : '',
+        this.size === 'duo' ? 'lingyun-tabbars--duo' : '',
         this.searchItem ? 'lingyun-tabbars--with-search' : '',
         /* 无搜索 4/5 项，或有搜索的 3+1 / 4+1：iPhone 左侧胶囊占满剩余宽度 */
         (!this.searchItem && this.mainItems.length >= 4) ||
@@ -712,6 +721,45 @@ $ly-tab-item-w: 68px;
       flex: 1 1 0;
       width: auto;
       min-width: 0;
+    }
+  }
+
+  /* iPhone Duo 内屏竖屏：95 高、玻璃条 62、Tab 54×77、搜索 62 */
+  &--duo {
+    padding-top: 12px;
+    padding-left: 25px;
+    padding-right: 25px;
+  }
+
+  &--duo &__bar {
+    flex: 0 0 auto;
+    width: auto;
+    height: 62px;
+    min-height: 62px;
+    gap: 0;
+  }
+
+  &--duo &__item {
+    flex: 0 0 77px;
+    width: 77px;
+    min-width: 77px;
+  }
+
+  &--duo &__item + &__item {
+    margin-left: -8px;
+  }
+
+  &--duo#{&}--fill &__bar {
+    @media (max-width: 689px) {
+      flex: 0 0 auto;
+      width: auto;
+    }
+  }
+
+  &--duo#{&}--with-search {
+    @media (max-width: 689px) {
+      justify-content: center;
+      gap: 16px;
     }
   }
 

@@ -6,7 +6,6 @@ import {
   lingyunPageNavRail,
 } from '../../utils/pageNavAdapter'
 import { getLingyunPageConfig } from '../../utils/pageConfig'
-import { LINGYUN_SCREEN_PC_MIN } from '../../utils/screenResolve'
 import { LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH } from '../lingyun-toolbars/getLingyunNavSafeInset'
 
 let booted = false
@@ -63,9 +62,9 @@ function mountHost(appContext: AppContext): void {
       lingyunPageNavRail.value ? LINGYUN_PAGE_NAV_RAIL_WIDTH : LINGYUN_PAGE_NAV_WIDTH
     }px`
   }
-  /* 宿主比组件更早创建，先按 PC + 全局 tabs 判断一次，避免首帧宽度闪一下 */
+  /* 宿主比组件更早创建，先按宽屏 + 全局 tabs 判断一次，避免首帧宽度闪一下 */
   lingyunPageNavRail.value =
-    window.innerWidth >= LINGYUN_SCREEN_PC_MIN &&
+    window.innerWidth >= LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH &&
     (getLingyunPageConfig().tabs || []).length > 0
   applyWidth()
   watch(lingyunPageNavRail, applyWidth)

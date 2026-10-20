@@ -81,12 +81,19 @@ setLingyunPageConfig({
 ```
 
 - 选中态从当前路由推导；详情页可用 `match` 归入某个 Tab。
-- PC（≥1200）由全局 tabs 驱动时，左侧导航收窄到 **84**，图标在上、文字在下；平板档（690–1199）保持 **220** 完整列表。
+- iPad（690–1199）与 PC（≥1200）配置全局 tabs 后，左侧导航收窄为 **84** 浮动玻璃窄栏，图标在上、文字在下；未配置 tabs 的完整目录仍为 220。
 - 优先级：props > `pages[path]` 页面覆盖 > `layout` > 宽度自动规则。
 - 窄屏点击 `reLaunch`；微信宽屏优先走 `openLingyunHostedPage`，不增加页面栈。
 - 壳自动为底部 Tab 留白，写入 `--lingyun-app-page-inset-bottom` 与 `LINGYUN_APP_PAGE_BOTTOM_INSET`。页面不要再手写 `padding-bottom`；已有手写值时设 `:auto-bottom-inset="false"`。
 - `reLaunch` 本身没有页面动画：壳会在换页后让内容淡入。底部 Tab 指示器按 Tab 顺序左右滑动，左侧菜单的选中胶囊按菜单顺序上下滑动。
 - 带商品底栏 / 底部搜索条的页面请配置 `pages[path].hideTabbar = true`。
+
+## iPhone Duo（P1）
+
+- 设备形态由 `lingyun.formFactor` / `lingyun.duoPose` 决定；宿主可通过 `configureLingyunLayout({ getFormFactor, getDuoPose })` 接入已有型号判断。
+- 内屏竖屏：顶部使用 `lingyun-duo-toolbar`（84 高），底部使用 `lingyun-tabbars size="duo"`（95 高，玻璃条 62，Tab 77×54，图标 22，文字 10/12）。
+- 半折：屏幕中心显示 40px 横向折痕安全带；交互控件应避开，滚动内容可跨越。
+- 外屏右侧栏、内屏横屏单栏与 Split View 在后续版本接入；微信小程序暂按标准宽度布局。
 
 不传左栏顶部插槽、也不调用 `setLingyunPageNavProfile` 时，宽屏左栏显示「凌云UI」和介绍「一套对齐 Apple Liquid Glass 的 uni-app 多端组件库」。传入自定义名称且不传副标题时，不显示这句介绍。
 

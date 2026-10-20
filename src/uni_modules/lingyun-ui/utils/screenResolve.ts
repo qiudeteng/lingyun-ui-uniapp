@@ -23,6 +23,17 @@ export type LingyunDevice = 'phone' | 'pad' | 'pc' | ''
 export type LingyunScreen = 'phone' | 'pad' | 'pc' | ''
 export type LingyunFoldable = 'yes' | 'no' | ''
 export type LingyunFold = 'folded' | 'expanded' | 'half' | ''
+/** 设备形态。Duo 不再按窗口宽度归类，避免内屏 669 被当成手机。 */
+export type LingyunFormFactor = 'mobile' | 'tablet' | 'desktop' | 'duo' | ''
+/** iPhone Duo 姿态。folded=外屏；expanded=内屏平放；half=内屏半折。 */
+export type LingyunDuoPose =
+  | ''
+  | 'outer-portrait'
+  | 'outer-landscape'
+  | 'inner-portrait'
+  | 'inner-portrait-folded'
+  | 'inner-landscape'
+  | 'inner-landscape-folded'
 
 export type LingyunEnv = {
   /** 当前窗口档。折叠、旋转、拉窗口都会变 */
@@ -35,6 +46,10 @@ export type LingyunEnv = {
   fold: LingyunFold
   /** 硬件类型。折叠不会把 phone 改成 pad */
   device: LingyunDevice
+  /** 设备形态；Duo 单独一类 */
+  formFactor: LingyunFormFactor
+  /** Duo 的外屏/内屏与横竖、半折姿态 */
+  duoPose: LingyunDuoPose
 }
 
 export type LingyunScreenInput = {
@@ -61,6 +76,9 @@ const FLIP_RE =
 
 const BOOK_RE =
   /(?:z[\s-]*fold|mate[\s-]*x|mix[\s-]*fold|find[\s-]*n|magic[\s-]*v|pixel[\s-]*fold|sm-f[689]\d{2}|pal-al|tah-an|tet-an|alt-al|grl-al|mgi-an|fri-an|ver-an|flc-an|pgu110|phn110|phu110|cpxd0c|cpx3dc|22061218)/i
+
+/** iPhone Duo：首款折叠 iPhone，外屏 466、内屏 669/951 逻辑像素 */
+const DUO_RE = /(?:iphone[\s-]*duo|\bduo\b)/i
 
 function textOf(value: unknown): string {
   return String(value || '').trim()
@@ -191,21 +209,55 @@ export function resolveLingyunSnapshot(input: LingyunScreenInput): LingyunEnv {
   const os = resolveOs(input.osName, platform, input.system)
   const device = resolveDevice(input.deviceType, brand, model, platform, os)
   const screen = resolveScreen(input.windowWidth)
-  const kind = resolveKind(
-    `${brand} ${model}`,
-    os,
-    device,
+  const id = `${brand} ${model}`.trim()
+  const isDuo = device === 'phone' && DUO_RE.test(id)
+  const kind = isDuo
+    ? 'book'
+    : resolveKind(
+        id,
+        os,
+        device,
+        input.windowWidth,
+        input.windowHeight,
+        input.minShort,
+        input.maxShort,
+      )
+  const fold = resolveFold(
+    kind,
     input.windowWidth,
     input.windowHeight,
-    input.minShort,
-    input.maxShort,
+    input.screenWidth,
+    input.screenHeight,
   )
   const known = !!(device || os || screen)
+
+  let formFactor: LingyunFormFactor = ''
+  let duoPose: LingyunDuoPose = ''
+  if (isDuo) {
+    formFactor = 'duo'
+    const portrait = input.windowHeight >= input.windowWidth
+    if (fold === 'folded') {
+      duoPose = portrait ? 'outer-portrait' : 'outer-landscape'
+    } else if (fold === 'half') {
+      duoPose = portrait ? 'inner-portrait-folded' : 'inner-landscape-folded'
+    } else {
+      duoPose = portrait ? 'inner-portrait' : 'inner-landscape'
+    }
+  } else if (screen === 'phone') {
+    formFactor = 'mobile'
+  } else if (screen === 'pad') {
+    formFactor = 'tablet'
+  } else if (screen === 'pc') {
+    formFactor = 'desktop'
+  }
+
   return {
     screen,
     os,
     device,
     foldable: kind === 'none' ? (known ? 'no' : '') : 'yes',
-    fold: resolveFold(kind, input.windowWidth, input.windowHeight, input.screenWidth, input.screenHeight),
+    fold,
+    formFactor,
+    duoPose,
   }
 }

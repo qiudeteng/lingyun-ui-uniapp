@@ -10,6 +10,7 @@ import { installLingyunPageNav } from './components/lingyun-page-nav/mountLingyu
 // #endif
 
 export * from './utils/feedback'
+export * from './utils/layoutAdapter'
 export * from './utils/pageNavAdapter'
 export * from './utils/pageConfig'
 export * from './utils/pageLayout'
@@ -28,9 +29,11 @@ export {
 } from './components/lingyun-tabbars/tabbarMetrics'
 export type {
   LingyunDevice,
+  LingyunDuoPose,
   LingyunEnv,
   LingyunFold,
   LingyunFoldable,
+  LingyunFormFactor,
   LingyunOs,
   LingyunScreen,
 } from './utils/screen'

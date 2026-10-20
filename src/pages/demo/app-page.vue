@@ -31,6 +31,11 @@
         <text class="hint">auto 时窄屏底部 Tab、宽屏左侧导航。</text>
       </lingyun-section>
 
+      <lingyun-section title="设备模拟" hint="仅 H5 预览；真机由设备识别方法注入">
+        <lingyun-segmented-control v-model="deviceMode" :items="deviceModeItems" />
+        <text class="hint">Duo 内屏使用顶部 Duo Toolbar + 底部 Duo Tab；半折中心显示 40px 折痕安全带。</text>
+      </lingyun-section>
+
       <lingyun-section title="本页覆盖" hint="pages['pages/demo/app-page']">
         <view class="row">
           <text class="row__label">隐藏底部 Tab</text>
@@ -57,13 +62,15 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, onUnmounted, ref } from 'vue'
+  import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
   import {
+    getLingyunLayoutOverride,
     getLingyunPageConfig,
     getLingyunPageOverride,
     lingyun,
     resetLingyunPageConfig,
     resolveLingyunPageLayout,
+    setLingyunLayoutOverride,
     setLingyunPageConfig,
     type LingyunPageTab,
   } from '@/uni_modules/lingyun-ui'
@@ -85,9 +92,40 @@
     { key: 'none', text: '无' },
   ]
 
+  const deviceModeItems = [
+    { key: 'default', text: '默认' },
+    { key: 'duo-inner', text: 'Duo 内屏' },
+    { key: 'duo-folded', text: 'Duo 半折' },
+  ]
+
   const navMode = ref('auto')
   const autoBottomInset = ref(true)
   const windowWidth = ref(0)
+  const existingOverride = getLingyunLayoutOverride()
+  const deviceMode = ref(
+    existingOverride?.duoPose === 'inner-portrait-folded'
+      ? 'duo-folded'
+      : existingOverride?.duoPose === 'inner-portrait'
+        ? 'duo-inner'
+        : 'default',
+  )
+
+  watch(
+    deviceMode,
+    (mode) => {
+      if (mode === 'duo-inner') {
+        setLingyunLayoutOverride({ formFactor: 'duo', duoPose: 'inner-portrait' })
+      } else if (mode === 'duo-folded') {
+        setLingyunLayoutOverride({
+          formFactor: 'duo',
+          duoPose: 'inner-portrait-folded',
+        })
+      } else {
+        setLingyunLayoutOverride(null)
+      }
+    },
+    { immediate: true },
+  )
 
   const pageOverride = computed(() => getLingyunPageOverride(PAGE_PATH))
 
@@ -134,8 +172,14 @@
     windowWidth.value = readWidth()
   }
 
-  const layout = computed(() =>
-    resolveLingyunPageLayout({
+  const layout = computed(() => {
+    const override =
+      deviceMode.value === 'duo-inner'
+        ? { formFactor: 'duo' as const, duoPose: 'inner-portrait' as const }
+        : deviceMode.value === 'duo-folded'
+          ? { formFactor: 'duo' as const, duoPose: 'inner-portrait-folded' as const }
+          : null
+    return resolveLingyunPageLayout({
       width: windowWidth.value,
       config: getLingyunPageConfig(),
       pageOverride: getLingyunPageOverride(PAGE_PATH),
@@ -143,8 +187,10 @@
       showTabbar: 'auto',
       navMode: navMode.value,
       safeArea: true,
-    }),
-  )
+      formFactor: override?.formFactor,
+      duoPose: override?.duoPose,
+    })
+  })
 
   const navLabel = computed(() => {
     if (layout.value.navMode === 'tabbar') return '底部 Tab'
