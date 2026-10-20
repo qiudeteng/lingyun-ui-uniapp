@@ -3,7 +3,6 @@
     class="lingyun-page-nav"
     :class="[themeRootClass, { 'lingyun-page-nav--rail': railMode }]"
   >
-    <view v-if="railMode" class="lingyun-page-nav__rail-panel" />
     <view class="lingyun-page-nav__head" :style="navHeadStyle">
       <view class="lingyun-page-nav__bar" :style="navBarStyle">
         <view v-if="windowControls && !railMode" class="lingyun-page-nav__windows" aria-hidden="true">
@@ -1111,22 +1110,6 @@ export default defineComponent({
   border-right: 0;
 }
 
-/* 窄栏整列保持页面底色；悬浮玻璃栏通高，四周留出安全区 */
-.lingyun-page-nav--rail .lingyun-page-nav__rail-panel {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  bottom: 8px;
-  left: 8px;
-  z-index: 0;
-  border-radius: 28px;
-  pointer-events: none;
-  @include lingyun-glass-control;
-  /* 通高栏用 Clear 档底色：透出统一的页面背景，只留玻璃描边与投影 */
-  background-color: var(--lingyun-glass-clear-bg, #{$lingyun-glass-clear-bg});
-  border-radius: 28px;
-}
-
 .lingyun-page-nav--rail .lingyun-page-nav__head,
 .lingyun-page-nav--rail .lingyun-page-nav__scroll {
   position: relative;
@@ -1134,14 +1117,8 @@ export default defineComponent({
 }
 
 .lingyun-page-nav--rail .lingyun-page-nav__head {
-  padding-top: 8px;
   padding-left: 4px;
   padding-right: 4px;
-}
-
-/* 滚动内容收在玻璃栏的安全区内 */
-.lingyun-page-nav--rail .lingyun-page-nav__scroll {
-  margin-bottom: 8px;
 }
 
 .lingyun-page-nav--rail .lingyun-page-nav__bar {

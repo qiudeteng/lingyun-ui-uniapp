@@ -1,5 +1,6 @@
 <template>
   <lingyun-app-page
+    class="demo-app-page"
     title="App Page"
     :nav-mode="navMode"
     :auto-bottom-inset="autoBottomInset"
@@ -16,6 +17,7 @@
         <lingyun-list-item title="窗口宽度" :detail="`${windowWidth}px`" />
         <lingyun-list-item title="屏幕档" :detail="screenLabel" />
         <lingyun-list-item title="导航形态" :detail="navLabel" />
+        <lingyun-list-item title="页面背景" detail="lingyun-app-page 根节点" />
       </lingyun-list>
 
       <lingyun-section title="全局一级导航" hint="setLingyunPageConfig">
@@ -261,11 +263,15 @@
 </script>
 
 <style lang="scss">
+  /* 页面背景放在 lingyun-app-page 根节点：左侧安全区与内容共用同一底色 */
+  .demo-app-page {
+    background: var(--lingyun-bg-grouped-primary, #f2f2f7);
+  }
+
   .page {
     box-sizing: border-box;
     padding-bottom: 24px;
     min-height: 100%;
-    background: var(--lingyun-bg-grouped-primary, #f2f2f7);
   }
 
   .hero {
