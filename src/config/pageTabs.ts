@@ -14,7 +14,6 @@ export const DEMO_PAGE_TABS: LingyunPageTab[] = [
 
 export const DEMO_PAGE_CONFIG: Partial<LingyunPageConfig> = {
   tabs: DEMO_PAGE_TABS,
-  sidebarTitle: '演示导航',
   layout: { navMode: 'auto' },
   pages: {
     '/pages/login/login': { hideTabbar: true, hideNav: true },

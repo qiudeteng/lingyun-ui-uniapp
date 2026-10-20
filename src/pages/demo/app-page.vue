@@ -170,7 +170,6 @@
       if (enabled) {
         setLingyunPageConfig({
           tabs: SAMPLE_TABS,
-          sidebarTitle: '演示导航',
           layout: { navMode: 'auto' },
         })
       } else {
