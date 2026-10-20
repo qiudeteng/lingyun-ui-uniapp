@@ -34,7 +34,7 @@
     </lingyun-duo-toolbar>
 
     <lingyun-toolbars
-      v-else-if="!embedded && showToolbar"
+      v-else-if="!embedded && showToolbar && pageLayout.toolbarPlacement !== 'hidden'"
       class="lingyun-app-page__toolbar"
       :title="displayTitle"
       :subtitle="hostedMiss ? '' : subtitle"
@@ -122,6 +122,23 @@
         <slot v-else />
       </view>
     </view>
+
+    <!-- Duo 右侧全高栏：外屏竖/横、内屏横屏 -->
+    <lingyun-duo-rail
+      v-if="duoRailVisible"
+      class="lingyun-app-page__duo-rail"
+      :items="tabbarItems"
+      :model-value="activeTabKey"
+      :pose="duoPoseKey"
+      :compact-tools="duoCompactTools"
+      @change="onTabbarChange"
+      @search="onDuoSearch"
+      @overflow="onDuoOverflow"
+    >
+      <template #tools>
+        <slot name="duo-tools" />
+      </template>
+    </lingyun-duo-rail>
 
     <!-- 全局一级导航：窄屏底部 Tab；宽屏由左侧 nav 承担 -->
     <view
@@ -254,7 +271,7 @@ const LINGYUN_APP_PAGE_EMBEDDED = Symbol('lingyun-app-page-embedded')
 
 export default defineComponent({
   name: 'LingyunAppPage',
-  emits: ['back', 'close', 'trailing', 'scroll', 'tab-change'],
+  emits: ['back', 'close', 'trailing', 'scroll', 'tab-change', 'duo-search', 'duo-overflow'],
   props: {
     title: { type: String, default: '' },
     subtitle: { type: String, default: '' },
@@ -480,6 +497,9 @@ export default defineComponent({
         '--lingyun-app-page-bar': `${this.toolbarStackPx}px`,
         '--lingyun-app-page-inset-top': this.insetTop,
         '--lingyun-page-nav-width': `${navWidth}px`,
+        '--lingyun-app-page-inset-right': this.duoRailVisible
+          ? `${this.pageLayout.railWidth}px`
+          : '0px',
         '--lingyun-app-page-inset-bottom': `${this.pageLayout.bottomInsetPx}px`,
         '--lingyun-app-page-tabbar-height': `${this.pageLayout.tabbarHeightPx}px`,
       }
@@ -518,14 +538,27 @@ export default defineComponent({
         duoPose: env.duoPose,
       }
       const plan = resolveLingyunPageLayout(input)
-      if (plan.chrome === 'duo-right-rail' || plan.chrome === 'duo-split') {
-        /* P1 暂用标准宽度布局；P2/P3 接入右侧栏与 Split View */
+      if (plan.chrome === 'duo-split') {
+        /* P1/P2 暂用标准宽度布局；P3 接入 Split View */
         return resolveLingyunPageLayout({ ...input, formFactor: undefined, duoPose: '' })
       }
       return plan
     },
     isDuoTopBottom() {
       return this.pageLayout.chrome === 'duo-top-bottom'
+    },
+    duoRailVisible() {
+      return (
+        !this.embedded &&
+        this.pageLayout.chrome === 'duo-right-rail' &&
+        this.pageLayout.sidebarVisible
+      )
+    },
+    duoPoseKey() {
+      return this.pageLayout.layoutClass.replace(/^duo-/, '')
+    },
+    duoCompactTools() {
+      return this.pageLayout.layoutClass === 'duo-outer-landscape'
     },
     isDuoSplit() {
       return this.pageLayout.chrome === 'duo-split'
@@ -632,6 +665,9 @@ export default defineComponent({
     },
     insetTop() {
       if (!this.showToolbar) return '0px'
+      if (this.duoRailVisible) {
+        return `${this.safeArea ? this.statusBarPx : 0}px`
+      }
       if (this.isDuoTopBottom || this.isDuoSplit) {
         return `${LINGYUN_DUO_TOP_BAR_HEIGHT}px`
       }
@@ -674,6 +710,7 @@ export default defineComponent({
           'lingyun-app-page--tabbar': this.tabbarVisible,
           'lingyun-app-page--page-enter': this.pageEntering,
           'lingyun-app-page--duo-top-bottom': this.isDuoTopBottom,
+          'lingyun-app-page--duo-right-rail': this.duoRailVisible,
           'lingyun-app-page--duo-split': this.isDuoSplit,
           'lingyun-app-page--fold-horizontal': this.pageLayout.foldBand === 'horizontal',
           'lingyun-app-page--fold-vertical': this.pageLayout.foldBand === 'vertical',
@@ -884,7 +921,17 @@ export default defineComponent({
         },
       })
     },
+    onDuoSearch() {
+      this.$emit('duo-search')
+    },
+    onDuoOverflow() {
+      this.$emit('duo-overflow')
+    },
     syncTopInset() {
+      if (this.duoRailVisible) {
+        this.topInsetPx = this.safeArea ? this.statusBarPx : 0
+        return
+      }
       if (this.isDuoTopBottom || this.isDuoSplit) {
         this.topInsetPx = this.showToolbar ? LINGYUN_DUO_TOP_BAR_HEIGHT : 0
         return
@@ -1118,6 +1165,12 @@ export default defineComponent({
 
 .lingyun-app-page--nav {
   padding-left: var(--lingyun-page-nav-width, 220px);
+  box-sizing: border-box;
+}
+
+/* Duo 右侧全高栏：内容让出栏宽 */
+.lingyun-app-page--duo-right-rail {
+  padding-right: var(--lingyun-app-page-inset-right, 0px);
   box-sizing: border-box;
 }
 

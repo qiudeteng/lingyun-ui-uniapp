@@ -3,6 +3,8 @@
     title="App Page"
     :nav-mode="navMode"
     :auto-bottom-inset="autoBottomInset"
+    @duo-search="toastDuo('搜索')"
+    @duo-overflow="toastDuo('更多')"
   >
     <view class="page">
       <view class="hero">
@@ -33,7 +35,7 @@
 
       <lingyun-section title="设备模拟" hint="仅 H5 预览；真机由设备识别方法注入">
         <lingyun-segmented-control v-model="deviceMode" :items="deviceModeItems" />
-        <text class="hint">Duo 内屏使用顶部 Duo Toolbar + 底部 Duo Tab；半折中心显示 40px 折痕安全带。</text>
+        <text class="hint">内屏：顶部 Duo Toolbar + 底部 Duo Tab；外屏/内屏横屏：右侧全高栏；半折显示 40px 折痕安全带。</text>
       </lingyun-section>
 
       <lingyun-section title="本页覆盖" hint="pages['pages/demo/app-page']">
@@ -58,6 +60,18 @@
         </view>
       </lingyun-section>
     </view>
+
+    <template #duo-tools>
+      <view class="duo-tool">
+        <lingyun-icon type="compose" :size="22" color="label" />
+      </view>
+      <view class="duo-tool">
+        <lingyun-icon type="camera" :size="22" color="label" />
+      </view>
+      <view class="duo-tool">
+        <lingyun-icon type="more" :size="22" color="label" />
+      </view>
+    </template>
   </lingyun-app-page>
 </template>
 
@@ -72,6 +86,8 @@
     resolveLingyunPageLayout,
     setLingyunLayoutOverride,
     setLingyunPageConfig,
+    showLingyunToast,
+    type LingyunDuoPose,
     type LingyunPageTab,
   } from '@/uni_modules/lingyun-ui'
 
@@ -94,38 +110,46 @@
 
   const deviceModeItems = [
     { key: 'default', text: '默认' },
-    { key: 'duo-inner', text: 'Duo 内屏' },
-    { key: 'duo-folded', text: 'Duo 半折' },
+    { key: 'duo-inner', text: '内屏' },
+    { key: 'duo-folded', text: '内屏半折' },
+    { key: 'duo-outer-portrait', text: '外屏竖' },
+    { key: 'duo-outer-landscape', text: '外屏横' },
+    { key: 'duo-inner-landscape', text: '内屏横' },
   ]
 
   const navMode = ref('auto')
   const autoBottomInset = ref(true)
   const windowWidth = ref(0)
+  const POSE_BY_MODE: Record<string, LingyunDuoPose> = {
+    'duo-inner': 'inner-portrait',
+    'duo-folded': 'inner-portrait-folded',
+    'duo-outer-portrait': 'outer-portrait',
+    'duo-outer-landscape': 'outer-landscape',
+    'duo-inner-landscape': 'inner-landscape',
+  }
   const existingOverride = getLingyunLayoutOverride()
   const deviceMode = ref(
-    existingOverride?.duoPose === 'inner-portrait-folded'
-      ? 'duo-folded'
-      : existingOverride?.duoPose === 'inner-portrait'
-        ? 'duo-inner'
-        : 'default',
+    Object.keys(POSE_BY_MODE).find(
+      (mode) => POSE_BY_MODE[mode] === existingOverride?.duoPose,
+    ) || 'default',
   )
 
   watch(
     deviceMode,
     (mode) => {
-      if (mode === 'duo-inner') {
-        setLingyunLayoutOverride({ formFactor: 'duo', duoPose: 'inner-portrait' })
-      } else if (mode === 'duo-folded') {
-        setLingyunLayoutOverride({
-          formFactor: 'duo',
-          duoPose: 'inner-portrait-folded',
-        })
+      const pose = POSE_BY_MODE[mode]
+      if (pose) {
+        setLingyunLayoutOverride({ formFactor: 'duo', duoPose: pose })
       } else {
         setLingyunLayoutOverride(null)
       }
     },
     { immediate: true },
   )
+
+  function toastDuo(text: string): void {
+    showLingyunToast({ text })
+  }
 
   const pageOverride = computed(() => getLingyunPageOverride(PAGE_PATH))
 
@@ -173,12 +197,7 @@
   }
 
   const layout = computed(() => {
-    const override =
-      deviceMode.value === 'duo-inner'
-        ? { formFactor: 'duo' as const, duoPose: 'inner-portrait' as const }
-        : deviceMode.value === 'duo-folded'
-          ? { formFactor: 'duo' as const, duoPose: 'inner-portrait-folded' as const }
-          : null
+    const pose = POSE_BY_MODE[deviceMode.value]
     return resolveLingyunPageLayout({
       width: windowWidth.value,
       config: getLingyunPageConfig(),
@@ -187,14 +206,16 @@
       showTabbar: 'auto',
       navMode: navMode.value,
       safeArea: true,
-      formFactor: override?.formFactor,
-      duoPose: override?.duoPose,
+      formFactor: pose ? 'duo' : undefined,
+      duoPose: pose,
     })
   })
 
   const navLabel = computed(() => {
     if (layout.value.navMode === 'tabbar') return '底部 Tab'
-    if (layout.value.navMode === 'sidebar') return '左侧导航'
+    if (layout.value.navMode === 'sidebar') {
+      return layout.value.navSide === 'right' ? '右侧导航' : '左侧导航'
+    }
     return '无导航'
   })
 
@@ -277,6 +298,14 @@
     font-size: 13px;
     line-height: 18px;
     color: var(--lingyun-label-secondary, #6a6a6a);
+  }
+
+  .duo-tool {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .line {
