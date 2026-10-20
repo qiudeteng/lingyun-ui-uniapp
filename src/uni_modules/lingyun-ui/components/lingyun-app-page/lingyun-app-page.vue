@@ -116,6 +116,7 @@
       :safe-area="tabbarSafeArea"
       :variant="tabbarVariant"
       :fallback-first="false"
+      :from-key="tabbarFromKey"
       icon-mode="icon"
       :fixed="true"
       @change="onTabbarChange"
@@ -180,6 +181,11 @@ import {
   type LingyunPageLayoutResult,
   type LingyunPageTab,
 } from '../../utils/pageLayout'
+import {
+  beginLingyunTabTransition,
+  clearLingyunTabTransition,
+  consumeLingyunTabTransition,
+} from '../../utils/tabTransition'
 // #ifdef H5
 import { setLingyunH5PageNavAllowed } from '../lingyun-page-nav/mountLingyunPageNav'
 // #endif
@@ -264,6 +270,10 @@ export default defineComponent({
       windowWidth: readLingyunWindowWidth(),
       /** 当前真实页面路径，用于推导 Tab 选中态 */
       currentPagePath: '',
+      /** 跨页切换时 Tab 指示器的起始 key */
+      tabbarFromKey: '',
+      /** 新页面内容淡入 */
+      tabEntering: false,
       /** 横向 swipe 确认后临时关 scroll-y，避免 iOS 斜滑带动页面上下晃 */
       bodyScrollY: true,
       /** H5：顶部插槽目标节点出现后再传送 */
@@ -278,6 +288,7 @@ export default defineComponent({
       _onWindowResize: null as ((res?: unknown) => void) | null,
       _stopRouteChange: null as (() => void) | null,
       _onHashChange: null as (() => void) | null,
+      _tabEnterTimer: null as ReturnType<typeof setTimeout> | null,
     }
   },
   setup() {
@@ -337,6 +348,7 @@ export default defineComponent({
       })
     }
     this.syncPageChrome()
+    this.applyTabTransition()
     this.syncNavLayout()
     this._scrollSettleTimer = null
     this._scrollLockCount = 0
@@ -351,6 +363,12 @@ export default defineComponent({
     this.syncH5PageNavHost()
     this.bindResize()
     this.bindPageRoute()
+    if (this.tabEntering) {
+      this._tabEnterTimer = setTimeout(() => {
+        this.tabEntering = false
+        this._tabEnterTimer = null
+      }, 280)
+    }
     if (this.usePageScroll) {
       this.$nextTick(() => this.setupGlassObserver())
     }
@@ -366,6 +384,10 @@ export default defineComponent({
     this.teardownGlassObserver()
     this.unbindResize()
     this.unbindPageRoute()
+    if (this._tabEnterTimer) {
+      clearTimeout(this._tabEnterTimer)
+      this._tabEnterTimer = null
+    }
   },
   watch: {
     safeArea() {
@@ -568,6 +590,7 @@ export default defineComponent({
           'lingyun-app-page--page-scroll': this.usePageScroll,
           'lingyun-app-page--nav': this.navDocked,
           'lingyun-app-page--tabbar': this.tabbarVisible,
+          'lingyun-app-page--tab-enter': this.tabEntering,
           'lingyun-app-page--auth-hold': this.authHold,
         },
       ]
@@ -725,6 +748,12 @@ export default defineComponent({
       this._onHashChange = null
       // #endif
     },
+    /** 消费一次跨页过渡：Tab 指示器从上一项滑入，内容淡入 */
+    applyTabTransition() {
+      const transition = consumeLingyunTabTransition(this.activeTabKey)
+      this.tabbarFromKey = transition ? transition.fromKey : ''
+      this.tabEntering = !!transition
+    },
     onTabbarChange(item: { key?: string | number }) {
       const key = item && item.key != null ? String(item.key) : ''
       if (!key) return
@@ -733,16 +762,24 @@ export default defineComponent({
       )
       if (!tab) return
       const raw = normalizeLingyunPagePath(tab.url)
-      if (!raw || raw === normalizeLingyunPagePath(this.effectivePagePath)) return
+      const currentPath = normalizeLingyunPagePath(this.effectivePagePath)
+      if (!raw || raw === currentPath) return
+      /* 必须在 setLingyunPageNavIntent 之前记录，否则意图会先把 activeTabKey 改成目标项 */
+      const fromKey = this.activeTabKey
       this.$emit('tab-change', { key: tab.key, tab })
       if (openLingyunHostedPage(tab.url, raw)) return
       setLingyunPageNavIntent(raw)
       const next = resolveLingyunPageUrl(tab.url)
       if (!next) return
+      beginLingyunTabTransition(fromKey, tab.key)
       uni.reLaunch({
         url: next,
         fail: () => {
-          uni.redirectTo({ url: next })
+          clearLingyunTabTransition()
+          uni.redirectTo({
+            url: next,
+            fail: () => clearLingyunTabTransition(),
+          })
         },
       })
     },
@@ -991,6 +1028,28 @@ export default defineComponent({
   z-index: 90;
   width: var(--lingyun-page-nav-width, 220px);
   height: 100%;
+}
+
+/* 一级 Tab 跨页：内容淡入；Tab 栏本身不移动 */
+.lingyun-app-page--tab-enter .lingyun-app-page__pad,
+.lingyun-app-page--tab-enter .lingyun-app-page__body {
+  animation: lingyun-app-page-tab-enter 0.24s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+/* bodyScroll=false 时 __body 已动画，避免内层 __pad 再叠一次 */
+.lingyun-app-page--tab-enter .lingyun-app-page__body .lingyun-app-page__pad {
+  animation: none;
+}
+
+@keyframes lingyun-app-page-tab-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /*

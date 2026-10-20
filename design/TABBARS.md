@@ -93,6 +93,7 @@
 | `variant` | string | `default` | `default` \| `prominent`（Sketch Default / Prominent Tab） |
 | `iconMode` | string | `text` | `text` 直接显示字形；`icon` 用 `lingyun-icon` 渲染 |
 | `fallbackFirst` | boolean | `true` | 无匹配项时高亮第一项；页面壳自动导航传 `false` |
+| `fromKey` | string\|number | `''` | 页面壳跨页切换时，指示器从上一项的 key 滑入 |
 | `safeArea` | boolean | `true` | 预留 Home Indicator |
 | `fixed` | boolean | `true` | 底部 fixed 悬浮 |
 

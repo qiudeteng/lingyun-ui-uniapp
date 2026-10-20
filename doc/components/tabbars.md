@@ -24,6 +24,7 @@
 | `variant` | 外观 | default |
 | `iconMode` | `text` 直接显示 `icon` 字形；`icon` 用 `lingyun-icon` 渲染 | text |
 | `fallbackFirst` | 没有匹配项时是否把第一项当作选中；页面壳自动导航传 `false` | true |
+| `fromKey` | 进场时从哪个 key 滑入当前项；页面壳跨页切换用 | '' |
 | `safeArea` | 底部安全区。开启时整条高 99，关闭时 78 | true |
 | `fixed` | 固定在底部 | true |
 ## 事件

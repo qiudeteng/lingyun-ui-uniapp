@@ -115,6 +115,7 @@ type LensRect = {
  * @property {String} variant = [default|prominent] Sketch：Default / Prominent Tab
  * @property {String} iconMode = [text|icon] text 直接显示字形；icon 用 lingyun-icon 渲染
  * @property {Boolean} fallbackFirst 无匹配项时高亮第一项（默认 true）
+ * @property {String|Number} fromKey 进场时从哪个 key 滑入（页面壳跨页切换用）
  * @property {Boolean} safeArea 预留底部 Home Indicator（默认 true）
  * @property {Boolean} fixed 固定底部悬浮（默认 true）
  * @event {Function} change / update:modelValue
@@ -175,6 +176,11 @@ export default defineComponent({
     fallbackFirst: {
       type: Boolean,
       default: true,
+    },
+    /** 页面壳跨页切换时，指示器从这一项滑到当前项 */
+    fromKey: {
+      type: [String, Number],
+      default: '',
     },
     safeArea: {
       type: Boolean,
@@ -258,7 +264,7 @@ export default defineComponent({
   },
   mounted() {
     this.$nextTick(() => {
-      setTimeout(() => this.syncIndicator({ liquid: false }), 20)
+      setTimeout(() => this.syncInitialIndicator(), 20)
     })
     /* #ifdef H5 */
     const onResize = () => this.syncIndicator({ liquid: false })
@@ -380,6 +386,68 @@ export default defineComponent({
         this._lensLast = 0
         this._lensRaf = this.scheduleFrame((t) => this.tickLens(t))
       }
+    },
+    /** 挂载时从上一页的 key 滑到当前 key；没有 fromKey 时直接落位 */
+    syncInitialIndicator(retry = 0) {
+      const active = (this.mainItems || []).find((item) => this.isActive(item))
+      const fromKey = this.fromKey
+      const fromItem = fromKey
+        ? (this.mainItems || []).find((item) => String(item.key) === String(fromKey))
+        : null
+      if (!active) {
+        /* 小程序新页面的路由可能晚一拍，等 active key 就绪再滑入 */
+        if (fromKey && retry < 6) {
+          setTimeout(() => this.syncInitialIndicator(retry + 1), 30)
+          return
+        }
+        this.syncIndicator({ liquid: false })
+        return
+      }
+      if (
+        !fromItem ||
+        String(fromItem.key) === String(active.key) ||
+        this.prefersReducedMotion()
+      ) {
+        this.syncIndicator({ liquid: false })
+        return
+      }
+      this.$nextTick(() => {
+        uni
+          .createSelectorQuery()
+          .in(this)
+          .select(`#${this.barId}`)
+          .boundingClientRect()
+          .select(`#${this.itemId(fromItem)}`)
+          .boundingClientRect()
+          .select(`#${this.itemId(active)}`)
+          .boundingClientRect()
+          .exec((res) => {
+            const bar = res && res[0]
+            const fromRect = res && res[1]
+            const toRaw = res && res[2]
+            if (!bar || !fromRect || !fromRect.width || !toRaw || !toRaw.width) {
+              this.syncIndicator({ liquid: false })
+              return
+            }
+            const toRect = {
+              left: toRaw.left - bar.left,
+              top: toRaw.top - bar.top,
+              width: toRaw.width,
+              height: toRaw.height,
+            }
+            this.indicator.visible = true
+            this.snapLens({
+              left: fromRect.left - bar.left,
+              top: fromRect.top - bar.top,
+              width: fromRect.width,
+              height: fromRect.height,
+            })
+            this.indicator.ready = true
+            this.$nextTick(() => {
+              this.flowLens(toRect)
+            })
+          })
+      })
     },
     syncIndicator(options?: { liquid?: boolean }) {
       const liquid = !!(options && options.liquid)
