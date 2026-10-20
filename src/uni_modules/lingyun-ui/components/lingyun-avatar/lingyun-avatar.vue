@@ -5,6 +5,7 @@
       class="lingyun-avatar__img"
       :src="src"
       mode="aspectFill"
+      @error="onImageError"
     />
     <text v-else class="lingyun-avatar__text">{{ initials }}</text>
   </view>
@@ -31,6 +32,7 @@ const RADIUS_PRESET: Record<string, number> = {
 
 export default defineComponent({
   name: 'LingyunAvatar',
+  emits: ['error'],
   props: {
     src: { type: String, default: '' },
     text: { type: String, default: '' },
@@ -83,6 +85,11 @@ export default defineComponent({
       else style.borderRadius = `${this.radiusPx}px`
       if (this.backgroundColor) style.backgroundColor = this.backgroundColor
       return style
+    },
+  },
+  methods: {
+    onImageError(event: unknown) {
+      this.$emit('error', event)
     },
   },
 })

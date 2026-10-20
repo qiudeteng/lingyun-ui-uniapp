@@ -11,25 +11,40 @@
           <view class="lingyun-page-nav__window lingyun-page-nav__window--min" />
           <view class="lingyun-page-nav__window lingyun-page-nav__window--zoom" />
         </view>
-        <view v-if="railMode ? showAvatar : showProfile" class="lingyun-page-nav__profile">
+        <view v-if="railMode || showProfile" class="lingyun-page-nav__profile">
           <view
-            v-if="showAvatar"
+            v-if="railMode || showAvatar"
             class="lingyun-page-nav__avatar"
-            :class="{ 'lingyun-page-nav__avatar--mark': showStorePicker }"
+            :class="{ 'lingyun-page-nav__avatar--mark': showStorePicker && !railMode }"
           >
-            <image
-              v-if="profileAvatar && !useAvatarSlot && !avatarFailed"
-              class="lingyun-page-nav__avatar-img"
-              :style="avatarImgStyle"
-              :src="profileAvatar"
-              mode="aspectFill"
-              @error="onAvatarError"
-            />
-            <text v-else-if="!useAvatarSlot" class="lingyun-page-nav__avatar-fallback">{{ avatarInitial }}</text>
-            <slot name="avatar" />
-            <!-- #ifdef H5 -->
-            <view v-if="useAvatarSlot" id="ly-nav-slot-avatar" class="lingyun-page-nav__slot" />
-            <!-- #endif -->
+            <template v-if="railMode">
+              <slot v-if="useAvatarSlot" name="avatar" />
+              <!-- #ifdef H5 -->
+              <view v-if="useAvatarSlot" id="ly-nav-slot-avatar" class="lingyun-page-nav__slot" />
+              <!-- #endif -->
+              <lingyun-avatar
+                v-if="!useAvatarSlot"
+                size="md"
+                :src="profileAvatar && !avatarFailed ? profileAvatar : ''"
+                :text="profileName || railBrand"
+                @error="onAvatarError"
+              />
+            </template>
+            <template v-else>
+              <image
+                v-if="profileAvatar && !useAvatarSlot && !avatarFailed"
+                class="lingyun-page-nav__avatar-img"
+                :style="avatarImgStyle"
+                :src="profileAvatar"
+                mode="aspectFill"
+                @error="onAvatarError"
+              />
+              <text v-else-if="!useAvatarSlot" class="lingyun-page-nav__avatar-fallback">{{ avatarInitial }}</text>
+              <slot name="avatar" />
+              <!-- #ifdef H5 -->
+              <view v-if="useAvatarSlot" id="ly-nav-slot-avatar" class="lingyun-page-nav__slot" />
+              <!-- #endif -->
+            </template>
           </view>
           <view v-if="!railMode" class="lingyun-page-nav__meta">
             <view
@@ -60,7 +75,6 @@
             </view>
           </view>
         </view>
-        <text v-else-if="railMode" class="lingyun-page-nav__rail-brand">{{ railBrand }}</text>
         <text v-else class="lingyun-page-nav__title">凌云UI</text>
       </view>
       <view v-if="showStorePicker && !railMode" class="lingyun-page-nav__store">
@@ -167,6 +181,7 @@ import { defineComponent, getCurrentInstance, ref, watch, type PropType } from '
 import { onShow } from '@dcloudio/uni-app'
 import { useLingyunTheme } from '../../utils/theme'
 import LingyunIcon from '../lingyun-icon/lingyun-icon.vue'
+import LingyunAvatar from '../lingyun-avatar/lingyun-avatar.vue'
 import {
   getLingyunNavLayout,
   LINGYUN_TOOLBAR_BAR_DESIGN_PX,
@@ -221,7 +236,7 @@ const LINGYUN_PAGE_NAV_SUBTITLE = '一套对齐 Apple Liquid Glass 的 uni-app �
  */
 export default defineComponent({
   name: 'LingyunPageNav',
-  components: { LingyunIcon },
+  components: { LingyunIcon, LingyunAvatar },
   inject: {
     pageScrollLocked: {
       from: LINGYUN_APP_PAGE_SCROLL_LOCKED,
@@ -1158,16 +1173,29 @@ export default defineComponent({
 }
 
 .lingyun-page-nav--rail .lingyun-page-nav__avatar {
+  width: 48px;
+  height: 48px;
   margin: 0 auto;
+  padding: 4px;
+  box-sizing: border-box;
+  border-radius: 24px;
+  overflow: hidden;
+  @include lingyun-glass-control;
+  border-radius: 24px;
 }
 
-.lingyun-page-nav--rail .lingyun-page-nav__rail-brand {
-  display: block;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 22px;
-  text-align: center;
-  color: var(--lingyun-label, #{$lingyun-label});
+.lingyun-page-nav--rail .lingyun-page-nav__avatar .lingyun-avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.lingyun-page-nav--rail .lingyun-page-nav__avatar .lingyun-page-nav__slot {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .lingyun-page-nav--rail .lingyun-page-nav__section {

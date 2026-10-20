@@ -5,6 +5,7 @@
 - P2 支持 Duo 外屏竖屏 / 外屏横屏 / 内屏横屏右侧全高栏：84 宽，工具组 48×164、Tab 组 48×210（4×48）、搜索 48、选中胶囊 44×58；外屏横屏工具自动收进「…」溢出。
 - `lingyun-app-page` 新增 `duo-tools` 插槽与 `duo-search` / `duo-overflow` 事件；新增 `lingyun-duo-rail` 组件。
 - P3 支持 Duo 内屏横屏折叠/半折 Split View：顶部 84 高 Duo Toolbar、右侧 84 返回列、左主栏 456 + 40 折痕避让带 + 右详情栏 371；Split View 隐藏 Tab。新增 `lingyun-split-view` 与 `split-primary` / `split-detail` 插槽。
+- 窄栏顶部改为玻璃头像包装，内部使用 `lingyun-avatar`：有用户头像显示头像，无头像显示姓名缩写；`lingyun-avatar` 新增 `error` 事件用于图片失败时回退到缩写。
 - 换页过渡只淡入内容块，页面背景（含左侧安全区）保持稳定，不再跟着渐入/闪烁。
 ## 1.0.30（2026-10-20）
 - `lingyun-app-page` 支持数据驱动的一级导航：`setLingyunPageConfig({ tabs })` 一次配置，窄屏渲染底部 Tab、宽屏渲染左侧停靠导航，默认按窗口宽度 690 切换。
