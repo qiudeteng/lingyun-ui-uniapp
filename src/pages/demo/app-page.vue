@@ -17,7 +17,7 @@
         <lingyun-list-item title="窗口宽度" :detail="`${windowWidth}px`" />
         <lingyun-list-item title="屏幕档" :detail="screenLabel" />
         <lingyun-list-item title="导航形态" :detail="navLabel" />
-        <lingyun-list-item title="页面背景" detail="lingyun-app-page 根节点" />
+        <lingyun-list-item title="页面背景" detail="壳根节点或内容根节点" />
       </lingyun-list>
 
       <lingyun-section title="全局一级导航" hint="setLingyunPageConfig">
