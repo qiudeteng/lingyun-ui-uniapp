@@ -34,7 +34,6 @@
   } from '@/uni_modules/lingyun-ui/utils/pageConfig'
   import { normalizeLingyunPagePath } from '@/uni_modules/lingyun-ui/utils/pageNavAdapter'
   import type { LingyunPageTabChild } from '@/uni_modules/lingyun-ui/utils/pageLayout'
-  import { openLingyunHostedPage } from '@/router/pageHost'
   import { resolveLingyunPageUrl } from '@/router/pageNav'
 
   const tabKey = ref('')
@@ -93,9 +92,9 @@
   function openChild(child: LingyunPageTabChild): void {
     const path = normalizeLingyunPagePath(child.url)
     if (!path) return
-    if (openLingyunHostedPage(child.url, path)) return
     const next = resolveLingyunPageUrl(child.url)
     if (!next) return
+    /* 工作台是 Tab 落地页，子项作为详情压栈，顶部返回可回到工作台 */
     uni.navigateTo({
       url: next,
       fail: () => uni.redirectTo({ url: next }),

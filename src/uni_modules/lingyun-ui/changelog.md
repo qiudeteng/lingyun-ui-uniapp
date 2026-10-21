@@ -1,4 +1,6 @@
 ## 1.0.31（2026-10-20）
+- 页面壳默认不再接管底部 Tab：只有一级 Tab 根页或工作台页显示 Tab 并自动留白；子页 / 详情页 / 首页默认没有 Tab，其他页面需要 Tab 时自行使用 `lingyun-tabbars`。
+- 修复了手机端从工作台进入子页无法返回的问题：工作台子项统一用 `uni.navigateTo` 压栈，第一个子项也显示返回；深链直接落到子页时返回父 Tab 工作台。
 - 修复了二级菜单触发层在微信端把导航项压成内容宽度、导致 Tab 不居中的问题；`lingyun-menu` / `lingyun-popover` 新增 `trigger-block`，导航项恢复整格宽度，点击区域覆盖整个导航单元。
 - 全局 tabs 支持 `children` 二级菜单：宽屏左侧（Web / 小程序一致）点击父项用 `lingyun-menu` 弹出（透明遮罩，点击外部关闭）；底部 / Duo 点击带 children 的父项进入固定工作台页，没有 children 直接进 `url`。新增 `workspaceUrl` 配置，子项路径自动归父 Tab 高亮。
 - 新增设备形态 `formFactor` 与 Duo 姿态 `duoPose`；宿主可通过 `configureLingyunLayout({ getFormFactor, getDuoPose })` 接入已有型号判断，未接入时用机型 + fold 状态兜底。

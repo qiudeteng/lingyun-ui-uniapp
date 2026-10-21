@@ -110,7 +110,7 @@
 
 `lingyun-app-page` 配置全局 `tabs` 后：
 
-- 窗口宽度 **< 690**：显示底部 Tab；页面壳自动为内容加底部留白（`safeArea` 时 **99**，否则 **78**），并写入 `--lingyun-app-page-inset-bottom`。
+- 窗口宽度 **< 690**：只有当页是一级 Tab 根页（无 children 的 `url`）或带 children 的**工作台页**时才渲染底部 Tab；子页面、详情页、首页等默认不渲染 Tab，也不加底部留白。页面壳自动为渲染 Tab 的页面留白（`safeArea` 时 **99**，否则 **78**），并写入 `--lingyun-app-page-inset-bottom`；其他页面如需 Tab，自行使用 `lingyun-tabbars`。
 - 窗口宽度 **≥ 690**：Tab 隐藏，导航切到左侧停靠列（分组实底，见 `SIDEBARS.md` §4）。iPad/PC 配置全局 tabs 时该列为 **84** 悬浮玻璃窄栏：通高、四周各留 8，页面背景从玻璃下方透出；未配置 tabs 的完整目录仍为 220。
 - iPhone Duo 内屏竖屏：底部 Tab 高 **95**，玻璃条 **62**，Tab **77×54**，图标 **22**，文字 **10 / 12**，搜索钮 **62**；半折时屏幕中心出现 **40** 横向折痕安全带。
 - iPhone Duo 内屏横屏折叠/半折：Split View 隐藏 Tab，右侧 84 返回列；左主栏 456 / 折痕带 40 / 右详情 371。

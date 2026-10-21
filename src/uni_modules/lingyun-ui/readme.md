@@ -88,7 +88,7 @@ setLingyunPageConfig({
 - 选中态从当前路由推导；详情页可用 `match` 归入某个 Tab。
 - 窄屏点击 `reLaunch`；微信宽屏优先走常驻宿主切换，不增加页面栈。
 - 优先级：组件 props > `pages[path]` 页面覆盖 > `layout` > 宽度自动规则。可用 `nav-mode`、`show-tabbar`、`show-nav` 覆盖。
-- 壳会自动为底部 Tab 留白，并写入 `--lingyun-app-page-inset-bottom`；页面不要再手写 `padding-bottom`，否则设 `:auto-bottom-inset="false"`。
+- 页面壳默认不接管底部 Tab：只有一级 Tab 根页或工作台页渲染底部 Tab，并写入 `--lingyun-app-page-inset-bottom`；子页/详情页/首页默认没有 Tab，也不留底部空间。其他页面需要 Tab 请自行使用 `lingyun-tabbars`。页面不要再手写 `padding-bottom`，否则设 `:auto-bottom-inset="false"`。
 - 带商品底栏 / 底部搜索条的页面请配置 `pages[path].hideTabbar = true`。
 - 小程序 Tab 指向内嵌视图时仍须静态登记，见上面的 `registerLingyunPageView`。
 

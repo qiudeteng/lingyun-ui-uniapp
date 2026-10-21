@@ -510,6 +510,10 @@ export default defineComponent({
     pageLayout() {
       this.applyPageLayout()
     },
+    tabbarVisible() {
+      /* 当前页是否属于一级 Tab 会随工作台 key / 路由变化 */
+      this.applyPageLayout()
+    },
     autoBottomInset() {
       this.applyPageLayout()
     },
@@ -556,7 +560,7 @@ export default defineComponent({
           : this.duoRailVisible
             ? `${this.pageLayout.railWidth}px`
             : '0px',
-        '--lingyun-app-page-inset-bottom': `${this.pageLayout.bottomInsetPx}px`,
+        '--lingyun-app-page-inset-bottom': `${this.effectiveBottomInsetPx}px`,
         '--lingyun-app-page-tabbar-height': `${this.pageLayout.tabbarHeightPx}px`,
       }
     },
@@ -645,7 +649,9 @@ export default defineComponent({
       return (
         !this.embedded &&
         this.pageLayout.tabbarVisible &&
-        this.tabbarItems.length > 0
+        this.tabbarItems.length > 0 &&
+        /* 页面壳默认不接管 Tab：只有一级 Tab 的根页/工作台才显示 */
+        this.isTabRoot
       )
     },
     activeTabKey() {
@@ -657,8 +663,26 @@ export default defineComponent({
       return tab ? tab.key : ''
     },
     isTabRoot() {
+      if (isLingyunWorkspacePath(this.effectivePagePath)) {
+        const key = getLingyunWorkspaceTabKey()
+        if (!key) return false
+        return (this.pageConfig.tabs || []).some(
+          (tab) =>
+            tab.key === key &&
+            Array.isArray(tab.children) &&
+            tab.children.length > 0,
+        )
+      }
       const tab = matchLingyunPageTab(this.pageConfig.tabs || [], this.effectivePagePath)
       if (!tab) return false
+      /* 有 children 时，Tab 根是工作台；子页面不是根（即使子页 url 与 Tab url 相同） */
+      if (Array.isArray(tab.children) && tab.children.length) {
+        if (buildLingyunPageTabWorkspaceUrl(tab)) return false
+        return (
+          normalizeLingyunPagePath(tab.url) ===
+          normalizeLingyunPagePath(this.effectivePagePath)
+        )
+      }
       return (
         normalizeLingyunPagePath(tab.url) ===
         normalizeLingyunPagePath(this.effectivePagePath)
@@ -674,9 +698,13 @@ export default defineComponent({
     tabbarVariant() {
       return this.pageConfig.tabbar?.variant || 'default'
     },
+    /** 只有当前页真的渲染 Tab 时才给内容留底部空间 */
+    effectiveBottomInsetPx() {
+      return this.tabbarVisible ? this.pageLayout.bottomInsetPx : 0
+    },
     /** 壳实际加到内容上的底部留白 */
     bottomInsetStyle() {
-      const inset = this.autoBottomInset ? this.pageLayout.bottomInsetPx : 0
+      const inset = this.autoBottomInset ? this.effectiveBottomInsetPx : 0
       return inset > 0 ? { paddingBottom: `${inset}px` } : null
     },
     /** 宽屏需要为顶栏让出左侧。H5 的列在 body 上，这里只留宽度。 */
@@ -884,7 +912,7 @@ export default defineComponent({
     applyPageLayout() {
       if (this.embedded) return
       this.navInsetPx = this.pageNavWidth
-      this.bottomInsetPx = this.pageLayout.bottomInsetPx
+      this.bottomInsetPx = this.effectiveBottomInsetPx
       this.syncH5PageNavHost()
     },
     syncPageChrome() {
@@ -1145,6 +1173,22 @@ export default defineComponent({
       if (pages.length > 1) {
         uni.navigateBack()
         return
+      }
+      /* 深链直接落到二级页面时，返回父 Tab 的工作台，而不是回首页 */
+      const tab = matchLingyunPageTab(
+        this.pageConfig.tabs || [],
+        this.effectivePagePath,
+      )
+      if (tab && Array.isArray(tab.children) && tab.children.length) {
+        const workspace = buildLingyunPageTabWorkspaceUrl(tab)
+        if (workspace) {
+          setLingyunWorkspaceTabKey(tab.key)
+          uni.reLaunch({
+            url: workspace,
+            fail: () => uni.reLaunch({ url: '/pages/index/index' }),
+          })
+          return
+        }
       }
       uni.reLaunch({ url: '/pages/index/index' })
     },
