@@ -1,23 +1,25 @@
 <template>
   <lingyun-app-page title="工作台" :show-back="false">
     <view class="page">
-      <view class="hero">
-        <text class="hero__title">{{ tabText }}</text>
-        <text class="hero__desc">选择一个功能进入</text>
+      <view :key="tabKey" class="workbench-body">
+        <view class="hero">
+          <text class="hero__title">{{ tabText }}</text>
+          <text class="hero__desc">选择一个功能进入</text>
+        </view>
+
+        <lingyun-grid
+          v-if="gridItems.length"
+          :column="3"
+          :items="gridItems"
+          @change="onGridChange"
+        />
+
+        <lingyun-empty
+          v-else
+          title="暂无二级菜单"
+          description="当前一级 Tab 还没有配置 children"
+        />
       </view>
-
-      <lingyun-grid
-        v-if="gridItems.length"
-        :column="3"
-        :items="gridItems"
-        @change="onGridChange"
-      />
-
-      <lingyun-empty
-        v-else
-        title="暂无二级菜单"
-        description="当前一级 Tab 还没有配置 children"
-      />
     </view>
   </lingyun-app-page>
 </template>
@@ -30,6 +32,7 @@
     getLingyunPageConfig,
     getLingyunWorkspaceTabKey,
     setLingyunWorkspaceTabKey,
+    syncLingyunWorkspaceUrl,
     useLingyunWorkspaceTabKey,
   } from '@/uni_modules/lingyun-ui/utils/pageConfig'
   import { normalizeLingyunPagePath } from '@/uni_modules/lingyun-ui/utils/pageNavAdapter'
@@ -65,6 +68,7 @@
     if (!fallback) return
     tabKey.value = fallback.key
     setLingyunWorkspaceTabKey(fallback.key)
+    syncLingyunWorkspaceUrl(fallback.key)
   }
 
   onLoad((query?: Record<string, string | undefined>) => {
@@ -72,14 +76,20 @@
   })
 
   onShow(() => {
-    if (tabKey.value) setLingyunWorkspaceTabKey(tabKey.value)
+    if (!tabKey.value) return
+    setLingyunWorkspaceTabKey(tabKey.value)
+    /* onLoad 时路由可能还没落定，这里再同步一次地址与 options */
+    syncLingyunWorkspaceUrl(tabKey.value)
   })
 
   /* 宿主内嵌切到另一个带 children 的 Tab 时页面不重建，跟着全局 key 换内容 */
   watch(useLingyunWorkspaceTabKey(), (key) => {
     if (!key || key === tabKey.value) return
     const next = findLingyunPageTab(key)
-    if (next && next.children && next.children.length) tabKey.value = next.key
+    if (next && next.children && next.children.length) {
+      tabKey.value = next.key
+      syncLingyunWorkspaceUrl(next.key)
+    }
   })
 
   function onGridChange(event: { detail?: { index?: number } }): void {
@@ -112,6 +122,20 @@
       radial-gradient(100% 70% at 90% 20%, rgba(16, 185, 129, 0.16), transparent 50%),
       radial-gradient(90% 60% at 50% 100%, rgba(245, 158, 11, 0.14), transparent 45%),
       var(--lingyun-bg-grouped-primary, #f2f2f7);
+  }
+
+  /* 页内切换只换内容，背景与 Tab 栏保持不动 */
+  .workbench-body {
+    animation: workbench-enter 0.2s ease both;
+  }
+
+  @keyframes workbench-enter {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   .hero {

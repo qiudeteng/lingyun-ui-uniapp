@@ -268,6 +268,7 @@ import {
   isLingyunWorkspacePath,
   matchLingyunPageTab,
   setLingyunWorkspaceTabKey,
+  syncLingyunWorkspaceUrl,
 } from '../../utils/pageConfig'
 import {
   resolveLingyunPageLayout,
@@ -993,6 +994,17 @@ export default defineComponent({
       const raw = normalizeLingyunPagePath(targetUrl)
       const currentPath = normalizeLingyunPagePath(this.effectivePagePath)
       if (!raw) return
+      /*
+       * 已在工作台时所有带 children 的 Tab 共用这一页：
+       * 只换全局 key，内容和 Tab 指示器原地更新，不再 reLaunch 造成白屏。
+       */
+      if (workspaceUrl && isLingyunWorkspacePath(currentPath)) {
+        if (getLingyunWorkspaceTabKey() === tab.key) return
+        this.$emit('tab-change', { key: tab.key, tab })
+        setLingyunWorkspaceTabKey(tab.key)
+        syncLingyunWorkspaceUrl(tab.key)
+        return
+      }
       if (workspaceUrl) {
         if (raw === currentPath && getLingyunWorkspaceTabKey() === tab.key) return
       } else if (raw === currentPath) {

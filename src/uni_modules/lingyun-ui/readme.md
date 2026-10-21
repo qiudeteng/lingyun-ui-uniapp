@@ -1,6 +1,6 @@
 # 凌云UI
 
-凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.31**，变更见 [`changelog.md`](./changelog.md)。
+凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.32**，变更见 [`changelog.md`](./changelog.md)。
 
 📖 [使用手册](https://lingyun.xinyicanyin.com/)（组件用法、属性、示例；右侧手机框实时预览）
 
@@ -86,7 +86,7 @@ setLingyunPageConfig({
 ```
 
 - 选中态从当前路由推导；详情页可用 `match` 归入某个 Tab。
-- 窄屏点击 `reLaunch`；微信宽屏优先走常驻宿主切换，不增加页面栈。
+- 窄屏点击 `reLaunch`；微信宽屏优先走常驻宿主切换，不增加页面栈。已经处于工作台页时，点击其他带 children 的一级 Tab 只切换工作台 key 和内容，不重建页面；H5 同步地址栏与当前页 options，小程序不走路由，避免白屏。
 - 优先级：组件 props > `pages[path]` 页面覆盖 > `layout` > 宽度自动规则。可用 `nav-mode`、`show-tabbar`、`show-nav` 覆盖。
 - 页面壳默认不接管底部 Tab：只有一级 Tab 根页或工作台页渲染底部 Tab，并写入 `--lingyun-app-page-inset-bottom`；子页/详情页/首页默认没有 Tab，也不留底部空间。其他页面需要 Tab 请自行使用 `lingyun-tabbars`。页面不要再手写 `padding-bottom`，否则设 `:auto-bottom-inset="false"`。
 - 带商品底栏 / 底部搜索条的页面请配置 `pages[path].hideTabbar = true`。

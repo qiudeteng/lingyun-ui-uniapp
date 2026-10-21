@@ -84,10 +84,10 @@ setLingyunPageConfig({
 - iPad（690–1199）与 PC（≥1200）配置全局 tabs 后，左侧导航收窄为 **84** 悬浮玻璃窄栏，图标在上、文字在下；玻璃栏通高、四周各留 8。页面内容背景会通过左侧安全区铺满整屏：演示页 `.page` 已内置；其他内容根节点加 `.lingyun-page-safe-left`（需在 `lingyun-app-page` 内）；也可以直接把背景配在 `lingyun-app-page` 根节点。未配置 tabs 的完整目录仍为 220。
 - Tab 支持 `children` 二级菜单：宽屏左侧（Web / 小程序一致）点击父项用 `lingyun-menu` 弹出（透明遮罩，点击外部关闭）；底部 Tab / Duo Tab 点击有 children 的父项进入固定工作台页（`workspaceUrl?tab=<key>`），没有 children 直接进 `url`。工作台子项用 `navigateTo` 压栈，返回父 Tab 工作台。子项路径自动归入父 Tab 高亮。
 - 优先级：props > `pages[path]` 页面覆盖 > `layout` > 宽度自动规则。
-- 窄屏点击 `reLaunch`；微信宽屏优先走 `openLingyunHostedPage`，不增加页面栈。
+- 窄屏点击 `reLaunch`；微信宽屏优先走 `openLingyunHostedPage`，不增加页面栈。已经处于工作台页时，点击其他带 children 的一级 Tab 不再 `reLaunch`：只切换工作台 key 和内容，Tab 栏与页面实例保持不动；H5 同步地址栏与当前页 options，返回子页后仍停在切换后的 Tab。
 - 页面壳默认不接管底部 Tab：只有一级 Tab 根页或带 children 的工作台页渲染 Tab；子页/详情页/首页默认没有 Tab，也不会留出底部空间。其他页面需要 Tab 请自行使用 `lingyun-tabbars`。
 - 壳只在当前页实际渲染底部 Tab 时留白，写入 `--lingyun-app-page-inset-bottom` 与 `LINGYUN_APP_PAGE_BOTTOM_INSET`。页面不要再手写 `padding-bottom`；已有手写值时设 `:auto-bottom-inset="false"`。
-- `reLaunch` 本身没有页面动画：壳会在换页后让内容淡入。底部 Tab 指示器按 Tab 顺序左右滑动，左侧菜单的选中胶囊按菜单顺序上下滑动。
+- 跨页 `reLaunch` 本身没有页面动画：壳会在换页后让内容淡入。底部 Tab 指示器按 Tab 顺序左右滑动，左侧菜单的选中胶囊按菜单顺序上下滑动；工作台内切换只让内容区淡入。
 - 带商品底栏 / 底部搜索条的页面请配置 `pages[path].hideTabbar = true`。
 
 ## iPhone Duo（P1）
