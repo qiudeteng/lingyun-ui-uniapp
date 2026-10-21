@@ -44,6 +44,7 @@
 `lingyun-menu` 作为左侧栏二级菜单时：
 
 - 点击父项展开，再次点击或点击外部关闭；左侧栏二级菜单传 `mask-transparent`，保留透明遮罩用于点击外部关闭，页面不压暗；
+- 传 `trigger-block` 让触发器撑满父级，导航项保持整格宽度与居中。
 - 传 `placement="right"`，面板贴着父项右侧弹出，不加遮罩、不改内容区。
 
 ## 4. Context Menu（lingyun-context-menu）

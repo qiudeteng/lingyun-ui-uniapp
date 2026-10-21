@@ -145,11 +145,12 @@
             @click="onNavItemTap(item)"
           >
             <lingyun-menu
-              class="lingyun-page-nav__menu"
+              style="display: block; width: 100%"
               placement="right"
               :show="!!(item.children && item.children.length) && childMenuKey === item.key"
               :actions="childMenuActions(item)"
               :mask-transparent="true"
+              :trigger-block="true"
               @update:show="onChildMenuShow(item, $event)"
               @select="onChildMenuSelect(item, $event)"
             >
@@ -1152,7 +1153,7 @@ export default defineComponent({
   transition: background-color 0.2s ease;
 }
 
-/* 二级菜单包一层不改变导航项布局的重置（触发器整宽见全局 _app-page-layout.scss） */
+/* 二级菜单包一层不改变导航项布局的重置 */
 .lingyun-page-nav__menu-cell {
   display: block;
   width: 100%;

@@ -8,6 +8,7 @@
     :mask-closable="maskClosable"
     :mask="mask"
     :mask-transparent="maskTransparent"
+    :trigger-block="triggerBlock"
     :z-index="zIndex"
     @close="onClose"
   >
@@ -98,6 +99,7 @@ export default defineComponent({
     maskClosable: { type: Boolean, default: true },
     mask: { type: Boolean, default: true },
     maskTransparent: { type: Boolean, default: false },
+    triggerBlock: { type: Boolean, default: false },
     zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
   },
   computed: {

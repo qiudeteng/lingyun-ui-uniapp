@@ -1,5 +1,5 @@
 <template>
-  <view class="lingyun-popover">
+  <view class="lingyun-popover" :class="{ 'lingyun-popover--trigger-block': triggerBlock }">
     <view class="lingyun-popover__trigger">
       <slot name="trigger" :show="visible" :toggle="onTriggerClick" />
     </view>
@@ -120,6 +120,8 @@ export default defineComponent({
     mask: { type: Boolean, default: true },
     /** 遮罩透明但仍拦截点击；用于点击外部关闭、不加暗色 */
     maskTransparent: { type: Boolean, default: false },
+    /** 触发器撑满父级；侧栏菜单等需要整宽触发的场景 */
+    triggerBlock: { type: Boolean, default: false },
     zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
     /** menu：Sketch Menus 面板（圆角 32、内边距 10），给 lingyun-menu 用 */
     variant: { type: String, default: '' },
@@ -169,6 +171,7 @@ export default defineComponent({
         this.showArrow ? 'lingyun-popover--arrow' : '',
         !this.mask ? 'lingyun-popover--no-mask' : '',
         this.maskTransparent ? 'lingyun-popover--mask-transparent' : '',
+        this.triggerBlock ? 'lingyun-popover--trigger-block' : '',
       ]
         .filter(Boolean)
         .join(' ')
@@ -543,6 +546,12 @@ export default defineComponent({
 
 .lingyun-popover__trigger {
   display: inline-flex;
+}
+
+.lingyun-popover--trigger-block,
+.lingyun-popover--trigger-block .lingyun-popover__trigger {
+  display: block;
+  width: 100%;
 }
 
 .lingyun-popover__root {
