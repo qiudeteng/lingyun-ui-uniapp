@@ -5,12 +5,14 @@
 import { reactive, ref } from 'vue'
 import {
   normalizeLingyunPagePath,
+  type LingyunPageNavChild,
   type LingyunPageNavSection,
 } from './pageNavAdapter'
 import type {
   LingyunPageConfig,
   LingyunPageOverride,
   LingyunPageTab,
+  LingyunPageTabChild,
 } from './pageLayout'
 
 function defaultConfig(): LingyunPageConfig {
@@ -28,14 +30,24 @@ const state = reactive<LingyunPageConfig>(defaultConfig())
 /** 当前工作台对应的一级 Tab key；工作台路径被多个 Tab 共用 */
 const workspaceTabKey = ref('')
 
+function normalizeTabChildren(
+  children: LingyunPageTabChild[] | undefined,
+): LingyunPageTabChild[] {
+  return (children || [])
+    .filter((child) => !!child && !!child.key)
+    .map((child) => ({
+      ...child,
+      children: normalizeTabChildren(child.children),
+    }))
+    .filter((child) => !!child.url || child.children.length > 0)
+}
+
 function validTabs(tabs: LingyunPageTab[]): LingyunPageTab[] {
   return tabs
     .filter((tab) => !!tab && !!tab.key && !!tab.url)
     .map((tab) => ({
       ...tab,
-      children: (tab.children || [])
-        .filter((child) => !!child && !!child.key && !!child.url)
-        .map((child) => ({ ...child })),
+      children: normalizeTabChildren(tab.children),
     }))
 }
 
@@ -90,16 +102,20 @@ function matchesOf(value: string | string[] | undefined): string[] {
   return value ? [value] : []
 }
 
+function childMatchesPath(child: LingyunPageTabChild, target: string): boolean {
+  if (normalizeLingyunPagePath(child.url || '') === target) return true
+  if (matchesOf(child.match).some((item) => normalizeLingyunPagePath(item) === target)) {
+    return true
+  }
+  return (child.children || []).some((entry) => childMatchesPath(entry, target))
+}
+
 function tabMatchesPath(tab: LingyunPageTab, target: string): boolean {
   if (normalizeLingyunPagePath(tab.url) === target) return true
   if (matchesOf(tab.match).some((item) => normalizeLingyunPagePath(item) === target)) {
     return true
   }
-  return (tab.children || []).some(
-    (child) =>
-      normalizeLingyunPagePath(child.url) === target ||
-      matchesOf(child.match).some((item) => normalizeLingyunPagePath(item) === target),
-  )
+  return (tab.children || []).some((child) => childMatchesPath(child, target))
 }
 
 /** 当前路径匹配的一级 Tab；子项路径也会归到父 Tab */
@@ -217,6 +233,44 @@ export function useLingyunWorkspaceTabKey() {
   return workspaceTabKey
 }
 
+function collectChildMatches(
+  children: LingyunPageTabChild[],
+  out: string[] = [],
+): string[] {
+  children.forEach((child) => {
+    if (child.url) out.push(child.url)
+    out.push(...matchesOf(child.match))
+    collectChildMatches(child.children || [], out)
+  })
+  return out
+}
+
+function flattenNavChildren(children: LingyunPageTabChild[]): LingyunPageNavChild[] {
+  const out: LingyunPageNavChild[] = []
+  children.forEach((child) => {
+    const nested = child.children || []
+    if (nested.length) {
+      out.push({
+        key: `${child.key}__title`,
+        title: child.text,
+        kind: 'title',
+      })
+      out.push(...flattenNavChildren(nested))
+      return
+    }
+    if (!child.url) return
+    out.push({
+      key: child.key,
+      title: child.text,
+      icon: child.icon,
+      url: child.url,
+      badge: child.badge,
+      match: child.match,
+    })
+  })
+  return out
+}
+
 export function buildLingyunPageTabSections(
   tabs: LingyunPageTab[],
   title = '',
@@ -228,17 +282,9 @@ export function buildLingyunPageTabSections(
       title,
       items: tabs.map((tab) => {
         const rawChildren = tab.children || []
-        const children = rawChildren.map((child) => ({
-          key: child.key,
-          title: child.text,
-          icon: child.icon,
-          url: child.url,
-          badge: child.badge,
-          match: child.match,
-        }))
         const match = [
           ...matchesOf(tab.match),
-          ...rawChildren.flatMap((child) => [child.url, ...matchesOf(child.match)]),
+          ...collectChildMatches(rawChildren),
         ]
         return {
           key: tab.key,
@@ -247,7 +293,7 @@ export function buildLingyunPageTabSections(
           icon: tab.icon,
           badge: tab.badge,
           match,
-          children,
+          children: flattenNavChildren(rawChildren),
           workspaceUrl: getLingyunPageTabWorkspaceUrl({
             ...tab,
             workspaceUrl: tab.workspaceUrl || workspaceUrl,

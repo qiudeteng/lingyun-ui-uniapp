@@ -22,6 +22,10 @@
         <lingyun-button variant="borderedProminent" size="large" text="打开双输入" @click="openInput2" />
       </lingyun-section>
 
+      <lingyun-section title="Notes（多行输入）">
+        <lingyun-button variant="borderedProminent" size="large" text="打开多行输入" @click="openNotes" />
+      </lingyun-section>
+
       <lingyun-section title="JS 调用 · uni.showLingyunAlert">
         <view class="demo-stack">
           <lingyun-button variant="bordered" size="large" text="提示 · 只有确定" @click="jsNotice" />
@@ -68,6 +72,16 @@
         @update:inputs="onInput2"
         @action="onAction"
       />
+
+      <lingyun-alert
+        v-model:show="notesVisible"
+        title="备注"
+        message="可以输入多行内容，键盘弹起时面板会自动上移。"
+        :inputs="notesFields"
+        :actions="inputActions"
+        @update:inputs="onNotesInput"
+        @action="onAction"
+      />
     </view>
   </lingyun-app-page>
 </template>
@@ -80,6 +94,7 @@
   const stackedVisible = ref(false)
   const input1Visible = ref(false)
   const input2Visible = ref(false)
+  const notesVisible = ref(false)
   const lastAction = ref('')
 
   const defaultActions = [
@@ -105,6 +120,15 @@
     { key: 'value', placeholder: 'Value', value: 'Value' },
     { key: 'placeholder', placeholder: 'Placeholder', value: '' },
   ])
+  const notesFields = ref<LingyunAlertInput[]>([
+    {
+      key: 'notes',
+      placeholder: '写点备注…',
+      multiline: true,
+      rows: 3,
+      maxlength: 300,
+    },
+  ])
 
   function openDefault(): void {
     defaultVisible.value = true
@@ -122,12 +146,20 @@
     input2Visible.value = true
   }
 
+  function openNotes(): void {
+    notesVisible.value = true
+  }
+
   function onInput1(next: LingyunAlertInput[]): void {
     input1Fields.value = next
   }
 
   function onInput2(next: LingyunAlertInput[]): void {
     input2Fields.value = next
+  }
+
+  function onNotesInput(next: LingyunAlertInput[]): void {
+    notesFields.value = next
   }
 
   async function jsNotice(): Promise<void> {

@@ -16,28 +16,29 @@
         </view>
 
         <view v-if="hasInputs" class="lingyun-alert__inputs">
-          <view
+          <lingyun-text-field
             v-for="(field, index) in normalizedInputs"
             :key="field.key || index"
             class="lingyun-alert__field"
-          >
-            <input
-              class="lingyun-alert__input"
-              :type="field.type || 'text'"
-              :password="field.password === true"
-              :value="fieldValues[index]"
-              :placeholder="field.placeholder || ''"
-              placeholder-class="lingyun-alert__input-ph"
-              :maxlength="field.maxlength != null ? field.maxlength : 140"
-              :focus="index === 0 && autoFocus && phase === 'open'"
-              :adjust-position="false"
-              :cursor-spacing="24"
-              @input="onInput(index, $event)"
-              @focus="onInputFocus"
-              @blur="onInputBlur"
-              @keyboardheightchange="onInputKeyboardHeight"
-            />
-          </view>
+            variant="field"
+            :model-value="fieldValues[index]"
+            :type="field.type || 'text'"
+            :secure="field.password === true"
+            :multiline="field.multiline === true"
+            :auto-height="field.autoHeight === true"
+            :rows="field.rows || 3"
+            :password-icon="false"
+            :clearable="false"
+            :placeholder="field.placeholder || ''"
+            :maxlength="field.maxlength != null ? field.maxlength : 140"
+            :focus="index === 0 && autoFocus && focusReady"
+            :adjust-position="false"
+            :cursor-spacing="24"
+            @update:model-value="onFieldValue(index, $event)"
+            @focus="onInputFocus"
+            @blur="onInputBlur"
+            @keyboardheightchange="onInputKeyboardHeight"
+          />
         </view>
 
         <slot />
@@ -85,6 +86,10 @@ import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
  * 玻璃：对齐 Sheet（#fff@0.72 + blur）；勿对玻璃节点写 opacity 显隐 */
 const LEAVE_MS = 240
 const NUDGE_MS = 420
+/** 入场缩放结束再聚焦，避免键盘弹起和面板缩放叠在一起 */
+const FOCUS_DELAY_MS = 440
+/** H5 visualViewport 在键盘动画中会连续触发，等高度稳定后再上推面板 */
+const VISUAL_VIEWPORT_DEBOUNCE_MS = 60
 
 type AlertInputField = {
   key?: string
@@ -93,6 +98,12 @@ type AlertInputField = {
   value?: unknown
   placeholder?: string
   maxlength?: number
+  /** 多行文本（备注 / notes）；等价于 type=textarea */
+  multiline?: boolean
+  /** 多行时随内容增高 */
+  autoHeight?: boolean
+  /** 多行时的行数，默认 3 */
+  rows?: number | string
 }
 
 type AlertAction = {
@@ -185,10 +196,14 @@ export default defineComponent({
       phase: '' as '' | 'enter' | 'open' | 'leave',
       leaveTimer: null as ReturnType<typeof setTimeout> | null,
       enterTimer: null as ReturnType<typeof setTimeout> | null,
+      /** 入场动画结束后再允许自动聚焦 */
+      focusReady: false,
+      focusTimer: null as ReturnType<typeof setTimeout> | null,
       /** 拒绝点遮罩关闭时的轻抖 */
       rejectNudge: false,
       nudgeTimer: null as ReturnType<typeof setTimeout> | null,
       _blurKbTimer: null as ReturnType<typeof setTimeout> | null,
+      _visualViewportTimer: null as ReturnType<typeof setTimeout> | null,
       _onKeyboardHeight: null as KeyboardHeightHandler | null,
       _onVisualViewport: null as (() => void) | null,
       /** 键盘高度（含输入框时上推面板） */
@@ -360,6 +375,11 @@ export default defineComponent({
         clearTimeout(this.enterTimer)
         this.enterTimer = null
       }
+      if (this.focusTimer) {
+        clearTimeout(this.focusTimer)
+        this.focusTimer = null
+      }
+      this.focusReady = false
       if (this.nudgeTimer) {
         clearTimeout(this.nudgeTimer)
         this.nudgeTimer = null
@@ -387,7 +407,13 @@ export default defineComponent({
       if (this.title) h += 22
       if (this.message) h += 44
       if (this.title || this.message) h += 42
-      h += this.normalizedInputs.length * 64
+      h += this.normalizedInputs.reduce((sum, field) => {
+        if (field.multiline === true || field.type === 'textarea') {
+          const rows = Math.max(1, Number(field.rows) || 3)
+          return sum + Math.max(66, 28 + 22 * rows) + 12
+        }
+        return sum + 64
+      }, 0)
       if (this.resolvedActions.length) {
         h += this.resolvedLayout === 'stack'
           ? this.resolvedActions.length * 48 + 12
@@ -414,6 +440,9 @@ export default defineComponent({
     },
     onInputFocus() {
       if (!this.hasInputs) return
+      /* 第一格 blur 后马上点第二格时，别让旧的清零定时器把键盘高度打回 0 */
+      clearTimeout(this._blurKbTimer ?? undefined)
+      this._blurKbTimer = null
       this.bindKeyboardHeight()
       this.measurePanelHeight()
       /* #ifdef H5 */
@@ -454,14 +483,21 @@ export default defineComponent({
       if (this._onVisualViewport) return
       if (typeof window === 'undefined' || !window.visualViewport) return
       this._onVisualViewport = () => {
-        const vv = window.visualViewport!
-        const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
-        this.setKeyboardHeight(covered > 80 ? covered : 0)
+        clearTimeout(this._visualViewportTimer ?? undefined)
+        this._visualViewportTimer = setTimeout(() => {
+          this._visualViewportTimer = null
+          const vv = window.visualViewport
+          if (!vv) return
+          const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+          this.setKeyboardHeight(covered > 80 ? covered : 0)
+        }, VISUAL_VIEWPORT_DEBOUNCE_MS)
       }
       window.visualViewport.addEventListener('resize', this._onVisualViewport)
       window.visualViewport.addEventListener('scroll', this._onVisualViewport)
     },
     unbindVisualViewport() {
+      clearTimeout(this._visualViewportTimer ?? undefined)
+      this._visualViewportTimer = null
       if (!this._onVisualViewport || typeof window === 'undefined' || !window.visualViewport) {
         this._onVisualViewport = null
         return
@@ -480,6 +516,12 @@ export default defineComponent({
           this.phase = 'open'
           this.enterTimer = null
           if (this.hasInputs) this.measurePanelHeight()
+          if (this.hasInputs && this.autoFocus) {
+            this.focusTimer = setTimeout(() => {
+              this.focusReady = true
+              this.focusTimer = null
+            }, this.reduceMotion ? 0 : FOCUS_DELAY_MS)
+          }
         }, this.reduceMotion ? 0 : 20)
       })
     },
@@ -523,23 +565,18 @@ export default defineComponent({
       if (this.resolvedLayout === 'stack') return list[0] === action
       return list[list.length - 1] === action
     },
-    onInput(index: number, event: AlertFieldEvent) {
-      const detail = event && event.detail
-      const target =
-        event && event.target && typeof event.target === 'object'
-          ? (event.target as { value?: unknown })
-          : null
-      const value =
-        detail && detail.value != null
-          ? String(detail.value)
-          : target && target.value != null
-            ? String(target.value)
-            : ''
+    onFieldValue(index: number, value: unknown) {
       const next = this.fieldValues.slice()
-      next[index] = value
+      next[index] = value == null ? '' : String(value)
       this.fieldValues = next
-      this.$emit('input', { index, value, values: next.slice() })
+      this.$emit('input', { index, value: next[index], values: next.slice() })
       this.$emit('update:inputs', this.buildInputsPayload(next))
+      const autoGrow = this.normalizedInputs.some(
+        (field) =>
+          (field.multiline === true || field.type === 'textarea') &&
+          field.autoHeight === true,
+      )
+      if (autoGrow) this.measurePanelHeight()
     },
     buildInputsPayload(values: string[]) {
       return this.normalizedInputs.map((field, i) => ({
@@ -623,7 +660,6 @@ $ly-header-gap: 10px;
 $ly-action-h: 48px;
 $ly-action-gap-row: 8px;
 $ly-action-gap-stack: 12px;
-$ly-field-h: 52px;
 $ly-field-gap: 12px;
 
 .lingyun-alert {
@@ -811,28 +847,6 @@ $ly-field-gap: 12px;
 
 .lingyun-alert__field {
   width: 100%;
-  height: $ly-field-h;
-  box-sizing: border-box;
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  border-radius: $lingyun-glass-radius-pill;
-  background-color: var(--lingyun-fill-tertiary, #{$lingyun-fill-tertiary});
-}
-
-.lingyun-alert__input {
-  width: 100%;
-  height: 100%;
-  font-size: 17px;
-  font-weight: 400;
-  line-height: 22px;
-  color: var(--lingyun-label, #{$lingyun-label});
-  background: transparent;
-  border: none;
-}
-
-.lingyun-alert__input-ph {
-  color: var(--lingyun-placeholder-text, #{$lingyun-placeholder-text});
 }
 
 .lingyun-alert__actions {

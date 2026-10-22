@@ -257,11 +257,7 @@
 </script>
 
 <style lang="scss">
-  /* 页面背景放在 lingyun-app-page 根节点：左侧安全区与内容共用同一底色 */
-  .demo-app-page {
-    background: var(--lingyun-bg-grouped-primary, #f2f2f7);
-  }
-
+  /* 页面背景由全局 --lingyun-page-background 统一提供 */
   .page {
     box-sizing: border-box;
     padding-bottom: 24px;

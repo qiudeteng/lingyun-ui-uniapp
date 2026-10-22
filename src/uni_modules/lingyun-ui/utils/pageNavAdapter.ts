@@ -18,9 +18,12 @@ export interface LingyunPageNavChild {
   key: string
   title: string
   icon?: string
-  url: string
+  /** 分组标题没有目标地址 */
+  url?: string
   badge?: LingyunPageBadge
   match?: string | string[]
+  /** 分组标题行：只展示，不可点击 */
+  kind?: 'title' | 'separator'
 }
 
 export interface LingyunPageNavItem {
@@ -72,6 +75,10 @@ export interface LingyunPageNavAdapter {
   selectStore?: (id: string | number) => void
   resolvePageUrl?: (url: string) => string
   openHostedPage?: (url: string, highlight?: string) => boolean
+  /** 一级 Tab 在当前宿主页内切换，不新增路由；返回 false 时退回 openHostedPage / 路由 */
+  openTabPage?: (url: string, highlight?: string) => boolean
+  /** 当前真实页面是否能承载宿主视图（首页 / 目录） */
+  isTabHostPage?: (path: string) => boolean
   clearHostedPage?: () => void
   getHostedPath?: () => string
   getHostedUrl?: () => string
@@ -176,6 +183,14 @@ export function resolveLingyunPageUrl(url: string): string {
 
 export function openLingyunHostedPage(url: string, highlight?: string): boolean {
   return !!adapter.openHostedPage?.(url, highlight)
+}
+
+export function openLingyunTabPage(url: string, highlight?: string): boolean {
+  return !!adapter.openTabPage?.(url, highlight)
+}
+
+export function isLingyunTabHostPage(path: string): boolean {
+  return !!adapter.isTabHostPage?.(path)
 }
 
 export function clearLingyunPageHost(): void {

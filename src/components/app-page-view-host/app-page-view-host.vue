@@ -1,5 +1,6 @@
 <template>
   <buttons-page v-if="currentPath === 'pages/demo/buttons'" />
+  <guide-start-page v-else-if="currentPath === 'pages/guide/start'" />
   <icons-page v-else-if="currentPath === 'pages/demo/icons'" />
   <badges-page v-else-if="currentPath === 'pages/demo/badges'" />
   <segmented-controls-page v-else-if="currentPath === 'pages/demo/segmented-controls'" />
@@ -76,6 +77,7 @@
 <script setup lang="ts">
 import { computed, nextTick, watch } from 'vue'
 import ButtonsPage from '@/pages/demo/buttons.vue'
+import GuideStartPage from '@/pages/guide/start.vue'
 import IconsPage from '@/pages/demo/icons.vue'
 import BadgesPage from '@/pages/demo/badges.vue'
 import SegmentedControlsPage from '@/pages/demo/segmented-controls.vue'

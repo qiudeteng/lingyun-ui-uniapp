@@ -17,6 +17,13 @@
   padding-top: var(--lingyun-app-page-inset-top, 60px) !important;
 }
 
+// H5 宿主页：外层 __pad 的「首子留顶栏」会落在内嵌 app-page 根节点上，
+// 内嵌页自己还会给首子留一次，顶部会出现一段黑带。
+// 只保留内嵌页自己的留白，让页面背景铺到工具栏下方。
+.lingyun-app-page__pad > .lingyun-app-page--embedded:first-child {
+  padding-top: 0 !important;
+}
+
 // 页面级滚动下根节点高度随内容，页面自带的 min-height: 100% 会退化为 auto，
 // 短页底部会露出根底色形成断层 → 这里把首子撑到满屏。
 .lingyun-app-page--page-scroll .lingyun-app-page__pad > view:first-child,

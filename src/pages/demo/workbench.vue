@@ -1,5 +1,5 @@
 <template>
-  <lingyun-app-page title="工作台" :show-back="false">
+  <lingyun-app-page :title="tabText" :show-back="false">
     <view class="page">
       <view :key="tabKey" class="workbench-body">
         <view class="hero">
@@ -7,12 +7,21 @@
           <text class="hero__desc">选择一个功能进入</text>
         </view>
 
-        <lingyun-grid
-          v-if="gridItems.length"
-          :column="3"
-          :items="gridItems"
-          @change="onGridChange"
-        />
+        <view v-if="groups.length" class="workbench-groups">
+          <lingyun-section
+            v-for="(group, index) in groups"
+            :key="group.key"
+            :title="group.title"
+            :is-last="index === groups.length - 1"
+          >
+            <lingyun-grid
+              background="transparent"
+              :column="4"
+              :items="gridItems(group.items)"
+              @change="onGridChange(group, $event)"
+            />
+          </lingyun-section>
+        </view>
 
         <lingyun-empty
           v-else
@@ -25,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref, watch } from 'vue'
+  import { computed, nextTick, onMounted, ref, watch } from 'vue'
   import { onLoad, onShow } from '@dcloudio/uni-app'
   import {
     findLingyunPageTab,
@@ -41,20 +50,61 @@
 
   const tabKey = ref('')
 
+  /* 从长分组切到短分组时回到顶部，避免停在上一个 Tab 的滚动位置 */
+  watch(tabKey, () => {
+    nextTick(() => {
+      uni.pageScrollTo({ scrollTop: 0, duration: 0 })
+    })
+  })
+
+  type WorkbenchGroup = {
+    key: string
+    /** 空标题 = 没有分组标题的卡片 */
+    title: string
+    items: LingyunPageTabChild[]
+  }
+
   const tab = computed(() => findLingyunPageTab(tabKey.value))
   const tabText = computed(() => tab.value?.text || '工作台')
   const children = computed<LingyunPageTabChild[]>(() => tab.value?.children || [])
 
-  const gridItems = computed(() =>
-    children.value.map((child) => ({
+  /*
+   * 二级菜单有 children 时作为分组卡片标题，三级菜单作为卡片里的按钮；
+   * 只有二级菜单（没有三级）时合成一张没有标题的卡片。
+   */
+  const groups = computed<WorkbenchGroup[]>(() => {
+    const list = children.value
+    if (!list.length) return []
+    const grouped: WorkbenchGroup[] = []
+    const loose: LingyunPageTabChild[] = []
+    list.forEach((entry) => {
+      const nested = (entry.children || []).filter((item) => !!item.url)
+      if (nested.length) {
+        grouped.push({ key: entry.key, title: entry.text, items: nested })
+        return
+      }
+      if (entry.url) loose.push(entry)
+    })
+    if (loose.length) {
+      grouped.push({
+        key: `${tab.value?.key || 'tab'}__loose`,
+        title: '',
+        items: loose,
+      })
+    }
+    return grouped
+  })
+
+  function gridItems(items: LingyunPageTabChild[]) {
+    return items.map((child) => ({
       icon: child.icon || 'circle',
       text: child.text,
       info:
         child.badge && typeof child.badge === 'object'
           ? child.badge.text
           : (child.badge as string | number | boolean | undefined),
-    })),
-  )
+    }))
+  }
 
   function syncTabKey(key: string): void {
     const wanted = String(key || '')
@@ -75,6 +125,15 @@
     syncTabKey(String(query?.tab || '') || getLingyunWorkspaceTabKey())
   })
 
+  /*
+   * 宿主页内嵌时组件晚于页面 onLoad 挂载，onLoad 不一定会再触发；
+   * 此时直接用全局 key 初始化，避免工作台是空白。
+   */
+  onMounted(() => {
+    if (tabKey.value) return
+    syncTabKey(getLingyunWorkspaceTabKey())
+  })
+
   onShow(() => {
     if (!tabKey.value) return
     setLingyunWorkspaceTabKey(tabKey.value)
@@ -92,17 +151,22 @@
     }
   })
 
-  function onGridChange(event: { detail?: { index?: number } }): void {
+  function onGridChange(
+    group: WorkbenchGroup,
+    event: { detail?: { index?: number } },
+  ): void {
     const index = Number(event?.detail?.index)
     if (!Number.isFinite(index)) return
-    const child = children.value[index]
+    const child = group.items[index]
     if (child) openChild(child)
   }
 
   function openChild(child: LingyunPageTabChild): void {
-    const path = normalizeLingyunPagePath(child.url)
+    const url = child.url
+    if (!url) return
+    const path = normalizeLingyunPagePath(url)
     if (!path) return
-    const next = resolveLingyunPageUrl(child.url)
+    const next = resolveLingyunPageUrl(url)
     if (!next) return
     /* 工作台是 Tab 落地页，子项作为详情压栈，顶部返回可回到工作台 */
     uni.navigateTo({

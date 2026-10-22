@@ -1223,6 +1223,11 @@ export default defineComponent({
     confirmText: { type: String, default: '完成' },
     /** selector 滚轮下方搜索框。默认关闭 */
     showSearch: { type: Boolean, default: false },
+    /**
+     * 微信小程序滚轮经过选项时的轻震动反馈。
+     * 自定义 scroll-view 滚轮拿不到原生 picker-view 的系统选择音，用轻震动近似。
+     */
+    haptic: { type: Boolean, default: true },
     searchPlaceholder: { type: String, default: '搜索' },
     zIndex: { type: [Number, String] as PropType<number | string>, default: 1200 },
     variant: { type: String, default: 'auto' },
@@ -1280,6 +1285,9 @@ export default defineComponent({
       _mpWheelUser: false,
       _mpSnapApplying: false,
       _mpSnapMap: {} as Record<string, ReturnType<typeof setTimeout>>,
+      /** 每列上一次经过的选项，用来只在跨行时触发反馈 */
+      _mpLastIndex: {} as Record<string, number>,
+      _mpLastFeedbackAt: 0,
     }
   },
   computed: {
@@ -2627,10 +2635,16 @@ export default defineComponent({
     applyMpWheelTops(indexes?: number[]) {
       const src = indexes || this.draftIndexes
       this.mpWheelTops = src.map((idx) => Math.max(0, Number(idx) || 0) * ITEM_H)
+      src.forEach((idx, colIndex) => {
+        this._mpLastIndex[`main:${colIndex}`] = Math.max(0, Number(idx) || 0)
+      })
     },
     applyMpTimeWheelTops(indexes?: number[]) {
       const src = indexes || this.timeDraftIndexes
       this.mpTimeWheelTops = src.map((idx) => Math.max(0, Number(idx) || 0) * ITEM_H)
+      src.forEach((idx, colIndex) => {
+        this._mpLastIndex[`time:${colIndex}`] = Math.max(0, Number(idx) || 0)
+      })
     },
     onMpWheelScroll(event: unknown, colIndex: number) {
       this.onMpColumnScroll(event, colIndex, 'main')
@@ -2647,6 +2661,12 @@ export default defineComponent({
       const max = Math.max(0, col.length - 1)
       const idx = Math.min(max, Math.max(0, Math.round(top / ITEM_H)))
       this._mpWheelUser = true
+      const key = `${which}:${colIndex}`
+      const lastIndex = this._mpLastIndex[key]
+      if (lastIndex !== idx) {
+        this._mpLastIndex[key] = idx
+        if (lastIndex !== undefined) this.playMpWheelFeedback()
+      }
       if (which === 'time') {
         const next = this.timeDraftIndexes.slice()
         next[colIndex] = idx
@@ -2658,8 +2678,20 @@ export default defineComponent({
       }
       this.scheduleMpSnap(which, colIndex, top)
     },
-    scheduleMpSnap(which: 'main' | 'time', colIndex: number, top: number) {
-      const key = `${which}:${colIndex}`
+    playMpWheelFeedback() {
+      if (!this.haptic) return
+      // #ifdef MP-WEIXIN
+      const now = Date.now()
+      if (now - this._mpLastFeedbackAt < 60) return
+      this._mpLastFeedbackAt = now
+      try {
+        uni.vibrateShort({ type: 'light' })
+      } catch {
+        /* 部分基础库 / 设备不支持震动 */
+      }
+      // #endif
+    },
+    scheduleMpSnap(which: 'main' | 'time', colIndex: number, top: number) {      const key = `${which}:${colIndex}`
       const prev = this._mpSnapMap[key]
       if (prev) clearTimeout(prev)
       this._mpSnapMap[key] = setTimeout(() => {

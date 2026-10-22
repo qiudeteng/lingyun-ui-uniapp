@@ -27,6 +27,12 @@ export type LingyunAlertInput = {
   value?: string
   placeholder?: string
   maxlength?: number
+  /** 多行文本（备注 / notes）；等价于 type=textarea */
+  multiline?: boolean
+  /** 多行时随内容增高 */
+  autoHeight?: boolean
+  /** 多行时的行数，默认 3 */
+  rows?: number | string
 }
 
 export type LingyunAlertAction = {

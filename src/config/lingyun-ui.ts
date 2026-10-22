@@ -26,7 +26,9 @@ import {
   ensureLingyunWidePageHost,
   hostedFromText,
   hostedPagePath,
+  isLingyunTabHostRoute,
   openLingyunHostedPage,
+  openLingyunTabHostPage,
   pageHostState,
 } from '@/router/pageHost'
 
@@ -52,6 +54,8 @@ export function configureLingyunUi(): void {
     selectStore: (id) => useUserStore().selectStore(id),
     resolvePageUrl: resolveLingyunPageUrl,
     openHostedPage: openLingyunHostedPage,
+    openTabPage: openLingyunTabHostPage,
+    isTabHostPage: isLingyunTabHostRoute,
     clearHostedPage: clearLingyunPageHost,
     getHostedPath: () => pageHostState.path,
     getHostedUrl: () => pageHostState.url,

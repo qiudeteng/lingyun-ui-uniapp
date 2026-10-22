@@ -67,11 +67,14 @@ export interface LingyunPageTabChild {
   key: string
   text: string
   icon?: string
-  url: string
+  /** 叶子菜单目标；分组只写 children */
+  url?: string
   note?: string
   badge?: LingyunPageBadge
   /** 详情页归入当前二级项高亮的额外路径 */
   match?: string | string[]
+  /** 三级菜单：有值时当前项作为分组卡片标题，子项作为卡片内按钮 */
+  children?: LingyunPageTabChild[]
 }
 
 export interface LingyunPageTab {

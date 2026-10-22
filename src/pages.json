@@ -36,6 +36,13 @@
 			}
 		},
 		{
+			"path": "pages/guide/start",
+			"style": {
+				"navigationBarTitleText": "接入",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/buttons",
 			"style": {
 				"navigationBarTitleText": "Buttons",

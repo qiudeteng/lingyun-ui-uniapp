@@ -1,5 +1,12 @@
 ## 1.0.32（2026-10-21）
 - 一级 Tab 在工作台内切换改为页内更新：只替换工作台 key 和内容，不再 `reLaunch`，Tab 栏与页面实例保持不动，消除移动端白屏；H5 只同步地址栏和当前页 options，从子页返回仍停在切换后的 Tab。
+- `LingyunPageTabChild` 支持 `children` 三级菜单：二级项作为分组卡片标题，三级项作为卡片里的按钮；只有二级菜单的 Tab 渲染成没有标题的卡片。宽屏 `lingyun-menu` 同步用分组标题分隔。
+- H5 首页 / 目录可作为一级 Tab 宿主页：点击底部 Tab 只切换宿主视图，地址保持为宿主路由的 `?tab=<key>`，页面栈不增长；刷新或子页返回后按 `?tab=` 恢复。
+- 修复 H5 一级 Tab 宿主页顶部重复留白：外层页面壳和内嵌页面都留了一次顶栏，导致工具栏下方出现黑色断层；现在只保留内嵌页自己的留白，页面背景一直铺到工具栏下方。
+- 页面背景统一由页面壳根节点绘制，新增 `--lingyun-page-background` 覆盖点；内容层 `.page` 默认透明，Tab 页底部留白不会再露出纯色断层。宿主工程可只配一次变量让所有页面共用同一背景。
+- `lingyun-alert` 输入行改用 `lingyun-text-field`；自动聚焦延后到弹窗入场动画结束，H5 visualViewport 键盘高度更新加防抖，避免输入框占位文字和面板在键盘弹起时抖动。切换两个输入框时不再被旧的 blur 定时器把键盘高度清零。
+- `lingyun-alert` 的 `inputs` 支持多行备注：`multiline: true`（或 `type: 'textarea'`）、`autoHeight`、`rows`，内部使用 `lingyun-text-field` 的多行模式。
+- 微信小程序 `lingyun-picker` 自定义滚轮新增 `haptic`（默认开）：跨过选项时触发轻震动，近似原生 `picker-view` 的选择反馈。原生滚轮的系统音在自定义 `scroll-view` 下不可用。
 
 ## 1.0.31（2026-10-20）
 - 页面壳默认不再接管底部 Tab：只有一级 Tab 根页或工作台页显示 Tab 并自动留白；子页 / 详情页 / 首页默认没有 Tab，其他页面需要 Tab 时自行使用 `lingyun-tabbars`。

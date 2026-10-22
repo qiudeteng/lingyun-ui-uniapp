@@ -56,7 +56,8 @@ uni.hideLingyunAlert()
 | `message` | 正文 | '' |
 | `actions` | 按钮：`{ text, role, primary }` | [] |
 | `layout` | `auto` 按按钮数量横排或竖排 | auto |
-| `inputs` | 可选输入行 | [] |
+| `inputs` | 可选输入行：`{ key, type, password, value, placeholder, maxlength, multiline, autoHeight, rows }`，最多 2 个；内部使用 `lingyun-text-field`。`multiline: true` 或 `type: 'textarea'` 为多行备注模式 | [] |
+| `autoFocus` | 打开后自动聚焦第一个输入框。会等入场动画结束后再聚焦，避免键盘弹起与面板缩放同时造成占位文字抖动 | true |
 | `maskClosable` | 点遮罩关闭 | false |
 | `closeOnAction` | 点按钮后关闭 | true |
 ## 事件

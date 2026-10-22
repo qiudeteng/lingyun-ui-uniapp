@@ -31,6 +31,11 @@ export const routes: RouteConfig[] = [
 		meta: { title: '凌云UI' }
 	},
 	{
+		path: '/pages/guide/start',
+		name: 'pagesGuideStart',
+		meta: { title: '接入' }
+	},
+	{
 		path: '/pages/demo/buttons',
 		name: 'pagesDemoButtons',
 		meta: { title: 'Buttons' }

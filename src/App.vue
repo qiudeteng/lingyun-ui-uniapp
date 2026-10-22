@@ -37,6 +37,23 @@
   }
 
   /*
+   * 全局页面背景：所有页面共用同一套渐变，画在页面壳根节点上。
+   * 内容层 .page 不再自带背景，这样底部 Tab 留白、安全区和宿主页
+   * 都能露出同一张背景，不会在页面底部出现纯色断层。
+   */
+  .lingyun-app-page {
+    --lingyun-page-background:
+      radial-gradient(120% 80% at 10% 0%, rgba(37, 99, 235, 0.22), transparent 55%),
+      radial-gradient(100% 70% at 90% 20%, rgba(16, 185, 129, 0.16), transparent 50%),
+      radial-gradient(90% 60% at 50% 100%, rgba(245, 158, 11, 0.14), transparent 45%),
+      var(--lingyun-bg-grouped-primary, $lingyun-bg-grouped-primary);
+  }
+
+  .lingyun-app-page .page {
+    background: transparent !important;
+  }
+
+  /*
    * 演示页内容根节点：背景铺满整屏，同时让出左侧导航安全区。
    * 微信 WXSS 对插槽首子选择器和 calc(var(...)) 不稳定，这里用 .page 类和固定宽度。
    */

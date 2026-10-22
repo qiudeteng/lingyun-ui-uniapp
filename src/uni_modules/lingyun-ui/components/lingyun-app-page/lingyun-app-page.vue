@@ -247,9 +247,11 @@ import {
   getLingyunPageNavIntent,
   hostedFromText,
   hostedPagePath,
+  isLingyunTabHostPage,
   lingyunPageRequiresLogin,
   normalizeLingyunPagePath,
   openLingyunHostedPage,
+  openLingyunTabPage,
   readLingyunCurrentPagePath,
   releaseLingyunPageNavHeaderSlots,
   resolveLingyunPageUrl,
@@ -573,13 +575,17 @@ export default defineComponent({
     },
     /** 小程序宽屏右侧内容路径优先，其次导航意图，最后真实路由 */
     effectivePagePath() {
-      const hosted = this.hostedPathRef
-      if (hosted) return normalizeLingyunPagePath(hosted)
-      const intent = this.pageIntentRef
-      if (intent) return normalizeLingyunPagePath(intent)
-      return normalizeLingyunPagePath(
+      const real = normalizeLingyunPagePath(
         this.currentPagePath || readLingyunCurrentPagePath(),
       )
+      const hosted = this.hostedPathRef
+      /* 宿主路径只属于承载它的首页/目录页，子页仍按自己的真实路由判断 */
+      if (hosted && isLingyunTabHostPage(real)) {
+        return normalizeLingyunPagePath(hosted)
+      }
+      const intent = this.pageIntentRef
+      if (intent) return normalizeLingyunPagePath(intent)
+      return real
     },
     pageLayout(): LingyunPageLayoutResult {
       const env = resolveLingyunFormFactor(lingyun)
@@ -1002,6 +1008,8 @@ export default defineComponent({
         if (getLingyunWorkspaceTabKey() === tab.key) return
         this.$emit('tab-change', { key: tab.key, tab })
         setLingyunWorkspaceTabKey(tab.key)
+        /* 宿主页内切换时同步宿主 URL；独立工作台由下面的 sync 处理 */
+        openLingyunTabPage(workspaceUrl, raw)
         syncLingyunWorkspaceUrl(tab.key)
         return
       }
@@ -1014,6 +1022,7 @@ export default defineComponent({
       const fromKey = this.activeTabKey
       this.$emit('tab-change', { key: tab.key, tab })
       if (workspaceUrl) setLingyunWorkspaceTabKey(tab.key)
+      if (openLingyunTabPage(targetUrl, raw)) return
       if (openLingyunHostedPage(targetUrl, raw)) return
       setLingyunPageNavIntent(raw)
       const next = resolveLingyunPageUrl(targetUrl)
@@ -1224,8 +1233,12 @@ export default defineComponent({
   height: 100vh;
   min-height: 100vh;
   box-sizing: border-box;
-  /* 分组列表页底：Grouped Primary（暗黑 #000，与卡面 Secondary #1c1c1e 拉开） */
-  background-color: var(--lingyun-bg-grouped-primary, #{$lingyun-bg-grouped-primary});
+  /* 页面统一背景。宿主工程可通过 --lingyun-page-background 覆盖；
+     默认回退到 Grouped Primary（暗黑 #000，与卡面 Secondary #1c1c1e 拉开） */
+  background: var(
+    --lingyun-page-background,
+    var(--lingyun-bg-grouped-primary, #{$lingyun-bg-grouped-primary})
+  );
   color: var(--lingyun-label, #{$lingyun-label});
 }
 

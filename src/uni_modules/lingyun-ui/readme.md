@@ -49,7 +49,7 @@ const { confirm } = await uni.showLingyunAlert({ title: '删除？', showCancel:
 
 ## 宽屏
 
-窗口宽度 **≥ 690** 时，页面左侧停靠导航。未配置全局 tabs 时完整目录宽 **220**；配置 tabs 后（iPad / PC）收窄为 **84** 悬浮玻璃窄栏，图标在上、文字在下，玻璃栏通高、四周各留 8。页面内容背景经左侧安全区铺满整屏并从玻璃下方透出：演示页 `.page` 已内置；其他内容根节点加 `.lingyun-page-safe-left`（需在 `lingyun-app-page` 内）；也可将背景配在 `lingyun-app-page` 根节点。全局 tabs 支持 `children` 二级菜单：宽屏左侧（Web / 小程序一致）点击父项用 `lingyun-menu` 弹出，底部 / Duo 点击父项进入固定工作台页（`workspaceUrl?tab=<key>`）。手机仍用底部 Tab。折叠屏展开（如 OPPO Find 692、717×781）走 iPad/PC 窄栏；手机竖屏仍是单栏。顶栏和内容区跟随 `--lingyun-page-nav-width`，不会压住导航。
+窗口宽度 **≥ 690** 时，页面左侧停靠导航。未配置全局 tabs 时完整目录宽 **220**；配置 tabs 后（iPad / PC）收窄为 **84** 悬浮玻璃窄栏，图标在上、文字在下，玻璃栏通高、四周各留 8。页面内容背景经左侧安全区铺满整屏并从玻璃下方透出：演示页 `.page` 已内置；其他内容根节点加 `.lingyun-page-safe-left`（需在 `lingyun-app-page` 内）；也可将背景配在 `lingyun-app-page` 根节点。全局 tabs 支持 `children` 二级菜单，二级项还可再带 `children`：二级是分组卡片标题，三级是卡片按钮，只有二级菜单时渲染无标题卡片；宽屏左侧（Web / 小程序一致）点击父项用 `lingyun-menu` 弹出（分组标题分隔），底部 / Duo 点击父项进入固定工作台页（`workspaceUrl?tab=<key>`）。手机仍用底部 Tab。折叠屏展开（如 OPPO Find 692、717×781）走 iPad/PC 窄栏；手机竖屏仍是单栏。顶栏和内容区跟随 `--lingyun-page-nav-width`，不会压住导航。
 
 | 端 | 行为 |
 |----|------|
@@ -86,7 +86,7 @@ setLingyunPageConfig({
 ```
 
 - 选中态从当前路由推导；详情页可用 `match` 归入某个 Tab。
-- 窄屏点击 `reLaunch`；微信宽屏优先走常驻宿主切换，不增加页面栈。已经处于工作台页时，点击其他带 children 的一级 Tab 只切换工作台 key 和内容，不重建页面；H5 同步地址栏与当前页 options，小程序不走路由，避免白屏。
+- 窄屏由首页 / 目录宿主页页内切换一级 Tab，页面栈不增长；H5 地址保持为宿主路由的 `?tab=<key>`，刷新或从子页返回按这个 key 恢复。微信宽屏优先走常驻宿主切换，不增加页面栈。从其他页面直接进入工作台时仍走一次路由。
 - 优先级：组件 props > `pages[path]` 页面覆盖 > `layout` > 宽度自动规则。可用 `nav-mode`、`show-tabbar`、`show-nav` 覆盖。
 - 页面壳默认不接管底部 Tab：只有一级 Tab 根页或工作台页渲染底部 Tab，并写入 `--lingyun-app-page-inset-bottom`；子页/详情页/首页默认没有 Tab，也不留底部空间。其他页面需要 Tab 请自行使用 `lingyun-tabbars`。页面不要再手写 `padding-bottom`，否则设 `:auto-bottom-inset="false"`。
 - 带商品底栏 / 底部搜索条的页面请配置 `pages[path].hideTabbar = true`。

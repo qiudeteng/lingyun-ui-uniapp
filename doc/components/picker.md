@@ -22,6 +22,7 @@
 | `disabled` | 禁用 | false |
 | `showSearch` | 滚轮下方按名称过滤 | false |
 | `searchPlaceholder` | 搜索框占位 | 搜索 |
+| `haptic` | 微信小程序滚轮经过选项时的轻震动反馈（自定义滚轮拿不到原生选择音） | true |
 | `cancelText` / `confirmText` | 弹层按钮 | 取消 / 完成 |
 | `variant` | 在 form-item 内自动变成行内 | auto |
 ## 事件

@@ -27,6 +27,12 @@ export interface LingyunPageNavSection {
 
 export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
   {
+    title: '接入',
+    items: [
+      { title: '接入', url: '/pages/guide/start', note: '安装 · 页面壳 · 宽屏与 Tab', icon: 'info' },
+    ],
+  },
+  {
     title: '基础控件',
     items: [
       { title: 'Buttons', url: '/pages/demo/buttons', note: '按钮 · Glass / Prominent', icon: 'circle' },

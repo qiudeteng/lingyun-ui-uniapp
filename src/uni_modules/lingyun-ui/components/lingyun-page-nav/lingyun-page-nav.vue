@@ -222,6 +222,7 @@ import {
   lingyunPageNavRail,
   normalizeLingyunPagePath,
   openLingyunHostedPage,
+  openLingyunTabPage,
   resolveLingyunPageUrl,
   selectLingyunPageNavStore,
   setLingyunPageNavIntent,
@@ -231,10 +232,13 @@ import {
   type LingyunPageNavSection,
 } from '../../utils/pageNavAdapter'
 import {
+  buildLingyunPageTabWorkspaceUrl,
   buildLingyunPageTabSections,
+  findLingyunPageTab,
   getLingyunPageConfig,
   getLingyunWorkspaceTabKey,
   isLingyunWorkspacePath,
+  setLingyunWorkspaceTabKey,
   useLingyunWorkspaceTabKey,
 } from '../../utils/pageConfig'
 import {
@@ -507,7 +511,35 @@ export default defineComponent({
         }
         return
       }
-      clearLingyunPageHost()
+      /*
+       * 一级 Tab 宿主用 ?tab= 记录页内内容。子页 hashchange 不能清宿主，
+       * 否则从子页返回时工作台内容会丢；只有回到首页 / 目录时才清空。
+       */
+      const hash = (typeof window !== 'undefined' && window.location.hash) || ''
+      const query = hash.split('?')[1] || ''
+      const tabPart = query.split('&').find((item) => item.startsWith('tab='))
+      let tabKey = tabPart ? tabPart.slice('tab='.length) : ''
+      try {
+        tabKey = tabKey ? decodeURIComponent(tabKey) : ''
+      } catch {
+        /* 保留原始值 */
+      }
+      if (hashPath === 'pages/index/index' && tabKey) {
+        const tab = findLingyunPageTab(tabKey)
+        if (tab) {
+          setLingyunWorkspaceTabKey(tab.key)
+          const target =
+            Array.isArray(tab.children) && tab.children.length
+              ? buildLingyunPageTabWorkspaceUrl(tab)
+              : tab.url
+          if (target) openLingyunTabPage(target)
+        }
+      } else if (
+        hashPath === 'pages/index/index' ||
+        hashPath === 'pages/demo/demo'
+      ) {
+        clearLingyunPageHost()
+      }
       clearLingyunPageNavIntent()
       this.currentPath = hashPath
       this._routeSeen = hashPath
@@ -790,6 +822,7 @@ export default defineComponent({
         key: child.key,
         label: child.title,
         icon: child.icon,
+        kind: child.kind,
       }))
     },
     onChildMenuShow(item: LingyunPageNavItem, show: boolean) {
@@ -798,7 +831,8 @@ export default defineComponent({
     onChildMenuSelect(item: LingyunPageNavItem, payload: { key?: string }) {
       const child = (item.children || []).find((entry) => entry.key === payload?.key)
       this.childMenuKey = ''
-      if (child) this.onNavTap(child.url)
+      if (!child || child.kind === 'title' || !child.url) return
+      this.onNavTap(child.url)
     },
     onNavItemTap(item: LingyunPageNavItem) {
       const wasOpen = this.childMenuKey === item.key

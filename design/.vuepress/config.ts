@@ -115,6 +115,7 @@ export default defineUserConfig({
         text: '页面设计说明',
         collapsible: true,
         children: [
+          { text: 'guide / start', link: '/pages/guide/start.md' },
           { text: 'demo / buttons', link: '/pages/demo/buttons.md' },
           { text: 'demo / icons', link: '/pages/demo/icons.md' },
           { text: 'demo / lists', link: '/pages/demo/lists.md' },
