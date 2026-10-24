@@ -72,4 +72,48 @@
   button::after {
     border: none;
   }
+
+  /* #ifdef H5 */
+  /*
+   * 文档实时预览 iframe：原生滚动条会占 15px，导致手机 / Duo 视口变窄。
+   * 隐藏原生滚动条，改用预览专用的悬浮指示条（不占布局宽度）。
+   */
+  html.lingyun-preview-embedded {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html.lingyun-preview-embedded::-webkit-scrollbar,
+  html.lingyun-preview-embedded body::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  html.lingyun-preview-embedded body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .lingyun-preview-scrollbar {
+    position: fixed;
+    top: 4px;
+    right: 0;
+    bottom: 4px;
+    z-index: 99999;
+    width: 10px;
+    pointer-events: auto;
+    cursor: pointer;
+    touch-action: none;
+  }
+
+  .lingyun-preview-scrollbar__thumb {
+    position: absolute;
+    right: 2px;
+    top: 0;
+    width: 3px;
+    border-radius: 999px;
+    background: rgba(120, 120, 128, 0.55);
+  }
+  /* #endif */
 </style>

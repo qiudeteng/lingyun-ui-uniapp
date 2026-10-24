@@ -23,6 +23,7 @@
       :title="displayTitle"
       :show-back="isDuoSplit ? false : showBackEffective"
       :right-inset="duoTopRightInset"
+      :glass-progress="glassProgress"
       @back="onBack"
     >
       <template #leading>
@@ -388,6 +389,7 @@ export default defineComponent({
       _lastReportedTop: undefined as number | undefined,
       _navSlotTimer: null as ReturnType<typeof setTimeout> | null,
       _onWindowResize: null as ((res?: unknown) => void) | null,
+      _onWindowScroll: null as ((event?: Event) => void) | null,
       _stopRouteChange: null as (() => void) | null,
       _onHashChange: null as (() => void) | null,
       _pageEnterTimer: null as ReturnType<typeof setTimeout> | null,
@@ -472,7 +474,13 @@ export default defineComponent({
     this.bindResize()
     this.bindPageRoute()
     if (this.usePageScroll) {
+      this.bindWindowScroll()
+      // #ifndef H5
       this.$nextTick(() => this.setupGlassObserver())
+      // #endif
+      // #ifdef H5
+      this.$nextTick(() => this.syncWindowScrollTop())
+      // #endif
     }
     try {
       useLingyunTheme().apply()
@@ -486,6 +494,7 @@ export default defineComponent({
     this.teardownGlassObserver()
     this.unbindResize()
     this.unbindPageRoute()
+    this.unbindWindowScroll()
     if (this._pageEnterTimer) {
       clearTimeout(this._pageEnterTimer)
       this._pageEnterTimer = null
@@ -530,8 +539,15 @@ export default defineComponent({
     },
     usePageScroll(enabled: boolean) {
       this.$nextTick(() => {
-        if (enabled) this.setupGlassObserver()
-        else this.teardownGlassObserver()
+        if (enabled) {
+          this.bindWindowScroll()
+          // #ifndef H5
+          this.setupGlassObserver()
+          // #endif
+        } else {
+          this.unbindWindowScroll()
+          this.teardownGlassObserver()
+        }
       })
     },
   },
@@ -926,6 +942,7 @@ export default defineComponent({
       if (this.embedded) return
       this.currentPagePath = readLingyunCurrentPagePath()
       this.settlePageIntent()
+      this.syncWindowScrollTop()
     },
     /** 导航意图与真实路径一致后清掉，避免侧栏高亮一直停在旧项 */
     settlePageIntent() {
@@ -1106,6 +1123,60 @@ export default defineComponent({
       }
       // #ifdef H5
       if (typeof window !== 'undefined') window.addEventListener('resize', onWindowResize)
+      // #endif
+    },
+    bindWindowScroll() {
+      // #ifdef H5
+      if (
+        this._onWindowScroll ||
+        this.embedded ||
+        !this.usePageScroll ||
+        typeof window === 'undefined'
+      ) {
+        return
+      }
+      this._onWindowScroll = () => {
+        const top =
+          Math.max(
+            window.scrollY || window.pageYOffset || 0,
+            (document.scrollingElement && document.scrollingElement.scrollTop) || 0,
+            document.documentElement.scrollTop || 0,
+            document.body.scrollTop || 0,
+          ) || 0
+        this.applyScrollTop(top)
+      }
+      window.addEventListener('scroll', this._onWindowScroll, { passive: true })
+      document.addEventListener('scroll', this._onWindowScroll, true)
+      this.syncWindowScrollTop()
+      // #endif
+    },
+    unbindWindowScroll() {
+      // #ifdef H5
+      if (this._onWindowScroll && typeof window !== 'undefined') {
+        window.removeEventListener('scroll', this._onWindowScroll)
+        document.removeEventListener('scroll', this._onWindowScroll, true)
+      }
+      this._onWindowScroll = null
+      // #endif
+    },
+    /** H5 页面级滚动直接读窗口位置；iframe / 预览里比 IntersectionObserver 更稳 */
+    syncWindowScrollTop() {
+      // #ifdef H5
+      if (
+        this.embedded ||
+        !this.usePageScroll ||
+        typeof window === 'undefined'
+      ) {
+        return
+      }
+      const top =
+        window.scrollY ||
+        window.pageYOffset ||
+        (document.scrollingElement && document.scrollingElement.scrollTop) ||
+        document.documentElement.scrollTop ||
+        document.body.scrollTop ||
+        0
+      this.applyScrollTop(top)
       // #endif
     },
     unbindResize() {

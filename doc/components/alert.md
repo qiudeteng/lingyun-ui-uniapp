@@ -57,9 +57,11 @@ uni.hideLingyunAlert()
 | `actions` | 按钮：`{ text, role, primary }` | [] |
 | `layout` | `auto` 按按钮数量横排或竖排 | auto |
 | `inputs` | 可选输入行：`{ key, type, password, value, placeholder, maxlength, multiline, autoHeight, rows }`，最多 2 个；内部使用 `lingyun-text-field`。`multiline: true` 或 `type: 'textarea'` 为多行备注模式 | [] |
-| `autoFocus` | 打开后自动聚焦第一个输入框。会等入场动画结束后再聚焦，避免键盘弹起与面板缩放同时造成占位文字抖动 | true |
+| `autoFocus` | 打开后自动聚焦第一个输入框。输入弹窗不做缩放入场，等输入框挂载稳定后再聚焦（约 220ms）；键盘上推走布局位移，不做补间 | true |
 | `maskClosable` | 点遮罩关闭 | false |
 | `closeOnAction` | 点按钮后关闭 | true |
+
+含输入框时，键盘上推使用**布局位移**，不对原生输入层所在容器做 `transform`，也不做位移补间；打开时等输入框挂载稳定后再聚焦。关闭时若键盘还开着，会先收起键盘，等键盘落下后再播放正常退场动画。页面请保持 `lingyun-app-page` 默认页面级滚动（`pageScroll=true`），不要把 alert 放进内层 `scroll-view`，与仓库 `design/TEXTFIELDS.md` §5 的键盘避让约束一致。
 ## 事件
 
 | 事件 | 说明 |

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vuepress/client'
 
 /** 文档页文件名 → H5 演示路由（不含 #） */
@@ -72,9 +72,50 @@ const WIDE_DEFAULT = new Set(['page-nav', 'app-page'])
 const SIZES = {
   phone: { w: 390, h: 844, label: '390 × 844', name: '手机' },
   wide: { w: 717, h: 781, label: '717 × 781', name: '宽屏' },
+  duo: { w: 669, h: 951, label: '内屏竖 · 669 × 951', name: 'iPhone Duo' },
 } as const
 
 type PreviewSize = keyof typeof SIZES
+type PhoneOrientation = 'portrait' | 'landscape'
+type PreviewDuoPose =
+  | 'outer-portrait'
+  | 'outer-landscape'
+  | 'inner-portrait'
+  | 'inner-portrait-folded'
+  | 'inner-landscape'
+  | 'inner-landscape-folded'
+
+type DuoPoseOption = {
+  key: PreviewDuoPose
+  name: string
+  w: number
+  h: number
+  label: string
+}
+
+/** 尺寸来自 duoMetrics.ts / Figma Duo Standard 画板 */
+const DUO_POSES: DuoPoseOption[] = [
+  { key: 'inner-portrait', name: '内屏竖', w: 669, h: 951, label: '内屏竖 · 669 × 951' },
+  {
+    key: 'inner-portrait-folded',
+    name: '内屏竖半折',
+    w: 669,
+    h: 951,
+    label: '内屏竖半折 · 669 × 951',
+  },
+  { key: 'outer-portrait', name: '外屏竖', w: 466, h: 678, label: '外屏竖 · 466 × 678' },
+  { key: 'outer-landscape', name: '外屏横', w: 678, h: 466, label: '外屏横 · 678 × 466' },
+  { key: 'inner-landscape', name: '内屏横', w: 951, h: 669, label: '内屏横 · 951 × 669' },
+  {
+    key: 'inner-landscape-folded',
+    name: '内屏横半折',
+    w: 951,
+    h: 669,
+    label: '内屏横半折 · 951 × 669',
+  },
+]
+
+const PHONE_LANDSCAPE = { w: 844, h: 390, label: '844 × 390', name: '手机横屏' } as const
 
 const route = useRoute()
 const ready = ref(false)
@@ -108,13 +149,37 @@ function defaultSize(name: string): PreviewSize {
 }
 
 const sizeMode = ref<PreviewSize>(defaultSize(slug.value))
-const wide = computed(() => sizeMode.value === 'wide')
-const logical = computed(() => SIZES[sizeMode.value])
+const phoneOrientation = ref<PhoneOrientation>('portrait')
+const duoPose = ref<PreviewDuoPose>('inner-portrait')
+const frameEl = ref<HTMLIFrameElement | null>(null)
+
+const duoLogical = computed(
+  () => DUO_POSES.find((item) => item.key === duoPose.value) || DUO_POSES[0],
+)
+
+/** 切设备 / 方向 / Duo 姿态时重载 iframe，顺便把演示页滚动位置和顶栏玻璃进度归零 */
+const frameKey = computed(
+  () =>
+    `${slug.value}|${sizeMode.value}|${phoneOrientation.value}|${duoPose.value}`,
+)
+
+const logical = computed(() => {
+  if (sizeMode.value === 'duo') return duoLogical.value
+  if (sizeMode.value === 'phone' && phoneOrientation.value === 'landscape') {
+    return PHONE_LANDSCAPE
+  }
+  return SIZES[sizeMode.value]
+})
+
+const maxPreviewWidth = computed(() => {
+  if (sizeMode.value === 'wide') return 520
+  if (sizeMode.value === 'duo') return 560
+  return phoneOrientation.value === 'landscape' ? 520 : 390
+})
 
 const scale = computed(() => {
-  const maxH = Math.max(360, viewportH.value - 196)
-  const maxW = wide.value ? 520 : 390
-  return Math.min(1, maxH / logical.value.h, maxW / logical.value.w)
+  const maxH = Math.max(320, viewportH.value - (sizeMode.value === 'duo' ? 260 : 230))
+  return Math.min(1, maxH / logical.value.h, maxPreviewWidth.value / logical.value.w)
 })
 
 const frameStyle = computed(() => ({
@@ -147,7 +212,14 @@ const origin = computed(() => {
   return isLocalDev.value ? `${window.location.protocol}//${window.location.hostname}:5175` : DEMO_ORIGIN
 })
 
-const src = computed(() => (demoPath.value ? `${origin.value}/#${demoPath.value}` : ''))
+const src = computed(() => {
+  if (!demoPath.value) return ''
+  const duoQuery =
+    sizeMode.value === 'duo'
+      ? `?__lyDuo=${encodeURIComponent(duoPose.value)}`
+      : ''
+  return `${origin.value}/#${demoPath.value}${duoQuery}`
+})
 
 function syncBodyClass(on: boolean): void {
   if (typeof document === 'undefined') return
@@ -170,9 +242,47 @@ function onResize(): void {
 }
 
 function setSize(mode: string): void {
-  if (mode !== 'phone' && mode !== 'wide') return
+  if (mode !== 'phone' && mode !== 'wide' && mode !== 'duo') return
   sizePicked.value = true
   sizeMode.value = mode
+}
+
+function setPhoneOrientation(orientation: PhoneOrientation): void {
+  sizePicked.value = true
+  phoneOrientation.value = orientation
+}
+
+function setDuoPose(pose: PreviewDuoPose): void {
+  sizePicked.value = true
+  duoPose.value = pose
+}
+
+/**
+ * 只改 iframe 视口不会让演示应用知道这是 Duo；通过 postMessage 设置
+ * setLingyunLayoutOverride，切回手机/宽屏时再清空。
+ */
+function postLayout(): void {
+  const win = frameEl.value?.contentWindow
+  if (!win || !origin.value) return
+  const payload =
+    sizeMode.value === 'duo'
+      ? {
+          type: 'lingyun-layout-preview',
+          formFactor: 'duo',
+          duoPose: duoPose.value,
+        }
+      : {
+          type: 'lingyun-layout-preview',
+          formFactor: '',
+          duoPose: '',
+        }
+  win.postMessage(payload, origin.value)
+}
+
+function onPreviewMessage(event: MessageEvent): void {
+  if (event.source !== frameEl.value?.contentWindow) return
+  const data = event.data as { type?: string } | null | undefined
+  if (data && data.type === 'lingyun-layout-preview-ready') postLayout()
 }
 
 watch(slug, (name) => {
@@ -188,16 +298,26 @@ watch(scale, () => {
   if (demoPath.value) syncBodyClass(true)
 })
 
+watch([sizeMode, phoneOrientation, duoPose], () => {
+  if (!demoPath.value) return
+  nextTick(() => {
+    postLayout()
+    syncBodyClass(true)
+  })
+})
+
 onMounted(() => {
   ready.value = true
   onResize()
   window.addEventListener('resize', onResize)
+  window.addEventListener('message', onPreviewMessage)
   syncBodyClass(!!demoPath.value)
   if (demoPath.value) probe()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
+  window.removeEventListener('message', onPreviewMessage)
   syncBodyClass(false)
 })
 </script>
@@ -211,8 +331,15 @@ onBeforeUnmount(() => {
     <div class="phone-preview__device">
       <div class="phone-preview__screen" :style="frameStyle">
         <div v-if="online" class="phone-preview__scale" :style="scaleStyle">
-          <!-- 用文档页做 key：只改 hash 时浏览器不会重载 iframe，演示会停在上一页 -->
-          <iframe :key="slug" class="phone-preview__frame" :src="src" title="组件演示" />
+          <!-- 用文档页 + 设备状态做 key：换页 / 换设备时重载，避免沿用上一模式的滚动位置 -->
+          <iframe
+            ref="frameEl"
+            :key="frameKey"
+            class="phone-preview__frame"
+            :src="src"
+            title="组件演示"
+            @load="postLayout"
+          />
         </div>
         <div v-else class="phone-preview__offline">
           <p>连不上演示应用</p>
@@ -231,6 +358,48 @@ onBeforeUnmount(() => {
         @click="setSize(key)"
       >
         {{ item.name }}
+      </button>
+    </div>
+
+    <div
+      v-if="sizeMode === 'phone'"
+      class="phone-preview__options"
+      role="group"
+      aria-label="手机方向"
+    >
+      <button
+        type="button"
+        class="phone-preview__size-btn phone-preview__size-btn--sub"
+        :class="{ 'is-active': phoneOrientation === 'portrait' }"
+        @click="setPhoneOrientation('portrait')"
+      >
+        竖屏
+      </button>
+      <button
+        type="button"
+        class="phone-preview__size-btn phone-preview__size-btn--sub"
+        :class="{ 'is-active': phoneOrientation === 'landscape' }"
+        @click="setPhoneOrientation('landscape')"
+      >
+        横屏
+      </button>
+    </div>
+
+    <div
+      v-else-if="sizeMode === 'duo'"
+      class="phone-preview__options phone-preview__options--duo"
+      role="group"
+      aria-label="iPhone Duo 状态"
+    >
+      <button
+        v-for="pose in DUO_POSES"
+        :key="pose.key"
+        type="button"
+        class="phone-preview__size-btn phone-preview__size-btn--sub"
+        :class="{ 'is-active': duoPose === pose.key }"
+        @click="setDuoPose(pose.key)"
+      >
+        {{ pose.name }}
       </button>
     </div>
   </aside>
@@ -258,7 +427,8 @@ onBeforeUnmount(() => {
   .phone-preview__device,
   .phone-preview__frame,
   .phone-preview__offline,
-  .phone-preview__sizes {
+  .phone-preview__sizes,
+  .phone-preview__options {
     pointer-events: auto;
   }
 
@@ -325,6 +495,18 @@ onBeforeUnmount(() => {
     background: var(--vp-c-bg-soft, #f6f6f7);
   }
 
+  .phone-preview__options {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 3px;
+    border-radius: 14px;
+    background: var(--vp-c-bg-soft, #f6f6f7);
+  }
+
   .phone-preview__size-btn {
     margin: 0;
     padding: 4px 14px;
@@ -336,6 +518,12 @@ onBeforeUnmount(() => {
     font-size: 12px;
     line-height: 18px;
     cursor: pointer;
+  }
+
+  .phone-preview__size-btn--sub {
+    padding: 3px 9px;
+    font-size: 11px;
+    line-height: 16px;
   }
 
   .phone-preview__size-btn.is-active {

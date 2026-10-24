@@ -3,9 +3,13 @@
 - `LingyunPageTabChild` 支持 `children` 三级菜单：二级项作为分组卡片标题，三级项作为卡片里的按钮；只有二级菜单的 Tab 渲染成没有标题的卡片。宽屏 `lingyun-menu` 同步用分组标题分隔。
 - H5 首页 / 目录可作为一级 Tab 宿主页：点击底部 Tab 只切换宿主视图，地址保持为宿主路由的 `?tab=<key>`，页面栈不增长；刷新或子页返回后按 `?tab=` 恢复。
 - 修复 H5 一级 Tab 宿主页顶部重复留白：外层页面壳和内嵌页面都留了一次顶栏，导致工具栏下方出现黑色断层；现在只保留内嵌页自己的留白，页面背景一直铺到工具栏下方。
+- `lingyun-duo-toolbar` 新增 `glassProgress`：Duo 内屏 / 横屏顶部栏在页面顶部全透明，随滚动逐渐浮出玻璃；`lingyun-app-page` 自动传入滚动进度。
+- H5 页面级滚动的顶栏玻璃进度改为直接读取窗口滚动位置，不再依赖 IntersectionObserver；iframe / 文档预览里页顶也稳定保持全透明。
 - 页面背景统一由页面壳根节点绘制，新增 `--lingyun-page-background` 覆盖点；内容层 `.page` 默认透明，Tab 页底部留白不会再露出纯色断层。宿主工程可只配一次变量让所有页面共用同一背景。
-- `lingyun-alert` 输入行改用 `lingyun-text-field`；自动聚焦延后到弹窗入场动画结束，H5 visualViewport 键盘高度更新加防抖，避免输入框占位文字和面板在键盘弹起时抖动。切换两个输入框时不再被旧的 blur 定时器把键盘高度清零。
+- `lingyun-alert` 输入行改用 `lingyun-text-field`；输入弹窗不做缩放入场，等输入框挂载稳定后再聚焦，避免小程序 `textarea` 闪一下聚焦又失焦。切换两个输入框时不再被旧的 blur 定时器把键盘高度清零。
 - `lingyun-alert` 的 `inputs` 支持多行备注：`multiline: true`（或 `type: 'textarea'`）、`autoHeight`、`rows`，内部使用 `lingyun-text-field` 的多行模式。
+- 修复 `lingyun-alert` 输入框键盘弹起时的文字滞后：键盘上推不用 `transform`（原生输入文字层跟不上 WXSS 外壳），改为布局位移且不做补间；输入框所在页面保持页面级滚动。
+- `lingyun-alert` 关闭时先收起键盘，等键盘落下后再播放正常退场动画；退场期间冻结上推位置，不再先跳回中间再闪烁消失。
 - 微信小程序 `lingyun-picker` 自定义滚轮新增 `haptic`（默认开）：跨过选项时触发轻震动，近似原生 `picker-view` 的选择反馈。原生滚轮的系统音在自定义 `scroll-view` 下不可用。
 
 ## 1.0.31（2026-10-20）

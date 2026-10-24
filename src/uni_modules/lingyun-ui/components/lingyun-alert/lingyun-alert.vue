@@ -86,10 +86,14 @@ import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
  * 玻璃：对齐 Sheet（#fff@0.72 + blur）；勿对玻璃节点写 opacity 显隐 */
 const LEAVE_MS = 240
 const NUDGE_MS = 420
-/** 入场缩放结束再聚焦，避免键盘弹起和面板缩放叠在一起 */
-const FOCUS_DELAY_MS = 440
 /** H5 visualViewport 在键盘动画中会连续触发，等高度稳定后再上推面板 */
 const VISUAL_VIEWPORT_DEBOUNCE_MS = 60
+/** 小程序 keyboardheightchange 也会连续上报中间高度；等稳定后再移动面板 */
+const MP_KEYBOARD_SETTLE_MS = 90
+/** 输入弹窗打开后稍等 textarea 挂载稳定再聚焦，避免原生输入层闪一下失焦 */
+const INPUT_FOCUS_DELAY_MS = 220
+/** 关闭时等待键盘收起的兜底时间 */
+const CLOSE_KB_TIMEOUT_MS = 320
 
 type AlertInputField = {
   key?: string
@@ -196,7 +200,7 @@ export default defineComponent({
       phase: '' as '' | 'enter' | 'open' | 'leave',
       leaveTimer: null as ReturnType<typeof setTimeout> | null,
       enterTimer: null as ReturnType<typeof setTimeout> | null,
-      /** 入场动画结束后再允许自动聚焦 */
+      /** 打开后允许自动聚焦；等输入框挂载稳定再置位 */
       focusReady: false,
       focusTimer: null as ReturnType<typeof setTimeout> | null,
       /** 拒绝点遮罩关闭时的轻抖 */
@@ -204,6 +208,11 @@ export default defineComponent({
       nudgeTimer: null as ReturnType<typeof setTimeout> | null,
       _blurKbTimer: null as ReturnType<typeof setTimeout> | null,
       _visualViewportTimer: null as ReturnType<typeof setTimeout> | null,
+      _kbHeightTimer: null as ReturnType<typeof setTimeout> | null,
+      _closeKbTimer: null as ReturnType<typeof setTimeout> | null,
+      _pendingClose: false,
+      /** 退场期间冻结键盘上推量，避免面板先跳回中间再淡出 */
+      _closeLiftPx: null as number | null,
       _onKeyboardHeight: null as KeyboardHeightHandler | null,
       _onVisualViewport: null as (() => void) | null,
       /** 键盘高度（含输入框时上推面板） */
@@ -279,6 +288,7 @@ export default defineComponent({
     },
     /** 键盘弹起时上移量：面板底边贴在键盘上方（小间距），避免旧算法 kb*0.58 抬得过高留白过大 */
     keyboardLiftPx() {
+      if (this._closeLiftPx != null) return this._closeLiftPx
       const kb = Math.max(0, Number(this.keyboardHeight) || 0)
       if (kb < 40) return 0
       let winH = 667
@@ -301,18 +311,29 @@ export default defineComponent({
       return Math.round(lift)
     },
     liftStyle() {
-      /* scale 放 lift，勿放 panel：同元素 opacity/scale 会搞坏小程序 backdrop-filter（Sheet 只做 transform） */
+      /*
+       * scale 放 lift，勿放 panel：同元素 opacity/scale 会搞坏小程序 backdrop-filter。
+       * 键盘上推用布局（margin-bottom）而不是 transform：小程序原生输入文字层
+       * 不会跟着祖先 transform 同步移动，之前的「文字滞后」就是两者不同步。
+       */
       const y = this.keyboardLiftPx
       let scale = 1
       if (!this.reduceMotion) {
-        if (this.phase === 'enter') scale = 1.16
+        /* 输入弹窗不做缩放入场，但退场时可以正常缩：此时键盘已收起、输入已失焦 */
+        if (this.phase === 'enter' && !this.hasInputs) scale = 1.16
         else if (this.phase === 'leave') scale = 0.92
       }
-      const transform =
-        y > 0 ? `translateY(-${y}px) scale(${scale})` : `scale(${scale})`
+      const transform = scale !== 1 ? `scale(${scale})` : 'none'
+      /* flex 垂直居中：margin-bottom = 2y 让面板中心上移 y */
+      const marginBottom = y > 0 ? `${Math.round(y * 2)}px` : '0px'
       const leaving = this.phase === 'leave'
       return {
         transform,
+        marginBottom,
+        /*
+         * 布局位移不做补间：过渡期间原生输入文字层会和 WXSS 外壳不同步，
+         * 出现文字闪烁/上移。键盘本身有系统动画，这里一次布局到位。
+         */
         transition: this.reduceMotion
           ? 'none'
           : leaving
@@ -349,8 +370,7 @@ export default defineComponent({
             /* #endif */
           }
         } else {
-          this.closeAnim()
-          this.resetKeyboardLift()
+          this.beginClose()
         }
       },
     },
@@ -379,6 +399,10 @@ export default defineComponent({
         clearTimeout(this.focusTimer)
         this.focusTimer = null
       }
+      if (this._kbHeightTimer) {
+        clearTimeout(this._kbHeightTimer)
+        this._kbHeightTimer = null
+      }
       this.focusReady = false
       if (this.nudgeTimer) {
         clearTimeout(this.nudgeTimer)
@@ -391,10 +415,17 @@ export default defineComponent({
       if (next === this.keyboardHeight) return
       this.keyboardHeight = next
       if (next > 0) this.measurePanelHeight()
+      if (next === 0 && this._pendingClose) this.finishPendingClose()
     },
     resetKeyboardLift() {
       clearTimeout(this._blurKbTimer ?? undefined)
       this._blurKbTimer = null
+      clearTimeout(this._kbHeightTimer ?? undefined)
+      this._kbHeightTimer = null
+      clearTimeout(this._closeKbTimer ?? undefined)
+      this._closeKbTimer = null
+      this._pendingClose = false
+      this._closeLiftPx = null
       this.setKeyboardHeight(0)
       this.panelHeightPx = 0
       this.unbindKeyboardHeight()
@@ -443,6 +474,8 @@ export default defineComponent({
       /* 第一格 blur 后马上点第二格时，别让旧的清零定时器把键盘高度打回 0 */
       clearTimeout(this._blurKbTimer ?? undefined)
       this._blurKbTimer = null
+      clearTimeout(this._kbHeightTimer ?? undefined)
+      this._kbHeightTimer = null
       this.bindKeyboardHeight()
       this.measurePanelHeight()
       /* #ifdef H5 */
@@ -450,6 +483,8 @@ export default defineComponent({
       /* #endif */
     },
     onInputBlur() {
+      clearTimeout(this._kbHeightTimer ?? undefined)
+      this._kbHeightTimer = null
       /* 延迟清零：切到下一输入框时避免闪回中间 */
       clearTimeout(this._blurKbTimer ?? undefined)
       this._blurKbTimer = setTimeout(() => {
@@ -457,16 +492,34 @@ export default defineComponent({
         this._blurKbTimer = null
       }, 80)
     },
+    queueKeyboardHeight(height: unknown) {
+      const next = Math.max(0, Number(height) || 0)
+      clearTimeout(this._kbHeightTimer ?? undefined)
+      if (next <= 0) {
+        this._kbHeightTimer = null
+        this.setKeyboardHeight(0)
+        return
+      }
+      this._kbHeightTimer = setTimeout(() => {
+        this._kbHeightTimer = null
+        this.setKeyboardHeight(next)
+      }, MP_KEYBOARD_SETTLE_MS)
+    },
     onInputKeyboardHeight(event: AlertFieldEvent) {
       const height = event && event.detail ? event.detail.height : 0
       clearTimeout(this._blurKbTimer ?? undefined)
-      this.setKeyboardHeight(height)
+      let deferred = false
+      // #ifdef MP-WEIXIN
+      deferred = true
+      // #endif
+      if (deferred) this.queueKeyboardHeight(height)
+      else this.setKeyboardHeight(height)
     },
     bindKeyboardHeight() {
       if (this._onKeyboardHeight) return
       if (typeof uni === 'undefined' || typeof uni.onKeyboardHeightChange !== 'function') return
       this._onKeyboardHeight = (res: UniNamespace.OnKeyboardHeightChangeResult) => {
-        this.setKeyboardHeight(res && res.height)
+        this.queueKeyboardHeight(res && res.height)
       }
       uni.onKeyboardHeightChange(this._onKeyboardHeight)
     },
@@ -509,26 +562,82 @@ export default defineComponent({
     /* #endif */
     openAnim() {
       this.clearTimers()
+      this._pendingClose = false
+      this._closeLiftPx = null
+      clearTimeout(this._closeKbTimer ?? undefined)
+      this._closeKbTimer = null
       this.mounted = true
       this.phase = 'enter'
+      /*
+       * 输入弹窗不做缩放入场；聚焦延后到输入框挂载稳定之后。
+       * 小程序 textarea 在首帧/动画期间翻转 focus 容易闪一下失焦。
+       */
+      if (this.hasInputs && this.autoFocus) {
+        this.focusTimer = setTimeout(() => {
+          this.focusReady = true
+          this.focusTimer = null
+        }, this.reduceMotion ? 0 : INPUT_FOCUS_DELAY_MS)
+      }
       this.$nextTick(() => {
         this.enterTimer = setTimeout(() => {
           this.phase = 'open'
           this.enterTimer = null
           if (this.hasInputs) this.measurePanelHeight()
-          if (this.hasInputs && this.autoFocus) {
-            this.focusTimer = setTimeout(() => {
-              this.focusReady = true
-              this.focusTimer = null
-            }, this.reduceMotion ? 0 : FOCUS_DELAY_MS)
-          }
         }, this.reduceMotion ? 0 : 20)
       })
+    },
+    /**
+     * 关闭入口：键盘开着时先收键盘，等它落下去再播正常的 alert 退场。
+     * 直接播退场会让面板在键盘收起过程中突然消失，出现闪烁。
+     */
+    beginClose() {
+      if (!this.mounted) {
+        this.phase = ''
+        this.resetKeyboardLift()
+        return
+      }
+      const keyboardEngaged = this.hasInputs && this.keyboardHeight > 0
+      if (!keyboardEngaged) {
+        this._closeLiftPx = null
+        this.closeAnim()
+        return
+      }
+      /* 冻结当前上推量：键盘收起后按这个位置退场，不再跳回中间 */
+      clearTimeout(this._kbHeightTimer ?? undefined)
+      this._kbHeightTimer = null
+      this._closeLiftPx = this.keyboardLiftPx
+      this._pendingClose = true
+      clearTimeout(this._closeKbTimer ?? undefined)
+      this._closeKbTimer = setTimeout(() => {
+        this._closeKbTimer = null
+        this.finishPendingClose()
+      }, CLOSE_KB_TIMEOUT_MS)
+      try {
+        if (typeof uni !== 'undefined' && typeof uni.hideKeyboard === 'function') {
+          uni.hideKeyboard()
+        }
+      } catch {
+        /* 端不支持时等兜底超时 */
+      }
+    },
+    finishPendingClose() {
+      if (!this._pendingClose) return
+      this._pendingClose = false
+      clearTimeout(this._closeKbTimer ?? undefined)
+      this._closeKbTimer = null
+      this.closeAnim()
     },
     closeAnim() {
       if (!this.mounted) {
         this.phase = ''
+        this.resetKeyboardLift()
         return
+      }
+      this._pendingClose = false
+      clearTimeout(this._closeKbTimer ?? undefined)
+      this._closeKbTimer = null
+      if (this._closeLiftPx == null && this.keyboardHeight > 0) {
+        this._closeLiftPx = this.keyboardLiftPx
       }
       this.clearTimers()
       this.phase = 'leave'
@@ -537,6 +646,8 @@ export default defineComponent({
         this.mounted = false
         this.phase = ''
         this.leaveTimer = null
+        /* 退场期间保持键盘上推量，动画结束后再清，避免中途跳回 */
+        this.resetKeyboardLift()
       }, wait)
     },
     actionClass(action: AlertAction) {
@@ -690,7 +801,6 @@ $ly-field-gap: 12px;
   max-width: $ly-alert-width;
   display: flex;
   justify-content: center;
-  will-change: transform;
 }
 
 .lingyun-alert__panel {
