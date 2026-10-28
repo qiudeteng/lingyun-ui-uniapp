@@ -1,13 +1,13 @@
 {
   "id": "lingyun-ui-charts",
   "displayName": "凌云UI Charts",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "description": "凌云UI 图表组件。系列色见 components/lingyun-ui-charts/config.ts。",
   "keywords": [
     "lingyun-ui",
     "图表",
     "可视化"
-  ],
+],
   "repository": "https://github.com/qiudeteng/lingyun-ui-uniapp",
   "engines": {
     "uni-app": "^5.05",
@@ -34,7 +34,8 @@
     "type": "component-vue",
     "darkmode": "√",
     "i18n": "x",
-    "widescreen": "√"
+    "widescreen": "√",
+    "vapor": "x"
   },
   "uni_modules": {
     "dependencies": [
