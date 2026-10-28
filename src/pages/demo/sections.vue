@@ -77,6 +77,32 @@
         <text class="body-text">32px，相对主标题和副标题垂直居中。</text>
       </lingyun-section>
 
+      <lingyun-section
+        title="左侧图标 · 字形"
+        subtitle="直接放入 lingyun-icon"
+        icon-size="large"
+        hint="#icon 插槽"
+      >
+        <template #icon>
+          <lingyun-icon type="bars" :size="20" color="primary" />
+        </template>
+        <text class="body-text">字形与图片共用 32px 图标盒，用来看图标的默认定位。</text>
+      </lingyun-section>
+
+      <lingyun-section
+        title="左侧图标 · 色块"
+        subtitle="业务卡片的淡蓝色块写法"
+        icon-size="large"
+        hint="容器 flex 居中"
+      >
+        <template #icon>
+          <view class="section-icon-tile">
+            <lingyun-icon type="bars" :size="20" color="primary" />
+          </view>
+        </template>
+        <text class="body-text">色块自己负责水平、垂直居中，图标不会再贴在左上角。</text>
+      </lingyun-section>
+
       <lingyun-section title="玻璃" color="glass" hint="color=glass" />
       <lingyun-section title="绿色" color="green" />
       <lingyun-section title="蓝色" color="blue" />
@@ -263,6 +289,16 @@
     font-size: 15px;
     line-height: 22px;
     color: var(--lingyun-label, #1c1c1e);
+  }
+
+  .section-icon-tile {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 122, 255, 0.12);
   }
 
   .chip {

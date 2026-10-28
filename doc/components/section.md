@@ -12,6 +12,18 @@
 </lingyun-section>
 ```
 
+标题左侧除了 `icon` 图片地址，还可以用 `#icon` 插槽放 `lingyun-icon` 或其他节点：
+
+```vue
+<lingyun-section title="筛选条件" icon-size="large" hint="#icon 插槽">
+  <template #icon>
+    <lingyun-icon type="bars" :size="20" color="primary" />
+  </template>
+</lingyun-section>
+```
+
+`#icon` 插槽占用 `icon-size` 指定的方形盒（默认 24，`small` 16，`large` 32）；自定义色块时由色块自己负责 flex 居中。
+
 ## 属性
 
 | 属性 | 说明 | 默认值 |

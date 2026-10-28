@@ -46,12 +46,22 @@
         </view>
       </lingyun-section>
 
-      <lingyun-section title="图例表" hint="legend.columns" is-last>
-        <view class="chart-box" :class="{ 'chart-box--legend-bottom': legendAtBottom }">
+      <lingyun-section title="图例表 · 右侧单列" hint="18 项 · 宽屏右侧单列 / 窄屏自动落底 · 上下箭头">
+        <view class="chart-box chart-box--paged">
           <lingyun-ui-charts
             type="ring"
-            :chartData="legendData"
-            :opts="legendOpts"
+            :chartData="pagedData"
+            :opts="pagedRightOpts"
+          />
+        </view>
+      </lingyun-section>
+
+      <lingyun-section title="图例表 · 底部 5 行" hint="18 项 · 默认 5 行/页 · 上下箭头" is-last>
+        <view class="chart-box chart-box--legend-bottom chart-box--paged-bottom">
+          <lingyun-ui-charts
+            type="ring"
+            :chartData="pagedData"
+            :opts="pagedBottomOpts"
           />
         </view>
       </lingyun-section>
@@ -60,10 +70,6 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
-  import { chartLegendOpts, chartLegendSamples } from './samples'
-  import { useLegendAtBottom } from './use-legend-at-bottom'
-
   const slices = [
     { name: '一班', value: 50 },
     { name: '二班', value: 30 },
@@ -96,19 +102,52 @@
   const gradientOpts = { extra: { ring: { ringWidth: 60, linearType: 'custom' } } }
   const widthOpts = { extra: { ring: { ringWidth: 60 } } }
 
-  const { legendAtBottom } = useLegendAtBottom()
-  const legendData = chartLegendSamples.ring
-  const legendOpts = computed(() => {
-    const base = { ...(chartLegendOpts.ring || {}) }
-    const legend = {
-      ...((base.legend as Record<string, unknown>) || {}),
-      position: legendAtBottom.value ? 'bottom' : 'right',
-      float: 'center',
-    }
-    return { ...base, legend }
-  })
+  /** 18 个渠道，用来演示表格图例单列 / 底部分页 */
+  const pagedSlices = Array.from({ length: 18 }, (_, index) => ({
+    name: `渠道${String(index + 1).padStart(2, '0')}`,
+    value: 128 - index * 4,
+    count: 18 - index,
+    rate: `${Math.max(2, 18 - index)}%`,
+  }))
+  const pagedData = { series: [{ data: pagedSlices }] }
+  const pagedColumns = [
+    { key: 'name', width: 88 },
+    { key: 'value', width: 44, align: 'right' },
+    { key: 'count', width: 32, align: 'right' },
+    { key: 'rate', width: 44, align: 'right', color: '#86868b' },
+  ]
+  const pagedBaseOpts = {
+    dataLabel: false,
+    title: { name: '1,284' },
+    subtitle: { name: '订单总数' },
+    extra: { ring: { ringWidthRatio: 0.58 } },
+    legend: {
+      lineHeight: 22,
+      fontSize: 12,
+      columns: pagedColumns,
+    },
+  }
+  const pagedRightOpts = {
+    ...pagedBaseOpts,
+    legend: { ...pagedBaseOpts.legend, position: 'right', float: 'center' },
+  }
+  const pagedBottomOpts = {
+    ...pagedBaseOpts,
+    legend: { ...pagedBaseOpts.legend, position: 'bottom', float: 'center' },
+  }
 </script>
 
 <style lang="scss">
   @import './chart-demo-page.scss';
+
+  /* 窄屏图表落底后，给绘图区更多高度，避免环图被图例压得太小 */
+  @media (max-width: 689px) {
+    .chart-box--paged {
+      height: 420px;
+    }
+
+    .chart-box--paged-bottom {
+      height: 460px;
+    }
+  }
 </style>

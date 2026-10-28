@@ -145,8 +145,15 @@ opts: {
 | `align` | `right` 右对齐，默认靠左 |
 | `color` | 整列文字色 |
 | `columnGap` | 列间距，px，默认 8。写在 `legend` 上 |
+| `overflow` | `page`（默认）单行 / 单列分页；`wrap` 恢复旧布局 |
+| `pageSize` | 每页数量；0 时普通图例自动计算，表格模式默认 5 行 |
+| `pageIndex` | 当前页，从 0 开始 |
+| `pageArrowSize` | 上下箭头点击区，默认 18px |
+| `pageArrowColor` | 箭头颜色，默认图例文字色 |
 
-`position` 为 `top` / `bottom` 且写了 `columns` 时：一行一项，图例区与绘图区同宽，多余宽度加在 `name` 列。
+`legend.overflow` 默认 `page`：横向图例只排一行，纵向图例只排一列；超出容量显示当前页，横向在右侧、纵向在底部绘制上下箭头。向上箭头翻上一页、向下箭头翻下一页，首页 / 末页对应箭头置灰。画布 CSS 宽度小于 520px 时，`left` / `right` 自动改为 `bottom`。旧版多行 / 多列布局用 `overflow: 'wrap'`。
+
+`position` 为 `top` / `bottom` 且写了 `columns` 时：按表格行排版，默认一页 **5 行**，超出用上下箭头分页；`pageSize` 可改每页行数。不写 `columns` 的普通图例仍是一行。
 
 | 图种 | 一行 | 额外字段 |
 |------|------|----------|

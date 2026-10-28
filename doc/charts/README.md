@@ -93,8 +93,15 @@ const chartOpts = { color: chartColorDark }
 | `align` | `right` 时数字右对齐，默认靠左 |
 | `color` | 整列文字色。不写用图例默认色 |
 | `columnGap` | 列间距，px，默认 8。写在 `legend` 上，不写在列上 |
+| `overflow` | `page`（默认）单行 / 单列分页；`wrap` 恢复旧的多行 / 多列铺开 |
+| `pageSize` | 每页图例数量。0 时普通图例按画布自动计算，表格模式默认 5 行 |
+| `pageIndex` | 当前页，从 0 开始；点击上下箭头时内部更新，也可外部指定 |
+| `pageArrowSize` | 上下箭头点击区大小，px，默认 18 |
+| `pageArrowColor` | 箭头颜色，默认跟随图例文字色 |
 
-`position` 为 `top` / `bottom` 且写了 `columns` 时：一行一项，图例区与绘图区同宽，多余宽度加在 `name` 列。
+`legend.overflow` 默认是 `page`：`position` 为 `top` / `bottom` 时只排一行，`left` / `right` 时只排一列；超出容量显示当前页，并在横向图例右侧 / 纵向图例底部出现上下箭头。向上箭头翻上一页、向下箭头翻下一页，首页 / 末页对应箭头置灰。画布 CSS 宽度小于 520px 时，`left` / `right` 会自动改为 `bottom`。传 `overflow: 'wrap'` 可恢复旧版自动换行 / 多列布局。
+
+`position` 为 `top` / `bottom` 且写了 `columns` 时：按表格行排版，默认一页 **5 行**，超出用上下箭头分页；`pageSize` 可改每页行数。不写 `columns` 的普通图例仍是一行。
 
 | 图种 | 一行是什么 | 额外字段写在哪 |
 | --- | --- | --- |

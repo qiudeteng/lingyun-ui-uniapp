@@ -1,4 +1,10 @@
-## 1.0.19（2026-10-16）
+## 1.0.20（2026-10-28）
+- 图例默认改为单行 / 单列，超出容量时只显示当前页，横向右侧 / 纵向底部出现上下箭头，点击上一页 / 下一页，不再把全部图例铺开；窄屏下左右图例自动落到底部。
+- 新增 `legend.overflow`（`page` / `wrap`）、`legend.pageSize`、`legend.pageIndex`、`legend.pageArrowSize`、`legend.pageArrowColor`；传 `overflow: 'wrap'` 可恢复旧的多行 / 多列布局。
+- 图例分页会保留原系列索引，翻页后点击图例仍能正确显示 / 隐藏对应系列。
+- 表格模式（`legend.columns`）在 `top` / `bottom` 时改为单列行排版，默认一页 5 行；`legend.pageSize` 可改每页行数。
+- 环图新增 `extra.ring.ringWidthRatio`：按半径比例控制环宽，大尺寸图表优先用它，避免固定 `ringWidth` 导致圆环过细、中心空白过大。
+## 1.0.19（2026-10-28）
 - 微信真机自动使用 Canvas 2D，修复图表穿透 Toolbar。
 ## 1.0.18（2026-10-16）
 - 删除 `canvas2d`，画布 ID 改为自动生成。

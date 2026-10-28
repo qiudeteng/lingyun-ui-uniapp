@@ -11,6 +11,7 @@
 - 默认不透明分组底
 - `color=glass` 玻璃
 - Title / Subtitle / Hint / Extra + click
+- `#icon` 插槽：直接放 `lingyun-icon`，以及用 flex 色块包一层
 - 布局工具类：`lingyun-section-row` / `stack` / `matrix`
 - Cover 插槽
 - Actions 插槽

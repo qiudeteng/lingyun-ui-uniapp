@@ -767,9 +767,31 @@ function findLegendIndex(currentPoints, legendData, opts) {
         }
       }
     }
+    if (currentIndex >= 0) currentIndex += Number(legendData.pageOffset) || 0;
     return currentIndex;
   }
   return currentIndex;
+}
+
+function findLegendPageArrow(currentPoints, legendData) {
+  var arrows = legendData && legendData.pageArrows;
+  if (!arrows) return '';
+  var directions = ['up', 'down'];
+  var gap = 4;
+  for (var i = 0; i < directions.length; i += 1) {
+    var direction = directions[i];
+    var arrow = arrows[direction];
+    if (!arrow) continue;
+    if (
+      currentPoints.x >= arrow.x - gap &&
+      currentPoints.x <= arrow.x + arrow.width + gap &&
+      currentPoints.y >= arrow.y - gap &&
+      currentPoints.y <= arrow.y + arrow.height + gap
+    ) {
+      return direction;
+    }
+  }
+  return '';
 }
 
 function isInExactLegendArea(currentPoints, area) {
@@ -987,7 +1009,365 @@ function legendItemWidth(item, layout, shapeWidth, shapeRight, itemGap, fontSize
   return shapeWidth + shapeRight + measureText(legendText || 'undefined', fontSize, context) + itemGap;
 }
 
+function isPagedLegend(opts) {
+  return !!opts.legend && opts.legend.overflow === 'page';
+}
+
+/**
+ * 窄屏时左右图例改为底部，避免图例挤占绘图区宽度。
+ * 阈值按 canvas 的 CSS 宽度算，不是窗口宽度；pixelRatio 不影响判断。
+ */
+function resolveLegendPosition(opts) {
+  var position = opts.legend && opts.legend.position;
+  var width = opts.width / (opts.pix || 1);
+  if (width < 520 && (position === 'left' || position === 'right')) {
+    return 'bottom';
+  }
+  return position;
+}
+
+function legendPageArrowSize(opts) {
+  return Math.max(12, Number(opts.legend.pageArrowSize) || 18) * opts.pix;
+}
+
+function makeLegendPageArrows(upX, downX, y, arrowSize, pageIndex, totalPages) {
+  return {
+    up: {
+      x: upX,
+      y: y,
+      width: arrowSize,
+      height: arrowSize,
+      size: arrowSize,
+      disabled: pageIndex <= 0
+    },
+    down: {
+      x: downX,
+      y: y,
+      width: arrowSize,
+      height: arrowSize,
+      size: arrowSize,
+      disabled: pageIndex >= totalPages - 1
+    }
+  };
+}
+
+function legendPageItemWidth(item, columnLayout, shapeWidth, shapeRight, fontSize, context) {
+  var textWidth = columnLayout
+    ? columnLayout.textWidth
+    : measureText(item.legendText ? item.legendText : item.name || '', fontSize, context);
+  return shapeWidth + shapeRight + textWidth;
+}
+
+/**
+ * 分页图例：top / bottom 固定一行，left / right 固定一列。
+ * 超出容量时只显示当前页，pageArrows 记录上下箭头的位置，由 drawLegend 绘制。
+ */
+function calPagedLegendData(series, opts, config, chartData, context) {
+  var legendData = {
+    paged: true,
+    area: {
+      start: { x: 0, y: 0 },
+      end: { x: 0, y: 0 },
+      width: 0,
+      height: 0,
+      wholeWidth: 0,
+      wholeHeight: 0
+    },
+    points: [],
+    widthArr: [],
+    heightArr: [],
+    pageIndex: 0,
+    totalPages: 1,
+    pageOffset: 0,
+    pageSize: 0,
+    tableRows: false,
+    pageArrows: null
+  };
+  if (opts.legend.show === false) {
+    chartData.legendData = legendData;
+    return legendData;
+  }
+  var padding = opts.legend.padding * opts.pix;
+  var margin = opts.legend.margin * opts.pix;
+  var fontSize = opts.legend.fontSize ? opts.legend.fontSize * opts.pix : config.fontSize;
+  var shapeWidth = 15 * opts.pix;
+  var shapeRight = 5 * opts.pix;
+  var lineHeight = Math.max(opts.legend.lineHeight * opts.pix, fontSize);
+  var itemGap = opts.legend.itemGap * opts.pix;
+  var arrowSize = legendPageArrowSize(opts);
+  var arrowGap = 8 * opts.pix;
+  var arrowBetween = 4 * opts.pix;
+  var requestedPageSize = Math.max(0, Number(opts.legend.pageSize) || 0);
+  var total = series.length;
+  var pageSize = 0;
+  var pageIndex = 0;
+  var totalPages = 1;
+  var pageItems = [];
+  var columnLayout = legendColumnLayout(series, opts, fontSize, context);
+  var position = resolveLegendPosition(opts);
+  legendData.columnLayout = columnLayout;
+
+  if (position === 'top' || position === 'bottom') {
+    var fullWidth = Math.max(0, opts.width - opts.area[1] - opts.area[3] - 2 * padding);
+    if (columnLayout && total) {
+      var targetText = Math.max(0, fullWidth - shapeWidth - shapeRight);
+      columnLayout = legendColumnLayout(series, opts, fontSize, context, targetText);
+      legendData.columnLayout = columnLayout;
+      /* 表格模式在底部 / 顶部时按行排版，默认一页 5 行，而不是压成横向一行 */
+      var tableRows = requestedPageSize > 0 ? requestedPageSize : 5;
+      var maxRows = Math.max(
+        1,
+        Math.floor(
+          (opts.height -
+            opts.area[0] -
+            opts.area[2] -
+            2 * margin -
+            2 * padding -
+            (total > tableRows ? arrowSize + arrowGap : 0)) /
+            lineHeight
+        )
+      );
+      pageSize = Math.max(1, Math.min(tableRows, total, maxRows));
+      totalPages = Math.max(1, Math.ceil(total / pageSize));
+      pageIndex = Math.max(0, Math.min(totalPages - 1, Number(opts.legend.pageIndex) || 0));
+      opts.legend.pageIndex = pageIndex;
+      var tableStart = pageIndex * pageSize;
+      pageItems = series.slice(tableStart, tableStart + pageSize);
+      var rowContentWidth = shapeWidth + shapeRight + columnLayout.textWidth;
+      legendData.tableRows = true;
+      legendData.points = pageItems.map(function(item) {
+        return [item];
+      });
+      legendData.widthArr = pageItems.map(function() {
+        return rowContentWidth;
+      });
+      legendData.heightArr = pageItems.map(function() {
+        return lineHeight;
+      });
+      legendData.area.start.x = opts.area[3];
+      legendData.area.end.x = opts.width - opts.area[1];
+      legendData.area.width = fullWidth;
+      legendData.area.wholeWidth = fullWidth;
+      legendData.area.height =
+        pageSize * lineHeight +
+        2 * padding +
+        (totalPages > 1 ? arrowSize + arrowGap : 0);
+      legendData.area.wholeHeight = legendData.area.height + 2 * margin;
+      if (position === 'top') {
+        legendData.area.start.y = opts.area[0] + margin;
+        legendData.area.end.y = legendData.area.start.y + legendData.area.height;
+      } else {
+        legendData.area.start.y =
+          opts.height - opts.area[2] - legendData.area.height - margin;
+        legendData.area.end.y = opts.height - opts.area[2] - margin;
+      }
+      if (totalPages > 1) {
+        var tableArrowBetween = 4 * opts.pix;
+        legendData.area.width = Math.max(
+          legendData.area.width,
+          arrowSize * 2 + tableArrowBetween + 2 * padding
+        );
+        legendData.area.end.x = legendData.area.start.x + legendData.area.width;
+        legendData.pageArrows = makeLegendPageArrows(
+          legendData.area.end.x - padding - arrowSize * 2 - tableArrowBetween,
+          legendData.area.end.x - padding - arrowSize,
+          legendData.area.end.y - padding - arrowSize,
+          arrowSize,
+          pageIndex,
+          totalPages
+        );
+      }
+      legendData.pageIndex = pageIndex;
+      legendData.totalPages = totalPages;
+      legendData.pageOffset = pageIndex * pageSize;
+      legendData.pageSize = pageSize;
+      legendData.position = position;
+      chartData.legendData = legendData;
+      return legendData;
+    }
+    var itemWidths = [];
+    for (var i = 0; i < total; i += 1) {
+      itemWidths.push(legendPageItemWidth(series[i], columnLayout, shapeWidth, shapeRight, fontSize, context));
+    }
+    var fitRow = function(available) {
+      var count = 0;
+      var used = 0;
+      for (var j = 0; j < total; j += 1) {
+        var width = itemWidths[j] + (count > 0 ? itemGap : 0);
+        if (used + width > available && count > 0) break;
+        if (count === 0 && width > available) {
+          count = 1;
+          used = width;
+          break;
+        }
+        used += width;
+        count += 1;
+      }
+      return { count: count, used: count > 0 ? used - itemGap : 0 };
+    };
+    var rowFit = fitRow(fullWidth);
+    var overflow = rowFit.count < total;
+    var available = overflow
+      ? Math.max(0, fullWidth - arrowSize * 2 - arrowGap - arrowBetween)
+      : fullWidth;
+    var fitted = fitRow(available);
+    pageSize = Math.max(1, fitted.count);
+    if (requestedPageSize > 0) pageSize = Math.min(requestedPageSize, total, pageSize);
+    totalPages = Math.max(1, Math.ceil(total / pageSize));
+    pageIndex = Math.max(0, Math.min(totalPages - 1, Number(opts.legend.pageIndex) || 0));
+    opts.legend.pageIndex = pageIndex;
+    var start = pageIndex * pageSize;
+    pageItems = series.slice(start, start + pageSize);
+    var contentWidth = 0;
+    for (var k = 0; k < pageItems.length; k += 1) {
+      contentWidth += itemWidths[start + k] + (k > 0 ? itemGap : 0);
+    }
+    /* 横向翻页时用所有页里最宽的一页占位，最后一页变短时箭头和整行不跳位 */
+    var maxPageContentWidth = contentWidth;
+    for (var pageNo = 0; pageNo < totalPages; pageNo += 1) {
+      var pageWidth = 0;
+      var pageStart = pageNo * pageSize;
+      for (var n = 0; n < pageSize && pageStart + n < total; n += 1) {
+        pageWidth += itemWidths[pageStart + n] + (n > 0 ? itemGap : 0);
+      }
+      maxPageContentWidth = Math.max(maxPageContentWidth, pageWidth);
+    }
+    var arrowReserve = totalPages > 1 ? arrowSize * 2 + arrowGap + arrowBetween : 0;
+    legendData.points = [pageItems];
+    legendData.widthArr = [maxPageContentWidth + arrowReserve];
+    legendData.heightArr = [lineHeight];
+    legendData.area.start.x = opts.area[3];
+    legendData.area.end.x = opts.width - opts.area[1];
+    legendData.area.width = fullWidth;
+    legendData.area.wholeWidth = fullWidth;
+    legendData.area.height = lineHeight + 2 * padding;
+    legendData.area.wholeHeight = legendData.area.height + 2 * margin;
+    if (position === 'top') {
+      legendData.area.start.y = opts.area[0] + margin;
+      legendData.area.end.y = legendData.area.start.y + legendData.area.height;
+    } else {
+      legendData.area.start.y = opts.height - opts.area[2] - legendData.area.height - margin;
+      legendData.area.end.y = opts.height - opts.area[2] - margin;
+    }
+    if (totalPages > 1) {
+      var arrowStartX = legendData.area.start.x + padding;
+      var arrowBlockWidth = maxPageContentWidth + arrowReserve;
+      if (opts.legend.float === 'right') {
+        arrowStartX = legendData.area.start.x + legendData.area.width - arrowBlockWidth;
+      } else if (opts.legend.float !== 'left') {
+        arrowStartX = legendData.area.start.x + (legendData.area.width - arrowBlockWidth) / 2;
+      }
+      var upOffsetX = maxPageContentWidth + arrowGap;
+      var downOffsetX = upOffsetX + arrowSize + arrowBetween;
+      var arrowY =
+        legendData.area.start.y + padding + (lineHeight - arrowSize) / 2;
+      legendData.pageArrows = makeLegendPageArrows(
+        arrowStartX + upOffsetX,
+        arrowStartX + downOffsetX,
+        arrowY,
+        arrowSize,
+        pageIndex,
+        totalPages
+      );
+      legendData.pageArrows.up.offsetX = upOffsetX;
+      legendData.pageArrows.down.offsetX = downOffsetX;
+    }
+  } else {
+    var maxHeight = opts.height - opts.area[0] - opts.area[2] - 2 * margin - 2 * padding;
+    var rowCapacity = Math.floor(maxHeight / lineHeight);
+    var overflowVertical = rowCapacity < total;
+    if (overflowVertical) {
+      rowCapacity = Math.floor((maxHeight - arrowSize - arrowGap) / lineHeight);
+    }
+    pageSize = Math.max(1, rowCapacity);
+    if (requestedPageSize > 0) pageSize = Math.min(requestedPageSize, total, pageSize);
+    totalPages = Math.max(1, Math.ceil(total / pageSize));
+    pageIndex = Math.max(0, Math.min(totalPages - 1, Number(opts.legend.pageIndex) || 0));
+    opts.legend.pageIndex = pageIndex;
+    var startVertical = pageIndex * pageSize;
+    pageItems = series.slice(startVertical, startVertical + pageSize);
+    var maxItemWidth = 0;
+    for (var m = 0; m < total; m += 1) {
+      maxItemWidth = Math.max(
+        maxItemWidth,
+        legendPageItemWidth(series[m], columnLayout, shapeWidth, shapeRight, fontSize, context)
+      );
+    }
+    legendData.points = pageItems.map(function(item) {
+      return [item];
+    });
+    legendData.widthArr = pageItems.map(function() {
+      return maxItemWidth;
+    });
+    legendData.heightArr = pageItems.map(function() {
+      return lineHeight;
+    });
+    legendData.area.width = maxItemWidth + 2 * padding;
+    legendData.area.wholeWidth = legendData.area.width;
+    legendData.area.height =
+      pageSize * lineHeight +
+      2 * padding +
+      (totalPages > 1 ? arrowSize + arrowGap : 0);
+    legendData.area.wholeHeight = legendData.area.height;
+    switch (opts.legend.float) {
+      case 'top':
+        legendData.area.start.y = opts.area[0] + margin;
+        legendData.area.end.y = opts.area[0] + margin + legendData.area.height;
+        break;
+      case 'bottom':
+        legendData.area.start.y = opts.height - opts.area[2] - margin - legendData.area.height;
+        legendData.area.end.y = opts.height - opts.area[2] - margin;
+        break;
+      default:
+        legendData.area.start.y = (opts.height - legendData.area.height) / 2;
+        legendData.area.end.y = (opts.height + legendData.area.height) / 2;
+    }
+    switch (position) {
+      case 'left':
+        legendData.area.start.x = opts.area[3];
+        legendData.area.end.x = opts.area[3] + legendData.area.width;
+        break;
+      case 'right':
+        legendData.area.start.x = opts.width - opts.area[1] - legendData.area.width;
+        legendData.area.end.x = opts.width - opts.area[1];
+        break;
+    }
+    if (totalPages > 1) {
+      legendData.area.width = Math.max(
+        legendData.area.width,
+        arrowSize * 2 + arrowBetween + 2 * padding
+      );
+      if (position === 'right') {
+        legendData.area.start.x = opts.width - opts.area[1] - legendData.area.width;
+        legendData.area.end.x = opts.width - opts.area[1];
+      } else {
+        legendData.area.end.x = legendData.area.start.x + legendData.area.width;
+      }
+      legendData.pageArrows = makeLegendPageArrows(
+        legendData.area.end.x - padding - arrowSize * 2 - arrowBetween,
+        legendData.area.end.x - padding - arrowSize,
+        legendData.area.end.y - padding - arrowSize,
+        arrowSize,
+        pageIndex,
+        totalPages
+      );
+    }
+  }
+
+  legendData.pageIndex = pageIndex;
+  legendData.totalPages = totalPages;
+  legendData.pageOffset = pageIndex * pageSize;
+  legendData.pageSize = pageSize;
+  legendData.position = position;
+  chartData.legendData = legendData;
+  return legendData;
+}
+
 function calLegendData(series, opts, config, chartData, context) {
+  if (isPagedLegend(opts)) {
+    return calPagedLegendData(series, opts, config, chartData, context);
+  }
+  var position = resolveLegendPosition(opts);
   let legendData = {
     area: {
       start: {
@@ -1019,7 +1399,7 @@ function calLegendData(series, opts, config, chartData, context) {
   let lineHeight = Math.max(opts.legend.lineHeight * opts.pix, fontSize);
   let columnLayout = legendColumnLayout(series, opts, fontSize, context);
   legendData.columnLayout = columnLayout;
-  if (opts.legend.position == 'top' || opts.legend.position == 'bottom') {
+  if (position == 'top' || position == 'bottom') {
     let legendList = [];
     let widthCountArr = [];
     // 图例表：上下布局时一行一项，宽度与绘图区对齐
@@ -1130,7 +1510,7 @@ function calLegendData(series, opts, config, chartData, context) {
       legendData.area.wholeWidth = legendData.area.width + padding;
     }
   }
-  switch (opts.legend.position) {
+  switch (position) {
     case 'top':
       legendData.area.start.y = opts.area[0] + margin;
       legendData.area.end.y = opts.area[0] + margin + legendData.area.height;
@@ -1148,6 +1528,7 @@ function calLegendData(series, opts, config, chartData, context) {
       legendData.area.end.x = opts.width - opts.area[1];
       break;
   }
+  legendData.position = position;
   chartData.legendData = legendData;
   return legendData;
 }
@@ -5032,11 +5413,41 @@ function drawYAxis(series, opts, config, context) {
 
 }
 
+function drawLegendPageArrow(legendData, opts, context, direction) {
+  var arrows = legendData.pageArrows;
+  var arrow = arrows && arrows[direction];
+  if (!arrow || !arrow.width) return;
+  var size = arrow.width;
+  var color = arrow.disabled
+    ? opts.legend.hiddenFontColor || opts.legend.fontColor
+    : opts.legend.pageArrowColor || opts.legend.fontColor;
+  context.beginPath();
+  context.setLineWidth(Math.max(1, 1.5 * opts.pix));
+  context.setStrokeStyle(color);
+  if (direction === 'up') {
+    context.moveTo(arrow.x + size * 0.25, arrow.y + size * 0.65);
+    context.lineTo(arrow.x + size * 0.5, arrow.y + size * 0.35);
+    context.lineTo(arrow.x + size * 0.75, arrow.y + size * 0.65);
+  } else {
+    context.moveTo(arrow.x + size * 0.25, arrow.y + size * 0.35);
+    context.lineTo(arrow.x + size * 0.5, arrow.y + size * 0.65);
+    context.lineTo(arrow.x + size * 0.75, arrow.y + size * 0.35);
+  }
+  context.stroke();
+  context.closePath();
+}
+
+function drawLegendPageArrows(legendData, opts, context) {
+  drawLegendPageArrow(legendData, opts, context, 'up');
+  drawLegendPageArrow(legendData, opts, context, 'down');
+}
+
 function drawLegend(series, opts, config, context, chartData) {
   if (opts.legend.show === false) {
     return;
   }
   let legendData = chartData.legendData;
+  let legendPosition = legendData.position || opts.legend.position;
   let legendList = legendData.points;
   let legendArea = legendData.area;
   let padding = opts.legend.padding * opts.pix;
@@ -5062,7 +5473,10 @@ function drawLegend(series, opts, config, context, chartData) {
     height = legendData.heightArr[listIndex];
     let startX = 0;
     let startY = 0;
-    if (opts.legend.position == 'top' || opts.legend.position == 'bottom') {
+    if (legendData.tableRows) {
+      startX = legendArea.start.x + padding;
+      startY = legendArea.start.y + padding + listIndex * lineHeight;
+    } else if (legendPosition == 'top' || legendPosition == 'bottom') {
       switch (opts.legend.float) {
         case 'left':
           startX = legendArea.start.x + padding;
@@ -5074,14 +5488,26 @@ function drawLegend(series, opts, config, context, chartData) {
         startX = legendArea.start.x + (legendArea.width - width) / 2;
       }
       startY = legendArea.start.y + padding + listIndex * lineHeight;
-    } else {
-      if (listIndex == 0) {
-        width = 0;
-      } else {
-        width = legendData.widthArr[listIndex - 1];
+      if (legendData.paged && legendData.pageArrows && listIndex === 0) {
+        legendData.pageArrows.up.x = startX + legendData.pageArrows.up.offsetX;
+        legendData.pageArrows.down.x = startX + legendData.pageArrows.down.offsetX;
+        legendData.pageArrows.up.y =
+          legendArea.start.y + padding + (lineHeight - legendData.pageArrows.up.height) / 2;
+        legendData.pageArrows.down.y = legendData.pageArrows.up.y;
       }
-      startX = legendArea.start.x + padding + width;
-      startY = legendArea.start.y + padding + (legendArea.height - height) / 2;
+    } else {
+      if (legendData.paged) {
+        startX = legendArea.start.x + padding;
+        startY = legendArea.start.y + padding + listIndex * lineHeight;
+      } else {
+        if (listIndex == 0) {
+          width = 0;
+        } else {
+          width = legendData.widthArr[listIndex - 1];
+        }
+        startX = legendArea.start.x + padding + width;
+        startY = legendArea.start.y + padding + (legendArea.height - height) / 2;
+      }
     }
     context.setFontSize(config.fontSize);
     for (let i = 0; i < itemList.length; i++) {
@@ -5149,7 +5575,11 @@ function drawLegend(series, opts, config, context, chartData) {
           if (cell.text) context.fillText(cell.text, textX, startY + fontTrans);
           rowX += columnLayout.widths[c] + columnLayout.gap;
         }
-        if (opts.legend.position == 'top' || opts.legend.position == 'bottom') {
+        if (legendData.tableRows) {
+          item.area[2] = startX + columnLayout.textWidth + itemGap;
+          startX -= shapeWidth + shapeRight;
+          startY += lineHeight;
+        } else if (legendPosition == 'top' || legendPosition == 'bottom') {
           startX += columnLayout.textWidth + itemGap;
           item.area[2] = startX;
         } else {
@@ -5161,7 +5591,7 @@ function drawLegend(series, opts, config, context, chartData) {
         const legendText = item.legendText ? item.legendText : item.name;
         context.setFillStyle(item.show ? opts.legend.fontColor : (opts.legend.hiddenFontColor || opts.fontColor));
         context.fillText(legendText, startX, startY + fontTrans);
-        if (opts.legend.position == 'top' || opts.legend.position == 'bottom') {
+        if (legendPosition == 'top' || legendPosition == 'bottom') {
           startX += measureText(legendText, fontSize, context) + itemGap;
           item.area[2] = startX;
         } else {
@@ -5174,6 +5604,9 @@ function drawLegend(series, opts, config, context, chartData) {
       context.stroke();
     }
   });
+  if (legendData.paged && legendData.pageArrows) {
+    drawLegendPageArrows(legendData, opts, context);
+  }
 }
 
 function drawPieDataPoints(series, opts, config, context) {
@@ -5184,6 +5617,7 @@ function drawPieDataPoints(series, opts, config, context) {
     offsetAngle: 0,
     labelWidth: 15,
     ringWidth: 30,
+    ringWidthRatio: 0,
     customRadius: 0,
     border: false,
     borderWidth: 2,
@@ -5250,7 +5684,10 @@ function drawPieDataPoints(series, opts, config, context) {
   });
   if (opts.type === 'ring') {
     var innerPieWidth = radius * 0.6;
-    if (typeof pieOption.ringWidth === 'number' && pieOption.ringWidth > 0) {
+    if (typeof pieOption.ringWidthRatio === 'number' && pieOption.ringWidthRatio > 0) {
+      var ringRatio = Math.min(0.9, pieOption.ringWidthRatio);
+      innerPieWidth = radius * (1 - ringRatio);
+    } else if (typeof pieOption.ringWidth === 'number' && pieOption.ringWidth > 0) {
       innerPieWidth = Math.max(0, radius - pieOption.ringWidth * opts.pix);
     }
     var userCenter = opts.extra && opts.extra.ring && opts.extra.ring.centerColor;
@@ -6659,8 +7096,9 @@ function drawCharts(type, opts, config, context) {
   var _calLegendData = calLegendData(seriesMA, opts, config, opts.chartData, context),
     legendHeight = _calLegendData.area.wholeHeight,
     legendWidth = _calLegendData.area.wholeWidth;
+  var legendPosition = _calLegendData.position || opts.legend.position;
 
-  switch (opts.legend.position) {
+  switch (legendPosition) {
     case 'top':
       opts.area[0] += legendHeight;
       break;
@@ -7292,7 +7730,13 @@ var LingyunUiCharts = function LingyunUiCharts(opts) {
     fontColor: '#000000',
     hiddenFontColor: 'rgba(60, 60, 67, 0.6)',
     formatter: {},
-    hiddenColor: '#CECECE'
+    hiddenColor: '#CECECE',
+    /* 图例分页：默认单行/单列，超出用上下箭头翻页；传 wrap 可恢复旧的多行/多列铺开 */
+    overflow: 'page',
+    pageSize: 0,
+    pageIndex: 0,
+    pageArrowSize: 18,
+    pageArrowColor: ''
   }, opts.legend);
   opts.extra = assign({
     tooltip:{
@@ -7619,6 +8063,23 @@ LingyunUiCharts.prototype.touchLegend = function(e) {
   }
   if (touches) {
     var _touches$ = getTouches(touches, this.opts, e);
+    var legendData = this.opts.chartData && this.opts.chartData.legendData;
+    var pageDirection = legendData
+      ? findLegendPageArrow({ x: _touches$.x, y: _touches$.y }, legendData)
+      : '';
+    if (pageDirection) {
+      var totalPages = Number(legendData.totalPages) || 1;
+      var currentPage = Number(this.opts.legend.pageIndex) || 0;
+      var arrow = legendData.pageArrows && legendData.pageArrows[pageDirection];
+      if (!arrow || arrow.disabled) return;
+      var nextPage = pageDirection === 'up' ? currentPage - 1 : currentPage + 1;
+      if (nextPage < 0 || nextPage >= totalPages) return;
+      this.opts.legend.pageIndex = nextPage;
+      this.opts.animation = false;
+      this.opts._scrollDistance_ = this.scrollOption.currentOffset;
+      drawCharts.call(this, this.opts.type, this.opts, this.config, this.context);
+      return;
+    }
     var index = this.getLegendDataIndex(e);
     if (index >= 0) {
       if (this.opts.type == 'candle') {

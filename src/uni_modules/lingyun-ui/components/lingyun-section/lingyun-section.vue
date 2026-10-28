@@ -23,20 +23,23 @@
             <image class="lingyun-section__thumb-image" :src="thumbnail" mode="aspectFit" />
           </view>
           <view
-            v-if="icon"
+            v-if="icon || $slots.icon"
             class="lingyun-section__icon"
             :class="iconClass"
             :style="iconBoxStyle"
           >
-            <lingyun-image
-              :src="icon"
-              :size="iconPx"
-              shape="rounded"
-              radius="sm"
-              mode="aspectFill"
-              :lazy="false"
-              :show-error-placeholder="false"
-            />
+            <slot name="icon">
+              <lingyun-image
+                v-if="icon"
+                :src="icon"
+                :size="iconPx"
+                shape="rounded"
+                radius="sm"
+                mode="aspectFill"
+                :lazy="false"
+                :show-error-placeholder="false"
+              />
+            </slot>
           </view>
           <view class="lingyun-section__heading">
             <text v-if="title" class="lingyun-section__title">{{ title }}</text>
@@ -308,6 +311,7 @@ export default defineComponent({
       return !!(
         this.title ||
         this.icon ||
+        this.$slots.icon ||
         this.resolvedSubtitle ||
         this.hint ||
         this.extra ||

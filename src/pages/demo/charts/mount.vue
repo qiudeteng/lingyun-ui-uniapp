@@ -76,12 +76,22 @@
         </view>
       </lingyun-section>
 
-      <lingyun-section title="山峰图圆角渐变色柱状图" hint="type=bar · barBorderRadius · linearType=custom" is-last>
+      <lingyun-section title="山峰图圆角渐变色柱状图" hint="type=bar · barBorderRadius · linearType=custom">
         <view class="chart-box">
           <lingyun-ui-charts
             type="mount"
             :chartData="mountData"
             :opts="capsuleOpts"
+          />
+        </view>
+      </lingyun-section>
+
+      <lingyun-section title="图例分页" hint="24 项 · 单行 · 上下箭头" is-last>
+        <view class="chart-box">
+          <lingyun-ui-charts
+            type="mount"
+            :chartData="pagedData"
+            :opts="pagedOpts"
           />
         </view>
       </lingyun-section>
@@ -101,6 +111,18 @@
           { name: '四班', value: 65 },
           { name: '五班', value: 79 },
         ],
+      },
+    ],
+  }
+
+  /** 24 个小时，用来看图例单行分页 */
+  const pagedData = {
+    series: [
+      {
+        data: Array.from({ length: 24 }, (_, index) => ({
+          name: String(index).padStart(2, '0') + '时',
+          value: 20 + ((index * 7) % 30),
+        })),
       },
     ],
   }
@@ -151,6 +173,19 @@
       mount: {
         type: 'bar',
         widthRatio: 0.8,
+      },
+    },
+  }
+
+  const pagedOpts = {
+    legend: {
+      position: 'bottom',
+      pageSize: 10,
+    },
+    extra: {
+      mount: {
+        type: 'mount',
+        widthRatio: 1.2,
       },
     },
   }

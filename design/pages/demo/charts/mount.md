@@ -12,6 +12,7 @@
 - **有边透明渐变 + 滚动条**：`linearType=opacity`，`enableScroll`，`xAxis.itemCount=4`
 - **有边渐变 + 标记线**：`enableMarkLine`，`extra.markLine`
 - **圆角渐变色柱状图**：`type=bar`，`barBorderRadius=[50,50,50,50]`，`linearType=custom`
+- **图例分页**：24 个小时，`legend.overflow: page`，单行 + 上下箭头翻页
 - 数据：没有 `categories`，峰写在 `series[0].data` 的 `{ name, value }`
 - 规范：[`design/CHARTS.md`](../../../CHARTS.md)
 - 系列色：包内 `config.ts` · [`COLORS.md`](../../../COLORS.md)
