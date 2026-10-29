@@ -96,7 +96,7 @@ const chartOpts = { color: chartColorDark }
 | `color` | 整列文字色。不写用图例默认色；`action` 列即操作文字色 |
 | `columnGap` | 列间距，px，默认 8。写在 `legend` 上，不写在列上 |
 | `tableBorder` | 表格图例外边框，默认 `true`；`false` 时不画外框，也不画内部行线，只保留背景。写在 `legend` 上 |
-| `tableRowLine` | 表格行下边线，默认 `true`；仅在 `tableBorder` 开启时生效，`false` 可只关行线。写在 `legend` 上 |
+| `tableRowLine` | 表格行下边线，默认 `false`；仅在 `tableBorder` 开启且显式设为 `true` 时显示。写在 `legend` 上 |
 | `tableLineWidth` | 行下边线粗细，px，默认 `0.5`。写在 `legend` 上 |
 | `tableGap` | 表格图例与绘图区的间距，px，默认 `8`。写在 `legend` 上 |
 | `tableShape` | `auto` 跟随系列形状；`dot` 用紧凑圆点。写在 `legend` 上 |
@@ -110,7 +110,7 @@ const chartOpts = { color: chartColorDark }
 
 `action` 列点击只触发 `@legendAction`，不会隐藏 / 显示系列；回调 `item` 为该行完整数据（饼类为扇区项，折线 / 柱状为系列项），同时带 `legendIndex`、`column`、`event`、`id`、`opts`。文字最多显示 **2 个字**，例如「详情」。操作列宽度至少按「文字宽 + 10px」计算，传入过窄的 `width` 会自动撑开；右对齐时另有 6px 内侧留白，保证文字不压到表格边框。
 
-`tableBorder` 关闭时外框和内部行线都不画；开启后行线用 `tableRowLine` 控制（默认开），行线整宽、默认 0.5px，最后一行也画。`tableGap` 控制与绘图区的间距；`tableShape: 'dot'` 用紧凑圆点替代系列形状。左右列表格的边框高度跟随绘图区高度，每页行数按这个高度自动计算；只有需要固定行数时才设置 `pageSize`。
+`tableBorder` 关闭时外框和内部行线都不画；开启后行线用 `tableRowLine` 控制（默认关，需要表格网格时显式开启），行线整宽、默认 0.5px，最后一行也画。`tableGap` 控制与绘图区的间距；`tableShape: 'dot'` 用紧凑圆点替代系列形状。左右列表格的边框高度跟随绘图区高度，每页行数按这个高度自动计算；只有需要固定行数时才设置 `pageSize`。
 
 `legend.overflow` 默认是 `page`：`position` 为 `top` / `bottom` 时只排一行，`left` / `right` 时只排一列；超出容量显示当前页，并在横向图例右侧 / 纵向图例底部出现上下箭头。向上箭头翻上一页、向下箭头翻下一页，首页 / 末页对应箭头置灰。画布 CSS 宽度小于 520px 时，`left` / `right` 会自动改为 `bottom`。传 `overflow: 'wrap'` 可恢复旧版自动换行 / 多列布局。
 

@@ -7819,8 +7819,8 @@ var LingyunUiCharts = function LingyunUiCharts(opts) {
     borderWidth: 0,
     /* 表格图例外边框；false 时保留背景，不画外框 */
     tableBorder: true,
-    /* 表格行下边线；与 tableBorder 独立，紧凑表格可只保留行线 */
-    tableRowLine: true,
+    /* 表格行下边线；默认关闭，需要表格网格时显式开启 */
+    tableRowLine: false,
     tableLineWidth: 0.5,
     /* 表格图例与绘图区的间距（px） */
     tableGap: 8,
