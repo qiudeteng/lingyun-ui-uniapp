@@ -17,7 +17,10 @@
         :hover-stay-time="70"
         @click="onSelect(item)"
       >
-        <view class="lingyun-tabbars__icon-wrap">
+        <view
+          class="lingyun-tabbars__icon-wrap"
+          :class="{ 'lingyun-tabbars__icon-wrap--pop': isPopping(item) }"
+        >
           <slot :name="`icon-${item.key}`" :item="item" :active="isActive(item)">
             <lingyun-icon
               v-if="iconMode === 'icon' && item.icon"
@@ -136,17 +139,19 @@ export default defineComponent({
         top: 0,
         width: 0,
         height: 0,
-        scaleY: 1,
         visible: false,
         ready: false,
       },
+      poppingKey: '',
+      _popTimer: null as ReturnType<typeof setTimeout> | null,
       _onResize: null as (() => void) | null,
       _lensRaf: null as number | null,
       _lensLast: 0,
-      _edgeL: null as SpringState | null,
-      _edgeR: null as SpringState | null,
-      _targetL: 0,
-      _targetR: 0,
+      _center: null as SpringState | null,
+      _lensWidth: null as SpringState | null,
+      _targetCenter: 0,
+      _targetWidth: 0,
+      _restWidth: 0,
       _targetTop: 0,
       _targetH: 0,
     }
@@ -192,6 +197,11 @@ export default defineComponent({
       default: true,
     },
     fixed: {
+      type: Boolean,
+      default: true,
+    },
+    /** 切换时触发轻震动，接近系统 Tab Bar 反馈 */
+    haptic: {
       type: Boolean,
       default: true,
     },
@@ -253,18 +263,18 @@ export default defineComponent({
         .join(' ')
     },
     indicatorStyle() {
-      const { left, top, width, height, scaleY } = this.indicator
+      const { left, top, width, height } = this.indicator
       return {
         left: `${left}px`,
         top: `${top}px`,
         width: `${width}px`,
         height: `${height}px`,
-        transform: `scaleY(${scaleY})`,
       }
     },
   },
   watch: {
-    current() {
+    current(next) {
+      this.triggerPop(next)
       this.syncIndicator({ liquid: true })
     },
     mainItems() {
@@ -283,6 +293,10 @@ export default defineComponent({
   },
   beforeUnmount() {
     this.stopLens()
+    if (this._popTimer) {
+      clearTimeout(this._popTimer)
+      this._popTimer = null
+    }
     /* #ifdef H5 */
     const onResize = this._onResize
     if (onResize) window.removeEventListener('resize', onResize)
@@ -291,6 +305,29 @@ export default defineComponent({
   methods: {
     itemId(item: TabItem | null | undefined) {
       return `${this.instanceId}-item-${item && item.key}`
+    },
+    isPopping(item: TabItem | null | undefined): boolean {
+      return !!item && !!this.poppingKey && String(item.key) === this.poppingKey
+    },
+    triggerPop(key: unknown): void {
+      if (key === undefined || key === null || key === '' || this.prefersReducedMotion()) return
+      this.poppingKey = String(key)
+      if (this._popTimer) clearTimeout(this._popTimer)
+      this._popTimer = setTimeout(() => {
+        this.poppingKey = ''
+        this._popTimer = null
+      }, 430)
+    },
+    fireHaptic(): void {
+      if (!this.haptic) return
+      try {
+        const api = uni as typeof uni & {
+          vibrateShort?: (options?: { type?: 'heavy' | 'medium' | 'light' }) => void
+        }
+        api.vibrateShort?.({ type: 'light' })
+      } catch {
+        /* 端不支持 */
+      }
     },
     prefersReducedMotion() {
       /* #ifdef H5 */
@@ -329,42 +366,42 @@ export default defineComponent({
       state.pos += state.vel * dt
     },
     lensSettled() {
-      const near = (state: SpringState, target: number) => Math.abs(state.pos - target) < 0.35 && Math.abs(state.vel) < 12
-      const edgeL = this._edgeL!
-      const edgeR = this._edgeR!
-      return near(edgeL, this._targetL) && near(edgeR, this._targetR)
+      const near = (state: SpringState, target: number) =>
+        Math.abs(state.pos - target) < 0.35 && Math.abs(state.vel) < 12
+      return (
+        near(this._center!, this._targetCenter) &&
+        near(this._lensWidth!, this._restWidth)
+      )
     },
     paintLens() {
-      const edgeL = this._edgeL!
-      const edgeR = this._edgeR!
-      const left = edgeL.pos
-      const width = Math.max(edgeR.pos - edgeL.pos, 8)
-      const rest = Math.max(this._targetR - this._targetL, 8)
-      const stretch = width / rest
-      const scaleY = Math.max(0.72, Math.min(1, 1 / Math.sqrt(Math.max(stretch, 1))))
-      this.indicator.left = left
+      const center = this._center!
+      const width = Math.max(this._lensWidth!.pos, 8)
+      this.indicator.left = center.pos - width / 2
       this.indicator.width = width
       this.indicator.top = this._targetTop
       this.indicator.height = this._targetH
-      this.indicator.scaleY = scaleY
     },
     tickLens(now: number) {
-      const edgeL = this._edgeL!
-      const edgeR = this._edgeR!
+      const center = this._center!
+      const width = this._lensWidth!
       const last = this._lensLast || now
       const dt = Math.min(0.032, Math.max(0.008, (now - last) / 1000))
       this._lensLast = now
-      const toCenter = (this._targetL + this._targetR) / 2
-      const curCenter = (edgeL.pos + edgeR.pos) / 2
-      const goingRight = toCenter >= curCenter
-      const lead = { k: 420, d: 28 }
-      const trail = { k: 155, d: 20 }
-      this.stepSpring(edgeL, this._targetL, goingRight ? trail.k : lead.k, goingRight ? trail.d : lead.d, dt)
-      this.stepSpring(edgeR, this._targetR, goingRight ? lead.k : trail.k, goingRight ? lead.d : trail.d, dt)
+      /* 位置快速收敛；宽度慢半拍，形成液态拉伸但不压扁高度 */
+      this.stepSpring(center, this._targetCenter, 520, 30, dt)
+      this.stepSpring(width, this._targetWidth, 300, 26, dt)
+      /* 位移基本到位后，宽度再收回到静止尺寸 */
+      if (
+        Math.abs(center.pos - this._targetCenter) < 1.2 &&
+        this._targetWidth !== this._restWidth
+      ) {
+        this._targetWidth = this._restWidth
+      }
       this.paintLens()
       if (this.lensSettled()) {
-        this._edgeL = { pos: this._targetL, vel: 0 }
-        this._edgeR = { pos: this._targetR, vel: 0 }
+        this._center = { pos: this._targetCenter, vel: 0 }
+        this._lensWidth = { pos: this._restWidth, vel: 0 }
+        this._targetWidth = this._restWidth
         this.paintLens()
         this._lensRaf = null
         return
@@ -373,27 +410,45 @@ export default defineComponent({
     },
     snapLens(rect: LensRect) {
       this.stopLens()
-      this._targetL = rect.left
-      this._targetR = rect.left + rect.width
+      this._targetCenter = rect.left + rect.width / 2
+      this._targetWidth = rect.width
+      this._restWidth = rect.width
       this._targetTop = rect.top
       this._targetH = rect.height
-      this._edgeL = { pos: this._targetL, vel: 0 }
-      this._edgeR = { pos: this._targetR, vel: 0 }
+      this._center = { pos: this._targetCenter, vel: 0 }
+      this._lensWidth = { pos: rect.width, vel: 0 }
       this.paintLens()
     },
     flowLens(rect: LensRect) {
-      if (!this._edgeL || !this._edgeR) {
+      if (!this._center || !this._lensWidth) {
         this.snapLens(rect)
         return
       }
-      this._targetL = rect.left
-      this._targetR = rect.left + rect.width
+      this._targetCenter = rect.left + rect.width / 2
+      this._restWidth = rect.width
+      /* 行进中先轻微拉宽 6%，中心到位后再收回来 */
+      this._targetWidth = rect.width * 1.06
       this._targetTop = rect.top
       this._targetH = rect.height
       this.indicator.visible = true
       if (!this._lensRaf) {
         this._lensLast = 0
         this._lensRaf = this.scheduleFrame((t) => this.tickLens(t))
+      }
+    },
+    /** 选中透镜比 Tab 项外扩 4×2，边缘贴合胶囊内边距 */
+    selectionRect(item: { left: number; top: number; width: number; height: number }, bar: { left: number; top: number; width: number; height: number }): LensRect {
+      const padX = 4
+      const padY = 2
+      const left = Math.max(0, item.left - bar.left - padX)
+      const right = Math.min(bar.width, item.left - bar.left + item.width + padX)
+      const top = Math.max(0, item.top - bar.top - padY)
+      const bottom = Math.min(bar.height, item.top - bar.top + item.height + padY)
+      return {
+        left,
+        top,
+        width: Math.max(right - left, 8),
+        height: Math.max(bottom - top, 8),
       }
     },
     /** 挂载时从上一页的 key 滑到当前 key；没有 fromKey 时直接落位 */
@@ -438,19 +493,9 @@ export default defineComponent({
               this.syncIndicator({ liquid: false })
               return
             }
-            const toRect = {
-              left: toRaw.left - bar.left,
-              top: toRaw.top - bar.top,
-              width: toRaw.width,
-              height: toRaw.height,
-            }
+            const toRect = this.selectionRect(toRaw, bar)
             this.indicator.visible = true
-            this.snapLens({
-              left: fromRect.left - bar.left,
-              top: fromRect.top - bar.top,
-              width: fromRect.width,
-              height: fromRect.height,
-            })
+            this.snapLens(this.selectionRect(fromRect, bar))
             this.indicator.ready = true
             this.$nextTick(() => {
               this.flowLens(toRect)
@@ -478,12 +523,7 @@ export default defineComponent({
             const bar = res && res[0]
             const item = res && res[1]
             if (!bar || !item || !item.width) return
-            const toRect = {
-              left: item.left - bar.left,
-              top: item.top - bar.top,
-              width: item.width,
-              height: item.height,
-            }
+            const toRect = this.selectionRect(item, bar)
             const canFlow =
               liquid &&
               this.indicator.ready &&
@@ -556,6 +596,7 @@ export default defineComponent({
     },
     onSelect(item: TabItem | null | undefined) {
       if (!item) return
+      if (String(item.key) !== String(this.current)) this.fireHaptic()
       this.$emit('update:modelValue', item.key)
       this.$emit('update:value', item.key)
       this.$emit('change', item)
@@ -656,6 +697,7 @@ $ly-tab-item-w: 68px;
     min-height: $ly-tabbar-content-h;
     padding: $ly-bar-pad;
     box-sizing: border-box;
+    isolation: isolate;
     @include lingyun-glass-control;
   }
 
@@ -668,9 +710,9 @@ $ly-tab-item-w: 68px;
     border-radius: $lingyun-glass-radius-pill;
     background-color: var(--lingyun-fill-secondary, #{$lingyun-fill-secondary});
     opacity: 0;
-    transform-origin: center center;
-    will-change: left, width, transform;
+    will-change: left, width;
     transition: opacity 0.2s ease;
+    box-sizing: border-box;
   }
 
   &__indicator--ready {
@@ -772,6 +814,25 @@ $ly-tab-item-w: 68px;
     height: $ly-tab-icon;
   }
 
+  &__icon-wrap--pop {
+    animation: ly-tab-icon-pop 0.42s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  @keyframes ly-tab-icon-pop {
+    0% {
+      transform: scale(1);
+    }
+    34% {
+      transform: scale(1.16);
+    }
+    66% {
+      transform: scale(0.96);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
   &__icon {
     font-size: $ly-tab-icon;
     line-height: 1;
@@ -826,11 +887,16 @@ $ly-tab-item-w: 68px;
   }
 }
 
+
 @media (prefers-reduced-motion: reduce) {
   .lingyun-tabbars__indicator--ready,
   .lingyun-tabbars__item,
   .lingyun-tabbars__search {
     transition: none;
+  }
+
+  .lingyun-tabbars__icon-wrap--pop {
+    animation: none;
   }
 }
 </style>

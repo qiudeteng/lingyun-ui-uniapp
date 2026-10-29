@@ -68,7 +68,7 @@
 - 滚动后内容从栏后穿过；`glassProgress`（0→1，约 **56px**）用 blur / 填充渐变 Regular Glass。
 - **默认页面级滚动**（`lingyun-app-page` 的 `pageScroll` 默认 `true`）：没有 `@scroll` 可用，`glassProgress` 由顶部哨兵节点（高 = `glassDistance`）的 `IntersectionObserver` 露出比例驱动，语义等价 `scrollTop / glassDistance`。含文本输入的页面必须保持该默认，原因见 [`TEXTFIELDS.md`](./TEXTFIELDS.md) §5。
 - 惯性快速回顶时微信 `scroll-view` 可能丢末帧：走内层 `scroll-view`（`:page-scroll="false"`）时 `lingyun-app-page` 用短 settle + `scrolltoupper` 对齐真实 `scrollTop`，不改变滚动中的渐变。
-- 操作钮保持独立 **Regular Glass / Prominent** 圆钮。
+- 操作钮保持独立玻璃圆钮；返回 / 关闭 / 右侧按钮组 / Tab Bar 统一使用 `lingyun-glass-control`。
 - 内层自管 `scroll-view`（`:body-scroll="false"`）时用 `useLingyunAppPageScroll`（建议同时绑 `scrolltoupper` → `reportScroll(0)`）。
 - `:page-scroll="false"` 只用于需要 `scroll-y` 锁的场景（横向 swipe 行）；该模式下**不要放文本输入**。
 

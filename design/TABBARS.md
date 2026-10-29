@@ -56,7 +56,7 @@
 | Tab 符号 | 25 | 25 |
 | 标签 | 10 / Semibold / 字距 -0.1 | 10 |
 
-选中胶囊是 `Fills/2 Secondary`（`rgba(120, 120, 128, 0.16)`），不是主色 Fill。未选中图标和文字用 `Labels - Liquid Glass / 1 Primary`（`#1A1A1A`）。选中只把图标改成系统蓝 `#0088FF`，文字保持主标签色。胶囊走 `lingyun-glass-control`（无 1px 白边、无面板级重投影）；不要用 `lingyun-glass-regular` 的小程序实霜。
+选中胶囊是 `Fills/2 Secondary`（`rgba(120, 120, 128, 0.16)`），不是主色 Fill。未选中图标和文字用 `Labels - Liquid Glass / 1 Primary`（`#1A1A1A`）。选中只把图标改成系统蓝 `#0088FF`，文字保持主标签色。胶囊与 toolbar 返回钮 / 右侧按钮组共用 `lingyun-glass-control`（控件底色 + 描边 + 6px 模糊；小程序无 blur 时保留底色与描边）；不要用 `lingyun-glass-regular` 的小程序实霜。选中透镜保持 Fill Secondary，不再叠加强渐变或厚投影。
 
 ---
 
@@ -66,7 +66,8 @@
 - 建议 **3–5** 个主导航项；标签短、图标优先 filled 风格（可用自定义 icon 插槽）。
 - `role: 'search'` 的项应 **与主胶囊分离**（Sketch：右侧独立圆钮）。底部玻璃搜索条是独立控件，见 [`SEARCHBARS.md`](./SEARCHBARS.md)。
 - 选中项：主色 + 胶囊内高亮；未选中：次级中性色。
-- 切换时选中高亮按 Liquid Glass **液态透镜**：前缘快、后缘慢的双弹簧，途中按体积守恒压扁；「减少动态效果」时关闭过渡。
+- 切换时选中高亮是 **液态透镜**：中心位置和宽度分别用弹簧，位置先到位、宽度慢半拍并轻微拉宽 6%，不压扁高度；透镜比 Tab 项左右外扩 4、上下外扩 2。
+- 选中图标做一次 0.42s 的轻微弹跳；切换触发轻震动；`prefers-reduced-motion` 时关闭位移、拉宽与弹跳。
 - 可选：滚动最小化（首版 API 预留，交互可后续加）。
 
 ---
@@ -96,6 +97,7 @@
 | `fromKey` | string\|number | `''` | 页面壳跨页切换时，指示器从上一项的 key 滑入 |
 | `safeArea` | boolean | `true` | 预留 Home Indicator |
 | `fixed` | boolean | `true` | 底部 fixed 悬浮 |
+| `haptic` | boolean | `true` | 切换 Tab 时轻震动（微信 / 支持振动的端） |
 
 | 事件 | 说明 |
 |------|------|
