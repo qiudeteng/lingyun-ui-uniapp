@@ -108,7 +108,7 @@ const chartOpts = { color: chartColorDark }
 | `pageArrowSize` | 上下箭头点击区大小，px，默认 18 |
 | `pageArrowColor` | 箭头颜色，默认跟随图例文字色 |
 
-`action` 列点击只触发 `@legendAction`，不会隐藏 / 显示系列；回调 `item` 为该行完整数据（饼类为扇区项，折线 / 柱状为系列项），同时带 `legendIndex`、`column`、`event`、`id`、`opts`。文字最多显示 **2 个字**，例如「详情」。
+`action` 列点击只触发 `@legendAction`，不会隐藏 / 显示系列；回调 `item` 为该行完整数据（饼类为扇区项，折线 / 柱状为系列项），同时带 `legendIndex`、`column`、`event`、`id`、`opts`。文字最多显示 **2 个字**，例如「详情」。操作列宽度至少按「文字宽 + 10px」计算，传入过窄的 `width` 会自动撑开；右对齐时另有 6px 内侧留白，保证文字不压到表格边框。
 
 `tableBorder` 关闭时外框和内部行线都不画；开启后行线用 `tableRowLine` 控制（默认开），行线整宽、默认 0.5px，最后一行也画。`tableGap` 控制与绘图区的间距；`tableShape: 'dot'` 用紧凑圆点替代系列形状。左右列表格的边框高度跟随绘图区高度，每页行数按这个高度自动计算；只有需要固定行数时才设置 `pageSize`。
 

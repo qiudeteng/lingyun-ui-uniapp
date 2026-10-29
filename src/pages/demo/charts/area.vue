@@ -141,7 +141,7 @@
       { key: 'name', width: 68 },
       { key: 'value', width: 44, align: 'right' },
       { key: 'rate', width: 40, align: 'right', color: '#86868b' },
-      { type: 'action', text: '详情', width: 40, align: 'right' },
+      { type: 'action', text: '详情', width: 44 },
     ]
     const legend = {
       ...baseLegend,

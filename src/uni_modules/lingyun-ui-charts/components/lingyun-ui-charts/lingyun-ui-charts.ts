@@ -1012,6 +1012,13 @@ function legendColumnLayout(series, opts, fontSize, context, stretchTextWidth?: 
   var flexIdx = 0;
   for (var c = 0; c < columns.length; c++) {
     var col = columns[c];
+    if (col.type === 'action') {
+      /* 操作列按截断后的文字给足宽度，传了过窄的 width 也不让文字压到边框 */
+      var actionText = legendCellOf(series.length ? series[0] : {}, col).text;
+      var actionMinWidth = measureText(actionText, fontSize, context) + 10 * opts.pix;
+      widths.push(col.width > 0 ? Math.max(col.width * opts.pix, actionMinWidth) : actionMinWidth);
+      continue;
+    }
     if (col.key === 'name') flexIdx = c;
     if (col.width > 0) {
       widths.push(col.width * opts.pix);
@@ -5623,8 +5630,11 @@ function drawLegend(series, opts, config, context, chartData) {
           var column = columnLayout.columns[c];
           var cell = legendCellOf(item, column);
           var textWidth = measureText(cell.text, fontSize, context);
-          var textX = column.align === 'right' ? rowX + columnLayout.widths[c] - textWidth : rowX;
           var isAction = column.type === 'action';
+          var actionInset = isAction && column.align === 'right' ? 6 * opts.pix : 0;
+          var textX = column.align === 'right'
+            ? rowX + columnLayout.widths[c] - textWidth - actionInset
+            : rowX;
           var cellColor;
           if (isAction) {
             cellColor = cell.color || column.color || opts.legend.actionColor ||

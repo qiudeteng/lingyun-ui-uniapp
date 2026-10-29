@@ -1,6 +1,9 @@
+## 1.0.23（2026-10-29）
+- 递增版本号，重新发布 1.0.22 的表格图例 action 列、紧凑表格、表高自适应与 tooltip 关闭等更新。
+- 修正表格图例 action 列在手机上开启边框时文字压到边框的问题：列宽至少按「文字宽 + 10px」计算，传入过窄的 `width` 会自动撑开；右对齐再留 6px 内侧间距，demo action 列改左对齐。
 ## 1.0.22（2026-10-29）
 - 修复图表 tooltip 关闭体验：移动端点击图表外任意位置即关闭（页面壳触摸广播 / H5 document 监听），H5 鼠标移出图表自动关闭；新增引擎方法 `hideToolTip()`。
-- 表格图例支持 `action` 列：`legend.columns` 里写 `{ type: 'action', text: '详情', width, align, color }`，默认「详情」、最多两个字，超出截断；点击不切换系列显隐，新增 `@legendAction` 事件，回调整行 `item`、`legendIndex`、`column`、`event`、`id`、`opts`。
+- 表格图例支持 `action` 列：`legend.columns` 里写 `{ type: 'action', text: '详情', width, align, color }`，默认「详情」、最多两个字，超出截断，列宽按文字自动留足空间；点击不切换系列显隐，新增 `@legendAction` 事件，回调整行 `item`、`legendIndex`、`column`、`event`、`id`、`opts`。
 - 新增 `legend.tableBorder`（关闭时不画外框和内部行线）、`tableRowLine`（开启外框时的行下边线，默认开）、`tableLineWidth`（默认 0.5px）、`tableLineColor`、`tableGap`（表格与绘图区间距，默认 8px）和 `tableShape`（`auto` 跟随系列 / `dot` 紧凑圆点）；行线整宽顶到左右边框、最后一行也画；左右列表格高度跟随绘图区，按表高自动计算每页行数。
 - 新增 `legend.actionColor`：action 列默认文字色；不设时用系列首色。
 ## 1.0.21 (2026-10-28)
