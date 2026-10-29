@@ -17,6 +17,8 @@
 - `lingyun-tabbars` 选中透镜改为「中心位移 + 宽度延迟弹簧」，选中时外扩 4×2 并弹一下图标（可关 `haptic`）；Tab 指示器增加重试与 480ms 兜底，修复偶发图标变蓝而背景没跟上的问题。
 - 修复 `lingyun-indexed-list` 在微信自定义组件宿主下高度失效（只显示 A/B）：宿主节点改为 flex 撑满，字母条预测量并补 `touchcancel` 与越界吸附。
 - `lingyun-search-bar` 的搜索字段与取消圆钮统一走 `lingyun-glass-control`，去掉额外的 raised 阴影，和 toolbar / tabbar 玻璃材质一致。
+- `lingyun-app-page` 页面背景改为独立固定层：页面级滚动、内层 `scroll-view`、`body` 自管滚动时背景渐变都固定在视口，不再跟着内容移动；壳根节点保留纯色兜底，宽屏侧栏透出的仍是同一张固定背景。
+- `lingyun-app-page` 根节点触摸时广播 `lingyun:page-touch`，图表组件据此收起 tooltip；手机上点击页面其他位置即可关闭图表提示，不必再点图表本身。
 ## 1.0.34（2026-10-28）
 - 递增版本号，确保 uni-app 插件市场能识别 1.0.33 的 `lingyun-section #icon` 插槽更新；内容与 1.0.33 一致。
 ## 1.0.33 (2026-10-28)

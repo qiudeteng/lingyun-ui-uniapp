@@ -89,15 +89,28 @@ const chartOpts = { color: chartColorDark }
 | 字段 | 说明 |
 | --- | --- |
 | `key` | 从该项上取的字段。`name` 用名称 |
+| `type` | `action` 时为操作列，不取行字段，文字用 `text`；点击不会切换显隐 |
+| `text` | `action` 列文字，默认「详情」；最多 **2 个字**，超出直接截断 |
 | `width` | 列宽，px。不写则按该列最长文字 |
 | `align` | `right` 时数字右对齐，默认靠左 |
-| `color` | 整列文字色。不写用图例默认色 |
+| `color` | 整列文字色。不写用图例默认色；`action` 列即操作文字色 |
 | `columnGap` | 列间距，px，默认 8。写在 `legend` 上，不写在列上 |
+| `tableBorder` | 表格图例外边框，默认 `true`；`false` 时不画外框，也不画内部行线，只保留背景。写在 `legend` 上 |
+| `tableRowLine` | 表格行下边线，默认 `true`；仅在 `tableBorder` 开启时生效，`false` 可只关行线。写在 `legend` 上 |
+| `tableLineWidth` | 行下边线粗细，px，默认 `0.5`。写在 `legend` 上 |
+| `tableGap` | 表格图例与绘图区的间距，px，默认 `8`。写在 `legend` 上 |
+| `tableShape` | `auto` 跟随系列形状；`dot` 用紧凑圆点。写在 `legend` 上 |
+| `tableLineColor` | 表格行下边线颜色；不设时跟随边框 / 中性灰。写在 `legend` 上 |
+| `actionColor` | `action` 列默认文字色；不设用系列首色。写在 `legend` 上 |
 | `overflow` | `page`（默认）单行 / 单列分页；`wrap` 恢复旧的多行 / 多列铺开 |
-| `pageSize` | 每页图例数量。0 时普通图例按画布自动计算，表格模式默认 5 行 |
+| `pageSize` | 每页图例数量。0 时普通图例按画布自动计算；左右列表格按表高自动计算，顶部 / 底部表格默认 5 行 |
 | `pageIndex` | 当前页，从 0 开始；点击上下箭头时内部更新，也可外部指定 |
 | `pageArrowSize` | 上下箭头点击区大小，px，默认 18 |
 | `pageArrowColor` | 箭头颜色，默认跟随图例文字色 |
+
+`action` 列点击只触发 `@legendAction`，不会隐藏 / 显示系列；回调 `item` 为该行完整数据（饼类为扇区项，折线 / 柱状为系列项），同时带 `legendIndex`、`column`、`event`、`id`、`opts`。文字最多显示 **2 个字**，例如「详情」。
+
+`tableBorder` 关闭时外框和内部行线都不画；开启后行线用 `tableRowLine` 控制（默认开），行线整宽、默认 0.5px，最后一行也画。`tableGap` 控制与绘图区的间距；`tableShape: 'dot'` 用紧凑圆点替代系列形状。左右列表格的边框高度跟随绘图区高度，每页行数按这个高度自动计算；只有需要固定行数时才设置 `pageSize`。
 
 `legend.overflow` 默认是 `page`：`position` 为 `top` / `bottom` 时只排一行，`left` / `right` 时只排一列；超出容量显示当前页，并在横向图例右侧 / 纵向图例底部出现上下箭头。向上箭头翻上一页、向下箭头翻下一页，首页 / 末页对应箭头置灰。画布 CSS 宽度小于 520px 时，`left` / `right` 会自动改为 `bottom`。传 `overflow: 'wrap'` 可恢复旧版自动换行 / 多列布局。
 
@@ -122,6 +135,7 @@ const chartOpts = {
       { key: 'value', width: 36, align: 'right' },
       { key: 'count', width: 20, align: 'right' },
       { key: 'rate', width: 32, align: 'right', color: '#86868b' },
+      { type: 'action', text: '查看更多', width: 64, align: 'right' },
     ],
   },
 }
@@ -170,6 +184,7 @@ const chartOpts = {
 | --- | --- |
 | `@complete` | 渲染完成。返回 `{ complete: true, id, type: "complete", opts }`。可用返回的 `id`（canvasId）从 `config.ts` 的 `cfu` 取实例再调引擎方法 |
 | `@getIndex` | 点击数据索引。返回 `{ type: "getIndex", currentIndex: { group, index }, legendIndex, id, event: { x, y }, opts }`；未命中时 index / legendIndex 为 `-1` |
+| `@legendAction` | 点击图例 `action` 列。返回 `{ type: "legendAction", legendIndex, item, column, event: { x, y }, id, opts }`；`item` 为该行完整数据，点击不会切换系列显隐 |
 | `@error` | 组件出错。返回 `{ type: "error", errorShow, msg, id }`（`errorShow` 为 props 状态） |
 | `@getTouchStart` | 拖动开始。返回 `{ type: "touchStart", event: { x, y }, id, opts }` |
 | `@getTouchMove` | 拖动中。返回 `{ type: "touchMove", event: { x, y }, id, opts }` |
@@ -334,6 +349,10 @@ chart.showToolTip(e, {
 ```
 
 组件侧用 `tooltipShow`、`tooltipFormat`（名字写在 `config.ts` 的 `cfu.formatter`）及触摸相关 props。
+
+#### hideToolTip()
+
+收起当前提示窗并重绘。组件已自动处理常见场景：移动端点击图表外任意位置关闭（页面壳触摸广播 / H5 document 监听），H5 鼠标移出图表自动关闭；也可以手动调用。
 
 #### scrollStart(e) / scroll(e) / scrollEnd(e)
 

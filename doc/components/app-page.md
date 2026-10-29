@@ -89,7 +89,7 @@ setLingyunPageConfig({
 - 窄屏由首页 / 目录宿主页在页内切换一级 Tab，页面栈不增长；H5 地址保持为宿主路由的 `?tab=<key>`，刷新或从子页返回后按这个 key 恢复。微信宽屏优先走 `openLingyunHostedPage`，不增加页面栈；从其他页面直接进入工作台时仍走一次路由。
 - 页面壳默认不接管底部 Tab：只有一级 Tab 根页或带 children 的工作台页渲染 Tab；子页/详情页/首页默认没有 Tab，也不会留出底部空间。其他页面需要 Tab 请自行使用 `lingyun-tabbars`。
 - 壳只在当前页实际渲染底部 Tab 时留白，写入 `--lingyun-app-page-inset-bottom` 与 `LINGYUN_APP_PAGE_BOTTOM_INSET`。页面不要再手写 `padding-bottom`；已有手写值时设 `:auto-bottom-inset="false"`。
-- 页面背景统一由壳根节点绘制，内容层 `.page` 默认透明。宿主可只配一次 `--lingyun-page-background`（可放渐变或纯色），所有页面共用，底部 Tab 留白、安全区和宿主页都会露出同一张背景。
+- 页面背景由独立的固定背景层绘制，固定在视口，不随页面级滚动 / 内层 scroll-view / body 自管滚动移动；壳根节点只保留纯色兜底。宿主可只配一次 `--lingyun-page-background`（可放渐变或纯色），所有页面共用，底部 Tab 留白、安全区和宿主页都会露出同一张背景。
 - 跨页 `reLaunch` 本身没有页面动画：壳会在换页后让内容淡入。底部 Tab 指示器按 Tab 顺序左右滑动，左侧菜单的选中胶囊按菜单顺序上下滑动；工作台内切换只让内容区淡入。
 - 带商品底栏 / 底部搜索条的页面请配置 `pages[path].hideTabbar = true`。
 

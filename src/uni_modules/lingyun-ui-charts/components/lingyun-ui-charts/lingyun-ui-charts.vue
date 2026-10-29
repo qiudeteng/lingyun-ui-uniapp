@@ -17,6 +17,7 @@
         v-on:mousemove="rdcharts.mouseMove"
         v-on:mousedown="rdcharts.mouseDown"
         v-on:mouseup="rdcharts.mouseUp"
+        v-on:mouseleave="rdcharts.mouseLeave"
         v-on:touchstart="rdcharts.touchStart"
         v-on:touchmove="rdcharts.touchMove"
         v-on:touchend="rdcharts.touchEnd"
@@ -388,6 +389,8 @@ export default defineComponent({
       _mpOverlayToken: 0,
       _mpLastShotTimer: 0,
       _resizeHandler: null as null | ((res: any) => void),
+      _tooltipActive: false,
+      _pageTouchHandler: null as null | (() => void),
     };
   },
   created(){
@@ -456,6 +459,10 @@ export default defineComponent({
     }, time);
     uni.onWindowResize(this._resizeHandler);
     // #endif
+    this._pageTouchHandler = () => {
+      this.hideTooltip()
+    }
+    uni.$on('lingyun:page-touch', this._pageTouchHandler)
   },
   destroyed(){
     // #ifdef MP-WEIXIN
@@ -479,6 +486,10 @@ export default defineComponent({
       this._resizeHandler = null
     }
     // #endif
+    if (this._pageTouchHandler) {
+      uni.$off('lingyun:page-touch', this._pageTouchHandler)
+      this._pageTouchHandler = null
+    }
   },
   watch: {
     chartDataStamp() {
@@ -1003,6 +1014,35 @@ export default defineComponent({
           }
         });
       }
+      this._tooltipActive = true
+    },
+    hideTooltip() {
+      if (!this._tooltipActive) return
+      this._tooltipActive = false
+      const instance = cfu.instance[this.cid]
+      if (instance && typeof instance.hideToolTip === 'function') {
+        instance.hideToolTip()
+      }
+    },
+    _emitLegendAction(e: any, point: { x: number; y: number }): boolean {
+      const cid = this.cid
+      const instance = cfu.instance[cid]
+      if (!instance || typeof instance.getLegendActionData !== 'function') return false
+      const action = instance.getLegendActionData(e)
+      if (!action) return false
+      this.emitMsg({
+        name: 'legendAction',
+        params: {
+          type: 'legendAction',
+          legendIndex: action.index,
+          item: action.item,
+          column: action.column,
+          event: point,
+          id: cid,
+          opts: instance.opts,
+        },
+      })
+      return true
     },
     _tap(e: any, move?: any) {
       let cid = this.cid
@@ -1050,6 +1090,7 @@ export default defineComponent({
                 this._showTooltip(e);
               }
             }else{
+              if (this._emitLegendAction(e, point)) return
               currentIndex = cfu.instance[cid].getCurrentDataIndex(e);
               legendIndex = cfu.instance[cid].getLegendDataIndex(e);
               if(this.tapLegend === true){
@@ -1067,8 +1108,11 @@ export default defineComponent({
             this._showTooltip(e);
           }
         }else{
+          const tapPoint = { x: e.detail.x - e.currentTarget.offsetLeft, y: e.detail.y - e.currentTarget.offsetTop }
+          const eventPoint = { x: e.detail.x, y: e.detail.y - e.currentTarget.offsetTop }
           e.changedTouches=[];
-          e.changedTouches.unshift({ x: e.detail.x - e.currentTarget.offsetLeft, y: e.detail.y - e.currentTarget.offsetTop });
+          e.changedTouches.unshift(tapPoint);
+          if (this._emitLegendAction(e, eventPoint)) return
           currentIndex = cfu.instance[cid].getCurrentDataIndex(e);
           legendIndex = cfu.instance[cid].getLegendDataIndex(e);
           if(this.tapLegend === true){
@@ -1077,7 +1121,7 @@ export default defineComponent({
           if (this.tooltipShow === true) {
             this._showTooltip(e);
           }
-          this.emitMsg({name: 'getIndex', params: {type:"getIndex", event:{ x: e.detail.x, y: e.detail.y - e.currentTarget.offsetTop }, currentIndex: currentIndex, legendIndex: legendIndex, id: cid, opts: cfu.instance[cid].opts}});
+          this.emitMsg({name: 'getIndex', params: {type:"getIndex", event: eventPoint, currentIndex: currentIndex, legendIndex: legendIndex, id: cid, opts: cfu.instance[cid].opts}});
         }
       }
     },
@@ -1176,7 +1220,9 @@ function rdformatterAssign(args,formatter) {
 export default {
   data() {
     return {
-      rid:null
+      rid:null,
+      _tooltipActive: false,
+      _outsideCloseHandler: null
     }
   },
   mounted() {
@@ -1188,12 +1234,47 @@ export default {
     }
     rootdom = {top:dm.offsetTop,left:dm.offsetLeft}
     // #endif
+    this.bindOutsideClose()
   },
   destroyed(){
+    this.unbindOutsideClose()
     delete cfu.option[this.rid]
     delete cfu.instance[this.rid]
   },
   methods: {
+    bindOutsideClose() {
+      if (typeof document === 'undefined' || this._outsideCloseHandler) return
+      const handler = (event) => {
+        const cid = this.rid
+        if (!cid || !this._tooltipActive) return
+        const el = document.getElementById('UC' + cid)
+        const target = event.target
+        if (el && target && (el === target || el.contains(target))) return
+        this.hideTooltip()
+      }
+      this._outsideCloseHandler = handler
+      document.addEventListener('touchstart', handler, true)
+      document.addEventListener('mousedown', handler, true)
+    },
+    unbindOutsideClose() {
+      if (this._outsideCloseHandler && typeof document !== 'undefined') {
+        document.removeEventListener('touchstart', this._outsideCloseHandler, true)
+        document.removeEventListener('mousedown', this._outsideCloseHandler, true)
+      }
+      this._outsideCloseHandler = null
+    },
+    hideTooltip() {
+      if (!this._tooltipActive) return
+      this._tooltipActive = false
+      const cid = this.rid
+      const instance = cid && cfu.instance[cid]
+      if (instance && typeof instance.hideToolTip === 'function') {
+        instance.hideToolTip()
+      }
+    },
+    mouseLeave() {
+      this.hideTooltip()
+    },
     //==============以下是图表引擎的方法====================
     ucinit(newVal, oldVal, owner, instance){
       if(!newVal || !newVal.canvasId){
@@ -1284,6 +1365,7 @@ export default {
           }
         });
       }
+      this._tooltipActive = true
     },
     tap(e) {
       let cid = this.rid
@@ -1302,6 +1384,22 @@ export default {
       }
       e.changedTouches = [];
       e.changedTouches.unshift(tmpe)
+      const legendAction = cfu.instance[cid].getLegendActionData(e)
+      if (legendAction) {
+        that[cid].callMethod('emitMsg', {
+          name: 'legendAction',
+          params: {
+            type: 'legendAction',
+            legendIndex: legendAction.index,
+            item: legendAction.item,
+            column: legendAction.column,
+            event: tmpe,
+            id: cid,
+            opts: cfu.instance[cid].opts
+          }
+        })
+        return
+      }
       currentIndex=cfu.instance[cid].getCurrentDataIndex(e)
       legendIndex=cfu.instance[cid].getLegendDataIndex(e)
       if(tapLegend === true){

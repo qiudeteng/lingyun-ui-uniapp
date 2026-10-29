@@ -141,15 +141,28 @@ opts: {
 | 字段 | 说明 |
 |------|------|
 | `key` | 从该项上取的字段。`name` 用名称 |
+| `type` | `action` 时为操作列，不取行字段，文字用 `text`；点击不切换显隐，触发 `@legendAction` |
+| `text` | `action` 列文字，默认「详情」；最多 **2 个字**，超出直接截断 |
 | `width` | 列宽，px。不写则按该列最长文字 |
 | `align` | `right` 右对齐，默认靠左 |
-| `color` | 整列文字色 |
+| `color` | 整列文字色；`action` 列即操作文字色 |
 | `columnGap` | 列间距，px，默认 8。写在 `legend` 上 |
+| `tableBorder` | 表格图例外边框，默认 `true`；`false` 时不画外框，也不画内部行线，只保留背景。写在 `legend` 上 |
+| `tableRowLine` | 表格行下边线，默认 `true`；仅在 `tableBorder` 开启时生效，`false` 可只关行线。写在 `legend` 上 |
+| `tableLineWidth` | 行下边线粗细，px，默认 `0.5`。写在 `legend` 上 |
+| `tableGap` | 表格图例与绘图区的间距，px，默认 `8`。写在 `legend` 上 |
+| `tableShape` | `auto` 跟随系列形状；`dot` 用紧凑圆点。写在 `legend` 上 |
+| `tableLineColor` | 表格行下边线颜色；不设时跟随边框 / 中性灰。写在 `legend` 上 |
+| `actionColor` | `action` 列默认文字色；不设用系列首色。写在 `legend` 上 |
 | `overflow` | `page`（默认）单行 / 单列分页；`wrap` 恢复旧布局 |
-| `pageSize` | 每页数量；0 时普通图例自动计算，表格模式默认 5 行 |
+| `pageSize` | 每页数量；0 时普通图例自动计算；左右列表格按表高自动计算，顶部 / 底部表格默认 5 行 |
 | `pageIndex` | 当前页，从 0 开始 |
 | `pageArrowSize` | 上下箭头点击区，默认 18px |
 | `pageArrowColor` | 箭头颜色，默认图例文字色 |
+
+`action` 列放在最后一列时，点击该格只触发 `@legendAction`，不会隐藏 / 显示对应系列；回调里 `item` 是这一行的完整数据（饼类为扇区项，折线 / 柱状为系列项），另有 `legendIndex`、`column`、`event`、`id`、`opts`。文字最多显示 **2 个字**，例如「详情」；传更长的文案也只取前两个字。
+
+`tableBorder` 关闭时外框和内部行线都不画；开启后行线用 `tableRowLine` 控制（默认开），行线整宽、默认 0.5px，最后一行也画。`tableGap` 控制与绘图区的间距；`tableShape: 'dot'` 用紧凑圆点替代系列形状。左右列布局的表格边框高度跟随绘图区高度，每页行数按这个高度自动计算；只有需要固定行数时才设置 `pageSize`。
 
 `legend.overflow` 默认 `page`：横向图例只排一行，纵向图例只排一列；超出容量显示当前页，横向在右侧、纵向在底部绘制上下箭头。向上箭头翻上一页、向下箭头翻下一页，首页 / 末页对应箭头置灰。画布 CSS 宽度小于 520px 时，`left` / `right` 自动改为 `bottom`。旧版多行 / 多列布局用 `overflow: 'wrap'`。
 
@@ -168,10 +181,12 @@ legend: {
   position: 'right',
   lineHeight: 22,
   fontSize: 12,
+  tableBorder: true,
   columns: [
     { key: 'name', width: 72 },
     { key: 'value', width: 36, align: 'right' },
     { key: 'rate', width: 32, align: 'right', color: '#86868b' },
+    { type: 'action', text: '查看更多', width: 64, align: 'right' },
   ],
 }
 // 饼类

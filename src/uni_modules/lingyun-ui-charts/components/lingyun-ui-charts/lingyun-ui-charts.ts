@@ -773,6 +773,34 @@ function findLegendIndex(currentPoints, legendData, opts) {
   return currentIndex;
 }
 
+function findLegendAction(currentPoints, legendData) {
+  if (!legendData || !legendData.points || !isInExactLegendArea(currentPoints, legendData.area)) return null;
+  var points = legendData.points;
+  var index = -1;
+  for (var i = 0, len = points.length; i < len; i++) {
+    var item = points[i];
+    for (var j = 0; j < item.length; j++) {
+      index += 1;
+      var row = item[j];
+      var area = row && row.actionArea;
+      if (
+        area &&
+        currentPoints.x >= area[0] &&
+        currentPoints.x <= area[2] &&
+        currentPoints.y >= area[1] &&
+        currentPoints.y <= area[3]
+      ) {
+        return {
+          index: index + (Number(legendData.pageOffset) || 0),
+          item: row,
+          column: row.actionColumn || null
+        };
+      }
+    }
+  }
+  return null;
+}
+
 function findLegendPageArrow(currentPoints, legendData) {
   var arrows = legendData && legendData.pageArrows;
   if (!arrows) return '';
@@ -958,6 +986,14 @@ function legendColumnsOf(opts) {
 }
 
 function legendCellOf(item, column) {
+  if (column && column.type === 'action') {
+    var actionText = column.text == null ? '详情' : String(column.text);
+    return {
+      /* 操作列最多两个字，超出直接截断，避免手机上撑出表格 */
+      text: actionText.slice(0, 2),
+      color: column.color || ''
+    };
+  }
   var raw = column.key === 'name'
     ? (item.legendText != null && item.legendText !== '' ? item.legendText : item.name)
     : item[column.key];
@@ -1089,6 +1125,7 @@ function calPagedLegendData(series, opts, config, chartData, context) {
   }
   var padding = opts.legend.padding * opts.pix;
   var margin = opts.legend.margin * opts.pix;
+  var tableGap = Math.max(0, Number(opts.legend.tableGap == null ? 8 : opts.legend.tableGap) || 0) * opts.pix;
   var fontSize = opts.legend.fontSize ? opts.legend.fontSize * opts.pix : config.fontSize;
   var shapeWidth = 15 * opts.pix;
   var shapeRight = 5 * opts.pix;
@@ -1152,14 +1189,14 @@ function calPagedLegendData(series, opts, config, chartData, context) {
         pageSize * lineHeight +
         2 * padding +
         (totalPages > 1 ? arrowSize + arrowGap : 0);
-      legendData.area.wholeHeight = legendData.area.height + 2 * margin;
+      legendData.area.wholeHeight = legendData.area.height + 2 * tableGap;
       if (position === 'top') {
-        legendData.area.start.y = opts.area[0] + margin;
+        legendData.area.start.y = opts.area[0] + tableGap;
         legendData.area.end.y = legendData.area.start.y + legendData.area.height;
       } else {
         legendData.area.start.y =
-          opts.height - opts.area[2] - legendData.area.height - margin;
-        legendData.area.end.y = opts.height - opts.area[2] - margin;
+          opts.height - opts.area[2] - legendData.area.height - tableGap;
+        legendData.area.end.y = opts.height - opts.area[2] - tableGap;
       }
       if (totalPages > 1) {
         var tableArrowBetween = 4 * opts.pix;
@@ -1273,7 +1310,11 @@ function calPagedLegendData(series, opts, config, chartData, context) {
       legendData.pageArrows.down.offsetX = downOffsetX;
     }
   } else {
-    var maxHeight = opts.height - opts.area[0] - opts.area[2] - 2 * margin - 2 * padding;
+    /* 左右列布局的表格：表高跟随绘图区高度，能放多少行由这个高度决定 */
+    var sideTable = !!columnLayout && (position === 'left' || position === 'right');
+    var maxHeight = sideTable
+      ? Math.max(0, opts.height - opts.area[0] - opts.area[2] - 2 * padding)
+      : opts.height - opts.area[0] - opts.area[2] - 2 * margin - 2 * padding;
     var rowCapacity = Math.floor(maxHeight / lineHeight);
     var overflowVertical = rowCapacity < total;
     if (overflowVertical) {
@@ -1303,24 +1344,30 @@ function calPagedLegendData(series, opts, config, chartData, context) {
       return lineHeight;
     });
     legendData.area.width = maxItemWidth + 2 * padding;
-    legendData.area.wholeWidth = legendData.area.width;
-    legendData.area.height =
-      pageSize * lineHeight +
-      2 * padding +
-      (totalPages > 1 ? arrowSize + arrowGap : 0);
+    legendData.area.wholeWidth = legendData.area.width + (columnLayout ? tableGap : 0);
+    legendData.area.height = sideTable
+      ? Math.max(0, opts.height - opts.area[0] - opts.area[2])
+      : pageSize * lineHeight +
+        2 * padding +
+        (totalPages > 1 ? arrowSize + arrowGap : 0);
     legendData.area.wholeHeight = legendData.area.height;
-    switch (opts.legend.float) {
-      case 'top':
-        legendData.area.start.y = opts.area[0] + margin;
-        legendData.area.end.y = opts.area[0] + margin + legendData.area.height;
-        break;
-      case 'bottom':
-        legendData.area.start.y = opts.height - opts.area[2] - margin - legendData.area.height;
-        legendData.area.end.y = opts.height - opts.area[2] - margin;
-        break;
-      default:
-        legendData.area.start.y = (opts.height - legendData.area.height) / 2;
-        legendData.area.end.y = (opts.height + legendData.area.height) / 2;
+    if (sideTable) {
+      legendData.area.start.y = opts.area[0];
+      legendData.area.end.y = opts.height - opts.area[2];
+    } else {
+      switch (opts.legend.float) {
+        case 'top':
+          legendData.area.start.y = opts.area[0] + margin;
+          legendData.area.end.y = opts.area[0] + margin + legendData.area.height;
+          break;
+        case 'bottom':
+          legendData.area.start.y = opts.height - opts.area[2] - margin - legendData.area.height;
+          legendData.area.end.y = opts.height - opts.area[2] - margin;
+          break;
+        default:
+          legendData.area.start.y = (opts.height - legendData.area.height) / 2;
+          legendData.area.end.y = (opts.height + legendData.area.height) / 2;
+      }
     }
     switch (position) {
       case 'left':
@@ -5465,7 +5512,9 @@ function drawLegend(series, opts, config, context, chartData) {
   context.rect(legendArea.start.x, legendArea.start.y, legendArea.width, legendArea.height);
   context.closePath();
   context.fill();
-  context.stroke();
+  if (!((legendData.tableRows || legendData.columnLayout) && opts.legend.tableBorder === false)) {
+    context.stroke();
+  }
   legendList.forEach(function(itemList, listIndex) {
     let width = 0;
     let height = 0;
@@ -5520,41 +5569,45 @@ function drawLegend(series, opts, config, context, chartData) {
       context.setLineWidth(1 * opts.pix);
       context.setStrokeStyle(item.show ? item.color : opts.legend.hiddenColor);
       context.setFillStyle(item.show ? item.color : opts.legend.hiddenColor);
-      switch (item.legendShape) {
-        case 'line':
-          context.moveTo(startX, startY + 0.5 * lineHeight - 2 * opts.pix);
-          context.fillRect(startX, startY + 0.5 * lineHeight - 2 * opts.pix, 15 * opts.pix, 4 * opts.pix);
-          break;
-        case 'triangle':
-          context.moveTo(startX + 7.5 * opts.pix, startY + 0.5 * lineHeight - 5 * opts.pix);
-          context.lineTo(startX + 2.5 * opts.pix, startY + 0.5 * lineHeight + 5 * opts.pix);
-          context.lineTo(startX + 12.5 * opts.pix, startY + 0.5 * lineHeight + 5 * opts.pix);
-          context.lineTo(startX + 7.5 * opts.pix, startY + 0.5 * lineHeight - 5 * opts.pix);
-          break;
-        case 'diamond':
-          context.moveTo(startX + 7.5 * opts.pix, startY + 0.5 * lineHeight - 5 * opts.pix);
-          context.lineTo(startX + 2.5 * opts.pix, startY + 0.5 * lineHeight);
-          context.lineTo(startX + 7.5 * opts.pix, startY + 0.5 * lineHeight + 5 * opts.pix);
-          context.lineTo(startX + 12.5 * opts.pix, startY + 0.5 * lineHeight);
-          context.lineTo(startX + 7.5 * opts.pix, startY + 0.5 * lineHeight - 5 * opts.pix);
-          break;
-        case 'circle':
-          context.moveTo(startX + 7.5 * opts.pix, startY + 0.5 * lineHeight);
-          context.arc(startX + 7.5 * opts.pix, startY + 0.5 * lineHeight, 5 * opts.pix, 0, 2 * Math.PI);
-          break;
-        case 'rect':
-          context.moveTo(startX, startY + 0.5 * lineHeight - 5 * opts.pix);
-          context.fillRect(startX, startY + 0.5 * lineHeight - 5 * opts.pix, 15 * opts.pix, 10 * opts.pix);
-          break;
-        case 'square':
-          context.moveTo(startX + 5 * opts.pix, startY + 0.5 * lineHeight - 5 * opts.pix);
-          context.fillRect(startX + 5 * opts.pix, startY + 0.5 * lineHeight - 5 * opts.pix, 10 * opts.pix, 10 * opts.pix);
-          break;
-        case 'none':
-          break;
-        default:
-          context.moveTo(startX, startY + 0.5 * lineHeight - 5 * opts.pix);
-          context.fillRect(startX, startY + 0.5 * lineHeight - 5 * opts.pix, 15 * opts.pix, 10 * opts.pix);
+      if (opts.legend.tableShape === 'dot' && legendData.columnLayout) {
+        context.arc(startX + 7.5 * opts.pix, startY + 0.5 * lineHeight, 4 * opts.pix, 0, 2 * Math.PI);
+      } else {
+        switch (item.legendShape) {
+          case 'line':
+            context.moveTo(startX, startY + 0.5 * lineHeight - 2 * opts.pix);
+            context.fillRect(startX, startY + 0.5 * lineHeight - 2 * opts.pix, 15 * opts.pix, 4 * opts.pix);
+            break;
+          case 'triangle':
+            context.moveTo(startX + 7.5 * opts.pix, startY + 0.5 * lineHeight - 5 * opts.pix);
+            context.lineTo(startX + 2.5 * opts.pix, startY + 0.5 * lineHeight + 5 * opts.pix);
+            context.lineTo(startX + 12.5 * opts.pix, startY + 0.5 * lineHeight + 5 * opts.pix);
+            context.lineTo(startX + 7.5 * opts.pix, startY + 0.5 * lineHeight - 5 * opts.pix);
+            break;
+          case 'diamond':
+            context.moveTo(startX + 7.5 * opts.pix, startY + 0.5 * lineHeight - 5 * opts.pix);
+            context.lineTo(startX + 2.5 * opts.pix, startY + 0.5 * lineHeight);
+            context.lineTo(startX + 7.5 * opts.pix, startY + 0.5 * lineHeight + 5 * opts.pix);
+            context.lineTo(startX + 12.5 * opts.pix, startY + 0.5 * lineHeight);
+            context.lineTo(startX + 7.5 * opts.pix, startY + 0.5 * lineHeight - 5 * opts.pix);
+            break;
+          case 'circle':
+            context.moveTo(startX + 7.5 * opts.pix, startY + 0.5 * lineHeight);
+            context.arc(startX + 7.5 * opts.pix, startY + 0.5 * lineHeight, 5 * opts.pix, 0, 2 * Math.PI);
+            break;
+          case 'rect':
+            context.moveTo(startX, startY + 0.5 * lineHeight - 5 * opts.pix);
+            context.fillRect(startX, startY + 0.5 * lineHeight - 5 * opts.pix, 15 * opts.pix, 10 * opts.pix);
+            break;
+          case 'square':
+            context.moveTo(startX + 5 * opts.pix, startY + 0.5 * lineHeight - 5 * opts.pix);
+            context.fillRect(startX + 5 * opts.pix, startY + 0.5 * lineHeight - 5 * opts.pix, 10 * opts.pix, 10 * opts.pix);
+            break;
+          case 'none':
+            break;
+          default:
+            context.moveTo(startX, startY + 0.5 * lineHeight - 5 * opts.pix);
+            context.fillRect(startX, startY + 0.5 * lineHeight - 5 * opts.pix, 15 * opts.pix, 10 * opts.pix);
+        }
       }
       context.closePath();
       context.fill();
@@ -5571,8 +5624,22 @@ function drawLegend(series, opts, config, context, chartData) {
           var cell = legendCellOf(item, column);
           var textWidth = measureText(cell.text, fontSize, context);
           var textX = column.align === 'right' ? rowX + columnLayout.widths[c] - textWidth : rowX;
-          context.setFillStyle(item.show ? (cell.color || column.color || opts.legend.fontColor) : (opts.legend.hiddenFontColor || opts.fontColor));
+          var isAction = column.type === 'action';
+          var cellColor;
+          if (isAction) {
+            cellColor = cell.color || column.color || opts.legend.actionColor ||
+              (opts.color && opts.color.length ? opts.color[0] : '') || opts.legend.fontColor;
+          } else {
+            cellColor = item.show
+              ? (cell.color || column.color || opts.legend.fontColor)
+              : (opts.legend.hiddenFontColor || opts.fontColor);
+          }
+          context.setFillStyle(cellColor);
           if (cell.text) context.fillText(cell.text, textX, startY + fontTrans);
+          if (isAction) {
+            item.actionArea = [rowX, startY, rowX + columnLayout.widths[c], startY + lineHeight];
+            item.actionColumn = column;
+          }
           rowX += columnLayout.widths[c] + columnLayout.gap;
         }
         if (legendData.tableRows) {
@@ -5586,6 +5653,24 @@ function drawLegend(series, opts, config, context, chartData) {
           item.area[2] = startX + columnLayout.textWidth + itemGap;
           startX -= shapeWidth + shapeRight;
           startY += lineHeight;
+        }
+        if (
+          opts.legend.tableBorder !== false &&
+          opts.legend.tableRowLine !== false
+        ) {
+          var rowLineY = item.area[3];
+          var rowLineColor = opts.legend.tableLineColor ||
+            (opts.legend.borderWidth > 0 ? opts.legend.borderColor : '') ||
+            'rgba(120, 120, 128, 0.2)';
+          context.beginPath();
+          context.setLineWidth(
+            (opts.legend.tableLineWidth == null ? 0.5 : opts.legend.tableLineWidth) * opts.pix
+          );
+          context.setStrokeStyle(rowLineColor);
+          context.moveTo(legendArea.start.x, rowLineY);
+          context.lineTo(legendArea.end.x, rowLineY);
+          context.stroke();
+          context.closePath();
         }
       } else {
         const legendText = item.legendText ? item.legendText : item.name;
@@ -7722,6 +7807,19 @@ var LingyunUiCharts = function LingyunUiCharts(opts) {
     backgroundColor: 'rgba(0,0,0,0)',
     borderColor: 'rgba(0,0,0,0)',
     borderWidth: 0,
+    /* 表格图例外边框；false 时保留背景，不画外框 */
+    tableBorder: true,
+    /* 表格行下边线；与 tableBorder 独立，紧凑表格可只保留行线 */
+    tableRowLine: true,
+    tableLineWidth: 0.5,
+    /* 表格图例与绘图区的间距（px） */
+    tableGap: 8,
+    /* 表格图例行下边线颜色；不设时跟随边框 / 中性灰 */
+    tableLineColor: '',
+    /* 表格图例符号：auto 跟随系列，dot 用紧凑圆点 */
+    tableShape: 'auto',
+    /* 表格图例 action 列默认文字色；不设用系列首色 */
+    actionColor: '',
     padding: 5,
     margin: 5,
     itemGap: 10,
@@ -8053,6 +8151,24 @@ LingyunUiCharts.prototype.getLegendDataIndex = function(e) {
   return -1;
 };
 
+LingyunUiCharts.prototype.getLegendActionData = function(e) {
+  var touches = null;
+  if (e.changedTouches) {
+    touches = e.changedTouches[0];
+  } else {
+    touches = e.mp.changedTouches[0];
+  }
+  if (touches) {
+    let _touches$ = getTouches(touches, this.opts, e);
+    var legendData = this.opts.chartData && this.opts.chartData.legendData;
+    return findLegendAction({
+      x: _touches$.x,
+      y: _touches$.y
+    }, legendData);
+  }
+  return null;
+};
+
 LingyunUiCharts.prototype.touchLegend = function(e) {
   var option = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
   var touches = null;
@@ -8326,6 +8442,18 @@ LingyunUiCharts.prototype.showToolTip = function(e) {
     }
     drawCharts.call(this, opts.type, opts, this.config, this.context);
   }
+};
+
+LingyunUiCharts.prototype.hideToolTip = function() {
+  var opts = assign({}, this.opts, {
+    _scrollDistance_: this.scrollOption ? this.scrollOption.currentOffset : 0,
+    animation: false
+  });
+  opts.tooltip = null;
+  if (this.opts.type === 'map' || this.opts.type === 'word') {
+    opts.updateData = false;
+  }
+  drawCharts.call(this, opts.type, opts, this.config, this.context);
 };
 
 LingyunUiCharts.prototype.translate = function(distance) {

@@ -1,5 +1,13 @@
 <template>
-  <view class="lingyun-app-page" :class="rootClass" :style="pageVars">
+  <view
+    class="lingyun-app-page"
+    :class="rootClass"
+    :style="pageVars"
+    @touchstart="onPageTouch"
+  >
+    <!-- 固定背景层：页面级滚动 / scroll-view 滚动时渐变都不跟着内容走 -->
+    <view v-if="!embedded" class="lingyun-app-page__backdrop" />
+
     <!-- 小程序宽屏侧栏留在页面里。H5 由 lingyunUi 挂到 body，避免换页拆掉侧栏。 -->
     <!-- #ifndef H5 -->
     <view v-if="!embedded && showPageNav" class="lingyun-app-page__nav">
@@ -1342,6 +1350,14 @@ export default defineComponent({
     onClose() {
       this.$emit('close')
     },
+    onPageTouch() {
+      /* 页面任意位置开始触摸时先收起图表 tooltip；点图表时图表随后会重新显示 */
+      try {
+        uni.$emit('lingyun:page-touch')
+      } catch {
+        /* ignore */
+      }
+    },
     onTrailing() {
       this.$emit('trailing')
     },
@@ -1362,13 +1378,21 @@ export default defineComponent({
   height: 100vh;
   min-height: 100vh;
   box-sizing: border-box;
-  /* 页面统一背景。宿主工程可通过 --lingyun-page-background 覆盖；
-     默认回退到 Grouped Primary（暗黑 #000，与卡面 Secondary #1c1c1e 拉开） */
-  background: var(
-    --lingyun-page-background,
-    var(--lingyun-bg-grouped-primary, #{$lingyun-bg-grouped-primary})
-  );
+  /* 根节点只保留纯色兜底；页面渐变由固定背景层绘制，滚动时不移动 */
+  background-color: var(--lingyun-bg-grouped-primary, #{$lingyun-bg-grouped-primary});
   color: var(--lingyun-label, #{$lingyun-label});
+}
+
+/* 固定背景层：渐变始终铺满视口，不随页面 / scroll-view 内容移动 */
+.lingyun-app-page__backdrop {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--lingyun-page-background, var(--lingyun-bg-grouped-primary, #{$lingyun-bg-grouped-primary}));
 }
 
 /* 页面级滚动：交给页面自己滚，勿锁死视口高度 */
@@ -1392,6 +1416,8 @@ export default defineComponent({
   width: 100%;
   height: 0;
   min-height: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .lingyun-app-page__body {
@@ -1401,6 +1427,8 @@ export default defineComponent({
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  position: relative;
+  z-index: 1;
 }
 
 .lingyun-app-page--embedded {
@@ -1420,6 +1448,8 @@ export default defineComponent({
 .lingyun-app-page__pad {
   min-height: 100%;
   box-sizing: border-box;
+  position: relative;
+  z-index: 1;
 }
 
 /* 宽屏未注册页：首子已被全局样式撑到一屏，这里把 404 放在顶栏以下的正中 */
