@@ -22,6 +22,7 @@
 | `showClose` | 关闭 | auto |
 | `showGrabber` | 抓手 | auto |
 | `showTrailing` | 右侧按钮 | true |
+| `trailingButtons` | 右侧自定义按钮组 `{ key, icon?, label?, disabled? }[]` | [] |
 | `fixed` | 固定在视口顶部。页面壳里会设为 true | false |
 | `safeArea` | 加上状态栏高度 | true |
 | `glassProgress` | 0 到 1，玻璃从透明到铺满 | 0 |
@@ -31,6 +32,9 @@
 | --- | --- |
 | `back` | 返回 |
 | `close` | 关闭 |
-| `trailing` | 右侧按钮 |
+| `trailing` | 默认右侧按钮 |
+| `trailing-action` | 自定义按钮组点击，参数 `{ key, button, index }` |
+
+`trailingButtons` 会渲染成右侧玻璃按钮组：单个是 44×44 圆钮，多个是 36×36 + gap 18 的胶囊组。点击后如果提供 `#trailing-menu="{ button, index, close }"` 插槽，会在按钮下方弹出自定义菜单内容；菜单内容可以是普通 menu、activity view 等。
 
 返回、关闭、分享都用 `lingyun-icon`。圆钮保持 **44**。返回是 `left`、字号 **28**；关闭是 `closeempty`、分享是 `upload`，字号都是 **26**。

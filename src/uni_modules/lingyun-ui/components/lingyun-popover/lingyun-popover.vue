@@ -132,6 +132,8 @@ export default defineComponent({
     anchor: { type: Object as PropType<AnchorBox | null>, default: null },
     /** 面板预估高度，用于判断下方放不下时翻到上方。0 用默认值 */
     estimateHeight: { type: Number, default: 0 },
+    /** 关闭时不播放退场动画，用于菜单之间直接切换，避免两个面板重叠 */
+    instantClose: { type: Boolean, default: false },
   },
   data() {
     return {
@@ -522,6 +524,12 @@ export default defineComponent({
       if (!this.mounted || this.phase === 'measure') {
         this.mounted = false
         this.phase = ''
+        return
+      }
+      if (this.instantClose) {
+        this.mounted = false
+        this.phase = ''
+        this.panelH = 0
         return
       }
       this.phase = 'leave'

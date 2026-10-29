@@ -14,12 +14,13 @@ export const LINGYUN_DUO_RAIL_CONTENT = 48
 export const LINGYUN_DUO_TOOL_GROUP_HEIGHT = 164
 export const LINGYUN_DUO_TOOL_ICON = 36
 export const LINGYUN_DUO_TOOL_GAP = 18
+/** Tab 组：4×48 + 3×2 gap + 上下 6 padding */
 export const LINGYUN_DUO_SIDE_TAB_GROUP_HEIGHT = 210
 export const LINGYUN_DUO_SIDE_TAB_SIZE = 48
 export const LINGYUN_DUO_SIDE_TAB_GAP = 2
 export const LINGYUN_DUO_SIDE_SEARCH = 48
-/** 选中胶囊比单个 Tab 略高，形成上下滑动的胶囊 */
-export const LINGYUN_DUO_SIDE_SELECTED_HEIGHT = 58
+/** 选中胶囊：44×56；与 48 单项上下各 4、组内上下 padding 6 后首尾各 2，与左右 2 一致 */
+export const LINGYUN_DUO_SIDE_SELECTED_HEIGHT = 56
 export const LINGYUN_DUO_SIDE_SELECTED_WIDTH = 44
 
 export const LINGYUN_DUO_TOP_BAR_HEIGHT = 84

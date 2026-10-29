@@ -13,7 +13,9 @@
    https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02/f/0E48874D-FCAE-47BC-8DE2-3F33ECC936ED#Inspect
 4. **Sketch Inspect · Top - Sheet/Title**  
    https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02/f/27FC19DA-7D0C-4A0E-952B-C79274579616#Inspect
-5. **HIG / Liquid Glass**  
+5. **HIG · Designing for iPhone Duo**  
+   https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo
+6. **HIG / Liquid Glass**  
    [Adopting Liquid Glass](https://developer.apple.com/documentation/TechnologyOverviews/adopting-liquid-glass) · [`UI_SPEC.md`](./UI_SPEC.md)
 
 ---
@@ -77,6 +79,7 @@
 | 项 | iPhone | iPad / Mac |
 |----|--------|------------|
 | 栏身 | **60**（上 8 / 下 8） | **54**（上 **0** / 下 **10**，内容行 44 顶对齐） |
+| 顶部安全区 | 状态栏真实高度 | 系统状态栏高度；H5 / PC 无状态栏时至少 **8** |
 | 左右内边距 | 16 | **20** |
 | 钮间距 | 8 | **12** |
 | 按钮 | 44 | **44**（48pt 只用于 iPhone Duo，不用于 iPad 顶栏） |
@@ -91,6 +94,21 @@
 拉宽 / 收窄窗口时顶栏与 `lingyun-app-page` 占位一起重算。
 
 同一断点下 `lingyun-app-page` 会在左侧停靠导航。固定顶栏的 `left` 为 `var(--lingyun-page-nav-width, 0px)`（有导航时 **220**），栏身只覆盖右侧内容区，标题仍在该栏身内居中。浮层里 `fixed=false` 的顶栏不读这个变量。侧栏顶部名称与这一栏标题垂直对齐；副标题挂在名称下，不改变栏高。规格见 [`SIDEBARS.md`](./SIDEBARS.md) §4。
+
+### 1.6 iPhone Duo 内屏竖屏（lingyun-duo-toolbar）
+
+Duo 内屏竖屏保留横向顶栏；外屏与内屏横屏改用右侧全高栏（见 [`SIDEBARS.md`](./SIDEBARS.md)）。顶栏对 Figma `Toolbar - Top - iPhone Duo`：
+
+| 项 | 尺寸 |
+|----|------|
+| 栏身 | **84** 高；padding 上 **24** / 右 **24** / 下 **12** / 左 **20**，gap **12**；内容行 **48** |
+| Leading | **48 × 48** 玻璃圆钮（返回符号约 **17pt**；本库 `lingyun-icon` 用 **22**） |
+| 标题 | 左对齐，**17 / 22** Semibold，字距 **-0.43**；在 Leading 之后、工具组之前占满剩余宽度 |
+| 工具组 | **164 × 48** 玻璃胶囊；3 个 **36×36** 工具项，gap **18**，左右 padding **10**；1~3 项按内容收缩 |
+| 右侧预留 | **134** = 状态栏 **98** + 间距 **12** + 右内边距 **24**；组件渲染独立 **98×48** 状态栏占位，内容由系统绘制，也可用 `status` 插槽自绘 |
+| 材质 | 栏身默认透明，随滚动浮出玻璃；Leading 与工具组始终是独立玻璃控件 |
+
+HIG 规则：相关工具项应成组，不要手动加固定间距；每个非纯文字工具项同时提供标题与符号（本库用 `duo-tools` 插槽渲染符号，标题由页面无障碍标签补足）。`duo-tools` 最多放 **3** 个 **36×36** 项；页面级 `trailing` 在 Duo 下作为兼容回退，二者同时存在时优先 `duo-tools`。
 
 ---
 
@@ -139,8 +157,33 @@
 |------|------|
 | `back` / `close` | 返回 / 关闭 |
 | `trailing` | 默认 Trailing 点击 |
+| `trailing-action` | 右侧自定义按钮组点击，参数 `{ key, button, index }` |
 
-插槽：`leading`、`trailing`、`title`、`subtitle`、`back`、`close`。
+插槽：`leading`、`trailing`、`title`、`subtitle`、`back`、`close`、`trailing-menu`。
+
+### 右侧自定义按钮组
+
+```vue
+<lingyun-toolbars
+  title="Title"
+  :trailing-buttons="[
+    { key: 'search', icon: 'search', label: 'Search' },
+    { key: 'more', icon: 'more', label: 'More' },
+  ]"
+  @trailing-action="onAction"
+>
+  <template #trailing-menu="{ button, close }">
+    <view class="my-menu">
+      <!-- 自定义 menu / activity view 内容；close() 关闭浮层 -->
+    </view>
+  </template>
+</lingyun-toolbars>
+```
+
+- 按钮组是右侧玻璃胶囊：1 个按钮为 **44×44** 圆钮，多个按 **36×36、gap 18、左右 10** 排列
+- 点击先发 `trailing-action`；若提供了 `trailing-menu` 插槽，会自动在按钮下方打开浮层并传入 `button / index / close`
+- `setLingyunThemeSwitchVisible(true)` 可把内置主题按钮加入同一个按钮组；demo 已开启
+
 
 ---
 

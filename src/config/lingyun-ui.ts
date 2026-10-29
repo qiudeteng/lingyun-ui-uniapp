@@ -43,107 +43,6 @@ const PREVIEW_DUO_POSES = new Set<string>([
   'inner-landscape-folded',
 ])
 
-/**
- * 文档预览 iframe 的原生滚动条会占 15px，隐藏后补一个不占布局的悬浮指示条。
- * 仅 iframe 预览环境调用；正常 H5 / 小程序不受影响。
- */
-function installLingyunPreviewScrollbar(): void {
-  // #ifdef H5
-  if (typeof document === 'undefined' || typeof window === 'undefined') return
-  if (document.querySelector('.lingyun-preview-scrollbar')) return
-  const attach = (): void => {
-    if (!document.body) return
-    const rail = document.createElement('div')
-    rail.className = 'lingyun-preview-scrollbar'
-    const thumb = document.createElement('div')
-    thumb.className = 'lingyun-preview-scrollbar__thumb'
-    rail.appendChild(thumb)
-    document.body.appendChild(rail)
-    let raf = 0
-    const update = (): void => {
-      raf = 0
-      const viewH = window.innerHeight
-      const total = Math.max(
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight,
-      )
-      if (total <= viewH + 1) {
-        rail.style.display = 'none'
-        return
-      }
-      rail.style.display = 'block'
-      const trackH = Math.max(0, viewH - 8)
-      const thumbH = Math.max(24, (viewH / total) * trackH)
-      const maxTop = Math.max(0, trackH - thumbH)
-      const maxScroll = Math.max(1, total - viewH)
-      const scrollTop =
-        window.scrollY ||
-        (document.scrollingElement && document.scrollingElement.scrollTop) ||
-        document.body.scrollTop ||
-        0
-      thumb.style.height = `${thumbH}px`
-      thumb.style.transform = `translateY(${
-        (Math.max(0, Math.min(maxScroll, scrollTop)) / maxScroll) * maxTop
-      }px)`
-    }
-    const queue = (): void => {
-      if (raf) return
-      raf = window.setTimeout(update, 16)
-    }
-    window.addEventListener('scroll', queue, { passive: true })
-    window.addEventListener('resize', queue)
-    try {
-      const observer = new MutationObserver(queue)
-      observer.observe(document.body, { childList: true, subtree: true })
-    } catch {
-      /* 旧浏览器忽略 */
-    }
-    window.addEventListener('load', queue, { once: true })
-    ;[200, 600, 1200, 2000].forEach((delay) => setTimeout(queue, delay))
-    update()
-
-    let dragging = false
-    const scrollToPointer = (clientY: number): void => {
-      const rect = rail.getBoundingClientRect()
-      if (!rect.height) return
-      const total = Math.max(
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight,
-      )
-      const maxScroll = total - window.innerHeight
-      if (maxScroll <= 0) return
-      const ratio = Math.max(
-        0,
-        Math.min(1, (clientY - rect.top) / rect.height),
-      )
-      window.scrollTo(0, ratio * maxScroll)
-    }
-    rail.addEventListener('pointerdown', (event: PointerEvent) => {
-      dragging = true
-      try {
-        rail.setPointerCapture(event.pointerId)
-      } catch {
-        /* 旧浏览器忽略 */
-      }
-      scrollToPointer(event.clientY)
-      event.preventDefault()
-    })
-    rail.addEventListener('pointermove', (event: PointerEvent) => {
-      if (!dragging) return
-      scrollToPointer(event.clientY)
-      event.preventDefault()
-    })
-    const endDrag = (): void => {
-      dragging = false
-    }
-    window.addEventListener('pointerup', endDrag)
-    window.addEventListener('pointercancel', endDrag)
-  }
-  if (document.body) attach()
-  else window.addEventListener('DOMContentLoaded', attach, { once: true })
-  // #endif
-}
-
 /** 从 iframe 地址的 hash query 读取初始 Duo 姿态，首帧就按 Duo 渲染，避免先闪一下手机布局 */
 function readPreviewDuoPose(): LingyunDuoPose | '' {
   if (typeof window === 'undefined') return ''
@@ -172,8 +71,6 @@ function installLingyunLayoutPreviewBridge(): void {
   }
   ;(window as Window & { __lingyunLayoutPreviewBound?: boolean }).__lingyunLayoutPreviewBound =
     true
-  document.documentElement.classList.add('lingyun-preview-embedded')
-  installLingyunPreviewScrollbar()
   const initialPose = readPreviewDuoPose()
   if (initialPose) {
     setLingyunLayoutOverride({ formFactor: 'duo', duoPose: initialPose })

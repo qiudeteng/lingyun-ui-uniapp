@@ -116,6 +116,8 @@ export interface LingyunPageConfig {
   tabbar?: {
     safeArea?: boolean
     variant?: 'default' | 'prominent'
+    /** Duo 右侧栏是否显示搜索入口；默认 false */
+    search?: boolean
   }
 }
 

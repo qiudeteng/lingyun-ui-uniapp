@@ -4,6 +4,25 @@
     :class="[themeRootClass, { 'lingyun-page-nav--rail': railMode }]"
   >
     <view v-if="railMode" class="lingyun-page-nav__rail-panel" />
+    <!-- 二级菜单打开时只遮住导航右侧，左侧其它 Tab 仍可直接点击切换 -->
+    <!-- #ifdef MP-WEIXIN -->
+    <root-portal>
+      <view
+        v-if="childMenuKey"
+        class="lingyun-page-nav__submenu-mask"
+        :style="{ left: railMode ? '84px' : '220px' }"
+        @click="closeChildMenu"
+      />
+    </root-portal>
+    <!-- #endif -->
+    <!-- #ifndef MP-WEIXIN -->
+    <view
+      v-if="childMenuKey"
+      class="lingyun-page-nav__submenu-mask"
+      :style="{ left: railMode ? '84px' : '220px' }"
+      @click="closeChildMenu"
+    />
+    <!-- #endif -->
     <view class="lingyun-page-nav__head" :style="navHeadStyle">
       <view class="lingyun-page-nav__bar" :style="navBarStyle">
         <view v-if="windowControls && !railMode" class="lingyun-page-nav__windows" aria-hidden="true">
@@ -148,8 +167,9 @@
               style="display: block; width: 100%"
               placement="right"
               :show="!!(item.children && item.children.length) && childMenuKey === item.key"
+              :instant-close="instantMenuKey === item.key"
               :actions="childMenuActions(item)"
-              :mask-transparent="true"
+              :mask="false"
               :trigger-block="true"
               @update:show="onChildMenuShow(item, $event)"
               @select="onChildMenuSelect(item, $event)"
@@ -299,6 +319,9 @@ export default defineComponent({
       indicatorReady: false,
       /** 窄栏点击二级菜单 */
       childMenuKey: '',
+      /** 切换到另一个二级菜单时，让旧菜单立即关闭，避免两个面板重叠 */
+      instantMenuKey: '',
+      _instantMenuTimer: null as ReturnType<typeof setTimeout> | null,
       _onHashChange: null as (() => void) | null,
       _expectPath: '',
       _routeSeen: '',
@@ -559,6 +582,8 @@ export default defineComponent({
   beforeUnmount() {
     this._navMounted = false
     clearTimeout(this._routeTimer ?? undefined)
+    clearTimeout(this._instantMenuTimer ?? undefined)
+    this._instantMenuTimer = null
     // #ifdef H5
     if (typeof window !== 'undefined' && this._onHashChange) {
       window.removeEventListener('hashchange', this._onHashChange)
@@ -828,6 +853,9 @@ export default defineComponent({
     onChildMenuShow(item: LingyunPageNavItem, show: boolean) {
       if (!show && this.childMenuKey === item.key) this.childMenuKey = ''
     },
+    closeChildMenu() {
+      this.childMenuKey = ''
+    },
     onChildMenuSelect(item: LingyunPageNavItem, payload: { key?: string }) {
       const child = (item.children || []).find((entry) => entry.key === payload?.key)
       this.childMenuKey = ''
@@ -835,11 +863,22 @@ export default defineComponent({
       this.onNavTap(child.url)
     },
     onNavItemTap(item: LingyunPageNavItem) {
-      const wasOpen = this.childMenuKey === item.key
+      const previous = this.childMenuKey
+      const wasOpen = previous === item.key
       this.childMenuKey = ''
       /* 宽屏左侧（Web 与小程序一致）：有二级菜单点击只弹 menu，再点关闭 */
       if (this.railMode && item.children && item.children.length) {
-        this.childMenuKey = wasOpen ? '' : item.key || ''
+        if (wasOpen) return
+        /* 从一个已打开的菜单切到另一个：旧菜单立即关闭，避免缩放进场重叠 */
+        if (previous) {
+          this.instantMenuKey = previous
+          clearTimeout(this._instantMenuTimer ?? undefined)
+          this._instantMenuTimer = setTimeout(() => {
+            if (this.instantMenuKey === previous) this.instantMenuKey = ''
+            this._instantMenuTimer = null
+          }, 320)
+        }
+        this.childMenuKey = item.key || ''
         return
       }
       this.onNavTap(item.url)
@@ -899,6 +938,20 @@ export default defineComponent({
   overflow: hidden;
   background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
   border-right: 1px solid var(--lingyun-separator, #{$lingyun-separator});
+}
+
+/* 二级菜单遮罩：从导航右边缘开始，不挡左侧 Tab；层级在顶栏之上、菜单面板之下 */
+.lingyun-page-nav__submenu-mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: var(--lingyun-page-nav-width, 220px);
+  z-index: 105;
+}
+
+.lingyun-page-nav--rail .lingyun-page-nav__submenu-mask {
+  left: var(--lingyun-page-nav-width, 84px);
 }
 
 .lingyun-page-nav__head {

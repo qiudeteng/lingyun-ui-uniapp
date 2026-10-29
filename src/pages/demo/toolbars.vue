@@ -83,11 +83,33 @@
         </view>
       </lingyun-section>
 
-      <lingyun-section title="Custom trailing" is-last>
+      <lingyun-section title="Custom trailing">
         <view class="preview">
           <lingyun-toolbars :safe-area="false" title="Edit">
             <template #trailing>
               <lingyun-button variant="borderless" size="mini" text="Done" />
+            </template>
+          </lingyun-toolbars>
+        </view>
+      </lingyun-section>
+
+      <lingyun-section title="Right action group" hint="trailing-buttons + trailing-menu" is-last>
+        <view class="preview">
+          <lingyun-toolbars
+            :safe-area="false"
+            title="Actions"
+            :trailing-buttons="actionButtons"
+            @trailing-action="onAction"
+          >
+            <template #trailing-menu="{ button, close }">
+              <view class="action-menu">
+                <view class="action-menu__item" @click="pickMenu(button, 'Action One', close)">
+                  Action One
+                </view>
+                <view class="action-menu__item" @click="pickMenu(button, 'Action Two', close)">
+                  Action Two
+                </view>
+              </view>
             </template>
           </lingyun-toolbars>
         </view>
@@ -97,8 +119,22 @@
 </template>
 
 <script setup lang="ts">
+  const actionButtons = [
+    { key: 'search', icon: 'search', label: 'Search' },
+    { key: 'more', icon: 'more', label: 'More' },
+  ]
+
   function toast(msg: string): void {
     uni.showToast({ title: msg, icon: 'none' })
+  }
+
+  function onAction(payload: { key?: string }): void {
+    toast(`action: ${payload?.key || ''}`)
+  }
+
+  function pickMenu(button: { key?: string } | null, text: string, close: () => void): void {
+    toast(`${button?.key || 'menu'}: ${text}`)
+    close()
   }
 </script>
 
@@ -143,5 +179,19 @@
         rgba(147, 197, 253, 0.35) 0 12px,
         rgba(167, 243, 208, 0.25) 12px 24px
       );
+  }
+
+  .action-menu {
+    padding: 4px 0;
+  }
+
+  .action-menu__item {
+    min-height: 44px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    font-size: 17px;
+    line-height: 22px;
+    color: var(--lingyun-label, #1a1a1a);
   }
 </style>

@@ -12,6 +12,8 @@
         <lingyun-list-item title="硬件" note="lingyun.device" :detail="token(lingyun.device)" />
         <lingyun-list-item title="是否折叠屏" note="lingyun.foldable" :detail="token(lingyun.foldable)" />
         <lingyun-list-item title="折叠状态" note="lingyun.fold" :detail="token(lingyun.fold)" />
+        <lingyun-list-item title="设备形态" note="lingyun.formFactor" :detail="token(lingyun.formFactor)" />
+        <lingyun-list-item title="Duo 姿态" note="lingyun.duoPose" :detail="token(lingyun.duoPose)" />
         <lingyun-list-item title="窗口" note="宽 × 高" :detail="sizeText" />
       </lingyun-list>
 

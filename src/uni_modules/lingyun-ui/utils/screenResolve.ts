@@ -161,6 +161,38 @@ function resolveKind(
   return 'none'
 }
 
+/** Duo 外屏 466×678、内屏 669×951（横竖都认） */
+function isDuoSize(input: LingyunScreenInput): boolean {
+  const pairs = [
+    [input.windowWidth, input.windowHeight],
+    [input.screenWidth, input.screenHeight],
+  ]
+  return pairs.some(([w, h]) => {
+    const short = Math.min(w, h)
+    const long = Math.max(w, h)
+    return (
+      (Math.abs(short - 466) <= 8 && Math.abs(long - 678) <= 8) ||
+      (Math.abs(short - 669) <= 8 && Math.abs(long - 951) <= 8)
+    )
+  })
+}
+
+/** Duo 没有系统折叠字段：外屏短边约 466，内屏约 669；窗口只占内屏一半时算半折 */
+function resolveDuoFold(input: LingyunScreenInput): LingyunFold {
+  const windowShort = Math.min(input.windowWidth, input.windowHeight)
+  const windowLong = Math.max(input.windowWidth, input.windowHeight)
+  if (Math.abs(windowShort - 466) <= 8 && Math.abs(windowLong - 678) <= 8) return 'folded'
+  if (Math.abs(windowShort - 669) <= 8 && Math.abs(windowLong - 951) <= 8) return 'expanded'
+  const screenW = input.screenWidth || input.windowWidth
+  const screenH = input.screenHeight || input.windowHeight
+  const screenShort = Math.min(screenW, screenH)
+  if (screenShort > 0 && screenShort < 600) return 'folded'
+  const widthRatio = input.screenWidth > 0 ? input.windowWidth / input.screenWidth : 1
+  const heightRatio = input.screenHeight > 0 ? input.windowHeight / input.screenHeight : 1
+  if (widthRatio <= 0.75 || heightRatio <= 0.75) return 'half'
+  return 'expanded'
+}
+
 function isHalf(
   kind: FoldKind,
   windowWidth: number,
@@ -206,36 +238,51 @@ export function resolveLingyunSnapshot(input: LingyunScreenInput): LingyunEnv {
   const brand = textOf(input.brand)
   const model = textOf(input.model)
   const platform = textOf(input.platform)
-  const os = resolveOs(input.osName, platform, input.system)
+  const id = `${brand} ${model}`.trim()
+  /* 小程序模拟器会把 osName 固定成 android；Duo 机型 / UA 已带 iPhone 时以机型为准 */
+  const os: LingyunOs = DUO_RE.test(id) || /iphone|ipad|ipod|ios/i.test(id)
+    ? 'ios'
+    : resolveOs(input.osName, platform, input.system)
   const device = resolveDevice(input.deviceType, brand, model, platform, os)
   const screen = resolveScreen(input.windowWidth)
-  const id = `${brand} ${model}`.trim()
-  const isDuo = device === 'phone' && DUO_RE.test(id)
-  const kind = isDuo
-    ? 'book'
-    : resolveKind(
-        id,
-        os,
-        device,
-        input.windowWidth,
-        input.windowHeight,
-        input.minShort,
-        input.maxShort,
-      )
-  const fold = resolveFold(
-    kind,
+  const detectedKind = resolveKind(
+    id,
+    os,
+    device,
     input.windowWidth,
     input.windowHeight,
-    input.screenWidth,
-    input.screenHeight,
+    input.minShort,
+    input.maxShort,
   )
+  /*
+   * 模拟器常把 Duo 的型号写成 iPhone / iPhone Fold，UA 里的 Duo 不一定进 deviceModel。
+   * iOS 手机只要是折叠形态，或屏幕尺寸正好是 Duo 的 466×678 / 669×951，就按 Duo 处理。
+   */
+  const isDuo =
+    device === 'phone' &&
+    (DUO_RE.test(id) ||
+      (os === 'ios' && (detectedKind === 'book' || isDuoSize(input))))
+  const kind = isDuo ? 'book' : detectedKind
+  const fold = isDuo
+    ? resolveDuoFold(input)
+    : resolveFold(
+        kind,
+        input.windowWidth,
+        input.windowHeight,
+        input.screenWidth,
+        input.screenHeight,
+      )
   const known = !!(device || os || screen)
 
   let formFactor: LingyunFormFactor = ''
   let duoPose: LingyunDuoPose = ''
   if (isDuo) {
     formFactor = 'duo'
-    const portrait = input.windowHeight >= input.windowWidth
+    /* 完整外屏 / 内屏按窗口横竖；半折窗口可能变扁，姿态按物理屏幕判断 */
+    const portrait =
+      fold === 'half' && input.screenWidth > 0 && input.screenHeight > 0
+        ? input.screenHeight >= input.screenWidth
+        : input.windowHeight >= input.windowWidth
     if (fold === 'folded') {
       duoPose = portrait ? 'outer-portrait' : 'outer-landscape'
     } else if (fold === 'half') {

@@ -20,7 +20,7 @@
   <screen-page v-else-if="currentPath === 'pages/demo/screen'" />
   <responsive-page v-else-if="currentPath === 'pages/demo/responsive'" />
   <app-page-page v-else-if="currentPath === 'pages/demo/app-page'" />
-  <workbench-page v-else-if="currentPath === 'pages/demo/workbench'" />
+  <workbench-page v-else-if="currentPath === 'pages/demo/workbench'" embedded />
   <tabbars-page v-else-if="currentPath === 'pages/demo/tabbars'" />
   <sidebars-page v-else-if="currentPath === 'pages/demo/sidebars'" />
   <search-bar-page v-else-if="currentPath === 'pages/demo/search-bar'" />
@@ -69,9 +69,6 @@
   <charts-tarea-page v-else-if="currentPath === 'pages/demo/charts/tarea'" />
   <app-page-view-outlet v-else-if="currentPath" :path="currentPath" />
   <slot v-else />
-  <!-- #ifdef MP-WEIXIN -->
-  <demo-theme-switch />
-  <!-- #endif -->
 </template>
 
 <script setup lang="ts">

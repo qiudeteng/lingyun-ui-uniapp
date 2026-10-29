@@ -103,6 +103,13 @@ function readDevice(): Pick<
     const ua = navigator.userAgent || ''
     const plat = navigator.platform || ''
     if (!empty.model) empty.model = ua
+    /* 自定义 Duo UA 时 uni 仍可能回 android，以 UA 的 iPhone / iPad 为准 */
+    if (/iphone|ipad|ipod|ios/i.test(ua)) {
+      empty.osName = 'ios'
+      if (/duo/i.test(ua) && !/duo/i.test(empty.model)) empty.model = `${empty.model} ${ua}`.trim()
+    } else if (!empty.osName && /android/i.test(ua)) {
+      empty.osName = 'android'
+    }
     if (!empty.platform) empty.platform = plat
     if (!empty.system) empty.system = ua
     if (!empty.deviceType && /iPad/.test(ua)) empty.deviceType = 'pad'

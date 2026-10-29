@@ -10,6 +10,7 @@
     :mask-transparent="maskTransparent"
     :trigger-block="triggerBlock"
     :z-index="zIndex"
+    :instant-close="instantClose"
     @close="onClose"
   >
     <template #trigger="{ show, toggle }">
@@ -101,6 +102,8 @@ export default defineComponent({
     maskTransparent: { type: Boolean, default: false },
     triggerBlock: { type: Boolean, default: false },
     zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
+    /** 关闭时不播退场，用于菜单间直接切换 */
+    instantClose: { type: Boolean, default: false },
   },
   computed: {
     innerShow: {

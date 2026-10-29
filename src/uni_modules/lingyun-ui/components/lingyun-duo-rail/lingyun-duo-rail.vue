@@ -8,7 +8,20 @@
       <view v-if="pose !== 'outer-landscape'" class="lingyun-duo-rail__status" />
 
       <view
-        v-if="compactTools"
+        v-if="showBack"
+        class="lingyun-duo-rail__back"
+        hover-class="lingyun-duo-rail__action--hover"
+        :hover-start-time="20"
+        :hover-stay-time="70"
+        role="button"
+        aria-label="Back"
+        @click="onBack"
+      >
+        <lingyun-icon type="left" :size="22" color="label" />
+      </view>
+
+      <view
+        v-if="compactTools && toolsAllowed"
         class="lingyun-duo-rail__overflow"
         hover-class="lingyun-duo-rail__action--hover"
         :hover-start-time="20"
@@ -19,7 +32,7 @@
       >
         <lingyun-icon type="more" :size="26" color="label" />
       </view>
-      <view v-else-if="$slots.tools" class="lingyun-duo-rail__tools">
+      <view v-else-if="toolsAllowed" class="lingyun-duo-rail__tools" :class="{ 'lingyun-duo-rail__tools--single': toolsSingle }">
         <slot name="tools" />
       </view>
     </view>
@@ -65,6 +78,7 @@
       </view>
 
       <view
+        v-if="showSearch"
         class="lingyun-duo-rail__search"
         hover-class="lingyun-duo-rail__action--hover"
         :hover-start-time="20"
@@ -109,10 +123,11 @@ const TAB_LIMIT = 4
  * lingyun-duo-rail
  * @description iPhone Duo 右侧全高栏（外屏竖/横、内屏横屏）。
  * 官方尺寸：栏宽 84，padding 24/24/24/12，gap 8；工具组 48×164，Tab 组 48×210，搜索 48。
+ * 独立页在摄像头 / 状态栏下方显示返回，并隐藏 Tab / 搜索；Tab 根页显示 Tab / 搜索、不显示返回。
  */
 export default defineComponent({
   name: 'LingyunDuoRail',
-  emits: ['change', 'update:modelValue', 'search', 'overflow'],
+  emits: ['change', 'update:modelValue', 'search', 'overflow', 'back'],
   props: {
     items: {
       type: Array as PropType<Array<RailItem | null | undefined>>,
@@ -126,6 +141,17 @@ export default defineComponent({
     pose: { type: String, default: 'outer-portrait' },
     /** 外屏横屏：工具收起为「…」 */
     compactTools: { type: Boolean, default: false },
+    /** 页面是否真的提供了 duo-tools；小程序 slot 声明也会让 $slots 为真，必须显式传 */
+    toolsVisible: {
+      type: Boolean as PropType<boolean | undefined>,
+      default: undefined,
+    },
+    /** 仅一个工具项时收成 48×48 圆钮 */
+    toolsSingle: { type: Boolean, default: false },
+    /** 独立页（非一级 Tab 根页）在摄像头 / 状态栏下方显示返回 */
+    showBack: { type: Boolean, default: false },
+    /** 一级 Tab 根页显示搜索；普通子页只有返回 */
+    showSearch: { type: Boolean, default: false },
   },
   data() {
     return {
@@ -146,6 +172,11 @@ export default defineComponent({
     },
     tabsId(): string {
       return `${this.instanceId}-tabs`
+    },
+    toolsAllowed(): boolean {
+      return this.toolsVisible !== undefined
+        ? !!this.toolsVisible
+        : !!this.$slots.tools
     },
     tabItems(): RailItem[] {
       return (this.items || [])
@@ -254,6 +285,9 @@ export default defineComponent({
     onOverflow(): void {
       this.$emit('overflow')
     },
+    onBack(): void {
+      this.$emit('back')
+    },
     hasBadge(item: RailItem): boolean {
       const badge = item.badge
       return badge !== undefined && badge !== null && badge !== false && badge !== ''
@@ -337,9 +371,20 @@ export default defineComponent({
   pointer-events: auto;
 }
 
+.lingyun-duo-rail__back {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  @include lingyun-glass-control;
+  pointer-events: auto;
+}
+
 .lingyun-duo-rail__tools {
   width: 48px;
-  height: 164px;
+  height: auto;
   box-sizing: border-box;
   border-radius: 9999px;
   display: flex;
@@ -347,8 +392,15 @@ export default defineComponent({
   align-items: center;
   justify-content: center;
   gap: 18px;
-  @include lingyun-glass-surface;
+  padding: 10px 0;
+  @include lingyun-glass-control;
   border-radius: 9999px;
+}
+
+.lingyun-duo-rail__tools--single {
+  height: 48px;
+  padding: 6px 0;
+  gap: 0;
 }
 
 .lingyun-duo-rail__action--hover,
@@ -376,9 +428,11 @@ export default defineComponent({
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  @include lingyun-glass-surface;
+  @include lingyun-glass-control;
+  border: 0;
   border-radius: 9999px;
 }
+
 
 .lingyun-duo-rail__tab {
   position: relative;

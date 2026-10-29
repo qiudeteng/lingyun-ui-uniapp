@@ -1,6 +1,6 @@
 # 凌云UI
 
-凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.34**，变更见 [`changelog.md`](./changelog.md)。
+凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.35**，变更见 [`changelog.md`](./changelog.md)。
 
 📖 [使用手册](https://lingyun.xinyicanyin.com/)（组件用法、属性、示例；右侧手机框实时预览）
 
@@ -9,7 +9,7 @@
 
 **UI 风格强制：Apple Liquid Glass** → 仓库 [`design/UI_SPEC.md`](../../../design/UI_SPEC.md)  
 **主题色强制：System Colors** → [`design/COLORS.md`](../../../design/COLORS.md) · [Sketch](https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02/color-variables?g=System%2520Colors)  
-**外观**：浅色 / 暗黑 / 跟随系统，业务侧用 `useThemeStore()`（`src/stores/theme.ts`）
+**外观**：浅色 / 暗黑 / 跟随系统，业务侧用 `useThemeStore()`（`src/stores/theme.ts`）。工具栏内置主题钮用 `setLingyunThemeSwitchVisible(true)` 开启。
 
 页面直接写 `lingyun-*` 标签，走 easycom，不必逐个 `import`。
 
@@ -106,10 +106,10 @@ configureLingyunLayout({
 })
 ```
 
-- P1 支持内屏竖屏：顶部 `lingyun-duo-toolbar`（84 高）+ 底部 Duo Tab（95 高）；半折时屏幕中心显示 40px 横向折痕安全带。
-- P2 支持外屏竖屏 / 外屏横屏 / 内屏横屏：右侧 `lingyun-duo-rail`（84 宽，工具组、仅图标 Tab、搜索；外屏横屏自动用「…」溢出）。页面用 `duo-tools` 插槽放工具按钮，监听 `duo-search` / `duo-overflow`。
+- P1 支持内屏竖屏：顶部 `lingyun-duo-toolbar`（84 高；Leading 48、标题 17/22 左对齐、右侧 164×48 玻璃工具组、最右预留 134）+ 底部 Duo Tab（95 高）；半折时屏幕中心显示 40px 横向折痕安全带。页面用 `duo-tools` 插槽放 1~3 个 36×36 工具项。
+- P2 支持外屏竖屏 / 外屏横屏 / 内屏横屏：右侧 `lingyun-duo-rail`（84 宽，工具组、仅图标 Tab、可选搜索；外屏横屏自动用「…」溢出）。页面用 `duo-tools` 插槽放工具按钮，监听 `duo-search` / `duo-overflow`。独立页隐藏 Tab / 搜索，只在摄像头 / 状态栏下方显示返回；搜索需配置 `tabbar.search = true`。
 - P3 支持内屏横屏折叠/半折 Split View：顶部 84 高 Duo Toolbar、右侧 84 返回列、左主栏 + 40 折痕带 + 右详情栏；Tab 隐藏。页面用 `split-primary` / `split-detail` 插槽，右侧返回触发 `back`。
-- 微信小程序暂按标准宽度布局，不进入 Duo 分支。
+- H5 与微信小程序都进入 Duo 分支；宿主可用 `setLingyunDuoSupported(false)` 关闭。
 
 ## 屏幕
 

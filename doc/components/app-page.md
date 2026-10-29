@@ -58,6 +58,8 @@
 | `showTabbar` | 全局 tabs 的底部 Tab 栏。`auto` 时只有一级 Tab 根页 / 工作台页在窄屏显示；显式 `false` 永远隐藏 | auto |
 | `navMode` | `auto / tabbar / sidebar / none`。页面级最高优先 | auto |
 | `autoBottomInset` | 自动为底部 Tab 留白（仅当前页实际渲染 Tab 时生效）。关掉后组件不再加 padding，但 CSS 变量与注入仍给出真实值 | true |
+| `autoTopInset` | 自动计算顶部工具栏 / 状态栏留白；被宿主页嵌入的工作台页设 false，由外层统一留白 | true |
+| `trailingButtons` | 顶栏右侧自定义按钮组，`{ key, icon?, label?, disabled? }[]`；点击发 `trailing-action` | [] |
 | `glassDistance` | 滚动多少 px 后顶栏玻璃铺满 | 56 |
 
 ## 一级导航（数据驱动）
@@ -94,11 +96,11 @@ setLingyunPageConfig({
 ## iPhone Duo（P1）
 
 - 设备形态由 `lingyun.formFactor` / `lingyun.duoPose` 决定；宿主可通过 `configureLingyunLayout({ getFormFactor, getDuoPose })` 接入已有型号判断。
-- 内屏竖屏：顶部使用 `lingyun-duo-toolbar`（84 高），底部使用 `lingyun-tabbars size="duo"`（95 高，玻璃条 62，Tab 77×54，图标 22，文字 10/12）。
+- 内屏竖屏：顶部使用 `lingyun-duo-toolbar`（84 高；Leading 48、标题 17/22 左对齐、右侧 164×48 工具组、最右预留 134），底部使用 `lingyun-tabbars size="duo"`（95 高，玻璃条 62，Tab 77×54，图标 22，文字 10/12）。页面的 `duo-tools` 插槽会渲染到顶部工具组，最多 3 个 36×36 项。
 - 半折：屏幕中心显示 40px 横向折痕安全带；交互控件应避开，滚动内容可跨越。
-- 外屏竖屏 / 外屏横屏 / 内屏横屏：右侧 `lingyun-duo-rail`（84 宽，工具组、4 个仅图标 Tab、搜索；外屏横屏工具收进「…」溢出）。页面用 `duo-tools` 插槽放工具按钮，监听 `duo-search` / `duo-overflow`。
+- 外屏竖屏 / 外屏横屏 / 内屏横屏：右侧 `lingyun-duo-rail`（84 宽，工具组、4 个仅图标 Tab、搜索；外屏横屏工具收进「…」溢出）。页面用 `duo-tools` 插槽放工具按钮，监听 `duo-search` / `duo-overflow`；同一组工具在 Duo 内屏竖屏会进入顶部玻璃工具组。独立页（非一级 Tab 根页）只在摄像头 / 状态栏下方显示返回钮，不显示 Tab 组和搜索；Tab 根页默认也不显示搜索，需配置 `tabbar.search = true`。
 - 内屏横屏折叠/半折：Split View（左主栏 / 40 折痕避让带 / 右详情栏），顶部 84 高 Duo Toolbar，右侧 84 返回列，Tab 隐藏。页面用 `split-primary` / `split-detail` 插槽；右侧返回触发 `back`。
-- 微信小程序暂按标准宽度布局。
+- H5 与微信小程序都按设备形态进入 Duo 分支；宿主可调用 `setLingyunDuoSupported(false)` 关闭。
 
 不传左栏顶部插槽、也不调用 `setLingyunPageNavProfile` 时，宽屏左栏显示「凌云UI」和介绍「一套对齐 Apple Liquid Glass 的 uni-app 多端组件库」。传入自定义名称且不传副标题时，不显示这句介绍。
 
@@ -106,8 +108,10 @@ setLingyunPageConfig({
 
 | 插槽 | 说明 |
 | --- | --- |
-| `leading` | 顶栏左侧 |
-| `trailing` | 顶栏右侧 |
+| `leading` | 顶栏左侧；Duo 内屏竖屏下接管 48×48 Leading，提供后不再渲染默认返回钮 |
+| `trailing` | 顶栏右侧；Duo 内屏竖屏作为 `duo-tools` 的兼容回退 |
+| `duo-tools` | Duo 工具项；内屏竖屏进入顶部 164×48 玻璃工具组（1~3 个 36×36），其他姿态进入右侧全高栏 |
+| `trailing-menu` | `trailingButtons` 点击后的自定义菜单内容；参数 `{ button, index, close }`，可放 menu / activity view |
 | `nav-avatar` | 宽屏左栏顶部头像 |
 | `nav-name` | 宽屏左栏顶部名称，对齐原来的「凌云UI」 |
 | `nav-subtitle` | 宽屏左栏顶部副标题，挂在名称下面 |
@@ -121,6 +125,7 @@ H5 侧栏在页面外面，这三个插槽会送进那一列。微信小程序�
 | `back` | 点返回 |
 | `close` | 点关闭 |
 | `trailing` | 点右侧按钮 |
+| `trailing-action` | 点 `trailingButtons`，参数 `{ key, button, index }` |
 | `tab-change` | 点底部 Tab，参数 `{ key, tab }` |
 
 含文本输入的页面不要设 `:page-scroll="false"`。横向滑动行需要锁竖向滚动时才关。

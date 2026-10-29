@@ -1,6 +1,6 @@
 /**
  * 设备形态适配。宿主可以把自己的机型判断方法接进来；
- * 没有接入时使用 screenResolve 的 fallback（Duo 按机型 + fold 状态）。
+ * 没有接入时使用 screenResolve 的 fallback（Duo 按机型 / 折叠形态 / 屏幕尺寸兜底）。
  */
 import { ref } from 'vue'
 import type {
@@ -23,11 +23,8 @@ let adapter: LingyunLayoutAdapter = {}
 let override: LingyunLayoutOverride | null = null
 const version = ref(0)
 
-/* 小程序暂不做 Duo 专属布局：回到按窗口宽度的标准方案 */
+/* Duo 布局在 H5 与微信小程序都启用；宿主可调用 setLingyunDuoSupported(false) 关闭 */
 let duoSupported = true
-// #ifdef MP-WEIXIN
-duoSupported = false
-// #endif
 
 export function configureLingyunLayout(next: LingyunLayoutAdapter): void {
   adapter = next || {}

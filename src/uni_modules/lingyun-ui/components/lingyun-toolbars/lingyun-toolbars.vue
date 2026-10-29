@@ -64,6 +64,34 @@
       </view>
 
       <view class="lingyun-toolbars__trailing">
+        <view
+          v-if="actionCount"
+          class="lingyun-toolbars__action-group"
+          :class="{ 'lingyun-toolbars__action-group--single': actionCount === 1 }"
+        >
+          <lingyun-theme-action v-if="themeSwitchEnabled" :grouped="true" :icon-size="28" />
+          <view
+            v-for="(button, index) in trailingButtons"
+            :id="trailingButtonId(button, index)"
+            :key="button.key || index"
+            class="lingyun-toolbars__group-button"
+            :class="{ 'lingyun-toolbars__group-button--disabled': button.disabled }"
+            hover-class="lingyun-toolbars__group-button--hover"
+            :hover-start-time="20"
+            :hover-stay-time="70"
+            role="button"
+            :aria-label="button.label || button.key"
+            @click.stop="onTrailingButton(button, index)"
+          >
+            <lingyun-icon
+              v-if="button.icon"
+              :type="button.icon"
+              :size="28"
+              color="label"
+            />
+            <text v-else class="lingyun-toolbars__group-text">{{ button.label }}</text>
+          </view>
+        </view>
         <slot name="trailing" />
         <view
           v-if="showTrailing"
@@ -81,6 +109,26 @@
       </view>
     </view>
 
+    <lingyun-popover
+      v-if="hasTrailingMenu"
+      v-model:show="trailingMenuOpen"
+      class="lingyun-toolbars__menu-host"
+      :anchor="trailingMenuAnchor"
+      placement="bottom"
+      :show-arrow="false"
+      :width="250"
+      variant="menu"
+      mask-transparent
+      :z-index="1200"
+    >
+      <slot
+        name="trailing-menu"
+        :button="trailingMenuButton"
+        :index="trailingMenuIndex"
+        :close="closeTrailingMenu"
+      />
+    </lingyun-popover>
+
     <view v-if="showLargeTitle" class="lingyun-toolbars__large" :style="largeStyle">
       <slot name="title">
         <text class="lingyun-toolbars__large-title">{{ title }}</text>
@@ -93,7 +141,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, getCurrentInstance } from 'vue'
+import { defineComponent, getCurrentInstance, type PropType } from 'vue'
 import { onResize } from '@dcloudio/uni-app'
 import {
   coerceTriFlag,
@@ -110,6 +158,14 @@ import {
   readLingyunResizeWidth,
 } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
 import { useLingyunTheme } from '../../utils/theme'
+import { useLingyunThemeSwitchVisible } from '../../utils/themeSwitch'
+
+export type LingyunToolbarButton = {
+  key: string
+  icon?: string
+  label?: string
+  disabled?: boolean
+}
 
 /**
  * lingyun-toolbars
@@ -122,7 +178,7 @@ import { useLingyunTheme } from '../../utils/theme'
  */
 export default defineComponent({
   name: 'LingyunToolbars',
-  emits: ['back', 'close', 'trailing'],
+  emits: ['back', 'close', 'trailing', 'trailing-action'],
   props: {
     placement: {
       type: String,
@@ -152,6 +208,11 @@ export default defineComponent({
     showTrailing: {
       type: Boolean,
       default: true,
+    },
+    /** 右侧自定义按钮组；点击发 trailing-action，可配合 #trailing-menu 插槽弹自定义菜单 */
+    trailingButtons: {
+      type: Array as PropType<LingyunToolbarButton[]>,
+      default: () => [],
     },
     /** auto：Mac 宽屏显示交通灯。停靠左侧导航时由 app-page 关掉。 */
     showWindowControls: {
@@ -185,6 +246,12 @@ export default defineComponent({
       windowControls: false,
       largeExtraPx: LINGYUN_TOOLBAR_LARGE_EXTRA_PX,
       title2LineLargeExtraPx: LINGYUN_TOOLBAR_2LINE_LARGE_EXTRA_PX,
+      trailingMenuOpen: false,
+      trailingMenuAnchor: null as
+        | { top: number; left: number; width: number; height: number }
+        | null,
+      trailingMenuButton: null as LingyunToolbarButton | null,
+      trailingMenuIndex: -1,
       _onWindowResize: null as ((res?: unknown) => void) | null,
     }
   },
@@ -219,6 +286,16 @@ export default defineComponent({
     },
   },
   computed: {
+    themeSwitchEnabled(): boolean {
+      /* 只挂页面级固定顶栏，demo 里的嵌套预览不重复出现主题钮 */
+      return this.fixed && useLingyunThemeSwitchVisible().value
+    },
+    actionCount(): number {
+      return this.trailingButtons.length + (this.themeSwitchEnabled ? 1 : 0)
+    },
+    hasTrailingMenu(): boolean {
+      return !!this.$slots['trailing-menu']
+    },
     placementKey() {
       return this.placement === 'sheet' ? 'sheet' : 'standard'
     },
@@ -282,6 +359,19 @@ export default defineComponent({
       if (this.windowControls) leading += LINGYUN_TOOLBAR_WINDOW_CONTROLS_W_PX + this.gapPx
       return Math.max(leading, action) + this.gapPx
     },
+    /** 右侧按钮组实际占宽（单个 44，多个 36n + 18(n-1) + 20） */
+    actionGroupWidthPx(): number {
+      const count = this.actionCount
+      if (!count) return 0
+      return count === 1 ? 44 : 36 * count + 18 * (count - 1) + 20
+    },
+    /** 标题右侧要让出右侧按钮组，避免小程序里视觉中心偏右 */
+    titleRightInsetPx(): number {
+      const group = this.actionGroupWidthPx
+      return group
+        ? Math.max(this.titleInsetPx, group + this.gapPx)
+        : this.titleInsetPx
+    },
     largeStyle() {
       const extra =
         this.styleKey === 'title2LineLarge' ? this.title2LineLargeExtraPx : this.largeExtraPx
@@ -319,6 +409,7 @@ export default defineComponent({
       style['--ly-toolbar-center-shift'] = `${centerShift}px`
       style['--ly-toolbar-gap'] = `${this.gapPx}px`
       style['--ly-toolbar-title-inset'] = `${this.titleInsetPx}px`
+      style['--ly-toolbar-title-inset-right'] = `${this.titleRightInsetPx}px`
       return style
     },
     showInlineTitle() {
@@ -444,6 +535,52 @@ export default defineComponent({
     onTrailing() {
       this.$emit('trailing')
     },
+    trailingButtonId(button: LingyunToolbarButton, index: number): string {
+      return `ly-toolbar-action-${index}`
+    },
+    onTrailingButton(button: LingyunToolbarButton, index: number) {
+      if (button.disabled) return
+      this.$emit('trailing-action', { key: button.key, button, index })
+      if (!this.hasTrailingMenu) return
+      this.trailingMenuButton = button
+      this.trailingMenuIndex = index
+      const id = this.trailingButtonId(button, index)
+      // #ifdef H5
+      if (typeof document !== 'undefined') {
+        const el = document.getElementById(id)
+        const rect = el ? el.getBoundingClientRect() : null
+        if (rect) {
+          this.trailingMenuAnchor = {
+            top: rect.top,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height,
+          }
+          this.trailingMenuOpen = true
+          return
+        }
+      }
+      // #endif
+      uni
+        .createSelectorQuery()
+        .in(this)
+        .select(`#${id}`)
+        .boundingClientRect()
+        .exec((res) => {
+          const rect = res && res[0]
+          if (!rect) return
+          this.trailingMenuAnchor = {
+            top: rect.top,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height,
+          }
+          this.trailingMenuOpen = true
+        })
+    },
+    closeTrailingMenu() {
+      this.trailingMenuOpen = false
+    },
   },
 })
 </script>
@@ -552,6 +689,64 @@ $ly-toolbar-gap: 8px;
   justify-content: flex-end;
 }
 
+.lingyun-toolbars__action-group {
+  height: 44px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 0 10px;
+  flex-shrink: 0;
+  @include lingyun-glass-control;
+  border-radius: 9999px;
+}
+
+.lingyun-toolbars__action-group--single {
+  width: 44px;
+  padding: 0 4px;
+  gap: 0;
+}
+
+.lingyun-toolbars__group-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lingyun-toolbars__group-button--hover {
+  transform: scale(0.92);
+}
+
+.lingyun-toolbars__group-button--disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.lingyun-toolbars__group-text {
+  max-width: 36px;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 16px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--lingyun-label, #{$lingyun-label});
+}
+
+.lingyun-toolbars__menu-host {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  overflow: visible;
+}
+
 .lingyun-toolbars__windows {
   width: 41px;
   height: 22px;
@@ -585,7 +780,7 @@ $ly-toolbar-gap: 8px;
 .lingyun-toolbars__title-wrap {
   position: absolute;
   left: var(--ly-toolbar-title-inset, #{$ly-toolbar-action + $ly-toolbar-gap});
-  right: var(--ly-toolbar-title-inset, #{$ly-toolbar-action + $ly-toolbar-gap});
+  right: var(--ly-toolbar-title-inset-right, var(--ly-toolbar-title-inset, #{$ly-toolbar-action + $ly-toolbar-gap}));
   /* 与栏身设计内边距对齐，标题与 44 钮同一内容带垂直居中 */
   top: var(--ly-toolbar-pad-top, #{$ly-toolbar-bar-pad-top});
   bottom: var(--ly-toolbar-pad-bottom, #{$ly-toolbar-bar-pad-bottom});
@@ -712,8 +907,8 @@ $ly-toolbar-gap: 8px;
   flex-shrink: 0;
 
   &--glass {
-    /* 控件钮：小程序也用半透明 regular-bg，勿走 Alert 用的 0.94 实霜 */
-    @include lingyun-glass-surface;
+    /* 与右侧按钮组 / tabbar / Duo 工具组统一走控件级玻璃 */
+    @include lingyun-glass-control;
     border-radius: $lingyun-glass-radius-pill;
   }
 
@@ -728,16 +923,5 @@ $ly-toolbar-gap: 8px;
     opacity: 0.82;
     transform: scale(0.96);
   }
-}
-
-/* 暗黑圆钮：浅银霜半透明（写死 token，避免吃到 Alert overlay 高 alpha） */
-.lingyun-toolbars.theme-dark .lingyun-toolbars__action--glass {
-  background-color: #{$lingyun-glass-regular-bg-dark};
-  border: #{$lingyun-glass-hairline-dark};
-  box-shadow: #{$lingyun-glass-highlight-dark}, #{$lingyun-glass-shadow-dark};
-  /* #ifdef H5 || APP-PLUS */
-  backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
-  -webkit-backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
-  /* #endif */
 }
 </style>

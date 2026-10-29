@@ -4,13 +4,14 @@
     title="App Page"
     :nav-mode="navMode"
     :auto-bottom-inset="autoBottomInset"
+    :show-back="showBack"
     @duo-search="toastDuo('搜索')"
     @duo-overflow="toastDuo('更多')"
   >
     <view class="page">
       <view class="hero">
         <text class="hero__title">数据驱动页面壳</text>
-        <text class="hero__desc">一份 tabs 配置同时驱动手机底部 Tab 与宽屏左侧导航</text>
+        <text class="hero__desc">一份 tabs 配置驱动手机底部 Tab、宽屏左侧导航与 Duo 右侧栏</text>
       </view>
 
       <lingyun-list header="当前环境" header-type="nested">
@@ -26,18 +27,18 @@
           <lingyun-switch v-model="tabsEnabled" />
         </view>
         <text class="hint">
-          开启后底部 Tab 与左侧导航共用同一组数据；关闭后恢复组件目录。
+          开启后底部 Tab、宽屏左侧导航与 Duo 右侧栏共用同一组数据。只有一级 Tab 根页会显示导航；当前页是子页面，所以这里只显示返回和 duo-tools。
         </text>
       </lingyun-section>
 
       <lingyun-section title="布局模式" hint="app-page nav-mode">
         <lingyun-segmented-control v-model="navMode" :items="navModeItems" />
-        <text class="hint">auto 时窄屏底部 Tab、宽屏左侧导航。</text>
+        <text class="hint">auto 时窄屏底部 Tab、宽屏左侧导航、Duo 右侧栏。</text>
       </lingyun-section>
 
       <lingyun-section title="设备模拟" hint="仅 H5 预览；真机由设备识别方法注入">
         <lingyun-segmented-control v-model="deviceMode" :items="deviceModeItems" />
-        <text class="hint">内屏：顶部 Duo Toolbar + 底部 Duo Tab；外屏/内屏横屏：右侧全高栏；半折显示 40px 折痕安全带。</text>
+        <text class="hint">内屏：顶部 Duo Toolbar + 底部 Duo Tab；外屏/内屏横屏：右侧全高栏，duo-tools 在栏顶，Tab 只在根页显示；半折显示 40px 折痕安全带。</text>
       </lingyun-section>
 
       <lingyun-section title="本页覆盖" hint="pages['pages/demo/app-page']">
@@ -52,6 +53,10 @@
         <view class="row">
           <text class="row__label">自动底部留白</text>
           <lingyun-switch v-model="autoBottomInset" />
+        </view>
+        <view class="row">
+          <text class="row__label">显示返回按钮</text>
+          <lingyun-switch v-model="showBack" />
         </view>
       </lingyun-section>
 
@@ -71,13 +76,37 @@
     </template>
 
     <template #duo-tools>
-      <view class="duo-tool">
+      <view
+        class="duo-tool"
+        hover-class="duo-tool--hover"
+        :hover-start-time="20"
+        :hover-stay-time="70"
+        role="button"
+        aria-label="Compose"
+        @click="toastDuo('撰写')"
+      >
         <lingyun-icon type="compose" :size="22" color="label" />
       </view>
-      <view class="duo-tool">
+      <view
+        class="duo-tool"
+        hover-class="duo-tool--hover"
+        :hover-start-time="20"
+        :hover-stay-time="70"
+        role="button"
+        aria-label="Camera"
+        @click="toastDuo('相机')"
+      >
         <lingyun-icon type="camera" :size="22" color="label" />
       </view>
-      <view class="duo-tool">
+      <view
+        class="duo-tool"
+        hover-class="duo-tool--hover"
+        :hover-start-time="20"
+        :hover-stay-time="70"
+        role="button"
+        aria-label="More"
+        @click="toastDuo('更多')"
+      >
         <lingyun-icon type="more" :size="22" color="label" />
       </view>
     </template>
@@ -92,6 +121,7 @@
     getLingyunPageOverride,
     lingyun,
     resetLingyunPageConfig,
+    resolveLingyunFormFactor,
     resolveLingyunPageLayout,
     setLingyunLayoutOverride,
     setLingyunPageConfig,
@@ -123,6 +153,7 @@
 
   const navMode = ref('auto')
   const autoBottomInset = ref(true)
+  const showBack = ref(true)
   const windowWidth = ref(0)
   const POSE_BY_MODE: Record<string, LingyunDuoPose> = {
     'duo-inner': 'inner-portrait',
@@ -202,7 +233,15 @@
   }
 
   const layout = computed(() => {
-    const pose = POSE_BY_MODE[deviceMode.value]
+    const simulatedPose = POSE_BY_MODE[deviceMode.value]
+    /* 默认档跟随真实设备识别，避免 Duo 姿态下仍显示“底部 Tab” */
+    const native = resolveLingyunFormFactor(lingyun)
+    const pose = simulatedPose || (deviceMode.value === 'default' ? native.duoPose : '')
+    const formFactor = pose
+      ? 'duo'
+      : deviceMode.value === 'default'
+        ? native.formFactor
+        : undefined
     return resolveLingyunPageLayout({
       width: windowWidth.value,
       config: getLingyunPageConfig(),
@@ -211,7 +250,7 @@
       showTabbar: 'auto',
       navMode: navMode.value,
       safeArea: true,
-      formFactor: pose ? 'duo' : undefined,
+      formFactor,
       duoPose: pose,
     })
   })
@@ -312,6 +351,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 50%;
+  }
+
+  .duo-tool--hover {
+    transform: scale(0.92);
   }
 
   .split-detail {

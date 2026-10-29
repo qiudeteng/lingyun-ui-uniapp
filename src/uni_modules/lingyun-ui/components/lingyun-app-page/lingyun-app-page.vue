@@ -23,14 +23,19 @@
       :title="displayTitle"
       :show-back="isDuoSplit ? false : showBackEffective"
       :right-inset="duoTopRightInset"
+      :tools-visible="!!$slots['duo-tools'] || !!$slots.trailing || !!themeSwitchVisible"
+      :tools-single="!$slots['duo-tools'] && !$slots.trailing"
+      :leading-visible="!!$slots.leading"
       :glass-progress="glassProgress"
       @back="onBack"
     >
-      <template #leading>
+      <template v-if="$slots.leading" #leading>
         <slot name="leading" />
       </template>
-      <template #trailing>
-        <slot name="trailing" />
+      <template #tools>
+        <slot name="duo-tools" />
+        <slot v-if="!$slots['duo-tools']" name="trailing" />
+        <lingyun-theme-action v-if="themeSwitchVisible" :grouped="true" :icon-size="22" />
       </template>
     </lingyun-duo-toolbar>
 
@@ -46,18 +51,23 @@
       :show-grabber="showGrabberEffective"
       :show-trailing="showTrailing"
       :show-window-controls="navDocked || tabbarVisible ? false : 'auto'"
+      :trailing-buttons="trailingButtons"
       :fixed="true"
       :safe-area="safeArea"
       :glass-progress="glassProgress"
       @back="onBack"
       @close="onClose"
       @trailing="onTrailing"
+      @trailing-action="onTrailingAction"
     >
       <template #leading>
         <slot name="leading" />
       </template>
       <template #trailing>
         <slot name="trailing" />
+      </template>
+      <template v-if="$slots['trailing-menu']" #trailing-menu="{ button, index, close }">
+        <slot name="trailing-menu" :button="button" :index="index" :close="close" />
       </template>
     </lingyun-toolbars>
 
@@ -158,16 +168,22 @@
     <lingyun-duo-rail
       v-if="duoRailVisible"
       class="lingyun-app-page__duo-rail"
-      :items="tabbarItems"
+      :items="duoRailItems"
       :model-value="activeTabKey"
       :pose="duoPoseKey"
       :compact-tools="duoCompactTools"
+      :tools-visible="!!$slots['duo-tools'] || !!themeSwitchVisible"
+      :tools-single="!$slots['duo-tools']"
+      :show-back="duoRailShowBack"
+      :show-search="duoRailShowSearch"
       @change="onTabbarChange"
       @search="onDuoSearch"
       @overflow="onDuoOverflow"
+      @back="onBack"
     >
       <template #tools>
         <slot name="duo-tools" />
+        <lingyun-theme-action v-if="themeSwitchVisible" :grouped="true" :icon-size="22" />
       </template>
     </lingyun-duo-rail>
 
@@ -238,6 +254,7 @@ import {
   readLingyunWindowWidth,
 } from '../lingyun-toolbars/getLingyunNavSafeInset'
 import { useLingyunTheme } from '../../utils/theme'
+import { useLingyunThemeSwitchVisible } from '../../utils/themeSwitch'
 import { lingyun } from '../../utils/screen'
 import { resolveLingyunFormFactor } from '../../utils/layoutAdapter'
 import {
@@ -326,7 +343,7 @@ const LINGYUN_APP_PAGE_EMBEDDED = Symbol('lingyun-app-page-embedded')
 
 export default defineComponent({
   name: 'LingyunAppPage',
-  emits: ['back', 'close', 'trailing', 'scroll', 'tab-change', 'duo-search', 'duo-overflow'],
+  emits: ['back', 'close', 'trailing', 'trailing-action', 'scroll', 'tab-change', 'duo-search', 'duo-overflow'],
   props: {
     title: { type: String, default: '' },
     subtitle: { type: String, default: '' },
@@ -360,6 +377,15 @@ export default defineComponent({
     navMode: { type: String, default: 'auto' },
     /** 关掉后壳不加底部留白，但 CSS 变量与注入仍给出真实值 */
     autoBottomInset: { type: Boolean, default: true },
+    /** 关掉后壳不加顶部留白；仅被宿主页嵌入的页面使用 */
+    autoTopInset: { type: Boolean, default: true },
+    /** 顶栏右侧自定义按钮组；点击发 trailing-action */
+    trailingButtons: {
+      type: Array as PropType<
+        Array<{ key: string; icon?: string; label?: string; disabled?: boolean }>
+      >,
+      default: () => [],
+    },
     glassDistance: { type: Number, default: 56 },
   },
   data() {
@@ -440,6 +466,7 @@ export default defineComponent({
       bottomInsetPx,
       scrollLocked,
       topInsetPx,
+      themeSwitchVisible: useLingyunThemeSwitchVisible(),
       hostedPathRef: useLingyunHostedPath(),
       pageIntentRef: useLingyunPageNavIntent(),
     }
@@ -633,6 +660,17 @@ export default defineComponent({
         this.pageLayout.sidebarVisible
       )
     },
+    /** 一级 Tab 根页才在右侧栏显示 Tab / 搜索；独立页只有返回 */
+    duoRailItems() {
+      return this.isTabRoot ? this.tabbarItems : []
+    },
+    duoRailShowBack() {
+      return coerceTriFlag(this.showBack, !this.isTabRoot)
+    },
+    /** 搜索是可选入口：只有 tabbar.search=true 的 Tab 根页才显示 */
+    duoRailShowSearch() {
+      return this.isTabRoot && this.pageConfig.tabbar?.search === true
+    },
     duoPoseKey() {
       return this.pageLayout.layoutClass.replace(/^duo-/, '')
     },
@@ -773,7 +811,7 @@ export default defineComponent({
       // #endif
     },
     insetTop() {
-      if (!this.showToolbar) return '0px'
+      if (!this.showToolbar || !this.autoTopInset) return '0px'
       if (this.duoRailVisible) {
         return `${this.safeArea ? this.statusBarPx : 0}px`
       }
@@ -1289,6 +1327,9 @@ export default defineComponent({
     },
     onTrailing() {
       this.$emit('trailing')
+    },
+    onTrailingAction(payload: Record<string, unknown>) {
+      this.$emit('trailing-action', payload)
     },
   },
 })

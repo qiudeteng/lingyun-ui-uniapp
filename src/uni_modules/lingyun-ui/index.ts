@@ -7,6 +7,7 @@ import { installLingyunScreen } from './utils/screen'
 import { useLingyunTheme } from './utils/theme'
 // #ifdef H5
 import { installLingyunPageNav } from './components/lingyun-page-nav/mountLingyunPageNav'
+import { installLingyunH5Scrollbar } from './utils/h5Scrollbar'
 // #endif
 
 export * from './utils/feedback'
@@ -15,6 +16,10 @@ export * from './utils/pageNavAdapter'
 export * from './utils/pageConfig'
 export * from './utils/pageLayout'
 export * from './utils/theme'
+export * from './utils/themeSwitch'
+// #ifdef H5
+export * from './utils/h5Scrollbar'
+// #endif
 export {
   isLingyunWideScreen,
   lingyun,
@@ -45,6 +50,7 @@ export const lingyunUi: Plugin = {
     installLingyunFeedback(app)
     // #ifdef H5
     installLingyunPageNav(app)
+    installLingyunH5Scrollbar()
     // #endif
   },
 }

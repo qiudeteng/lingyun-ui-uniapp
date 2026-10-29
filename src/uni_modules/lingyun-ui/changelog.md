@@ -1,3 +1,17 @@
+## 1.0.35（2026-10-28）
+- `lingyun-duo-toolbar` 按官方 `Toolbar - Top - iPhone Duo` 重做布局：84 高，Leading 48、标题 17/22 左对齐、右侧 164×48 玻璃工具组（1~3 个 36×36，gap 18，左右 10），最右保留 134 给状态栏；空 Leading / 工具组不再额外占 12 间距。`leading` 插槽改为接管整个 Leading 区，提供后不再渲染默认返回钮。
+- `lingyun-app-page` 的 `duo-tools` 插槽同时供 Duo 内屏竖屏顶部工具组和右侧全高栏使用；`trailing` 在 Duo 下作为兼容回退，二者同时存在时优先 `duo-tools`。
+- `lingyun-duo-rail` 新增独立页模式：非一级 Tab 根页隐藏 Tab 组与搜索，在摄像头 / 状态栏下方显示返回钮；Tab 根页仍显示 Tab，搜索需配置 `tabbar.search = true`。工具组改为由 `tools-visible` 显式控制，修复微信小程序声明空 slot 时仍渲染空玻璃组、外屏横屏无工具仍显示「…」的问题。Tab 组保持 **48×210**（上下 padding 6），选中胶囊 **44×56**，首尾上下与左右均留 **2px**。
+- 搜索入口 `duo-search` 保留，但不再默认渲染；配置 `setLingyunPageConfig({ tabbar: { search: true } })` 后才显示。
+- 修复 Tab 二级 / 三级工作台被宿主页嵌入时顶部重复留白：工作台页通过 `auto-top-inset="false"` 取消自身顶部留白，顶部只由外层 `lingyun-app-page` 负责；普通页面顶部占位逻辑不变。
+- `lingyun-toolbars` 新增右侧自定义按钮组：`trailing-buttons` + `trailing-action` 事件；提供 `trailing-menu` 插槽（`{ button, index, close }`），点击按钮自动在下方弹出自定义菜单内容。1 个按钮为 44×44 圆钮，多个为 36×36 玻璃胶囊组。
+- 新增内置 `lingyun-theme-action`：`setLingyunThemeSwitchVisible(true)` 后进入工具栏右侧按钮组 / Duo 工具组，点击切换浅色 / 暗黑 / 自动；demo 已开启，不再使用页面右上角浮层。
+- `lingyun-app-page` 新增 `autoTopInset`（宿主页嵌入的工作台页关掉自身顶部留白）与 `trailingButtons` / `trailing-action` / `trailing-menu` 透传。
+- 宽屏（Pad / PC）无系统状态栏时顶部至少保留 **8px** 安全区，toolbar 不再贴顶。
+- 统一控件玻璃材质：`lingyun-toolbars` 返回 / 关闭钮、右侧按钮组、`lingyun-tabbars`、Duo 工具组和 Duo Tab 组都走 `lingyun-glass-control`；Duo 主题钮与 mobile 下表现一致。
+- 右侧按钮图标与返回钮同尺寸（标准 toolbar 28 / Duo 22）；标题右侧按实际按钮组宽度避让，小程序里不再被右侧按钮挤得偏右。
+- 修复 iPhone Duo 在小程序模拟器里被识别成 Android、且不进入 Duo 布局：机型或 UA 已包含 Duo / iPhone / iPad 时，`lingyun.os` 优先判为 `ios`；iOS 手机为折叠形态，或屏幕 / 窗口尺寸为 Duo 的 **466×678 / 669×951**（横竖均可）时，按 Duo 识别。半折姿态改用物理屏幕横竖判断，窗口变横也不会识别错。
+- 微信小程序默认启用 Duo 布局（此前 `MP-WEIXIN` 被强制回落到 mobile）；仍可用 `setLingyunDuoSupported(false)` 关闭。
 ## 1.0.34（2026-10-28）
 - 递增版本号，确保 uni-app 插件市场能识别 1.0.33 的 `lingyun-section #icon` 插槽更新；内容与 1.0.33 一致。
 ## 1.0.33 (2026-10-28)

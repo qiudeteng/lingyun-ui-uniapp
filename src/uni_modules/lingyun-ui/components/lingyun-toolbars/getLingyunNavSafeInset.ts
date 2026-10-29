@@ -31,6 +31,9 @@ export const LINGYUN_TOOLBAR_PAD_TOP_REGULAR_PX = 0
 /** iPad 栏身下内边距：54 − 44 */
 export const LINGYUN_TOOLBAR_PAD_BOTTOM_REGULAR_PX = 10
 
+/** 宽屏没有系统状态栏（H5 / PC 模拟器）时的最小顶部安全留白 */
+export const LINGYUN_TOOLBAR_REGULAR_TOP_SAFE_PX = 8
+
 /** iPad Leading / Trailing 间距 */
 export const LINGYUN_TOOLBAR_GAP_REGULAR_PX = 12
 
@@ -221,6 +224,8 @@ export function getLingyunNavLayout(
 
   if (regular) {
     barHeight = Math.max(barHeight, LINGYUN_TOOLBAR_BAR_REGULAR_PX)
+    /* 宽屏没有系统状态栏时也保留最小顶部安全区，避免 toolbar 贴顶 */
+    statusBarHeight = Math.max(statusBarHeight, LINGYUN_TOOLBAR_REGULAR_TOP_SAFE_PX)
   } else {
     // 窄屏保证能放下上下各 8 + 44 钮（border-box）→ 至少 60
     barHeight = Math.max(barHeight, designBarHeight, LINGYUN_TOOLBAR_BAR_MIN_PX)

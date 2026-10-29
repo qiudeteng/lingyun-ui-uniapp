@@ -1,5 +1,5 @@
 <template>
-  <lingyun-app-page :title="tabText" :show-back="false">
+  <lingyun-app-page :title="tabText" :show-back="false" :auto-top-inset="!embedded">
     <view class="page">
       <view :key="tabKey" class="workbench-body">
         <view class="hero">
@@ -36,6 +36,8 @@
 <script setup lang="ts">
   import { computed, nextTick, onMounted, ref, watch } from 'vue'
   import { onLoad, onShow } from '@dcloudio/uni-app'
+
+  defineProps<{ embedded?: boolean }>()
   import {
     findLingyunPageTab,
     getLingyunPageConfig,
