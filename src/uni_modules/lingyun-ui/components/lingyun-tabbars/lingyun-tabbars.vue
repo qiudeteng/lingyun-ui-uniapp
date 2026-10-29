@@ -146,6 +146,7 @@ export default defineComponent({
       _popTimer: null as ReturnType<typeof setTimeout> | null,
       _onResize: null as (() => void) | null,
       _lensRaf: null as number | null,
+      _settleTimer: null as ReturnType<typeof setTimeout> | null,
       _lensLast: 0,
       _center: null as SpringState | null,
       _lensWidth: null as SpringState | null,
@@ -297,6 +298,10 @@ export default defineComponent({
       clearTimeout(this._popTimer)
       this._popTimer = null
     }
+    if (this._settleTimer) {
+      clearTimeout(this._settleTimer)
+      this._settleTimer = null
+    }
     /* #ifdef H5 */
     const onResize = this._onResize
     if (onResize) window.removeEventListener('resize', onResize)
@@ -359,6 +364,25 @@ export default defineComponent({
       this.cancelFrame(this._lensRaf)
       this._lensRaf = null
     },
+    clearSettleTimer() {
+      if (this._settleTimer) {
+        clearTimeout(this._settleTimer)
+        this._settleTimer = null
+      }
+    },
+    /** 动画兜底：rAF 暂停、查询竞态或弹簧未收敛时，强制落到最新目标 */
+    armSettleTimer() {
+      this.clearSettleTimer()
+      this._settleTimer = setTimeout(() => {
+        this._settleTimer = null
+        if (!this._center || !this._lensWidth) return
+        this.stopLens()
+        this._center = { pos: this._targetCenter, vel: 0 }
+        this._lensWidth = { pos: this._restWidth, vel: 0 }
+        this._targetWidth = this._restWidth
+        this.paintLens()
+      }, 480)
+    },
     stepSpring(state: SpringState, target: number, stiffness: number, damping: number, dt: number) {
       const force = (target - state.pos) * stiffness
       const damp = -state.vel * damping
@@ -404,12 +428,14 @@ export default defineComponent({
         this._targetWidth = this._restWidth
         this.paintLens()
         this._lensRaf = null
+        this.clearSettleTimer()
         return
       }
       this._lensRaf = this.scheduleFrame((t) => this.tickLens(t))
     },
     snapLens(rect: LensRect) {
       this.stopLens()
+      this.clearSettleTimer()
       this._targetCenter = rect.left + rect.width / 2
       this._targetWidth = rect.width
       this._restWidth = rect.width
@@ -431,6 +457,7 @@ export default defineComponent({
       this._targetTop = rect.top
       this._targetH = rect.height
       this.indicator.visible = true
+      this.armSettleTimer()
       if (!this._lensRaf) {
         this._lensLast = 0
         this._lensRaf = this.scheduleFrame((t) => this.tickLens(t))
@@ -503,13 +530,21 @@ export default defineComponent({
           })
       })
     },
-    syncIndicator(options?: { liquid?: boolean }) {
+    syncIndicator(options?: { liquid?: boolean }, retry = 0) {
       const liquid = !!(options && options.liquid)
       const active = (this.mainItems || []).find((item) => this.isActive(item))
       if (!active) {
         this.stopLens()
+        this.clearSettleTimer()
         this.indicator.visible = false
         return
+      }
+      const expectedKey = String(active.key)
+      const stillCurrent = () => {
+        if (this.current === undefined || this.current === null || this.current === '') {
+          return true
+        }
+        return String(this.current) === expectedKey
       }
       this.$nextTick(() => {
         uni
@@ -522,7 +557,14 @@ export default defineComponent({
           .exec((res) => {
             const bar = res && res[0]
             const item = res && res[1]
-            if (!bar || !item || !item.width) return
+            if (!bar || !item || !item.width) {
+              /* 页面刚切换 / 节点还没挂好时查询可能为空，重试几次 */
+              if (retry < 3 && stillCurrent()) {
+                setTimeout(() => this.syncIndicator(options, retry + 1), 40 * (retry + 1))
+              }
+              return
+            }
+            if (!stillCurrent()) return
             const toRect = this.selectionRect(item, bar)
             const canFlow =
               liquid &&

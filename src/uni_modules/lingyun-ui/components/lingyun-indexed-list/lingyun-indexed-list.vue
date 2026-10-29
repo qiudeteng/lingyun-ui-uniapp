@@ -47,6 +47,7 @@
       @touchstart.stop="onTouchStart"
       @touchmove.stop.prevent="onTouchMove"
       @touchend.stop="onTouchEnd"
+      @touchcancel.stop="onTouchEnd"
       @mousedown.stop="onMouseDown"
       @mousemove.stop.prevent="onMouseMove"
       @mouseup.stop="onTouchEnd"
@@ -144,6 +145,7 @@ export default defineComponent({
       deep: true,
       handler() {
         this.setList()
+        this.$nextTick(() => this.measureMenu())
       },
     },
   },
@@ -152,6 +154,9 @@ export default defineComponent({
     this.isPC = this.detectPC()
     /* #endif */
     this.setList()
+    this.$nextTick(() => {
+      setTimeout(() => this.measureMenu(), 30)
+    })
   },
   methods: {
     setList() {
@@ -224,8 +229,11 @@ export default defineComponent({
       this.scrollViewId = id
     },
     pick(event: TouchEvent | MouseEvent) {
-      if (!this.itemHeight) return
-      const index = Math.floor((this.pointY(event) - this.menuTop) / this.itemHeight)
+      if (!this.itemHeight || !this.lists.length) return
+      const y = this.pointY(event)
+      if (!Number.isFinite(y)) return
+      const raw = Math.floor((y - this.menuTop) / this.itemHeight)
+      const index = Math.max(0, Math.min(this.lists.length - 1, raw))
       if (index === this.touchmoveIndex) return
       this.jumpTo(index)
     },
@@ -287,6 +295,15 @@ export default defineComponent({
 <style lang="scss">
 @import '../../styles/variables.scss';
 @import '../../styles/setting/_glass.scss';
+
+/* 微信自定义组件宿主节点默认没有高度，需让宿主跟随父级 flex 并撑满 */
+:host {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+}
 
 .lingyun-indexed-list {
   position: relative;
