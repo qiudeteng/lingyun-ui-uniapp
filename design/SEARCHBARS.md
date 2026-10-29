@@ -21,7 +21,7 @@
 | 符号 | 尺寸 | 说明 |
 |------|------|------|
 | Search Selected - Placeholder / Value | **402 × 76** | 整条；padding **0 / 28 / 28 / 28** |
-| Search Field | **346 × 48** | Regular Glass 胶囊 |
+| Search Field | **346 × 48** | 控件玻璃胶囊（`lingyun-glass-control`） |
 | Search with Focus（可选） | 286 + 12 + 48 | 字段 + 间距 + 取消圆钮 |
 | Search Selected - Typing | **402 × 394** | 键盘展开面板（首版不做） |
 
@@ -41,7 +41,7 @@
 
 ## 2. 行为与分层
 
-- 属于 **Liquid Glass 控件层**，默认 **固定底部** 悬浮，禁止实心底栏冒充。
+- 属于 **Liquid Glass 控件层**，默认 **固定底部** 悬浮，禁止实心底栏冒充。字段和取消圆钮使用 `lingyun-glass-control`，与 toolbar / tabbar 按钮共用材质；小程序无 blur 时保留控件底色与描边，不再走 `lingyun-glass-regular` 的近实底 fallback。
 - 默认始终展示（Placeholder：346 满宽），不依赖 Tab 切换才出现。
 - **同一条上的状态切换**：默认 Placeholder；聚焦后过渡到 Search with Focus（字段收窄 + 取消钮从右侧滑入）；取消 / 失焦再收回。不是两套组件。
 - 宽度变化必须有过渡（约 0.38s），禁止硬切造成抖动；「减少动态效果」时关闭过渡。
@@ -86,7 +86,7 @@
 
 ## 4. 自检
 
-- [ ] 底部悬浮玻璃胶囊，非实心底栏
+- [ ] 底部悬浮玻璃胶囊，字段 / 取消钮使用 `lingyun-glass-control`，非实心底栏
 - [ ] 整条接近 402×76，字段 346×48，padding 28pt
 - [ ] Placeholder：放大镜 + Search + 麦克风
 - [ ] 默认固定底部，不依赖点 Tab 才出现

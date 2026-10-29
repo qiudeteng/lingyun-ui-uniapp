@@ -433,10 +433,8 @@ $ly-search-cancel: $ly-search-field-h;
     padding: 0 $ly-search-field-pad-r 0 $ly-search-field-pad-l;
     gap: $ly-search-field-gap;
     box-sizing: border-box;
-    @include lingyun-glass-regular;
+    @include lingyun-glass-control;
     border-radius: $lingyun-glass-radius-pill;
-    box-shadow: var(--lingyun-glass-highlight, #{$lingyun-glass-highlight}),
-      var(--lingyun-glass-shadow-raised, #{$lingyun-glass-shadow-raised});
   }
 
   &__icon {
@@ -502,11 +500,9 @@ $ly-search-cancel: $ly-search-field-h;
   &__cancel {
     width: $ly-search-cancel;
     height: $ly-search-cancel;
-    @include lingyun-glass-regular;
+    @include lingyun-glass-control;
     border-radius: 50%;
     color: var(--lingyun-label, #{$lingyun-main-color});
-    box-shadow: var(--lingyun-glass-highlight, #{$lingyun-glass-highlight}),
-      var(--lingyun-glass-shadow-raised, #{$lingyun-glass-shadow-raised});
     transform: scale(0.84);
     opacity: 0;
     transition:
