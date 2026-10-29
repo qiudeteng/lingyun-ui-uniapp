@@ -12,6 +12,7 @@
     :z-index="zIndex"
     :instant-close="instantClose"
     @close="onClose"
+    @closed="onClosed"
   >
     <template #trigger="{ show, toggle }">
       <slot name="trigger" :show="show" :toggle="toggle" />
@@ -91,7 +92,7 @@ import {
  */
 export default defineComponent({
   name: 'LingyunMenu',
-  emits: ['update:show', 'update:modelValue', 'select', 'close'],
+  emits: ['update:show', 'update:modelValue', 'select', 'close', 'closed'],
   props: {
     show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
     modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
@@ -166,6 +167,9 @@ export default defineComponent({
     },
     onClose() {
       this.$emit('close')
+    },
+    onClosed() {
+      this.$emit('closed')
     },
   },
 })

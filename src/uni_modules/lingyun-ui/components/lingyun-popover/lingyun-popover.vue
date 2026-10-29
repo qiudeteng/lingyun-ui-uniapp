@@ -1,5 +1,24 @@
 <template>
-  <view class="lingyun-popover" :class="{ 'lingyun-popover--trigger-block': triggerBlock }">
+  <view
+    class="lingyun-popover"
+    :class="{
+      'lingyun-popover--trigger-block': triggerBlock,
+      'lingyun-popover--menu-active':
+        variant === 'menu' &&
+        mounted &&
+        !triggerBlock &&
+        placement !== 'left' &&
+        placement !== 'right' &&
+        phase !== '' &&
+        phase !== 'leave',
+      'lingyun-popover--menu-returning':
+        variant === 'menu' &&
+        phase === 'leave' &&
+        !triggerBlock &&
+        placement !== 'left' &&
+        placement !== 'right',
+    }"
+  >
     <view class="lingyun-popover__trigger">
       <slot name="trigger" :show="visible" :toggle="onTriggerClick" />
     </view>
@@ -20,7 +39,9 @@
             <view class="lingyun-popover__arrow-stroke" />
           </view>
           <view ref="panel" class="lingyun-popover__panel">
-            <slot />
+            <view class="lingyun-popover__content">
+              <slot />
+            </view>
           </view>
         </view>
       </view>
@@ -44,7 +65,9 @@
             <view class="lingyun-popover__arrow-stroke" />
           </view>
           <view ref="panel" class="lingyun-popover__panel">
-            <slot />
+            <view class="lingyun-popover__content">
+              <slot />
+            </view>
           </view>
         </view>
       </view>
@@ -70,6 +93,10 @@ import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
  * 会减去 windowTop，所以外部传入的 anchor 在 H5 要补回。
  */
 const LEAVE_MS = 240
+/* 菜单：从锚点长成玻璃水滴再收回，比普通浮层的缩放入场更长一点 */
+const MENU_LEAVE_MS = 340
+const MENU_ENTER_SCALE = 0.22
+const MENU_LEAVE_SCALE = 0.55
 const GAP = 8
 const ARROW_W = 22
 const ARROW_H = 14
@@ -103,7 +130,7 @@ function toDom(ref: unknown): DomLike | null {
 export default defineComponent({
   name: 'LingyunPopover',
   mixins: [mpOverlayHoldMixin],
-  emits: ['update:show', 'update:modelValue', 'close'],
+  emits: ['update:show', 'update:modelValue', 'close', 'closed'],
   props: {
     show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
     modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
@@ -150,6 +177,10 @@ export default defineComponent({
       openSeq: 0,
       panelH: 0,
       followRaf: 0,
+      anchorCenterX: 0,
+      anchorCenterY: 0,
+      anchorW: 0,
+      anchorH: 0,
     }
   },
   computed: {
@@ -191,34 +222,81 @@ export default defineComponent({
       return { left: o, top: edge }
     },
     liftStyle() {
-      /* 对齐 Alert：缩放在 lift，勿对玻璃 panel 做 opacity */
-      let scale = 1
-      if (this.phase === 'enter') scale = 1.16
-      else if (this.phase === 'leave') scale = 0.92
+      /*
+       * 普通浮层对齐 Alert：缩放在 lift，勿对玻璃 panel 做 opacity。
+       * 菜单有锚点矩形时，把面板起始帧直接映射成按钮中心的一颗圆：
+       * translate 到按钮中心 + scale(d/面板宽高)，再回到 translate(0,0) scale(1,1)。
+       */
+      const menu = this.variant === 'menu'
+      const menuAnchor = menu && this.anchorW > 0 && this.anchorH > 0
       const leaving = this.phase === 'leave'
-      /* 缩放原点放在箭头尖（指向点），缩放过程中箭头始终贴着锚点 */
+      const active = this.phase === 'enter' || leaving
       const tip = `${this.arrowOffset + ARROW_W / 2}px`
       const place = this.resolvedPlace
-      return {
+      let transform = 'scale(1, 1)'
+      let transformOrigin =
+        place === 'top'
+          ? `${tip} 100%`
+          : place === 'left'
+            ? `100% ${tip}`
+            : place === 'right'
+              ? `0 ${tip}`
+              : `${tip} 0`
+
+      if (menuAnchor) {
+        const d = Math.max(48, Math.min(72, Math.max(this.anchorW, this.anchorH)))
+        const sx = active && this.panelWidth > 0 ? d / this.panelWidth : 1
+        const sy = active ? (this.panelH > 0 ? d / this.panelH : sx) : 1
+        const tx = active ? this.anchorCenterX - this.panelLeft - d / 2 : 0
+        const ty = active ? this.anchorCenterY - this.panelTop - d / 2 : 0
+        transform = `translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`
+        transformOrigin = '0 0'
+      } else {
+        let scaleX = 1
+        let scaleY = 1
+        if (menu) {
+          if (this.phase === 'enter') {
+            const scale = this.menuScale(MENU_ENTER_SCALE)
+            scaleX = scale.x
+            scaleY = scale.y
+          } else if (leaving) {
+            const scale = this.menuScale(MENU_LEAVE_SCALE)
+            scaleX = scale.x
+            scaleY = scale.y
+          }
+        } else if (this.phase === 'enter') {
+          scaleX = 1.16
+          scaleY = 1.16
+        } else if (leaving) {
+          scaleX = 0.92
+          scaleY = 0.92
+        }
+        transform = `scale(${scaleX}, ${scaleY})`
+      }
+
+      const transition = this.noTrans
+        ? 'none'
+        : leaving
+          ? menu
+            ? 'transform 0.2s cubic-bezier(0.4, 0, 0.8, 0.6), opacity 0.08s ease-in 0.18s'
+            : 'transform 0.22s cubic-bezier(0.4, 0, 1, 1)'
+          : menu
+            ? 'transform 0.46s cubic-bezier(0.22, 1.32, 0.36, 1)'
+            : 'transform 0.42s cubic-bezier(0.32, 0.72, 0, 1)'
+      const style: Record<string, string> = {
         top: `${this.panelTop}px`,
         left: `${this.panelLeft}px`,
         width: `${this.panelWidth}px`,
         '--ax': `${this.arrowOffset}px`,
-        transform: `scale(${scale})`,
-        transformOrigin:
-          place === 'top'
-            ? `${tip} 100%`
-            : place === 'left'
-              ? `100% ${tip}`
-              : place === 'right'
-                ? `0 ${tip}`
-                : `${tip} 0`,
-        transition: this.noTrans
-          ? 'none'
-          : leaving
-            ? 'transform 0.22s cubic-bezier(0.4, 0, 1, 1)'
-            : 'transform 0.42s cubic-bezier(0.32, 0.72, 0, 1)',
+        /* 水滴起始帧用椭圆圆角补偿非等比缩放，视觉上仍是正圆 */
+        '--menu-rx': `${this.panelWidth / 2}px`,
+        '--menu-ry': `${(this.panelH > 0 ? this.panelH : this.panelWidth) / 2}px`,
+        transform,
+        transformOrigin,
+        transition,
       }
+      if (menu) style.opacity = leaving ? '0' : '1'
+      return style
     },
   },
   watch: {
@@ -235,6 +313,14 @@ export default defineComponent({
     this.unbindFollow()
   },
   methods: {
+    /** 菜单水滴：起始缩放按面板短边折算，让不同长宽的面板都从近似正圆长出来 */
+    menuScale(base: number): { x: number; y: number } {
+      const w = this.panelWidth
+      const h = this.panelH
+      if (!(w > 0) || !(h > 0)) return { x: base, y: base }
+      const short = Math.min(w, h)
+      return { x: (base * short) / w, y: (base * short) / h }
+    },
     /** H5：遮罩挡不住滚轮 / 惯性滚动，打开期间页面或任意容器滚动、窗口缩放时重新贴锚点 */
     bindFollow() {
       // #ifdef H5
@@ -390,6 +476,10 @@ export default defineComponent({
       const along = this.showArrow ? ARROW_H + TIP_GAP : GAP
 
       if (!trigger || typeof trigger.width !== 'number' || !(trigger.width > 0) || trigger.top == null) {
+        this.anchorCenterX = 0
+        this.anchorCenterY = 0
+        this.anchorW = 0
+        this.anchorH = 0
         this.resolvedPlace = 'bottom'
         this.panelTop = Math.round(vh * 0.28)
         this.panelLeft = 16
@@ -402,6 +492,14 @@ export default defineComponent({
       const anchorTop = trigger.top
       const anchorWidth = trigger.width
       const anchorHeight = trigger.height ?? 0
+
+      this.anchorCenterX = anchorLeft + anchorWidth / 2
+      this.anchorCenterY = anchorTop + anchorHeight / 2
+      this.anchorW = anchorWidth
+      this.anchorH = anchorHeight
+      /* 菜单最终面板覆盖触发按钮：按钮被菜单“吃掉”，不再留一条空位 */
+      const verticalAlong =
+        !this.showArrow && this.variant === 'menu' ? -anchorHeight : along
 
       const width = this.resolvePanelWidth(anchorWidth, vw)
       const allowed: string[] = ['top', 'bottom', 'left', 'right']
@@ -433,11 +531,21 @@ export default defineComponent({
         return
       }
 
-      let left = anchorLeft + anchorWidth / 2 - this.alignTip(width)
+      let left: number
+      if (this.variant === 'menu' && !this.showArrow) {
+        /* 菜单贴按钮的左上角或右上角：按钮偏左时左对齐，偏右时右对齐 */
+        const roomRight = vw - (anchorLeft + anchorWidth)
+        left =
+          roomRight >= anchorLeft
+            ? anchorLeft
+            : anchorLeft + anchorWidth - width
+      } else {
+        left = anchorLeft + anchorWidth / 2 - this.alignTip(width)
+      }
       left = Math.max(12, Math.min(left, vw - width - 12))
 
-      const below = anchorTop + anchorHeight + along
-      const above = anchorTop - along - height
+      const below = anchorTop + anchorHeight + verticalAlong
+      const above = anchorTop - verticalAlong - height
       const roomBelow = vh - 12 - (below + height)
       const roomAbove = above - 12
       if (place === 'bottom' && roomBelow < 0 && roomAbove > roomBelow) place = 'top'
@@ -521,23 +629,29 @@ export default defineComponent({
       this.clearTimers()
       this.unbindFollow()
       this.openSeq++
+      const wasMounted = this.mounted
       if (!this.mounted || this.phase === 'measure') {
         this.mounted = false
         this.phase = ''
+        if (wasMounted) this.$emit('closed')
         return
       }
       if (this.instantClose) {
         this.mounted = false
         this.phase = ''
         this.panelH = 0
+        this.$emit('closed')
         return
       }
+      /* 进场途中被关掉也走退场过渡，避免水滴从起始尺寸直接跳走 */
+      this.noTrans = false
       this.phase = 'leave'
       this.leaveTimer = setTimeout(() => {
         this.mounted = false
         this.phase = ''
         this.leaveTimer = null
-      }, LEAVE_MS)
+        this.$emit('closed')
+      }, this.variant === 'menu' ? MENU_LEAVE_MS : LEAVE_MS)
     },
   },
 })
@@ -554,6 +668,31 @@ export default defineComponent({
 
 .lingyun-popover__trigger {
   display: inline-flex;
+  transition: opacity 0.12s ease;
+}
+
+/* 菜单打开期间触发按钮被菜单“吃掉”，关闭动画结束后再恢复 */
+.lingyun-popover--menu-active .lingyun-popover__trigger {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* 关闭时菜单几乎完全消失后，按钮再淡入；不做下挂小水滴 */
+@keyframes lingyun-popover-menu-return {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.lingyun-popover--menu-returning .lingyun-popover__trigger {
+  animation: lingyun-popover-menu-return 0.08s ease-out 0.26s both;
+  transform-origin: 50% 50%;
 }
 
 .lingyun-popover--trigger-block,
@@ -731,7 +870,80 @@ $popover-hairline-dark: rgba(166, 166, 166, 0.45);
 .lingyun-popover--menu .lingyun-popover__panel {
   border-radius: 32px;
   padding: 10px;
+  overflow: hidden;
 }
+
+.lingyun-popover__content {
+  min-width: 0;
+}
+
+/*
+ * Menu 入场对齐 iOS 27：面板从按钮位置长成一颗玻璃水滴，再收成 32 圆角；
+ * 内容晚一步淡入并去掉模糊。圆角 200 在 250 宽面板上会裁成半圆端，形成水滴轮廓。
+ */
+.lingyun-popover--menu .lingyun-popover__content {
+  transform-origin: 50% 0;
+}
+
+.lingyun-popover--menu.lingyun-popover--enter .lingyun-popover__panel {
+  border-radius: var(--menu-rx, 200px) / var(--menu-ry, 200px);
+  transition: none;
+}
+
+.lingyun-popover--menu.lingyun-popover--open .lingyun-popover__panel {
+  border-radius: 32px;
+  transition: border-radius 0.46s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.lingyun-popover--menu.lingyun-popover--leave .lingyun-popover__panel {
+  border-radius: var(--menu-rx, 200px) / var(--menu-ry, 200px);
+  box-shadow: none;
+  transition: border-radius 0.2s cubic-bezier(0.4, 0, 0.8, 0.6);
+}
+
+.lingyun-popover--menu.lingyun-popover--enter .lingyun-popover__content {
+  opacity: 0;
+  transform: scale(1.03);
+  transition: none;
+}
+
+.lingyun-popover--menu.lingyun-popover--open .lingyun-popover__content {
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity 0.22s ease-out 0.12s,
+    transform 0.4s cubic-bezier(0.22, 1.08, 0.36, 1) 0.04s;
+}
+
+.lingyun-popover--menu.lingyun-popover--leave .lingyun-popover__content {
+  opacity: 0;
+  transform: scale(0.985);
+  transition:
+    opacity 0.14s ease-in,
+    transform 0.2s ease-in;
+}
+
+/* #ifdef H5 */
+.lingyun-popover--menu.lingyun-popover--enter .lingyun-popover__content {
+  filter: blur(10px);
+}
+
+.lingyun-popover--menu.lingyun-popover--open .lingyun-popover__content {
+  filter: blur(0);
+  transition:
+    opacity 0.22s ease-out 0.12s,
+    transform 0.4s cubic-bezier(0.22, 1.08, 0.36, 1) 0.04s,
+    filter 0.3s ease-out 0.08s;
+}
+
+.lingyun-popover--menu.lingyun-popover--leave .lingyun-popover__content {
+  filter: blur(6px);
+  transition:
+    opacity 0.14s ease-in,
+    transform 0.2s ease-in,
+    filter 0.16s ease-in;
+}
+/* #endif */
 
 .lingyun-popover__root.theme-dark .lingyun-popover__panel {
   border: #{$lingyun-glass-hairline-dark};

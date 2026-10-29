@@ -12,6 +12,11 @@
 - 右侧按钮图标与返回钮同尺寸（标准 toolbar 28 / Duo 22）；标题右侧按实际按钮组宽度避让，小程序里不再被右侧按钮挤得偏右。
 - 修复 iPhone Duo 在小程序模拟器里被识别成 Android、且不进入 Duo 布局：机型或 UA 已包含 Duo / iPhone / iPad 时，`lingyun.os` 优先判为 `ios`；iOS 手机为折叠形态，或屏幕 / 窗口尺寸为 Duo 的 **466×678 / 669×951**（横竖均可）时，按 Duo 识别。半折姿态改用物理屏幕横竖判断，窗口变横也不会识别错。
 - 微信小程序默认启用 Duo 布局（此前 `MP-WEIXIN` 被强制回落到 mobile）；仍可用 `setLingyunDuoSupported(false)` 关闭。
+- `lingyun-popover` 的 `variant="menu"` 改为 iOS 27 菜单材质化动效：从触发按钮中心、原位置长出一颗 48–72px 的玻璃水滴（按按钮短边取），点击后按钮立即隐藏；面板按按钮左右可用空间自动贴左上角或右上角，不再水平居中在按钮下面，覆盖按钮原来的位置。面板按锚点矩形做 translate + scale 映射，圆角起始帧用椭圆半径补偿非等比缩放，视觉为正圆，落定 32 圆角并轻微回弹，约 0.46s。内容晚约 0.1s 淡入，H5 同时从 `blur(10px)` 清晰化。关闭时内容先淡出，面板反向收缩并淡出，菜单几乎完全消失后按钮再淡入；不做下挂小水滴（异形融合需要画布，Web / 小程序暂不实现）。`lingyun-menu`、`lingyun-toolbars #trailing-menu`、宽屏二级菜单共用；`lingyun-popover` 新增 `closed` 事件（退场动画结束、浮层卸载后触发）。
+- `lingyun-theme-action` 新增 `menu-open` / `menu-closed` 事件；`lingyun-toolbars` 与 `lingyun-app-page` 的 Duo 顶部 / 右侧工具组在主题菜单打开到退场结束期间整体隐去，`closed` 后再恢复，避免玻璃胶囊从菜单边缘漏出或提前盖住按钮。
+- `lingyun-tabbars` 选中透镜改为「中心位移 + 宽度延迟弹簧」，选中时外扩 4×2 并弹一下图标（可关 `haptic`）；Tab 指示器增加重试与 480ms 兜底，修复偶发图标变蓝而背景没跟上的问题。
+- 修复 `lingyun-indexed-list` 在微信自定义组件宿主下高度失效（只显示 A/B）：宿主节点改为 flex 撑满，字母条预测量并补 `touchcancel` 与越界吸附。
+- `lingyun-search-bar` 的搜索字段与取消圆钮统一走 `lingyun-glass-control`，去掉额外的 raised 阴影，和 toolbar / tabbar 玻璃材质一致。
 ## 1.0.34（2026-10-28）
 - 递增版本号，确保 uni-app 插件市场能识别 1.0.33 的 `lingyun-section #icon` 插槽更新；内容与 1.0.33 一致。
 ## 1.0.33 (2026-10-28)

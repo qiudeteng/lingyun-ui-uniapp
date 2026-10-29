@@ -32,7 +32,14 @@
       >
         <lingyun-icon type="more" :size="26" color="label" />
       </view>
-      <view v-else-if="toolsAllowed" class="lingyun-duo-rail__tools" :class="{ 'lingyun-duo-rail__tools--single': toolsSingle }">
+      <view
+        v-else-if="toolsAllowed"
+        class="lingyun-duo-rail__tools"
+        :class="{
+          'lingyun-duo-rail__tools--single': toolsSingle,
+          'lingyun-duo-rail__tools--hidden': toolsHidden,
+        }"
+      >
         <slot name="tools" />
       </view>
     </view>
@@ -148,6 +155,8 @@ export default defineComponent({
     },
     /** 仅一个工具项时收成 48×48 圆钮 */
     toolsSingle: { type: Boolean, default: false },
+    /** 主题菜单打开期间隐去工具组，避免玻璃胶囊从菜单边缘漏出 */
+    toolsHidden: { type: Boolean, default: false },
     /** 独立页（非一级 Tab 根页）在摄像头 / 状态栏下方显示返回 */
     showBack: { type: Boolean, default: false },
     /** 一级 Tab 根页显示搜索；普通子页只有返回 */
@@ -395,6 +404,12 @@ export default defineComponent({
   padding: 10px 0;
   @include lingyun-glass-control;
   border-radius: 9999px;
+  transition: opacity 0.12s ease;
+}
+
+.lingyun-duo-rail__tools--hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .lingyun-duo-rail__tools--single {

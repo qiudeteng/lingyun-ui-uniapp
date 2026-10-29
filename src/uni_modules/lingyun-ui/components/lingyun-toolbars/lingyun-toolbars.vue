@@ -63,13 +63,22 @@
         </slot>
       </view>
 
-      <view class="lingyun-toolbars__trailing">
+      <view
+        class="lingyun-toolbars__trailing"
+        :class="{ 'lingyun-toolbars__trailing--menu-open': themeMenuMounted || trailingMenuMounted }"
+      >
         <view
           v-if="actionCount"
           class="lingyun-toolbars__action-group"
           :class="{ 'lingyun-toolbars__action-group--single': actionCount === 1 }"
         >
-          <lingyun-theme-action v-if="themeSwitchEnabled" :grouped="true" :icon-size="28" />
+          <lingyun-theme-action
+            v-if="themeSwitchEnabled"
+            :grouped="true"
+            :icon-size="28"
+            @menu-open="onThemeMenuOpen"
+            @menu-closed="onThemeMenuClosed"
+          />
           <view
             v-for="(button, index) in trailingButtons"
             :id="trailingButtonId(button, index)"
@@ -120,6 +129,7 @@
       variant="menu"
       mask-transparent
       :z-index="1200"
+      @closed="onTrailingMenuClosed"
     >
       <slot
         name="trailing-menu"
@@ -247,6 +257,8 @@ export default defineComponent({
       largeExtraPx: LINGYUN_TOOLBAR_LARGE_EXTRA_PX,
       title2LineLargeExtraPx: LINGYUN_TOOLBAR_2LINE_LARGE_EXTRA_PX,
       trailingMenuOpen: false,
+      trailingMenuMounted: false,
+      themeMenuMounted: false,
       trailingMenuAnchor: null as
         | { top: number; left: number; width: number; height: number }
         | null,
@@ -556,6 +568,7 @@ export default defineComponent({
             width: rect.width,
             height: rect.height,
           }
+          this.trailingMenuMounted = true
           this.trailingMenuOpen = true
           return
         }
@@ -575,11 +588,21 @@ export default defineComponent({
             width: rect.width,
             height: rect.height,
           }
+          this.trailingMenuMounted = true
           this.trailingMenuOpen = true
         })
     },
     closeTrailingMenu() {
       this.trailingMenuOpen = false
+    },
+    onTrailingMenuClosed() {
+      this.trailingMenuMounted = false
+    },
+    onThemeMenuOpen() {
+      this.themeMenuMounted = true
+    },
+    onThemeMenuClosed() {
+      this.themeMenuMounted = false
     },
   },
 })
@@ -687,6 +710,13 @@ $ly-toolbar-gap: 8px;
 
 .lingyun-toolbars__trailing {
   justify-content: flex-end;
+  transition: opacity 0.12s ease;
+}
+
+/* 菜单打开期间整个右侧操作区隐去，避免玻璃胶囊或其它按钮从菜单边缘漏出来 */
+.lingyun-toolbars__trailing--menu-open {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .lingyun-toolbars__action-group {
@@ -717,6 +747,7 @@ $ly-toolbar-gap: 8px;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  transition: opacity 0.12s ease;
 }
 
 .lingyun-toolbars__group-button--hover {

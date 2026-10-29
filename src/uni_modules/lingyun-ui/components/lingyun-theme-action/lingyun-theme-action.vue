@@ -6,6 +6,7 @@
     mask-transparent
     :z-index="1200"
     @select="onThemeSelect"
+    @closed="onMenuClosed"
   >
     <template #trigger="{ toggle }">
       <view
@@ -35,6 +36,7 @@ import { useLingyunTheme, type LingyunThemePreference } from '../../utils/theme'
  */
 export default defineComponent({
   name: 'LingyunThemeAction',
+  emits: ['menu-open', 'menu-closed'],
   props: {
     grouped: { type: Boolean, default: false },
     iconSize: { type: [Number, String], default: 20 },
@@ -43,6 +45,11 @@ export default defineComponent({
     return {
       open: false,
     }
+  },
+  watch: {
+    open(val: boolean) {
+      if (val) this.$emit('menu-open')
+    },
   },
   computed: {
     theme() {
@@ -79,6 +86,9 @@ export default defineComponent({
         this.theme.setPreference(key)
       }
       this.open = false
+    },
+    onMenuClosed(): void {
+      this.$emit('menu-closed')
     },
   },
 })

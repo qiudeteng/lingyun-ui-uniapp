@@ -29,7 +29,10 @@
       <view
         v-if="showTools"
         class="lingyun-duo-toolbar__tools"
-        :class="{ 'lingyun-duo-toolbar__tools--single': toolsSingle }"
+        :class="{
+          'lingyun-duo-toolbar__tools--single': toolsSingle,
+          'lingyun-duo-toolbar__tools--hidden': toolsHidden,
+        }"
       >
         <slot name="tools" />
         <slot name="trailing" />
@@ -81,6 +84,8 @@ export default defineComponent({
     },
     /** 仅一个工具项时收成 48×48 圆钮 */
     toolsSingle: { type: Boolean, default: false },
+    /** 主题菜单打开期间隐去工具组，避免玻璃胶囊从菜单边缘漏出 */
+    toolsHidden: { type: Boolean, default: false },
     /** 0 全透明，1 满液态玻璃 */
     glassProgress: { type: Number, default: 0 },
   },
@@ -189,6 +194,12 @@ export default defineComponent({
   padding: 0 10px;
   @include lingyun-glass-control;
   border-radius: 9999px;
+  transition: opacity 0.12s ease;
+}
+
+.lingyun-duo-toolbar__tools--hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .lingyun-duo-toolbar__tools--single {

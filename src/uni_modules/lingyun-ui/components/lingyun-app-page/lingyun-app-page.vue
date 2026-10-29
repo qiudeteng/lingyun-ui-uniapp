@@ -27,6 +27,7 @@
       :tools-single="!$slots['duo-tools'] && !$slots.trailing"
       :leading-visible="!!$slots.leading"
       :glass-progress="glassProgress"
+      :tools-hidden="duoToolsMenuMounted"
       @back="onBack"
     >
       <template v-if="$slots.leading" #leading>
@@ -35,7 +36,13 @@
       <template #tools>
         <slot name="duo-tools" />
         <slot v-if="!$slots['duo-tools']" name="trailing" />
-        <lingyun-theme-action v-if="themeSwitchVisible" :grouped="true" :icon-size="22" />
+        <lingyun-theme-action
+          v-if="themeSwitchVisible"
+          :grouped="true"
+          :icon-size="22"
+          @menu-open="duoToolsMenuMounted = true"
+          @menu-closed="duoToolsMenuMounted = false"
+        />
       </template>
     </lingyun-duo-toolbar>
 
@@ -174,6 +181,7 @@
       :compact-tools="duoCompactTools"
       :tools-visible="!!$slots['duo-tools'] || !!themeSwitchVisible"
       :tools-single="!$slots['duo-tools']"
+      :tools-hidden="duoRailToolsMenuMounted"
       :show-back="duoRailShowBack"
       :show-search="duoRailShowSearch"
       @change="onTabbarChange"
@@ -183,7 +191,13 @@
     >
       <template #tools>
         <slot name="duo-tools" />
-        <lingyun-theme-action v-if="themeSwitchVisible" :grouped="true" :icon-size="22" />
+        <lingyun-theme-action
+          v-if="themeSwitchVisible"
+          :grouped="true"
+          :icon-size="22"
+          @menu-open="duoRailToolsMenuMounted = true"
+          @menu-closed="duoRailToolsMenuMounted = false"
+        />
       </template>
     </lingyun-duo-rail>
 
@@ -405,6 +419,9 @@ export default defineComponent({
       pageEntering: false,
       /** 横向 swipe 确认后临时关 scroll-y，避免 iOS 斜滑带动页面上下晃 */
       bodyScrollY: true,
+      /** Duo 顶部 / 右侧工具栏的主题菜单打开期间隐去工具组，避免玻璃胶囊从菜单边缘漏出 */
+      duoToolsMenuMounted: false,
+      duoRailToolsMenuMounted: false,
       /** H5：顶部插槽目标节点出现后再传送 */
       navHeaderReady: false,
       _scrollSettleTimer: null as ReturnType<typeof setTimeout> | null,
