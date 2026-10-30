@@ -1,6 +1,6 @@
 # 凌云UI
 
-凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.38**，变更见 [`changelog.md`](./changelog.md)。
+凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.39**，变更见 [`changelog.md`](./changelog.md)。
 
 📖 [使用手册](https://lingyun.xinyicanyin.com/)（组件用法、属性、示例；右侧手机框实时预览）
 
@@ -49,7 +49,7 @@ const { confirm } = await uni.showLingyunAlert({ title: '删除？', showCancel:
 
 ## 宽屏
 
-窗口宽度 **≥ 690** 时，页面左侧停靠导航。未配置全局 tabs 时完整目录宽 **220**；配置 tabs 后（iPad / PC）收窄为 **84** 悬浮玻璃窄栏，图标在上、文字在下，玻璃栏通高、四周各留 8。页面内容背景经左侧安全区铺满整屏并从玻璃下方透出：演示页 `.page` 已内置；其他内容根节点加 `.lingyun-page-safe-left`（需在 `lingyun-app-page` 内）；也可将背景配在 `lingyun-app-page` 根节点。全局 tabs 支持 `children` 二级菜单，二级项还可再带 `children`：二级是分组卡片标题，三级是卡片按钮，只有二级菜单时渲染无标题卡片；宽屏左侧（Web / 小程序一致）点击父项用 `lingyun-menu` 弹出（分组标题分隔），底部 / Duo 点击父项进入固定工作台页（`workspaceUrl?tab=<key>`）。手机仍用底部 Tab。折叠屏展开（如 OPPO Find 692、717×781）走 iPad/PC 窄栏；手机竖屏仍是单栏。顶栏和内容区跟随 `--lingyun-page-nav-width`，不会压住导航。
+窗口宽度 **≥ 690** 时，页面左侧停靠导航。未配置全局 tabs 时完整目录宽 **220**；配置 tabs 后（iPad / PC）收窄为 **84** 通高窄栏，图标在上、文字在下。整列铺满左侧区域（无外边距、无圆角、无侧边线），底色与内容卡片相同的 grouped 背景，叠加固定的顶栏同款 tint（浅色 `#fff`×0.42 / 暗黑 ×0.14，不随滚动变化），滚动后与顶栏玻璃同亮度；侧栏下方没有滚动内容，不做 blur。`.lingyun-page-safe-left` 保留兼容。全局 tabs 支持 `children` 二级菜单，二级项还可再带 `children`：二级是分组卡片标题，三级是卡片按钮，只有二级菜单时渲染无标题卡片；宽屏左侧（Web / 小程序一致）点击父项用 `lingyun-menu` 弹出（分组标题分隔），底部 / Duo 点击父项进入固定工作台页（`workspaceUrl?tab=<key>`）。手机仍用底部 Tab。折叠屏展开（如 OPPO Find 692、717×781）走 iPad/PC 窄栏；手机竖屏仍是单栏。顶栏和内容区跟随 `--lingyun-page-nav-width`，不会压住导航。
 
 | 端 | 行为 |
 |----|------|
@@ -154,7 +154,7 @@ configureLingyunLayout({
 
 ```
 lingyun-ui/
-├── package.json          # 1.0.38
+├── package.json          # 1.0.39
 ├── readme.md
 ├── changelog.md
 ├── index.ts              # app.use(lingyunUi)

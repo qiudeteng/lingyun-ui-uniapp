@@ -3,6 +3,7 @@
     class="lingyun-page-nav"
     :class="[themeRootClass, { 'lingyun-page-nav--rail': railMode }]"
   >
+    <!-- 窄栏通高背景层：实底 + 固定 tint，不随滚动变化 -->
     <view v-if="railMode" class="lingyun-page-nav__rail-panel" />
     <!-- 二级菜单打开时只遮住导航右侧，左侧其它 Tab 仍可直接点击切换 -->
     <!-- #ifdef MP-WEIXIN -->
@@ -1281,25 +1282,27 @@ export default defineComponent({
   align-items: center;
 }
 
-/* 全局 tabs 驱动的窄侧栏：图标在上、文字在下 */
+/* 全局 tabs 驱动的窄侧栏：图标在上、文字在下；实底 + 顶栏同款玻璃 tint */
 .lingyun-page-nav--rail {
   position: relative;
-  background-color: transparent;
+  /* 与内容卡片同色，顶栏玻璃压在卡片上时两边亮度一致 */
+  background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
+  /* 与顶栏玻璃直接相接，不要侧边线，否则顶部连接处出现一道竖线 */
   border-right: 0;
 }
 
-/* 整列悬浮玻璃栏：通高，四周留 8px 安全区；页面背景从玻璃下方透出 */
 .lingyun-page-nav--rail .lingyun-page-nav__rail-panel {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  bottom: 8px;
-  left: 8px;
+  inset: 0;
   z-index: 0;
-  border-radius: 28px;
   pointer-events: none;
-  @include lingyun-glass-control;
-  border-radius: 28px;
+  border-radius: 0;
+  /* 固定材质：实底之上叠一层顶栏满玻璃的 tint，不随滚动变化 */
+  background-color: rgba(255, 255, 255, 0.42);
+}
+
+.lingyun-page-nav--rail.theme-dark .lingyun-page-nav__rail-panel {
+  background-color: rgba(255, 255, 255, 0.14);
 }
 
 .lingyun-page-nav--rail .lingyun-page-nav__head,

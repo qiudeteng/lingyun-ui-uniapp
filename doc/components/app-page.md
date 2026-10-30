@@ -83,7 +83,7 @@ setLingyunPageConfig({
 ```
 
 - 选中态从当前路由推导；详情页可用 `match` 归入某个 Tab。
-- iPad（690–1199）与 PC（≥1200）配置全局 tabs 后，左侧导航收窄为 **84** 悬浮玻璃窄栏，图标在上、文字在下；玻璃栏通高、四周各留 8。页面内容背景会通过左侧安全区铺满整屏：演示页 `.page` 已内置；其他内容根节点加 `.lingyun-page-safe-left`（需在 `lingyun-app-page` 内）；也可以直接把背景配在 `lingyun-app-page` 根节点。未配置 tabs 的完整目录仍为 220。
+- iPad（690–1199）与 PC（≥1200）配置全局 tabs 后，左侧导航收窄为 **84** 通高窄栏，图标在上、文字在下；整列铺满左侧区域（无外边距、无圆角、无侧边线），底色与内容卡片相同的 grouped 背景，叠加固定的顶栏同款 tint（不随滚动变化），滚动后与顶栏玻璃同亮度。`.lingyun-page-safe-left` 保留兼容。未配置 tabs 的完整目录仍为 220。
 - Tab 支持 `children` 二级菜单；二级项还可再带 `children` 作为三级菜单：工作台把有三级的分组渲染成带标题的分组卡片，三级项是卡片里的按钮；只有二级菜单的 Tab 渲染成一张没有标题的卡片。宽屏左侧菜单用分组标题分隔。宽屏左侧（Web / 小程序一致）点击父项用 `lingyun-menu` 弹出（透明遮罩，点击外部关闭）；底部 Tab / Duo Tab 点击有 children 的父项进入固定工作台页（`workspaceUrl?tab=<key>`），没有 children 直接进 `url`。工作台子项用 `navigateTo` 压栈，返回父 Tab 工作台。子项路径自动归入父 Tab 高亮。
 - 优先级：props > `pages[path]` 页面覆盖 > `layout` > 宽度自动规则。
 - 窄屏由首页 / 目录宿主页在页内切换一级 Tab，页面栈不增长；H5 地址保持为宿主路由的 `?tab=<key>`，刷新或从子页返回后按这个 key 恢复。微信宽屏优先走 `openLingyunHostedPage`，不增加页面栈；从其他页面直接进入工作台时仍走一次路由。
