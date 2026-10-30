@@ -1,3 +1,9 @@
+## 1.0.38（2026-10-30）
+- `lingyun-sheets` 顶栏右侧新增内置按钮：`trailing-icon` + `trailing-text`（最多 2 字，超出截断），复用 `lingyun-button`（`borderedProminent` / `medium`）；仅 icon 时 40×40 蓝色圆钮，带文字为蓝色胶囊，点击发 `trailing`。优先级为内置按钮 > `#trailing` 插槽 > `showTrailing` 默认分享圆钮（小程序插槽为静态声明，无法判断插槽内是否真的有内容）。
+- `lingyun-sheets` 新增宽屏居中卡片尺寸 `width` / `height`（px，仅窗口 ≥690 生效）：`0` 用默认上限 936×770，实际夹在 `[320, 视口-64]` / `[240, 视口-64]`，卡片保持水平垂直居中；窄屏仍由 `detent` 决定。
+- `lingyun-sheets` 的 `maskClosable=false` 时点遮罩改为拒绝反馈：面板水平轻抖 + `uni.vibrateShort({ type: 'medium' })`（对齐 `lingyun-alert`），关闭 / 重开 / 卸载时清理计时器；H5 等无震动端不再产生未处理的 Promise。
+- `lingyun-stepper` 新增 `left-text` / `right-text`：控件外侧灰色说明文字（15px、secondary），最多 4 字，禁用时同步变淡；根节点增加 host 包裹层，内部 `.lingyun-stepper` 类名保持不变。
+- demo 同步：Sheets 增加点遮罩开关、内置 trailing、宽屏卡片尺寸示例；Switch & Stepper 增加左右文字示例；相关文档与 readme 更新。
 ## 1.0.37（2026-10-29）
 - 递增版本号，重新发布 1.0.36；内容与 1.0.36 一致。
 ## 1.0.36（2026-10-29）

@@ -1,3 +1,6 @@
+## 1.0.25（2026-10-30）
+- 修复仪表盘（gauge）在微信小程序与 H5 尺寸不一致：`width`、`splitLine`（`fixRadius` / `width` / `childWidth`）、`pointer.width`、指针三角与 `labelOffset` 等统一按 `opts.pix` 换算，小程序 Canvas 2D 的圆环粗细、progress 中心圆盘、刻度、指针与标题间距与 Web 对齐；H5 `pix=1` 表现不变。
+- 同步修正 `drawGaugeLabel` 的环宽补偿与 `drawRingTitle` 的标题间距 / `offsetX` 换算。
 ## 1.0.24（2026-10-29）
 - 修正表格图例默认出现行下边线的问题：`tableRowLine` 默认关闭，只有显式开启且 `tableBorder` 打开时才画行线；column 等旧图例表不再出现多余下边线。
 - 递增版本号，重新发布 1.0.23 的 action 列宽度修正、紧凑表格、表高自适应与 tooltip 关闭等更新。

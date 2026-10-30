@@ -1,40 +1,44 @@
 <template>
-  <view class="lingyun-stepper" :class="{ 'lingyun-stepper--disabled': disabled }">
-    <view
-      class="lingyun-stepper__btn"
-      :class="{ 'lingyun-stepper__btn--disabled': atMin }"
-      hover-class="lingyun-stepper__btn--hover"
-      :hover-start-time="20"
-      :hover-stay-time="70"
-      @click="onStep(-1)"
-    >
-      <text class="lingyun-stepper__mark">−</text>
+  <view class="lingyun-stepper-host" :class="{ 'lingyun-stepper-host--disabled': disabled }">
+    <text v-if="leftTextClipped" class="lingyun-stepper__side-text">{{ leftTextClipped }}</text>
+    <view class="lingyun-stepper" :class="{ 'lingyun-stepper--disabled': disabled }">
+      <view
+        class="lingyun-stepper__btn"
+        :class="{ 'lingyun-stepper__btn--disabled': atMin }"
+        hover-class="lingyun-stepper__btn--hover"
+        :hover-start-time="20"
+        :hover-stay-time="70"
+        @click="onStep(-1)"
+      >
+        <text class="lingyun-stepper__mark">−</text>
+      </view>
+      <view class="lingyun-stepper__div" />
+      <input
+        v-if="showValue"
+        class="lingyun-stepper__value"
+        type="number"
+        :style="valueStyle"
+        :value="draft"
+        :disabled="disabled"
+        confirm-type="done"
+        @input="onDraft"
+        @focus="onFocus"
+        @blur="commitDraft"
+        @confirm="commitDraft"
+      />
+      <view v-if="showValue" class="lingyun-stepper__div" />
+      <view
+        class="lingyun-stepper__btn"
+        :class="{ 'lingyun-stepper__btn--disabled': atMax }"
+        hover-class="lingyun-stepper__btn--hover"
+        :hover-start-time="20"
+        :hover-stay-time="70"
+        @click="onStep(1)"
+      >
+        <text class="lingyun-stepper__mark">+</text>
+      </view>
     </view>
-    <view class="lingyun-stepper__div" />
-    <input
-      v-if="showValue"
-      class="lingyun-stepper__value"
-      type="number"
-      :style="valueStyle"
-      :value="draft"
-      :disabled="disabled"
-      confirm-type="done"
-      @input="onDraft"
-      @focus="onFocus"
-      @blur="commitDraft"
-      @confirm="commitDraft"
-    />
-    <view v-if="showValue" class="lingyun-stepper__div" />
-    <view
-      class="lingyun-stepper__btn"
-      :class="{ 'lingyun-stepper__btn--disabled': atMax }"
-      hover-class="lingyun-stepper__btn--hover"
-      :hover-start-time="20"
-      :hover-stay-time="70"
-      @click="onStep(1)"
-    >
-      <text class="lingyun-stepper__mark">+</text>
-    </view>
+    <text v-if="rightTextClipped" class="lingyun-stepper__side-text">{{ rightTextClipped }}</text>
   </view>
 </template>
 
@@ -51,6 +55,12 @@ type StepperFieldEvent = {
   target?: { value?: string | number } | null
 }
 
+/** 左右说明文字最多 4 个字（按 Unicode 码点截断，避免拆开 emoji） */
+function clipSideText(value: unknown): string {
+  const text = String(value == null ? '' : value).trim()
+  return Array.from(text).slice(0, 4).join('')
+}
+
 export default defineComponent({
   name: 'LingyunStepper',
   emits: ['update:modelValue', 'update:value', 'change'],
@@ -63,6 +73,10 @@ export default defineComponent({
     disabled: { type: Boolean, default: false },
     /** 在 − / + 之间展示可编辑的当前值 */
     showValue: { type: Boolean, default: false },
+    /** 步进器左侧灰色说明文字，最多 4 个字 */
+    leftText: { type: String, default: '' },
+    /** 步进器右侧灰色说明文字，最多 4 个字 */
+    rightText: { type: String, default: '' },
   },
   data() {
     return {
@@ -89,6 +103,12 @@ export default defineComponent({
     },
     atMax(): boolean {
       return this.disabled || this.current >= this.max
+    },
+    leftTextClipped(): string {
+      return clipSideText(this.leftText)
+    },
+    rightTextClipped(): string {
+      return clipSideText(this.rightText)
     },
     valueStyle(): { width: string } {
       const text = this.editing ? String(this.draft) : this.format(this.current)
@@ -166,6 +186,27 @@ export default defineComponent({
 
 <style lang="scss">
 @import '../../styles/variables.scss';
+
+/* 外层只负责左右说明文字与控件对齐；控件自身仍是 .lingyun-stepper */
+.lingyun-stepper-host {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.lingyun-stepper__side-text {
+  flex-shrink: 0;
+  font-size: 15px;
+  line-height: 20px;
+  white-space: nowrap;
+  color: var(--lingyun-label-secondary, #{$lingyun-label-secondary});
+}
+
+.lingyun-stepper-host--disabled .lingyun-stepper__side-text {
+  opacity: 0.45;
+}
 
 .lingyun-stepper {
   display: inline-flex;

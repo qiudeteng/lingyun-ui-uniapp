@@ -39,7 +39,7 @@
               :show-back="false"
               :show-close="showClose"
               :show-grabber="false"
-              :show-trailing="showTrailing"
+              :show-trailing="showTrailingEffective"
               :safe-area="false"
               :fixed="false"
               :glass-progress="0"
@@ -54,8 +54,25 @@
                   <text class="lingyun-sheets__title">{{ title }}</text>
                 </slot>
               </template>
-              <template v-if="$slots.trailing" #trailing>
-                <slot name="trailing" />
+              <template #trailing>
+                <lingyun-button
+                  v-if="hasBuiltInTrailing"
+                  class="lingyun-sheets__trailing-button"
+                  variant="borderedProminent"
+                  size="medium"
+                  :text="trailingTextClipped"
+                  :aria-label="trailingTextClipped || trailingIcon || 'Trailing'"
+                  @click="onTrailing"
+                >
+                  <template v-if="trailingIcon" #icon>
+                    <lingyun-icon
+                      :type="trailingIcon"
+                      :size="trailingTextClipped ? 18 : 22"
+                      color="white"
+                    />
+                  </template>
+                </lingyun-button>
+                <slot v-if="!hasBuiltInTrailing" name="trailing" />
               </template>
             </lingyun-toolbars>
           </view>
@@ -111,7 +128,7 @@
               :show-back="false"
               :show-close="showClose"
               :show-grabber="false"
-              :show-trailing="showTrailing"
+              :show-trailing="showTrailingEffective"
               :safe-area="false"
               :fixed="false"
               :glass-progress="0"
@@ -126,8 +143,25 @@
                   <text class="lingyun-sheets__title">{{ title }}</text>
                 </slot>
               </template>
-              <template v-if="$slots.trailing" #trailing>
-                <slot name="trailing" />
+              <template #trailing>
+                <lingyun-button
+                  v-if="hasBuiltInTrailing"
+                  class="lingyun-sheets__trailing-button"
+                  variant="borderedProminent"
+                  size="medium"
+                  :text="trailingTextClipped"
+                  :aria-label="trailingTextClipped || trailingIcon || 'Trailing'"
+                  @click="onTrailing"
+                >
+                  <template v-if="trailingIcon" #icon>
+                    <lingyun-icon
+                      :type="trailingIcon"
+                      :size="trailingTextClipped ? 18 : 22"
+                      color="white"
+                    />
+                  </template>
+                </lingyun-button>
+                <slot v-if="!hasBuiltInTrailing" name="trailing" />
               </template>
             </lingyun-toolbars>
           </view>
@@ -170,6 +204,7 @@ import {
  */
 const LEAVE_MS = 250
 const ENTER_KICK_MS = 48
+const NUDGE_MS = 420
 const DISMISS_DY = 72
 /** Sketch · Medium Detent：面板左右 + 底部各内缩 8，四角 34（悬浮卡片） */
 const INSET_MEDIUM = 8
@@ -229,6 +264,16 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+    /** 顶栏右侧内置按钮：图标（lingyun-icon type），可单独使用 */
+    trailingIcon: {
+      type: String,
+      default: '',
+    },
+    /** 顶栏右侧内置按钮：最多 2 个字，可和 trailingIcon 组合；两者都空时回退 showTrailing */
+    trailingText: {
+      type: String,
+      default: '',
+    },
     safeAreaBottom: {
       type: Boolean,
       default: true,
@@ -236,6 +281,16 @@ export default defineComponent({
     zIndex: {
       type: [Number, String] as PropType<number | string>,
       default: 1000,
+    },
+    /** 宽屏（≥690）居中卡片宽度 px；0 = 默认上限（≤936，且不超出视口 - 64） */
+    width: {
+      type: Number,
+      default: 0,
+    },
+    /** 宽屏（≥690）居中卡片高度 px；0 = 默认上限（≤770，且不超出视口 - 64） */
+    height: {
+      type: Number,
+      default: 0,
     },
   },
   data() {
@@ -253,6 +308,9 @@ export default defineComponent({
       dragStartY: 0,
       dragDy: 0,
       dragging: false,
+      /** 点遮罩不可关闭时的拒绝反馈 */
+      rejectNudge: false,
+      nudgeTimer: null as ReturnType<typeof setTimeout> | null,
       _onWindowResize: null as (() => void) | null,
       _appScrollLocked: false,
       _scrollLocked: false,
@@ -266,6 +324,19 @@ export default defineComponent({
       if (this.show !== undefined && this.show !== null) return !!this.show
       if (this.modelValue !== undefined && this.modelValue !== null) return !!this.modelValue
       return false
+    },
+    /** 顶栏右侧文字最多 2 个字（按 Unicode 码点截断，避免拆开 emoji） */
+    trailingTextClipped(): string {
+      const text = String(this.trailingText || '').trim()
+      return Array.from(text).slice(0, 2).join('')
+    },
+    hasBuiltInTrailing(): boolean {
+      return !!(this.trailingIcon || this.trailingTextClipped)
+    },
+    /** 内置 trailing（icon / 文字）优先于 #trailing 插槽与默认分享圆钮；
+     *  小程序端插槽是否存在是静态的，不能用来判断“有没有内容” */
+    showTrailingEffective(): boolean {
+      return this.showTrailing && !this.hasBuiltInTrailing
     },
     detentKey() {
       return this.detent === 'large' ? 'large' : 'medium'
@@ -287,10 +358,26 @@ export default defineComponent({
     isRegular() {
       return (Number(this.windowWidth) || 375) >= REGULAR_MIN_WIDTH
     },
+    /** 宽屏卡片宽：props.width，夹在 [320, 视口 - 64]；0 用默认上限 936 */
+    regularWidthPx() {
+      const w = Math.max(320, Number(this.windowWidth) || 375)
+      const limit = Math.max(320, w - REGULAR_INSET * 2)
+      const requested = Number(this.width) || 0
+      const base = requested > 0 ? requested : Math.min(REGULAR_MAX_WIDTH, limit)
+      return Math.max(320, Math.min(base, limit))
+    },
+    /** 宽屏卡片高：props.height，夹在 [240, 视口 - 64]；0 用默认上限 770 */
+    regularHeightPx() {
+      const h = Math.max(320, Number(this.windowHeight) || 667)
+      const limit = Math.max(240, h - REGULAR_INSET * 2)
+      const requested = Number(this.height) || 0
+      const base = requested > 0 ? requested : Math.min(REGULAR_MAX_HEIGHT, limit)
+      return Math.max(240, Math.min(base, limit))
+    },
     panelHeightPx() {
       const h = Math.max(320, Number(this.windowHeight) || 667)
       if (this.isRegular) {
-        return Math.min(REGULAR_MAX_HEIGHT, h - REGULAR_INSET * 2)
+        return this.regularHeightPx
       }
       if (this.isLarge) {
         const gap = Math.max(LARGE_TOP_GAP_MIN, Number(this.largeTopGap) || LARGE_TOP_GAP_MIN)
@@ -302,7 +389,7 @@ export default defineComponent({
     sideInsetPx() {
       if (!this.isRegular) return this.isLarge ? 0 : INSET_MEDIUM
       const w = Math.max(320, Number(this.windowWidth) || 375)
-      const panel = Math.min(REGULAR_MAX_WIDTH, w - REGULAR_INSET * 2)
+      const panel = this.regularWidthPx
       return Math.round((w - panel) / 2)
     },
     /** 宽屏垂直居中；窄屏见 sideInsetPx */
@@ -346,6 +433,7 @@ export default defineComponent({
         'lingyun-sheets__panel--regular': this.isRegular,
         'lingyun-sheets__panel--large': !this.isRegular && this.isLarge,
         'lingyun-sheets__panel--medium': !this.isRegular && !this.isLarge,
+        'lingyun-sheets__panel--nudge': this.rejectNudge && !this.reduceMotion,
       }
     },
     /** 屏外起点位移：面板高 + 底部留白，否则收起后残留露头 */
@@ -461,6 +549,11 @@ export default defineComponent({
         clearTimeout(this.enterTimer)
         this.enterTimer = null
       }
+      if (this.nudgeTimer) {
+        clearTimeout(this.nudgeTimer)
+        this.nudgeTimer = null
+      }
+      this.rejectNudge = false
     },
     openAnim() {
       this.clearTimers()
@@ -518,8 +611,39 @@ export default defineComponent({
       this.setVisible(false)
     },
     onOverlayClick() {
-      if (!this.maskClosable) return
-      this.close()
+      if (this.maskClosable) {
+        this.close()
+        return
+      }
+      if (this.phase !== 'open') return
+      this.playRejectNudge()
+    },
+    /** 点遮罩不可关闭：短震动 + 面板水平轻抖（对齐 Alert 的拒绝反馈） */
+    playRejectNudge() {
+      const fireVibrate = (
+        options: UniNamespace.VibrateShortOptions & { type?: 'medium' },
+        retry = true,
+      ) => {
+        try {
+          const ret = uni.vibrateShort(options) as unknown
+          if (ret && typeof (ret as Promise<unknown>).catch === 'function') {
+            ;(ret as Promise<unknown>).catch(() => {})
+          }
+        } catch {
+          if (retry) fireVibrate({ fail: () => {} }, false)
+        }
+      }
+      fireVibrate({ type: 'medium', fail: () => {} })
+      if (this.reduceMotion) return
+      this.rejectNudge = false
+      this.$nextTick(() => {
+        this.rejectNudge = true
+        if (this.nudgeTimer) clearTimeout(this.nudgeTimer)
+        this.nudgeTimer = setTimeout(() => {
+          this.rejectNudge = false
+          this.nudgeTimer = null
+        }, NUDGE_MS)
+      })
     },
     onTrailing() {
       this.$emit('trailing')
@@ -705,6 +829,39 @@ export default defineComponent({
   -webkit-backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
 }
 
+/* 点遮罩不可关闭：面板水平轻抖（同 Alert 拒绝语汇） */
+.lingyun-sheets__panel--nudge {
+  animation: lingyun-sheets-nudge 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes lingyun-sheets-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  12% {
+    transform: translateX(-11px);
+  }
+  24% {
+    transform: translateX(11px);
+  }
+  36% {
+    transform: translateX(-8px);
+  }
+  48% {
+    transform: translateX(8px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  72% {
+    transform: translateX(4px);
+  }
+  84% {
+    transform: translateX(-2px);
+  }
+}
+
 /*
  * Sketch Large Detent：贴边贴底 + 不透明分组背景（#FFFFFF / #1C1C1E），
  * 不是玻璃 —— 内容满屏时不需要透底，且避免长表单文字被背景干扰。
@@ -746,6 +903,10 @@ export default defineComponent({
 .lingyun-sheets--reduce-motion.lingyun-sheets--leave .lingyun-sheets__panel,
 .lingyun-sheets--reduce-motion.lingyun-sheets--open .lingyun-sheets__panel {
   transform: translate3d(0, 0, 0) !important;
+}
+
+.lingyun-sheets--reduce-motion .lingyun-sheets__panel--nudge {
+  animation: none !important;
 }
 
 .lingyun-sheets--dragging .lingyun-sheets__panel {
@@ -808,5 +969,10 @@ export default defineComponent({
   box-sizing: border-box;
   padding: 8px 16px 16px;
   min-height: 100%;
+}
+
+/* 内置 trailing 复用 lingyun-button（borderedProminent · medium） */
+.lingyun-sheets__trailing-button {
+  flex-shrink: 0;
 }
 </style>

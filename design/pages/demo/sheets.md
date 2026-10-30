@@ -12,6 +12,8 @@
 用例：
 
 - Open Medium / Open Large
+- **点遮罩关闭**开关（`maskClosable`）：关闭后点遮罩不收起，仍可用关闭钮 / Grabber 下滑
+- **Wide size**：宽屏居中卡片尺寸示例（`width` / `height`，仅 ≥690 生效）
 - **圆钮 · Close + Title + Share**（左右 44 Glass 圆钮，对齐 Sketch）
 - **文字 · Cancel + Title + Done**（左右文字按钮）
 - Sheet 内「切换到 Medium / Large」切换档位；遮罩 / Grabber 下滑关闭

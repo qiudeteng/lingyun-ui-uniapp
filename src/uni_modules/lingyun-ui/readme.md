@@ -1,6 +1,6 @@
 # 凌云UI
 
-凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.37**，变更见 [`changelog.md`](./changelog.md)。
+凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.38**，变更见 [`changelog.md`](./changelog.md)。
 
 📖 [使用手册](https://lingyun.xinyicanyin.com/)（组件用法、属性、示例；右侧手机框实时预览）
 
@@ -154,7 +154,7 @@ configureLingyunLayout({
 
 ```
 lingyun-ui/
-├── package.json          # 1.0.28
+├── package.json          # 1.0.38
 ├── readme.md
 ├── changelog.md
 ├── index.ts              # app.use(lingyunUi)
@@ -227,6 +227,21 @@ lingyun-ui/
 
 <lingyun-sheets v-model:show="open" title="Sheet" detent="medium">
   <view>内容</view>
+</lingyun-sheets>
+
+<!-- 点遮罩是否关闭：maskClosable，默认 true；false 时点遮罩抖动 + 短震动，仍可用关闭钮 / 下滑收起 -->
+<lingyun-sheets v-model:show="locked" title="必选" :mask-closable="false">
+  <view>点遮罩不关闭</view>
+</lingyun-sheets>
+
+<!-- 顶栏右侧内置按钮（蓝色 Prominent）：icon + 最多 2 个字；只传 trailing-icon 时显示为圆钮 -->
+<lingyun-sheets v-model:show="detail" title="详情" trailing-icon="upload" trailing-text="分享" @trailing="onShare">
+  <view>内容</view>
+</lingyun-sheets>
+
+<!-- 宽屏居中卡片尺寸（≥690 生效）：width / height，px；0 用默认上限 936×770 -->
+<lingyun-sheets v-model:show="form" title="筛选" :width="520" :height="420">
+  <view>宽屏小卡片</view>
 </lingyun-sheets>
 
 <lingyun-action-sheet

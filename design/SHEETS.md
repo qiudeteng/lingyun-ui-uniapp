@@ -47,8 +47,8 @@ Sketch 画板 1210×834 上面板为 **936×770**，左右各 137、上下各 32
 
 | 项 | 值 |
 |----|----|
-| 宽 | `min(936, windowWidth − 64)`，水平居中 |
-| 高 | `min(770, windowHeight − 64)`，垂直居中 |
+| 宽 | 默认 `min(936, windowWidth − 64)`，水平居中；传 `width` 时夹在 `[320, windowWidth − 64]` |
+| 高 | 默认 `min(770, windowHeight − 64)`，垂直居中；传 `height` 时夹在 `[240, windowHeight − 64]` |
 | 圆角 | **四角 32** |
 | 材质 | 与 large 同：纯色不透明 `--lingyun-bg-grouped-secondary`，无描边、无投影 |
 | Grabber | **不出**（宽屏卡片不可换档） |
@@ -91,11 +91,17 @@ Sketch 画板 1210×834 上面板为 **936×770**，左右各 137、上下各 32
 | `detent` | `medium` \| `large` | `medium` | 固定档位 |
 | `maskClosable` | boolean | `true` | 点遮罩关闭 |
 | `showClose` | boolean | `true` | 顶栏关闭钮 |
-| `showTrailing` | boolean | `false` | 顶栏 trailing |
+| `showTrailing` | boolean | `false` | 顶栏默认分享圆钮 |
+| `trailingIcon` | string | `''` | 顶栏右侧内置按钮图标（lingyun-icon type），可单独使用 |
+| `trailingText` | string | `''` | 顶栏右侧内置按钮文字，最多 **2** 个字，可与 `trailingIcon` 组合 |
 | `safeAreaBottom` | boolean | `true` | 内容底安全区 |
 | `zIndex` | number | `1000` | 层级 |
+| `width` | number | `0` | 宽屏居中卡片宽（px）；`0` 用默认上限 **936**，实际夹在 `[320, 视口-64]` |
+| `height` | number | `0` | 宽屏居中卡片高（px）；`0` 用默认上限 **770**，实际夹在 `[240, 视口-64]` |
 
-事件：`update:show`、`update:modelValue`、`close`、`update:detent`  
+右侧优先级：`trailingIcon` / `trailingText` 内置按钮 > `#trailing` 插槽 > `showTrailing` 默认分享圆钮。内置按钮与插槽同时设置时以内置为准（小程序插槽为静态声明，无法可靠判断是否渲染内容）。内置按钮复用 **`lingyun-button`（`borderedProminent` / `medium`）**：仅 icon 时 40×40 蓝色圆钮，带文字时蓝色胶囊（icon 18 + 16px 白字）；点击发 `trailing`。`maskClosable=false` 时点遮罩不关闭，面板水平轻抖 + `uni.vibrateShort` 短震动（对齐 Alert 拒绝反馈）。
+
+事件：`update:show`、`update:modelValue`、`close`、`update:detent`、`trailing`  
 插槽：默认内容；`leading` / `trailing` / `title` 透传 toolbars
 
 ---
@@ -117,8 +123,8 @@ Sketch 画板 1210×834 上面板为 **936×770**，左右各 137、上下各 32
 ## 4. 自检
 
 - [ ] medium 四周内缩 8 + 四角 34 玻璃；large 贴边贴底 + 顶角 38 纯色，顶缘在页面顶栏之下（状态栏 + 栏身，避开胶囊）
-- [ ] 宽屏（≥690）为居中卡片：≤936×770、四角 32、纯色、无 Grabber
-- [ ] Grabber 60×4；关闭钮可关；遮罩可关（maskClosable）
+- [ ] 宽屏（≥690）为居中卡片：默认 ≤936×770、四角 32、纯色、无 Grabber；`width` / `height` 生效且不被视口裁切
+- [ ] Grabber 60×4；关闭钮可关；遮罩可关（maskClosable）；不可关时点遮罩抖动 + 短震动
 - [ ] 开合动画；档位切换高度过渡；收起后无残留露头
 - [ ] Grabber 区下滑超阈值关闭；内容区可滚动
 - [ ] section 内打开不被裁切（Teleport / root-portal）

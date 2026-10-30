@@ -19,6 +19,10 @@
           <lingyun-stepper v-model="n" :min="0" :max="9" />
           <lingyun-stepper v-model="n" :min="0" :max="9" show-value disabled />
         </view>
+        <view class="row">
+          <lingyun-stepper v-model="n" :min="0" :max="99" left-text="购买数量" right-text="件" show-value />
+          <lingyun-stepper v-model="n" :min="0" :max="99" left-text="数量" right-text="份" />
+        </view>
       </lingyun-section>
     </view>
   </lingyun-app-page>

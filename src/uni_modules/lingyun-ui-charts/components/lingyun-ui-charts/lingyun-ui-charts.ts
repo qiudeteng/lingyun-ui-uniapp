@@ -2791,7 +2791,7 @@ function drawRingTitle(opts, config, context, center, innerRadius) {
   var subtitle = opts.subtitle.name || '';
   var titleFontColor = opts.title.color || opts.fontColor;
   var subtitleFontColor = opts.subtitle.color || opts.fontColor;
-  var margin = 5;
+  var margin = 5 * opts.pix;
   if (innerRadius > 0) {
     var limit = innerRadius * 1.6;
     var scale = 1;
@@ -2829,7 +2829,7 @@ function drawRingTitle(opts, config, context, center, innerRadius) {
   }
   if (title) {
     var _textWidth = ringCenterWidth(title, titlefontSize, context);
-    var _startX = center.x - _textWidth / 2 + (opts.title.offsetX || 0);
+    var _startX = center.x - _textWidth / 2 + (opts.title.offsetX || 0) * opts.pix;
     var _startY = center.y + titlefontSize / 2 + (opts.title.offsetY || 0) * opts.pix;
     if (subtitle) {
       _startY -= (subtitleHeight + margin) / 2;
@@ -2987,7 +2987,7 @@ function drawBarPointText(points, series, config, context, opts) {
 }
 
 function drawGaugeLabel(gaugeOption, radius, centerPosition, opts, config, context) {
-  radius -= gaugeOption.width / 2 + gaugeOption.labelOffset * opts.pix;
+  radius -= gaugeOption.width * opts.pix / 2 + gaugeOption.labelOffset * opts.pix;
   radius = radius < 10 ? 10 : radius;
   let totalAngle;
   if (gaugeOption.endAngle < gaugeOption.startAngle) {
@@ -6002,6 +6002,12 @@ function drawGaugeDataPoints(categories, series, opts, config, context) {
   if (gaugeOption.oldData == undefined) {
     gaugeOption.oldData = 0;
   }
+  // 仪表盘配置按 CSS 像素书写，画布坐标系在小程序端是设备像素，统一换算
+  var gaugeWidth = gaugeOption.width * opts.pix;
+  var splitFixRadius = (gaugeOption.splitLine.fixRadius || 0) * opts.pix;
+  var splitWidth = (gaugeOption.splitLine.width || 0) * opts.pix;
+  var childWidth = (gaugeOption.splitLine.childWidth || 0) * opts.pix;
+  var pointerWidth = (gaugeOption.pointer.width || 0) * opts.pix;
   categories = getGaugeAxisPoints(categories, gaugeOption.startAngle, gaugeOption.endAngle);
   var centerPosition = {
     x: opts.width / 2,
@@ -6009,15 +6015,15 @@ function drawGaugeDataPoints(categories, series, opts, config, context) {
   };
   var radius = Math.min(centerPosition.x, centerPosition.y);
   radius -= 5 * opts.pix;
-  radius -= gaugeOption.width / 2;
+  radius -= gaugeWidth / 2;
   radius = radius < 10 ? 10 : radius;
-  var innerRadius = radius - gaugeOption.width;
+  var innerRadius = radius - gaugeWidth;
   var totalAngle = 0;
   //判断仪表盘的样式：default百度样式，progress新样式
   if (gaugeOption.type == 'progress') {
     //## 第一步画中心圆形背景和进度条背景
     //中心圆形背景
-    var pieRadius = radius - gaugeOption.width * 3;
+    var pieRadius = radius - gaugeWidth * 3;
     context.beginPath();
     let gradient = context.createLinearGradient(centerPosition.x, centerPosition.y - pieRadius, centerPosition.x, centerPosition.y + pieRadius);
     //配置渐变填充（起点：中心点向上减半径；结束点中心点向下加半径）
@@ -6027,7 +6033,7 @@ function drawGaugeDataPoints(categories, series, opts, config, context) {
     context.arc(centerPosition.x, centerPosition.y, pieRadius, 0, 2 * Math.PI, false);
     context.fill();
     //画进度条背景
-    context.setLineWidth(gaugeOption.width);
+    context.setLineWidth(gaugeWidth);
     context.setStrokeStyle(hexToRgb(series[0].color, 0.3));
     context.setLineCap('round');
     context.beginPath();
@@ -6041,8 +6047,8 @@ function drawGaugeDataPoints(categories, series, opts, config, context) {
     }
     let splitAngle = totalAngle / gaugeOption.splitLine.splitNumber;
     let childAngle = totalAngle / gaugeOption.splitLine.splitNumber / gaugeOption.splitLine.childNumber;
-    let startX = -radius - gaugeOption.width * 0.5 - gaugeOption.splitLine.fixRadius;
-    let endX = -radius - gaugeOption.width - gaugeOption.splitLine.fixRadius + gaugeOption.splitLine.width;
+    let startX = -radius - gaugeWidth * 0.5 - splitFixRadius;
+    let endX = -radius - gaugeWidth - splitFixRadius + splitWidth;
     context.save();
     context.translate(centerPosition.x, centerPosition.y);
     context.rotate((gaugeOption.startAngle - 1) * Math.PI);
@@ -6065,19 +6071,19 @@ function drawGaugeDataPoints(categories, series, opts, config, context) {
     context.restore();
     //## 第三步画进度条
     series = getGaugeArcbarDataPoints(series, gaugeOption, process);
-    context.setLineWidth(gaugeOption.width);
+    context.setLineWidth(gaugeWidth);
     context.setStrokeStyle(series[0].color);
     context.setLineCap('round');
     context.beginPath();
     context.arc(centerPosition.x, centerPosition.y, innerRadius, gaugeOption.startAngle * Math.PI, series[0]._proportion_ * Math.PI, false);
     context.stroke();
     //## 第四步画指针
-    let pointerRadius = radius - gaugeOption.width * 2.5;
+    let pointerRadius = radius - gaugeWidth * 2.5;
     context.save();
     context.translate(centerPosition.x, centerPosition.y);
     context.rotate((series[0]._proportion_ - 1) * Math.PI);
     context.beginPath();
-    context.setLineWidth(gaugeOption.width / 3);
+    context.setLineWidth(gaugeWidth / 3);
     let gradient3 = context.createLinearGradient(0, -pointerRadius * 0.6, 0, pointerRadius * 0.6);
     gradient3.addColorStop('0', hexToRgb('#FFFFFF', 0));
     gradient3.addColorStop('0.5', hexToRgb(series[0].color, 1));
@@ -6086,20 +6092,20 @@ function drawGaugeDataPoints(categories, series, opts, config, context) {
     context.arc(0, 0, pointerRadius, 0.85 * Math.PI, 1.15 * Math.PI, false);
     context.stroke();
     context.beginPath();
-    context.setLineWidth(1);
+    context.setLineWidth(1 * opts.pix);
     context.setStrokeStyle(series[0].color);
     context.setFillStyle(series[0].color);
-    context.moveTo(-pointerRadius - gaugeOption.width / 3 / 2, -4);
-    context.lineTo(-pointerRadius - gaugeOption.width / 3 / 2 - 4, 0);
-    context.lineTo(-pointerRadius - gaugeOption.width / 3 / 2, 4);
-    context.lineTo(-pointerRadius - gaugeOption.width / 3 / 2, -4);
+    context.moveTo(-pointerRadius - gaugeWidth / 3 / 2, -4 * opts.pix);
+    context.lineTo(-pointerRadius - gaugeWidth / 3 / 2 - 4 * opts.pix, 0);
+    context.lineTo(-pointerRadius - gaugeWidth / 3 / 2, 4 * opts.pix);
+    context.lineTo(-pointerRadius - gaugeWidth / 3 / 2, -4 * opts.pix);
     context.stroke();
     context.fill();
     context.restore();
     //default百度样式
   } else {
     //画背景
-    context.setLineWidth(gaugeOption.width);
+    context.setLineWidth(gaugeWidth);
     context.setLineCap('butt');
     for (let i = 0; i < categories.length; i++) {
       let eachCategories = categories[i];
@@ -6117,9 +6123,9 @@ function drawGaugeDataPoints(categories, series, opts, config, context) {
     }
     let splitAngle = totalAngle / gaugeOption.splitLine.splitNumber;
     let childAngle = totalAngle / gaugeOption.splitLine.splitNumber / gaugeOption.splitLine.childNumber;
-    let startX = -radius - gaugeOption.width * 0.5 - gaugeOption.splitLine.fixRadius;
-    let endX = -radius - gaugeOption.width * 0.5 - gaugeOption.splitLine.fixRadius + gaugeOption.splitLine.width;
-    let childendX = -radius - gaugeOption.width * 0.5 - gaugeOption.splitLine.fixRadius + gaugeOption.splitLine.childWidth;
+    let startX = -radius - gaugeWidth * 0.5 - splitFixRadius;
+    let endX = -radius - gaugeWidth * 0.5 - splitFixRadius + splitWidth;
+    let childendX = -radius - gaugeWidth * 0.5 - splitFixRadius + childWidth;
     context.translate(centerPosition.x, centerPosition.y);
     context.rotate((gaugeOption.startAngle - 1) * Math.PI);
     for (let i = 0; i < gaugeOption.splitLine.splitNumber + 1; i++) {
@@ -6154,16 +6160,16 @@ function drawGaugeDataPoints(categories, series, opts, config, context) {
       context.rotate((eachSeries._proportion_ - 1) * Math.PI);
       context.beginPath();
       context.setFillStyle(eachSeries.color);
-      context.moveTo(gaugeOption.pointer.width, 0);
-      context.lineTo(0, -gaugeOption.pointer.width / 2);
+      context.moveTo(pointerWidth, 0);
+      context.lineTo(0, -pointerWidth / 2);
       context.lineTo(-innerRadius, 0);
-      context.lineTo(0, gaugeOption.pointer.width / 2);
-      context.lineTo(gaugeOption.pointer.width, 0);
+      context.lineTo(0, pointerWidth / 2);
+      context.lineTo(pointerWidth, 0);
       context.closePath();
       context.fill();
       context.beginPath();
       context.setFillStyle('#FFFFFF');
-      context.arc(0, 0, gaugeOption.pointer.width / 6, 0, 2 * Math.PI, false);
+      context.arc(0, 0, pointerWidth / 6, 0, 2 * Math.PI, false);
       context.fill();
       context.restore();
     }
