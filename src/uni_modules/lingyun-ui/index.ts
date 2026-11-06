@@ -33,6 +33,14 @@ export {
   LINGYUN_TABBAR_PAD_TOP_PX,
 } from './components/lingyun-tabbars/tabbarMetrics'
 export type {
+  LingyunDateSwitcherChange,
+  LingyunDateSwitcherLimit,
+  LingyunDateSwitcherMode,
+  LingyunDateSwitcherPayload,
+  LingyunDateSwitcherRange,
+  LingyunDateSwitcherValue,
+} from './components/lingyun-date-switcher/types'
+export type {
   LingyunDevice,
   LingyunDuoPose,
   LingyunEnv,

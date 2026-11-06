@@ -25,7 +25,7 @@
 - **Sidebar 专章** → **[`SIDEBARS.md`](./SIDEBARS.md)**（Sketch Sidebar 画板）
 - **Action Sheets 专章** → **[`ACTIONSHEETS.md`](./ACTIONSHEETS.md)**（HIG Action Sheets + Liquid Glass）
 - **Activity Views 专章** → **[`ACTIVITY_VIEWS.md`](./ACTIVITY_VIEWS.md)**（Sketch Activity Views · 分享面板）
-- **Activity / Toast·HUD / Progress / Empty / Picker / Switch** → [`ACTIVITY_INDICATORS.md`](./ACTIVITY_INDICATORS.md) · [`TOASTS.md`](./TOASTS.md) · [`PROGRESS.md`](./PROGRESS.md) · [`EMPTY.md`](./EMPTY.md) · [`PICKERS.md`](./PICKERS.md) · [`SWITCHES.md`](./SWITCHES.md)
+- **Activity / Toast·HUD / Progress / Empty / Picker / Switch** → [`ACTIVITY_INDICATORS.md`](./ACTIVITY_INDICATORS.md) · [`TOASTS.md`](./TOASTS.md) · [`PROGRESS.md`](./PROGRESS.md) · [`EMPTY.md`](./EMPTY.md) · [`PICKERS.md`](./PICKERS.md) · [`SWITCHES.md`](./SWITCHES.md) · [`DATE_SWITCHERS.md`](./DATE_SWITCHERS.md)
 - **P1：Checks / Slider / Tags / Avatars / Page Control / Skeleton / Refresh / Popovers / Menus** → [`CHECKS.md`](./CHECKS.md) · [`SLIDERS.md`](./SLIDERS.md) · [`TAGS.md`](./TAGS.md) · [`AVATARS.md`](./AVATARS.md) · [`PAGE_CONTROLS.md`](./PAGE_CONTROLS.md) · [`SKELETONS.md`](./SKELETONS.md) · [`REFRESH.md`](./REFRESH.md) · [`POPOVERS.md`](./POPOVERS.md) · [`MENUS.md`](./MENUS.md)
 - **Text Fields 专章** → **[`TEXTFIELDS.md`](./TEXTFIELDS.md)**（Sketch Text Field Light/Dark）
 - **Text 专章** → **[`TEXTS.md`](./TEXTS.md)**（HIG Text Styles · Labels）
@@ -94,6 +94,7 @@ design/
 ├── EMPTY.md
 ├── PICKERS.md
 ├── SWITCHES.md
+├── DATE_SWITCHERS.md   # 底部日期切换条（TABBARS 同款玻璃）
 ├── CHECKS.md
 ├── SLIDERS.md
 ├── TAGS.md

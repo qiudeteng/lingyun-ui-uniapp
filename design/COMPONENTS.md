@@ -33,6 +33,7 @@
 | ✅ | `lingyun-picker` | selector / date / daterange / week / time / datetime | [`PICKERS.md`](./PICKERS.md) |
 | ✅ | `lingyun-data-picker` | 数据驱动级联选择（localdata 树） | [`PICKERS.md`](./PICKERS.md) |
 | ✅ | `lingyun-switch` / `lingyun-stepper` | 独立开关与步进器 | [`SWITCHES.md`](./SWITCHES.md) |
+| ✅ | `lingyun-date-switcher` | 底部日期切换条（天 / 周 / 月 / 年 / 日期段） | [`DATE_SWITCHERS.md`](./DATE_SWITCHERS.md) |
 | ✅ | `lingyun-checkbox` / `lingyun-radio` / `lingyun-radio-group` | 表单单选 / 多选 | [`CHECKS.md`](./CHECKS.md) |
 | ✅ | `lingyun-data-checkbox` / `lingyun-data-radio` | 数据驱动多选 / 单选（localdata） | [`CHECKS.md`](./CHECKS.md) |
 | ✅ | `lingyun-slider` | 独立滑条 | [`SLIDERS.md`](./SLIDERS.md) |

@@ -150,6 +150,7 @@ const componentSidebar = [
       { text: '表单行', link: '/components/form-item.html' },
       { text: '开关', link: '/components/switch.html' },
       { text: '步进器', link: '/components/stepper.html' },
+      { text: '日期切换器', link: '/components/date-switcher.html' },
       { text: '复选框', link: '/components/checkbox.html' },
       { text: '单选', link: '/components/radio.html' },
       { text: '单选组', link: '/components/radio-group.html' },

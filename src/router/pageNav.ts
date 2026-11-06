@@ -56,6 +56,7 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
       { title: 'Slider', url: '/pages/demo/sliders', note: '滑条', icon: 'tune' },
       { title: 'Pickers', url: '/pages/demo/pickers', note: '选择器 · 级联 data-picker', icon: 'bars' },
       { title: 'Date & Time', url: '/pages/demo/date-time-pickers', note: '日期 / 时间 / 日期时间 · 起止 · 表单', icon: 'calendar' },
+      { title: 'Date Switcher', url: '/pages/demo/date-switcher', note: '底部日期切换条 · 天 / 周 / 月 / 年 / 日期段', icon: 'calendar' },
     ],
   },
   {

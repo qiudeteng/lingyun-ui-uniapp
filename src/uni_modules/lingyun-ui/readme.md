@@ -244,6 +244,9 @@ lingyun-ui/
   <view>宽屏小卡片</view>
 </lingyun-sheets>
 
+<!-- 底部日期切换条：date / week / month / year / range；fixed 默认固定底部；modes 控制模式菜单，showModeSwitch=false 隐藏模式钮 -->
+<lingyun-date-switcher v-model="date" mode="week" :modes="['date', 'week', 'month', 'year', 'range']" @change="onDateChange" />
+
 <lingyun-action-sheet
   v-model:show="asOpen"
   title="Select an option"
