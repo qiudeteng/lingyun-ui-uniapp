@@ -1,3 +1,5 @@
+## 1.0.43（2026-11-06）
+- 修复 `lingyun-row` 设置 `gutter` 后整行左移、右侧少一半间距：`gutter > 0` 时行宽按 `calc(100% + gutter)` 计算，配合左右负 margin 让列内容与父级左右边缘对齐；`gutter=0` 保持 `width: 100%` 不变。
 ## 1.0.42（2026-11-06）
 - `lingyun-tabbars` 支持图片图标：`items` 可传 `iconSrc` / `activeIconSrc`，优先于 `icon` / `iconMode`；选中态优先 `activeIconSrc`，未传时回退 `iconSrc`，搜索项同样支持。`lingyun-app-page` 全局 tabs 同步透传。
 - `lingyun-text-field` 新增 `name` / `autocomplete`，H5 浏览器自动填充后主动同步原生值并隐藏占位符；自动填充底色与文字跟随浅色 / 暗黑主题。

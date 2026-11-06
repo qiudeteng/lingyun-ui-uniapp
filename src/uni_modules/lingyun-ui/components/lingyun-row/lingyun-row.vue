@@ -52,6 +52,8 @@ export default defineComponent({
         const half = `${gutter / 2}px`
         style.marginLeft = `-${half}`
         style.marginRight = `-${half}`
+        /* 仅写负 margin 不会让 width:100% 的块变宽，只会整体左移；补回 gutter 宽度 */
+        style.width = `calc(100% + ${gutter}px)`
       }
       return style
     },
