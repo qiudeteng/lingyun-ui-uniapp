@@ -2,6 +2,7 @@
   <lingyun-app-page
     ref="pageRef"
     title="All In One"
+    :show-tabbar="false"
     searchable
     search-placeholder="搜索订单"
     v-model:searching="searching"
@@ -19,30 +20,76 @@
     @segment-change="onSegmentChange"
   >
     <view class="page">
-      <view class="hero">
-        <text class="hero__title">All In One</text>
-        <text class="hero__desc">筛选 + 搜索 + 分段控制</text>
-      </view>
+      <template v-if="searching">
+        <view class="search-head">
+          <text class="search-head__title">搜索订单</text>
+          <text class="search-head__desc">独立搜索视图 · 历史与结果随关键词变化</text>
+        </view>
 
-      <lingyun-section title="顶部能力" :hint="currentLabel">
-        <text class="hint">
-          右上角筛选按钮打开全宽菜单；搜索按钮独立分组，展开时从右往左滑入；下方分段控制由 app-page 数据配置。
-        </text>
-        <text class="hint hint--last">最近事件：{{ lastEvent || '—' }}</text>
-      </lingyun-section>
+        <lingyun-section title="搜索历史" hint="点击直接搜索">
+          <view v-if="searchHistory.length" class="history-row">
+            <view
+              v-for="item in searchHistory"
+              :key="item"
+              class="history-chip"
+              hover-class="history-chip--hover"
+              @click="pickHistory(item)"
+            >
+              <text class="history-chip__text">{{ item }}</text>
+            </view>
+            <view class="history-clear" @click="clearHistory">清空</view>
+          </view>
+          <text v-else class="hint">暂无搜索历史</text>
+        </lingyun-section>
 
-      <lingyun-section title="结果" :hint="`${filtered.length} 条`" is-last>
-        <lingyun-list>
-          <lingyun-list-item
-            v-for="item in filtered"
-            :key="item.title"
-            :title="item.title"
-            :note="item.note"
-            :detail="item.status"
-          />
-          <lingyun-list-item v-if="!filtered.length" title="没有匹配结果" note="调整搜索或筛选条件" />
-        </lingyun-list>
-      </lingyun-section>
+        <lingyun-section title="搜索结果" :hint="`${filtered.length} 条`" is-last>
+          <lingyun-list>
+            <lingyun-list-item
+              v-for="item in filtered"
+              :key="item.title"
+              :title="item.title"
+              :note="item.note"
+              :detail="item.status"
+            />
+            <lingyun-list-item
+              v-if="!filtered.length"
+              title="没有匹配结果"
+              note="换个关键词或调整筛选条件"
+            />
+          </lingyun-list>
+        </lingyun-section>
+      </template>
+
+      <template v-else>
+        <view class="hero">
+          <text class="hero__title">All In One</text>
+          <text class="hero__desc">筛选 + 搜索 + 分段控制 + 底部日期切换</text>
+        </view>
+
+        <lingyun-section title="顶部能力" :hint="currentLabel">
+          <text class="hint">
+            右上角筛选按钮打开全宽菜单；搜索按钮独立分组，展开时从右往左滑入；下方分段控制由 app-page 数据配置。
+          </text>
+          <text class="hint hint--last">最近事件：{{ lastEvent || '—' }}</text>
+        </lingyun-section>
+
+        <lingyun-section title="日期范围" :hint="dateModeLabel">
+          <text class="hint">底部日期切换器支持天 / 周 / 月 / 年 / 自定义日期段，当前区间：{{ dateRange }}</text>
+        </lingyun-section>
+
+        <lingyun-section title="结果" :hint="`${filtered.length} 条`" is-last>
+          <lingyun-list>
+            <lingyun-list-item
+              v-for="item in filtered"
+              :key="item.title"
+              :title="item.title"
+              :note="item.note"
+              :detail="item.status"
+            />
+            <lingyun-list-item v-if="!filtered.length" title="没有匹配结果" note="调整搜索或筛选条件" />
+          </lingyun-list>
+        </lingyun-section>
+      </template>
     </view>
 
     <lingyun-menu
@@ -89,17 +136,23 @@
         </view>
       </template>
     </lingyun-menu>
+
+    <lingyun-date-switcher
+      v-model:mode="dateMode"
+      :model-value="dateValue"
+      @update:model-value="onDateValue"
+      @change="onDateChange"
+    />
   </lingyun-app-page>
 </template>
 
 <script setup lang="ts">
   import { computed, reactive, ref, watch } from 'vue'
-  import { onHide, onShow } from '@dcloudio/uni-app'
-  import { setLingyunThemeSwitchVisible } from '@/uni_modules/lingyun-ui'
-
-  /* 综合页右侧已有筛选 + 搜索两组，隐藏内置主题钮给标题让位 */
-  onShow(() => setLingyunThemeSwitchVisible(false))
-  onHide(() => setLingyunThemeSwitchVisible(true))
+  import type {
+    LingyunDateSwitcherChange,
+    LingyunDateSwitcherMode,
+    LingyunDateSwitcherValue,
+  } from '@/uni_modules/lingyun-ui'
 
   type SegmentKey = 'all' | 'active' | 'done'
   type PeriodKey = 'today' | 'week' | 'month'
@@ -117,6 +170,10 @@
   const keyword = ref('')
   const segment = ref<SegmentKey>('all')
   const lastEvent = ref('')
+  const searchHistory = ref<string[]>(['订单 A-1024', '进行中', '本周'])
+  const dateMode = ref<LingyunDateSwitcherMode>('week')
+  const dateValue = ref<LingyunDateSwitcherValue>('2026-11-02')
+  const dateRange = ref('2026-11-02 - 2026-11-08')
 
   const segments = [
     { key: 'all', text: '全部' },
@@ -139,6 +196,16 @@
     done: '已完成',
   }
   const currentLabel = computed(() => labels[segment.value] || '—')
+  const dateModeLabel = computed(() => {
+    const map: Record<string, string> = {
+      date: '天',
+      week: '周',
+      month: '月',
+      year: '年',
+      range: '日期段',
+    }
+    return map[dateMode.value] || '周'
+  })
 
   const toolbarGroups = [[{ key: 'filter', icon: 'tune', label: '筛选' }]]
   const filterOpen = ref(false)
@@ -183,12 +250,39 @@
   }
 
   function onSearch(): void {
+    const value = keyword.value.trim()
+    if (value) {
+      searchHistory.value = [value, ...searchHistory.value.filter((item) => item !== value)].slice(0, 6)
+    }
     setEvent(`search · ${keyword.value || '空'}`)
     uni.showToast({ title: keyword.value ? `搜索：${keyword.value}` : '搜索空关键词', icon: 'none' })
   }
 
+  function pickHistory(value: string): void {
+    keyword.value = value
+    searchHistory.value = [
+      value,
+      ...searchHistory.value.filter((item) => item !== value),
+    ].slice(0, 6)
+    setEvent(`search-history · ${value}`)
+  }
+
+  function clearHistory(): void {
+    searchHistory.value = []
+    setEvent('search-history · 清空')
+  }
+
   function onSearchCancel(): void {
     setEvent(`search-cancel · ${keyword.value || '空'}`)
+  }
+
+  function onDateValue(value: LingyunDateSwitcherValue): void {
+    dateValue.value = value
+  }
+
+  function onDateChange(payload: LingyunDateSwitcherChange): void {
+    dateRange.value = payload.range
+    setEvent(`date-change · ${payload.value}`)
   }
 
   function onToolbarAction(payload: {
@@ -217,8 +311,57 @@
 <style lang="scss">
   .page {
     box-sizing: border-box;
-    padding-bottom: 40px;
+    padding-bottom: 150px;
     min-height: 100%;
+  }
+
+  .search-head {
+    padding: 24px 20px 8px;
+  }
+
+  .search-head__title {
+    display: block;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--lingyun-label, #1c1c1e);
+  }
+
+  .search-head__desc {
+    display: block;
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--lingyun-label-secondary, #6a6a6a);
+  }
+
+  .history-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .history-chip {
+    padding: 7px 13px;
+    border-radius: 9999px;
+    background: var(--lingyun-fill-tertiary, rgba(118, 118, 128, 0.12));
+  }
+
+  .history-chip--hover {
+    opacity: 0.65;
+  }
+
+  .history-chip__text {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--lingyun-label, #1c1c1e);
+  }
+
+  .history-clear {
+    padding: 7px 8px;
+    font-size: 13px;
+    line-height: 20px;
+    color: var(--lingyun-primary, #0a84ff);
   }
 
   .hero {

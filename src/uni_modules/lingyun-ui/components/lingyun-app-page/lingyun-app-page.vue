@@ -31,7 +31,7 @@
       :title="displayTitle"
       :show-back="isDuoSplit ? false : showBackEffective"
       :right-inset="duoTopRightInset"
-      :tools-visible="!!$slots['duo-tools'] || !!$slots.trailing || !!themeSwitchVisible"
+      :tools-visible="!!$slots['duo-tools'] || !!$slots.trailing || !!themeSwitchEffective"
       :tools-single="!$slots['duo-tools'] && !$slots.trailing"
       :leading-visible="!!$slots.leading"
       :glass-progress="glassProgress"
@@ -45,7 +45,7 @@
         <slot name="duo-tools" />
         <slot v-if="!$slots['duo-tools']" name="trailing" />
         <lingyun-theme-action
-          v-if="themeSwitchVisible"
+          v-if="themeSwitchEffective"
           :grouped="true"
           :icon-size="22"
           @menu-open="duoToolsMenuMounted = true"
@@ -69,6 +69,7 @@
       :trailing-buttons="trailingButtons"
       :trailing-buttons-hidden="trailingButtonsHidden"
       :trailing-menu-enabled="trailingMenuEnabled"
+      :show-theme-switch="showThemeSwitch"
       :searchable="searchable"
       :searching="searchActive"
       :search-value="searchText"
@@ -212,7 +213,7 @@
       :model-value="activeTabKey"
       :pose="duoPoseKey"
       :compact-tools="duoCompactTools"
-      :tools-visible="!!$slots['duo-tools'] || !!themeSwitchVisible"
+      :tools-visible="!!$slots['duo-tools'] || !!themeSwitchEffective"
       :tools-single="!$slots['duo-tools']"
       :tools-hidden="duoRailToolsMenuMounted"
       :show-back="duoRailShowBack"
@@ -225,7 +226,7 @@
       <template #tools>
         <slot name="duo-tools" />
         <lingyun-theme-action
-          v-if="themeSwitchVisible"
+          v-if="themeSwitchEffective"
           :grouped="true"
           :icon-size="22"
           @menu-open="duoRailToolsMenuMounted = true"
@@ -457,6 +458,11 @@ export default defineComponent({
     trailingButtonsHidden: { type: Boolean, default: false },
     /** 显式启用 #trailing-menu 浮层；小程序插槽检测不可靠，需手动开启 */
     trailingMenuEnabled: { type: Boolean, default: false },
+    /** 页面级主题钮开关：auto 跟随全局；false 只隐藏当前页，不改进程全局状态 */
+    showThemeSwitch: {
+      type: [Boolean, String] as PropType<boolean | string>,
+      default: 'auto',
+    },
     /** 开启顶部搜索：右侧多一个独立搜索按钮；搜索模式用输入框替换顶部内容 */
     searchable: { type: Boolean, default: false },
     /** 搜索模式开关；支持 v-model:searching */
@@ -622,7 +628,9 @@ export default defineComponent({
     searching: {
       immediate: true,
       handler(val: boolean) {
+        const wasActive = this.searchActive
         this.searchActive = !!val
+        if (wasActive && !this.searchActive) this.clearSearchValue()
       },
     },
     searchValue: {
@@ -697,6 +705,11 @@ export default defineComponent({
       } catch {
         return 'theme-light'
       }
+    },
+    themeSwitchEffective(): boolean {
+      if (this.showThemeSwitch === false) return false
+      if (this.showThemeSwitch === true) return true
+      return !!this.themeSwitchVisible
     },
     toolbarStackPx() {
       let h = this.barHeightPx
@@ -1466,9 +1479,16 @@ export default defineComponent({
     /** 关闭顶部搜索；cancel=false 时不发取消事件，用于父级主动收起 */
     closeSearch(cancel = true) {
       if (!this.searchActive) return
+      const value = this.searchText
       this.searchActive = false
       this.$emit('update:searching', false)
-      if (cancel) this.$emit('search-cancel', this.searchText)
+      if (cancel) this.$emit('search-cancel', value)
+      this.clearSearchValue()
+    },
+    clearSearchValue() {
+      if (!this.searchText) return
+      this.searchText = ''
+      this.$emit('update:searchValue', '')
     },
     toggleSearch() {
       if (this.searchActive) this.closeSearch()

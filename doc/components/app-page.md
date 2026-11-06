@@ -62,6 +62,7 @@
 | `trailingButtons` | 顶栏右侧自定义按钮组；一维为一组，二维按组渲染多个胶囊；点击发 `trailing-action` | [] |
 | `trailingButtonsHidden` | 隐藏顶栏按钮组；页面打开自己的锚点浮层时使用 | false |
 | `trailingMenuEnabled` | 显式启用 `#trailing-menu` 内置浮层；小程序必须开启 | false |
+| `showThemeSwitch` | 页面级主题钮开关；`auto` 跟随全局，`false` 只隐藏当前页，不改进程全局状态 | auto |
 | `searchable` | 开启顶部搜索：右侧多一个独立分组的搜索按钮 | false |
 | `searching` | 搜索模式；支持 `v-model:searching` | false |
 | `searchValue` | 搜索关键词；支持 `v-model:search-value` | '' |
@@ -88,7 +89,7 @@
 </lingyun-app-page>
 ```
 
-按钮和输入框的实际渲染在 `lingyun-toolbars` 内，`app-page` 只负责透传属性 / 事件，并提供 `openSearch()` / `closeSearch()` 方法；搜索模式打开时右侧搜索按钮变为取消按钮。
+按钮和输入框的实际渲染在 `lingyun-toolbars` 内，`app-page` 只负责透传属性 / 事件，并提供 `openSearch()` / `closeSearch()` 方法；搜索模式打开时右侧搜索按钮变为取消按钮。关闭搜索（点取消、调 `closeSearch()` 或外部把 `searching` 置为 false）会清空关键词并同步 `v-model:search-value`，`search-cancel` 仍会带上关闭前的关键词。
 
 ### 顶栏分段
 

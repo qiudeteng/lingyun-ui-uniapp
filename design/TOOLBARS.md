@@ -152,6 +152,7 @@ HIG 规则：相关工具项应成组，不要手动加固定间距；每个非�
 | `glassProgress` | number | `0` | 0~1，栏身液态玻璃强度（滚动渐变） |
 | `trailingButtonsHidden` | boolean | `false` | 隐藏数据驱动的右侧按钮组；页面打开自己的锚点浮层时使用，避免按钮从菜单边缘露出 |
 | `trailingMenuEnabled` | boolean | `false` | 显式启用 `#trailing-menu` 内置浮层；小程序插槽检测不可靠，不开启会在点击按钮时弹出空菜单 |
+| `showThemeSwitch` | boolean / `'auto'` | `'auto'` | 页面级主题钮开关；`false` 只隐藏当前 toolbar，不改进程全局状态 |
 | `fixed` | boolean | `false` | 顶部 fixed |
 | `safeArea` | boolean | `true` | 预留状态栏（JS `statusBarHeight`，对齐 uni-status-bar；微信内容行对齐胶囊） |
 
@@ -201,8 +202,9 @@ HIG 规则：相关工具项应成组，不要手动加固定间距；每个非�
 - 点击后进入搜索模式：返回 / 标题 / `#leading` / 数据按钮组 / 主题钮全部隐藏，左侧换成 44px 玻璃搜索框（搜索图标 + 输入框 + 清除钮），原搜索钮位置变成 44px 取消钮
 - 输入框 `confirm-type=search`，键盘确认发 `search`；输入、取消、打开分别发 `search-input` / `search-cancel` / `search-open`
 - 搜索框与取消钮都在微信胶囊安全区内，搜索框自动让出右侧胶囊
-- **过渡**：搜索层从右侧滑入（约 0.32s，ease-out），左侧返回 / 标题 / 按钮组同时向左侧淡出；关闭时反向，不从中间突然切换
+- **过渡**：搜索/关闭按钮位置固定，不参与动画；只有左侧输入框从右侧滑入（约 0.32s），关闭时反向滑出，标题与数据按钮组同时淡出 / 左移
 - `searching` 可由属性 / `v-model:searching` 控制，toolbar 自身也会发 `update:searching`；页面壳 `lingyun-app-page` 负责透传并提供 `openSearch()` / `closeSearch()` 方法
+- 关闭搜索时清空关键词并同步 `v-model:search-value`；`search-cancel` 仍携带关闭前的值，方便页面记录或清理结果
 - 搜索模式不渲染标题层，大标题样式也一起隐藏
 
 ### 顶栏下方分段控制（segments）
@@ -232,6 +234,6 @@ HIG 规则：相关工具项应成组，不要手动加固定间距；每个非�
 - [ ] 窄屏仍是 iPhone **60**（上下各 8）；微信胶囊避让与标题居中校正不变
 - [ ] 微信 PC（windows / mac）：栏身高度与同宽度 H5 一致，不按胶囊抬高
 - [ ] `searchable` 时搜索钮是独立 44px 胶囊；进入搜索后左侧内容与数据按钮组全部隐藏，搜索框 + 取消钮正常，微信胶囊不被遮挡
-- [ ] 搜索展开从右往左滑入、关闭反向；左侧内容同时淡出 / 左移
+- [ ] 搜索展开只有输入框从右往左滑入、关闭反向；搜索/取消按钮位置固定不变
 - [ ] `segments` 在 toolbar 下方渲染 40 高分段行，选中态正确；为空不占高度，页面顶部留白同步
 - [ ] `segment-click` / `segment-change` 都带 `{ value, item }`；`searching` 与 `v-model:searching` 双向一致
