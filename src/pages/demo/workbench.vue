@@ -1,5 +1,5 @@
 <template>
-  <lingyun-app-page :title="tabText" :show-back="false" :auto-top-inset="!embedded">
+  <lingyun-app-page :title="tabText" :show-back="false">
     <view class="page">
       <view :key="tabKey" class="workbench-body">
         <view class="hero">

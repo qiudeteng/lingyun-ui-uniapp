@@ -58,7 +58,7 @@
 | `showTabbar` | 全局 tabs 的底部 Tab 栏。`auto` 时只有一级 Tab 根页 / 工作台页在窄屏显示；显式 `false` 永远隐藏 | auto |
 | `navMode` | `auto / tabbar / sidebar / none`。页面级最高优先 | auto |
 | `autoBottomInset` | 自动为底部 Tab 留白（仅当前页实际渲染 Tab 时生效）。关掉后组件不再加 padding，但 CSS 变量与注入仍给出真实值 | true |
-| `autoTopInset` | 自动计算顶部工具栏 / 状态栏留白；被宿主页嵌入的工作台页设 false，由外层统一留白 | true |
+| `autoTopInset` | 自动计算顶部工具栏 / 状态栏留白；被宿主页嵌入时也保持 true，由嵌入页自己承接（小程序宿主节点接不到外层 padding，设 false 会丢状态栏安全区） | true |
 | `trailingButtons` | 顶栏右侧自定义按钮组，`{ key, icon?, label?, disabled? }[]`；点击发 `trailing-action` | [] |
 | `glassDistance` | 滚动多少 px 后顶栏玻璃铺满 | 56 |
 
