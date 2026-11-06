@@ -13,7 +13,7 @@
         </view>
       </lingyun-section>
 
-      <lingyun-section title="Stepper" :hint="`value = ${n}`" is-last>
+      <lingyun-section title="Stepper" :hint="`value = ${n}`">
         <view class="row">
           <lingyun-stepper v-model="n" :min="0" :max="9" show-value />
           <lingyun-stepper v-model="n" :min="0" :max="9" />
@@ -22,6 +22,13 @@
         <view class="row">
           <lingyun-stepper v-model="n" :min="0" :max="99" left-text="购买数量" right-text="件" show-value />
           <lingyun-stepper v-model="n" :min="0" :max="99" left-text="数量" right-text="份" />
+        </view>
+      </lingyun-section>
+
+      <lingyun-section title="大数字" :hint="`value = ${big}`" is-last>
+        <view class="row">
+          <lingyun-stepper v-model="big" :min="0" :max="999999999" show-value />
+          <lingyun-stepper v-model="big" :min="0" :max="999999999" left-text="库存" right-text="件" show-value />
         </view>
       </lingyun-section>
     </view>
@@ -34,6 +41,7 @@
   const on = ref(true)
   const on2 = ref(false)
   const n = ref(3)
+  const big = ref(123456789)
 </script>
 
 <style lang="scss">
@@ -69,6 +77,7 @@
   .row {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
     gap: 24px;
     padding: 8px 4px;

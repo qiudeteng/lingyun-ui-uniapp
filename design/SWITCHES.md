@@ -44,6 +44,8 @@
 
 事件：`update:modelValue`、`change`
 
+数值框宽度按当前数字位数自适应（15px 字号约 **10px / 位 + 12px 内边距**），多位数字完整可见；页面侧不要再给 `.lingyun-stepper__value` 写固定宽度，行容器需要允许换行或让出空间。
+
 ## 3. 自检
 
 - [ ] 独立可用；暗黑；mp-weixin 可运行

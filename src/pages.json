@@ -246,6 +246,13 @@
 			}
 		},
 		{
+			"path": "pages/demo/date-switcher",
+			"style": {
+				"navigationBarTitleText": "Date Switcher",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/checks",
 			"style": {
 				"navigationBarTitleText": "Checkbox & Radio",

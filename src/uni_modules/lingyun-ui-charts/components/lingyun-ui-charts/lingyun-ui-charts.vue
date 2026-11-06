@@ -431,9 +431,9 @@ export default defineComponent({
     // #endif
     // #ifdef H5
     this.inH5 = true;
-    if(this.inWin === true){
-      this.openmouse = this.onmouse;
-    }
+    /* H5 桌面端统一启用鼠标：设备模拟器可能把 platform 报成 android，
+       但用户仍用鼠标拖图表 / 滚动条；触摸事件仍走 touch 分支。 */
+    this.openmouse = this.onmouse;
     // #endif
     this.$nextTick(()=>{
       this.beforeInit();
@@ -766,6 +766,22 @@ export default defineComponent({
         if (!userOpts.yAxis || userOpts.yAxis.fontColor == null || userOpts.yAxis.fontColor === '') {
           if (!option.yAxis || typeof option.yAxis !== 'object') option.yAxis = {}
           option.yAxis.fontColor = chartLabelColorDark
+        }
+      }
+      /* 横向滚动条跟随全局滚动条：轨道透明、圆角滑块，暗黑用浅色 */
+      if (option.enableScroll) {
+        const scrollAxis =
+          option.xAxis && typeof option.xAxis === 'object'
+            ? option.xAxis
+            : (option.xAxis = {})
+        if (scrollAxis.scrollColor == null || scrollAxis.scrollColor === '') {
+          scrollAxis.scrollColor = dark ? 'rgba(235, 235, 245, 0.45)' : 'rgba(60, 60, 67, 0.48)'
+        }
+        if (
+          scrollAxis.scrollBackgroundColor == null ||
+          scrollAxis.scrollBackgroundColor === ''
+        ) {
+          scrollAxis.scrollBackgroundColor = 'rgba(0, 0, 0, 0)'
         }
       }
       if (this.type === 'ring') {

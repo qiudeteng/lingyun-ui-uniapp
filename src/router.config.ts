@@ -181,6 +181,11 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Switch & Stepper' }
 	},
 	{
+		path: '/pages/demo/date-switcher',
+		name: 'pagesDemoDateSwitcher',
+		meta: { title: 'Date Switcher' }
+	},
+	{
 		path: '/pages/demo/checks',
 		name: 'pagesDemoChecks',
 		meta: { title: 'Checkbox & Radio' }

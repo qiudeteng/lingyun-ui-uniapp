@@ -113,7 +113,8 @@ export default defineComponent({
     valueStyle(): { width: string } {
       const text = this.editing ? String(this.draft) : this.format(this.current)
       const len = Math.max(1, text.length)
-      return { width: `${Math.max(36, len * 12 + 8)}px` }
+      /* 15px 数字约 8.3px/位，留 ~1.7px/位余量 + 12px 内边距，按位数自适应 */
+      return { width: `${Math.max(36, Math.ceil(len * 10 + 12))}px` }
     },
   },
   methods: {
