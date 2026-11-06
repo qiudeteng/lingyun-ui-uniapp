@@ -1,3 +1,7 @@
+## 1.0.26（2026-11-06）
+- H5 桌面端统一启用鼠标事件：设备模拟器把 platform 报成 android 时仍可用鼠标拖动图表与横向滚动条；触摸事件分支保持不变。
+- 横向滚动条默认跟随主题：轨道透明、圆角滑块，暗黑模式使用浅色滑块。
+- 折线图 demo 增加表格图例示例（名称 / 合计 / 占比 / 详情 action），同步设计说明。
 ## 1.0.25（2026-10-30）
 - 修复仪表盘（gauge）在微信小程序与 H5 尺寸不一致：`width`、`splitLine`（`fixRadius` / `width` / `childWidth`）、`pointer.width`、指针三角与 `labelOffset` 等统一按 `opts.pix` 换算，小程序 Canvas 2D 的圆环粗细、progress 中心圆盘、刻度、指针与标题间距与 Web 对齐；H5 `pix=1` 表现不变。
 - 同步修正 `drawGaugeLabel` 的环宽补偿与 `drawRingTitle` 的标题间距 / `offsetX` 换算。

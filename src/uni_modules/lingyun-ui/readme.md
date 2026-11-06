@@ -1,6 +1,6 @@
 # 凌云UI
 
-凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.40**，变更见 [`changelog.md`](./changelog.md)。
+凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.41**，变更见 [`changelog.md`](./changelog.md)。
 
 📖 [使用手册](https://lingyun.xinyicanyin.com/)（组件用法、属性、示例；右侧手机框实时预览）
 
@@ -154,7 +154,7 @@ configureLingyunLayout({
 
 ```
 lingyun-ui/
-├── package.json          # 1.0.40
+├── package.json          # 1.0.41
 ├── readme.md
 ├── changelog.md
 ├── index.ts              # app.use(lingyunUi)
