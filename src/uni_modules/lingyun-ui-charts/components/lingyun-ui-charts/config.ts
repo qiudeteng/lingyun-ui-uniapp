@@ -112,7 +112,7 @@ const cfu: Record<string, any> = {
 		},
 		"extra": {
 			"ring": {
-				"ringWidth":30,
+				"ringWidth":0,
 				"activeOpacity": 0.5,
 				"activeRadius": 10,
 				"offsetAngle": 0,

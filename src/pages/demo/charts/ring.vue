@@ -6,6 +6,12 @@
         <text class="hero__desc">lingyun-ui-charts · 圆环图</text>
       </view>
 
+      <lingyun-section title="默认环宽" hint="不传 ringWidth · 按半径 40% 自适应">
+        <view class="chart-box">
+          <lingyun-ui-charts type="ring" :chartData="baseData" />
+        </view>
+      </lingyun-section>
+
       <lingyun-section title="基本环形图" hint="ringWidth=60 · border=false">
         <view class="chart-box">
           <lingyun-ui-charts
