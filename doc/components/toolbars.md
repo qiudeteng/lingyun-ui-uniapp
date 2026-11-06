@@ -1,6 +1,6 @@
 # lingyun-toolbars
 
-顶栏。放在 `lingyun-app-page` 里时不用再写一份；单独用在自定义布局或 Sheet 里。
+顶栏。放在 `lingyun-app-page` 里时不用再写一份；单独用在自定义布局或 Sheet 里。搜索 / 分段 / 综合示例见 `pages/demo/toolbar-search`、`pages/demo/toolbar-segments`、`pages/demo/toolbar-comprehensive`。
 
 ## 示例
 

@@ -18,6 +18,8 @@
           <lingyun-form-item label="账号">
             <lingyun-text-field
               v-model="form.username"
+              name="username"
+              autocomplete="username"
               placeholder="请输入手机号码或邮箱"
               :clearable="true"
             />
@@ -25,6 +27,8 @@
           <lingyun-form-item label="密码">
             <lingyun-text-field
               v-model="form.password"
+              name="password"
+              autocomplete="current-password"
               placeholder="请输入密码"
               secure
             />

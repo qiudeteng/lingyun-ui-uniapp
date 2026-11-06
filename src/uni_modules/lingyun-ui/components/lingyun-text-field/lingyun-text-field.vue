@@ -24,6 +24,8 @@
           class="lingyun-text-field__control lingyun-text-field__control--area"
           :class="controlClass"
           :value="val"
+          :name="name || undefined"
+          :autocomplete="autocomplete || undefined"
           :placeholder="placeholder"
           placeholder-class="lingyun-text-field__ph"
           :disabled="disabled || readonly"
@@ -47,6 +49,8 @@
           :class="controlClass"
           :type="nativeInputType"
           :password="nativePassword"
+          :name="name || undefined"
+          :autocomplete="autocomplete || undefined"
           :value="val"
           :placeholder="placeholder"
           placeholder-class="lingyun-text-field__ph"
@@ -177,6 +181,10 @@ export default defineComponent({
     rows: { type: [Number, String] as PropType<number | string>, default: 3 },
     maxlength: { type: [Number, String] as PropType<number | string>, default: -1 },
     type: { type: String, default: 'text' },
+    /** H5 自动填充提示；登录账号 / 密码建议传 username / current-password */
+    autocomplete: { type: String, default: '' },
+    /** 原生表单字段名，浏览器密码管理器用它匹配账号密码 */
+    name: { type: String, default: '' },
     confirmType: { type: String, default: 'done' },
     focus: { type: Boolean, default: false },
     /**
@@ -206,6 +214,9 @@ export default defineComponent({
       _nativeFocused: false,
       _ringTouchX: 0,
       _ringTouchY: 0,
+      _autofillInput: null as HTMLInputElement | null,
+      _autofillSync: null as (() => void) | null,
+      _autofillTimers: [] as ReturnType<typeof setTimeout>[],
     }
   },
   computed: {
@@ -389,10 +400,12 @@ export default defineComponent({
     this.$nextTick(() => {
       this.focused = !!this.focus
       this.focusShow = !!this.focus
+      this.bindAutofillSync()
     })
   },
   beforeUnmount() {
     this.clearRingGuard()
+    this.unbindAutofillSync()
   },
   methods: {
     initVal() {
@@ -405,6 +418,49 @@ export default defineComponent({
       } else {
         this.val = ''
       }
+    },
+    /** H5：浏览器自动填充不一定会走 uni-input 的 input 事件，主动同步原生值，避免占位符与填充值重叠 */
+    bindAutofillSync() {
+      // #ifdef H5
+      if (typeof document === 'undefined') return
+      const root = this.$el as HTMLElement | undefined
+      const input =
+        root && typeof root.querySelector === 'function'
+          ? (root.querySelector('input') as HTMLInputElement | null)
+          : null
+      if (!input) return
+      if (this.autocomplete) input.setAttribute('autocomplete', this.autocomplete)
+      if (this.name) input.setAttribute('name', this.name)
+      this._autofillInput = input
+      const sync = () => {
+        const value = input.value == null ? '' : String(input.value)
+        if (value === String(this.val == null ? '' : this.val)) return
+        this.val = value
+        this.$emit('update:modelValue', value)
+        this.$emit('update:value', value)
+        this.$emit('input', value)
+      }
+      this._autofillSync = sync
+      input.addEventListener('animationstart', sync)
+      input.addEventListener('focus', sync)
+      input.addEventListener('change', sync)
+      this._autofillTimers = [80, 360, 1200].map((delay) => setTimeout(sync, delay))
+      // #endif
+    },
+    unbindAutofillSync() {
+      // #ifdef H5
+      const input = this._autofillInput
+      const sync = this._autofillSync
+      if (input && sync) {
+        input.removeEventListener('animationstart', sync)
+        input.removeEventListener('focus', sync)
+        input.removeEventListener('change', sync)
+      }
+      this._autofillInput = null
+      this._autofillSync = null
+      this._autofillTimers.forEach((timer) => clearTimeout(timer))
+      this._autofillTimers = []
+      // #endif
     },
     onInput(event: { detail?: { value?: string } }) {
       let value = (event && event.detail ? event.detail.value : '') as string
@@ -670,13 +726,57 @@ $ly-tf-icon: 22px;
   box-sizing: border-box;
 }
 
-/* 原生 password 会让 Edge 再画一只眼睛，收掉它，只留组件自己的显隐按钮。 */
+/* H5：收掉浏览器原生密码眼睛，避免和组件自己的显隐按钮重复 */
 /* #ifdef H5 */
 .lingyun-text-field__control :deep(.uni-input-input)::-ms-reveal,
-.lingyun-text-field__control :deep(.uni-input-input)::-ms-clear {
-  display: none;
-  width: 0;
-  height: 0;
+.lingyun-text-field__control :deep(.uni-input-input)::-ms-clear,
+.lingyun-text-field__control :deep(.uni-input-input)::-webkit-credentials-auto-fill-button,
+.lingyun-text-field__control :deep(.uni-input-input)::-webkit-strong-password-auto-fill-button,
+.lingyun-text-field__control :deep(.uni-input-input)::-webkit-contacts-auto-fill-button,
+.lingyun-text-field__control :deep(.uni-input-input)::-webkit-textfield-decoration-container {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 自动填充：盖掉浏览器默认深色底色，文字跟随当前主题 */
+.lingyun-text-field__control :deep(.uni-input-input):-webkit-autofill,
+.lingyun-text-field__control :deep(.uni-input-input):-webkit-autofill:hover,
+.lingyun-text-field__control :deep(.uni-input-input):-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--lingyun-label, #000000) !important;
+  caret-color: var(--lingyun-label, #000000);
+  -webkit-box-shadow: 0 0 0 1000px var(--lingyun-fill-tertiary, #f2f2f7) inset !important;
+  box-shadow: 0 0 0 1000px var(--lingyun-fill-tertiary, #f2f2f7) inset !important;
+  transition: background-color 999999s ease-in-out 0s;
+}
+
+.lingyun-text-field--cell
+  .lingyun-text-field__control
+  :deep(.uni-input-input):-webkit-autofill,
+.lingyun-text-field--cell
+  .lingyun-text-field__control
+  :deep(.uni-input-input):-webkit-autofill:hover,
+.lingyun-text-field--cell
+  .lingyun-text-field__control
+  :deep(.uni-input-input):-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px
+    var(--lingyun-bg-grouped-secondary, #ffffff) inset !important;
+  box-shadow: 0 0 0 1000px var(--lingyun-bg-grouped-secondary, #ffffff) inset !important;
+}
+
+@keyframes lingyun-text-field-autofill {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.lingyun-text-field__control :deep(.uni-input-input):-webkit-autofill {
+  animation: lingyun-text-field-autofill 0.001s;
 }
 /* #endif */
 

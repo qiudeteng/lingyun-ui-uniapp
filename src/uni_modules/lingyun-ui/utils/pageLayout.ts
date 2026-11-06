@@ -83,6 +83,10 @@ export interface LingyunPageTab {
   text: string
   /** lingyun-icon 的 type。iconMode='icon' 时生效 */
   icon?: string
+  /** 图片图标地址；设置后 Tab 栏优先使用图片 */
+  iconSrc?: string
+  /** 选中态图片图标地址；不传时继续用 iconSrc */
+  activeIconSrc?: string
   /** 一级路由；有 children 且配置了工作台时，仅作为无二级菜单时的兜底 */
   url: string
   badge?: LingyunPageBadge

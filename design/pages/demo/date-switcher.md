@@ -11,4 +11,4 @@
 - 点击中间区域打开内置日期选择器；选择后按当前模式归一化
 - 模式切换、前后切换、选择器确认都会触发 `change`，页面「选择值」展示返回 JSON 的 `value`，下方展示完整 JSON
 - 范围限制：顶部可选择今天之前 / 今天之后 / 本周 / 本月等预设，越界时前后按钮禁用
-- 规范：[`DATE_SWITCHERS.md`](../../../DATE_SWITCHERS.md)、[`TABBARS.md`](../../../TABBARS.md)
+- 规范：[`DATE_SWITCHERS.md`](../../DATE_SWITCHERS.md)、[`TABBARS.md`](../../TABBARS.md)

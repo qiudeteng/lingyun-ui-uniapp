@@ -15,11 +15,29 @@
 />
 ```
 
+图片图标：
+
+```vue
+<lingyun-tabbars
+  v-model="current"
+  :items="[
+    {
+      key: 'home',
+      text: '首页',
+      iconSrc: '/static/tabbar/home.png',
+      activeIconSrc: '/static/tabbar/home-active.png',
+    },
+  ]"
+/>
+```
+
+`iconSrc` 优先于 `icon` / `iconMode`；选中时用 `activeIconSrc`，不传则继续用 `iconSrc`。页面壳全局 tabs 的 `iconSrc` / `activeIconSrc` 会透传到 Tab 栏。
+
 ## 属性
 
 | 属性 | 说明 | 默认值 |
 | --- | --- | --- |
-| `items` | 项：`{ key, text, icon, badge, role }`。`role: search` 为搜索钮；`badge` 支持数字 / 文本 / `{ text, color, dot, max }` | [] |
+| `items` | 项：`{ key, text, icon, iconSrc, activeIconSrc, badge, role }`。`role: search` 为搜索钮；`badge` 支持数字 / 文本 / `{ text, color, dot, max }` | [] |
 | `modelValue` | 当前 key | — |
 | `variant` | 外观 | default |
 | `iconMode` | `text` 直接显示 `icon` 字形；`icon` 用 `lingyun-icon` 渲染 | text |

@@ -64,6 +64,7 @@
 
 - Tab Bar 属于 **Liquid Glass 控件层**，浮在内容之上，**禁止**实心不透明底冒充。
 - 建议 **3–5** 个主导航项；标签短、图标优先 filled 风格（可用自定义 icon 插槽）。
+- 图片图标：`iconSrc` 优先于 `icon` / `iconMode`，选中态用 `activeIconSrc`；图片按 `iconSize`（25 / Duo 22）显示，`aspectFit` 保持比例。
 - `role: 'search'` 的项应 **与主胶囊分离**（Sketch：右侧独立圆钮）。底部玻璃搜索条是独立控件，见 [`SEARCHBARS.md`](./SEARCHBARS.md)。
 - 选中项：主色 + 胶囊内高亮；未选中：次级中性色。
 - 切换时选中高亮是 **液态透镜**：中心位置和宽度分别用弹簧，位置先到位、宽度慢半拍并轻微拉宽 6%，不压扁高度；透镜比 Tab 项左右外扩 4、上下外扩 2。
@@ -89,7 +90,7 @@
 
 | Prop | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `items` | array | `[]` | `{ key, text?, icon?, badge?, role?: 'search' }`；`badge` 为数字/字符串，或 `{ text, color?, dot?, max? }`，内部用 `lingyun-badge` |
+| `items` | array | `[]` | `{ key, text?, icon?, iconSrc?, activeIconSrc?, badge?, role?: 'search' }`；`badge` 为数字/字符串，或 `{ text, color?, dot?, max? }`，内部用 `lingyun-badge` |
 | `modelValue` / `value` | string\|number | — | 当前选中 `key` |
 | `variant` | string | `default` | `default` \| `prominent`（Sketch Default / Prominent Tab） |
 | `iconMode` | string | `text` | `text` 直接显示字形；`icon` 用 `lingyun-icon` 渲染 |

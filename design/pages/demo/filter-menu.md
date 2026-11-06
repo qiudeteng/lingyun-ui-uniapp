@@ -10,4 +10,4 @@
 - 菜单打开期间通过 `trailing-buttons-hidden` 隐藏按钮组，`closed` 后恢复，避免按钮从菜单边缘露出
 - 菜单内容为默认插槽自定义表单：状态、时间范围、排序、只看我的、重置 / 应用；菜单只负责弹出与定位
 - 选择后点「应用」收起菜单，并把条件同步到页面摘要与结果列表；「重置」只重置表单
-- 相关规范：[`TOOLBARS.md`](../../../TOOLBARS.md)、[`MENUS.md`](../../../MENUS.md)
+- 相关规范：[`TOOLBARS.md`](../../TOOLBARS.md)、[`MENUS.md`](../../MENUS.md)

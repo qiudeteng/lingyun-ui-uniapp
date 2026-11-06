@@ -9,6 +9,7 @@
 - [平板与电脑](./pc.md)
 - [宽屏目录](./page-nav.md)
 - [顶栏](./toolbars.md)
+- [主题切换](./theme-action.md)
 - [底栏](./tabbars.md)
 - [搜索栏](./search-bar.md)
 - [侧栏浮层](./sidebar.md)
@@ -43,6 +44,7 @@
 - [滑条](./slider.md)
 - [选择器](./picker.md)
 - [日期选择器](./date-picker.md)
+- [日期切换器](./date-switcher.md)
 - [级联选择](./data-picker.md)
 
 ## 列表与内容

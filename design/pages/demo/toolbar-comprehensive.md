@@ -10,4 +10,4 @@
 - `segments` 在 toolbar 下方显示分段控制，切换状态 / 结果
 - 底部 `lingyun-date-switcher` 提供天 / 周 / 月 / 年 / 自定义日期段，展示当前区间
 - 搜索、分段、筛选、日期同时作用于结果列表
-- 相关规范：[`TOOLBARS.md`](../../../TOOLBARS.md)、[`MENUS.md`](../../../MENUS.md)、[`SEGMENTED_CONTROLS.md`](../../../SEGMENTED_CONTROLS.md)、[`DATE_SWITCHERS.md`](../../../DATE_SWITCHERS.md)
+- 相关规范：[`TOOLBARS.md`](../../TOOLBARS.md)、[`MENUS.md`](../../MENUS.md)、[`SEGMENTED_CONTROLS.md`](../../SEGMENTED_CONTROLS.md)、[`DATE_SWITCHERS.md`](../../DATE_SWITCHERS.md)
