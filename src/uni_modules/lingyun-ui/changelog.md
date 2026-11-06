@@ -1,3 +1,13 @@
+## 1.0.41（2026-11-06）
+- 新增底部日期切换器 `lingyun-date-switcher`：支持天 / 周 / 月 / 年 / 自定义日期段，前后切换、模式菜单、范围限制，`change` / `center` 统一返回 `value` 与 `range`。
+- `lingyun-menu` 新增 `full-width`、`anchor` 与默认插槽自定义内容；不传 `actions` 时菜单只负责弹出、定位、遮罩和动效，内容完全由页面接管。
+- `lingyun-popover` 新增 `full-width` / `anchor`，并在展开动画结束后发送内部事件，供内容重新测量。
+- `lingyun-toolbars` 新增顶部搜索模式（独立搜索钮、从右往左输入框过渡、关闭清空关键词、延迟聚焦）、下方 `segments` 分段控制、`trailing-buttons` 二维分组、`trailing-buttons-hidden`、`trailing-menu-enabled`、`showThemeSwitch`；点击事件返回 `groupIndex` / `buttonIndex` / 整组 `anchor`。
+- `lingyun-app-page` 透传搜索与分段配置，支持 `v-model:searching` / `v-model:search-value` / `v-model:segment-value`，新增 `openSearch()` / `closeSearch()` / `toggleSearch()` 方法及 `search` / `search-input` / `search-cancel` / `segment-click` / `segment-change` 事件。
+- 修复 `lingyun-segmented-control` 在缩放浮层（菜单 / Sheet）内选中块测量错误：H5 使用布局尺寸，小程序在展开完成后重新测量。
+- `lingyun-stepper` 数值框宽度按数字位数自适应，多位数字完整显示。
+- 主题菜单 / `trailing-menu` 改为按按钮组右上角定位；新增页面级 `showThemeSwitch`，局部隐藏不再修改全局主题钮状态。
+- demo 新增底部日期切换、顶部搜索、顶部分段、筛选菜单与 All In One 综合示例；同步设计规范与组件文档。
 ## 1.0.40（2026-11-06）
 - 修复 Tab 二级 / 三级工作台被宿主页嵌入时，小程序顶部缺少状态栏安全区：工作台保持 `autoTopInset`，由嵌入页自行承接「状态栏 + 顶栏」留白；H5 宿主对嵌入页根节点的去重逻辑不变，不会双重留白。
 - 同步 `lingyun-app-page` 文档：嵌入页也应保持 `auto-top-inset` 为 `true`。
