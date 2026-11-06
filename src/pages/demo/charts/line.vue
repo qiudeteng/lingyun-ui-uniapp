@@ -76,6 +76,17 @@
         </view>
       </lingyun-section>
 
+      <lingyun-section title="折线图表格图例" hint="legend.columns · 每个系列一行 · action 列">
+        <view class="chart-box">
+          <lingyun-ui-charts
+            type="line"
+            :chartData="tableData"
+            :opts="tableOpts"
+            @legendAction="onLegendAction"
+          />
+        </view>
+      </lingyun-section>
+
       <lingyun-section title="时间轴折线图" hint="type=tline · 坐标 [x, y]" is-last>
         <view class="chart-box">
           <lingyun-ui-charts
@@ -98,6 +109,16 @@
       { name: '成交量A', data: [35, 8, 25, 37, 4, 20] },
       { name: '成交量B', data: [70, 40, 65, 100, 44, 68] },
       { name: '成交量C', data: [100, 80, 95, 150, 112, 132] },
+    ],
+  }
+
+  /** 表格图例：系列上的自定义字段（total / rate）直接作为列显示 */
+  const tableData = {
+    categories: years,
+    series: [
+      { name: '成交量A', data: [35, 8, 25, 37, 4, 20], total: '129', rate: '+8.2%' },
+      { name: '成交量B', data: [70, 40, 65, 100, 44, 68], total: '387', rate: '+12.5%' },
+      { name: '成交量C', data: [100, 80, 95, 150, 112, 132], total: '669', rate: '-3.1%' },
     ],
   }
 
@@ -242,6 +263,34 @@
       itemCount: 4,
       disableGrid: true,
     },
+  }
+
+  const tableOpts = {
+    legend: {
+      position: 'bottom',
+      fontSize: 13,
+      lineHeight: 26,
+      padding: 4,
+      columns: [
+        { key: 'name', width: 70 },
+        { key: 'total', width: 52, align: 'right' },
+        { key: 'rate', width: 46, align: 'right', color: '#86868b' },
+        { type: 'action', text: '详情', width: 44, align: 'right' },
+      ],
+      tableBorder: true,
+      borderWidth: 0.5,
+      borderColor: 'rgba(120, 120, 128, 0.32)',
+      tableRowLine: true,
+      tableLineWidth: 0.5,
+      tableLineColor: 'rgba(120, 120, 128, 0.16)',
+      tableShape: 'dot',
+      tableGap: 10,
+      actionColor: '#0A84FF',
+    },
+  }
+
+  function onLegendAction(payload: { item?: { name?: string } }): void {
+    uni.showToast({ title: `查看更多：${payload?.item?.name || '—'}`, icon: 'none' })
   }
 
   const timeOpts = {}

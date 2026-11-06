@@ -11,6 +11,7 @@
 - **渐变色曲线图**：`linearType=custom`，色标写在 `series.linearColor`
 - **渐变 + 阴影 + 水平动画**：`onShadow` + `series.setShadow`，`animation=horizontal`
 - **滚动条**：`enableScroll`，`xAxis.itemCount=4`，`scrollShow`
+- **表格图例**：`legend.columns`（名称 / 合计 / 占比 / action），每个折线系列一行；点击「详情」发 `legendAction`
 - **时间轴折线图**：`type=tline`，点为 `[x, y]`
 - 规范：[`design/CHARTS.md`](../../../CHARTS.md)
 - 系列色：包内 `config.ts` · [`COLORS.md`](../../../COLORS.md)
