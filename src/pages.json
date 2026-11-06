@@ -330,6 +330,34 @@
 			}
 		},
 		{
+			"path": "pages/demo/filter-menu",
+			"style": {
+				"navigationBarTitleText": "Filter Menu",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/toolbar-search",
+			"style": {
+				"navigationBarTitleText": "Toolbar Search",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/toolbar-segments",
+			"style": {
+				"navigationBarTitleText": "Toolbar Segments",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/toolbar-comprehensive",
+			"style": {
+				"navigationBarTitleText": "All In One",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/sidebars",
 			"style": {
 				"navigationBarTitleText": "Sidebar",

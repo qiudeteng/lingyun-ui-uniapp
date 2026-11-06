@@ -241,6 +241,26 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Menus' }
 	},
 	{
+		path: '/pages/demo/filter-menu',
+		name: 'pagesDemoFilterMenu',
+		meta: { title: 'Filter Menu' }
+	},
+	{
+		path: '/pages/demo/toolbar-search',
+		name: 'pagesDemoToolbarSearch',
+		meta: { title: 'Toolbar Search' }
+	},
+	{
+		path: '/pages/demo/toolbar-segments',
+		name: 'pagesDemoToolbarSegments',
+		meta: { title: 'Toolbar Segments' }
+	},
+	{
+		path: '/pages/demo/toolbar-comprehensive',
+		name: 'pagesDemoToolbarComprehensive',
+		meta: { title: 'All In One' }
+	},
+	{
 		path: '/pages/demo/sidebars',
 		name: 'pagesDemoSidebars',
 		meta: { title: 'Sidebar' }
