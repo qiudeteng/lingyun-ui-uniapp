@@ -5711,7 +5711,7 @@ function drawPieDataPoints(series, opts, config, context) {
     activeRadius: 10,
     offsetAngle: 0,
     labelWidth: 15,
-    ringWidth: 30,
+    ringWidth: 0,
     ringWidthRatio: 0,
     customRadius: 0,
     border: false,
