@@ -150,6 +150,8 @@ HIG 规则：相关工具项应成组，不要手动加固定间距；每个非�
 | `showGrabber` | boolean / `'auto'` | `'auto'` | Sheet 顶部拖条 |
 | `showTrailing` | boolean | `true` | 默认 Trailing 占位钮（与 `trailing` 插槽叠加） |
 | `glassProgress` | number | `0` | 0~1，栏身液态玻璃强度（滚动渐变） |
+| `trailingButtonsHidden` | boolean | `false` | 隐藏数据驱动的右侧按钮组；页面打开自己的锚点浮层时使用，避免按钮从菜单边缘露出 |
+| `trailingMenuEnabled` | boolean | `false` | 显式启用 `#trailing-menu` 内置浮层；小程序插槽检测不可靠，不开启会在点击按钮时弹出空菜单 |
 | `fixed` | boolean | `false` | 顶部 fixed |
 | `safeArea` | boolean | `true` | 预留状态栏（JS `statusBarHeight`，对齐 uni-status-bar；微信内容行对齐胶囊） |
 
@@ -157,7 +159,7 @@ HIG 规则：相关工具项应成组，不要手动加固定间距；每个非�
 |------|------|
 | `back` / `close` | 返回 / 关闭 |
 | `trailing` | 默认 Trailing 点击 |
-| `trailing-action` | 右侧自定义按钮组点击，参数 `{ key, button, index }` |
+| `trailing-action` | 右侧自定义按钮组点击，参数 `{ key, button, index, groupIndex, buttonIndex, anchor }` |
 
 插槽：`leading`、`trailing`、`title`、`subtitle`、`back`、`close`、`trailing-menu`。
 
@@ -167,12 +169,16 @@ HIG 规则：相关工具项应成组，不要手动加固定间距；每个非�
 <lingyun-toolbars
   title="Title"
   :trailing-buttons="[
-    { key: 'search', icon: 'search', label: 'Search' },
-    { key: 'more', icon: 'more', label: 'More' },
+    [
+      { key: 'search', icon: 'search', label: 'Search' },
+      { key: 'more', icon: 'more', label: 'More' },
+    ],
+    [{ key: 'filter', icon: 'tune', label: 'Filter' }],
   ]"
+  trailing-menu-enabled
   @trailing-action="onAction"
 >
-  <template #trailing-menu="{ button, close }">
+  <template #trailing-menu="{ button, index, groupIndex, buttonIndex, close }">
     <view class="my-menu">
       <!-- 自定义 menu / activity view 内容；close() 关闭浮层 -->
     </view>
@@ -180,9 +186,32 @@ HIG 规则：相关工具项应成组，不要手动加固定间距；每个非�
 </lingyun-toolbars>
 ```
 
-- 按钮组是右侧玻璃胶囊：1 个按钮为 **44×44** 圆钮，多个按 **36×36、gap 18、左右 10** 排列
-- 点击先发 `trailing-action`；若提供了 `trailing-menu` 插槽，会自动在按钮下方打开浮层并传入 `button / index / close`
-- `setLingyunThemeSwitchVisible(true)` 可把内置主题按钮加入同一个按钮组；demo 已开启
+- `trailing-buttons` 支持一维 / 二维数组：一维是一组；二维按子数组拆成多个玻璃胶囊，组与组之间沿用工具栏 **8** 间距
+- 单组内 1 个按钮为 **44×44** 圆钮，多个按 **36×36、gap 18、左右 10** 排列
+- 点击先发 `trailing-action`，参数 `{ key, button, index, groupIndex, buttonIndex, anchor }`；`anchor` 是按钮视口矩形，可直接传给 `lingyun-menu` 的 `anchor` 或自行定位浮层
+- 若同时传了 `trailing-menu-enabled` 和 `trailing-menu` 插槽，会自动在按钮下方打开浮层并传入 `button / index / groupIndex / buttonIndex / close`；小程序里必须显式开启，否则插槽检测会导致空菜单
+- `setLingyunThemeSwitchVisible(true)` 时主题钮固定加入**第一组**，与第一组按钮共用胶囊
+- 页面用 `anchor` 自己打开浮层时，把 `trailing-buttons-hidden` 绑到浮层开关（建议到 `closed` 再恢复），按钮组会淡出，避免从菜单边缘露出
+- 菜单打开时整组按钮会隐藏；主题菜单与 `trailing-menu` 浮层按**按钮组右上角**对齐（不是单个按钮的右上角），单选按钮自成一组时视觉不变
+- 标题右侧让位按所有按钮组的总宽度计算，页面不需要再自己处理小程序胶囊排版
+
+### 顶部搜索（searchable / searching）
+
+- `searchable=true` 时，右侧额外渲染一个**独立 44px 玻璃胶囊**搜索钮，位于数据按钮组之后；不和数据按钮挤在同一组
+- 点击后进入搜索模式：返回 / 标题 / `#leading` / 数据按钮组 / 主题钮全部隐藏，左侧换成 44px 玻璃搜索框（搜索图标 + 输入框 + 清除钮），原搜索钮位置变成 44px 取消钮
+- 输入框 `confirm-type=search`，键盘确认发 `search`；输入、取消、打开分别发 `search-input` / `search-cancel` / `search-open`
+- 搜索框与取消钮都在微信胶囊安全区内，搜索框自动让出右侧胶囊
+- **过渡**：搜索层从右侧滑入（约 0.32s，ease-out），左侧返回 / 标题 / 按钮组同时向左侧淡出；关闭时反向，不从中间突然切换
+- `searching` 可由属性 / `v-model:searching` 控制，toolbar 自身也会发 `update:searching`；页面壳 `lingyun-app-page` 负责透传并提供 `openSearch()` / `closeSearch()` 方法
+- 搜索模式不渲染标题层，大标题样式也一起隐藏
+
+### 顶栏下方分段控制（segments）
+
+- `segments` 数据配置一组 `{ key, text?, icon?, disabled? }`，在 toolbar **下方**渲染 Small 分段控制
+- 行高 **40**（Small 32 + 下边距 8）；`segments` 为空不渲染、不占高度
+- 内边距与 toolbar 一致（iPhone 16 / iPad 20），右侧同样避开微信胶囊
+- `segmentValue` 受控；切换发 `update:segmentValue`，同时发 `segment-click` 和 `segment-change`，参数 `{ value, item }`
+- 搜索模式只替换 toolbar 主行，分段行保留
 
 
 ---
@@ -202,3 +231,7 @@ HIG 规则：相关工具项应成组，不要手动加固定间距；每个非�
 - [ ] Mac 桌面宽屏：有左侧导航时交通灯在侧栏顶栏；无侧栏时在 Toolbar Leading。**41×22**（红 / 黄 / 绿）；iPad 与微信不显示
 - [ ] 窄屏仍是 iPhone **60**（上下各 8）；微信胶囊避让与标题居中校正不变
 - [ ] 微信 PC（windows / mac）：栏身高度与同宽度 H5 一致，不按胶囊抬高
+- [ ] `searchable` 时搜索钮是独立 44px 胶囊；进入搜索后左侧内容与数据按钮组全部隐藏，搜索框 + 取消钮正常，微信胶囊不被遮挡
+- [ ] 搜索展开从右往左滑入、关闭反向；左侧内容同时淡出 / 左移
+- [ ] `segments` 在 toolbar 下方渲染 40 高分段行，选中态正确；为空不占高度，页面顶部留白同步
+- [ ] `segment-click` / `segment-change` 都带 `{ value, item }`；`searching` 与 `v-model:searching` 双向一致

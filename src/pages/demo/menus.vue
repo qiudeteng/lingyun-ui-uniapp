@@ -18,6 +18,23 @@
         </lingyun-menu>
       </lingyun-section>
 
+      <lingyun-section title="Full width" hint="full-width · 手机铺满，PC / PAD 上限 400">
+        <lingyun-menu
+          v-model:show="fullOpen"
+          full-width
+          :actions="actions"
+          @select="onSelect"
+        >
+          <template #trigger>
+            <lingyun-button
+              variant="borderedProminent"
+              text="Open full width"
+              @click="fullOpen = !fullOpen"
+            />
+          </template>
+        </lingyun-menu>
+      </lingyun-section>
+
       <lingyun-section title="Context · long-press" is-last>
         <lingyun-context-menu :actions="actions" @select="onSelect">
           <view class="card">
@@ -33,6 +50,7 @@
   import { ref } from 'vue'
 
   const open = ref(false)
+  const fullOpen = ref(false)
   const last = ref('—')
   /** 对齐 Sketch Examples/Menus 那张官方菜单 */
   const actions = [

@@ -124,6 +124,8 @@ export default defineComponent({
       },
       _onResize: null as (() => void) | null,
       _resizeRaf: null as number | null,
+      _settleTimers: [] as ReturnType<typeof setTimeout>[],
+      _onOverlayOpened: null as (() => void) | null,
       _ro: null as ResizeObserver | null,
       _lensRaf: null as number | null,
       _lensLast: 0,
@@ -208,9 +210,13 @@ export default defineComponent({
   },
   mounted() {
     this.bindThumbResize()
+    this.bindOverlayOpened()
+    this.scheduleSettleThumbSync()
     this.$nextTick(() => this.scheduleThumbSync())
   },
   beforeUnmount() {
+    this.unbindOverlayOpened()
+    this.clearSettleThumbSync()
     this.stopLens()
     this.unbindThumbResize()
   },
@@ -253,6 +259,35 @@ export default defineComponent({
           this.syncThumb({ liquid: false })
         })
       })
+    },
+    /** 菜单 / Sheet 从缩放态展开时，布局宽度不变但测量到的 rect 会被 transform 缩小；多补几次落定后的测量 */
+    bindOverlayOpened() {
+      const handler = () => this.scheduleThumbSync()
+      this._onOverlayOpened = handler
+      if (typeof uni !== 'undefined' && typeof uni.$on === 'function') {
+        uni.$on('lingyun:overlay-opened', handler)
+      }
+    },
+    unbindOverlayOpened() {
+      const handler = this._onOverlayOpened
+      if (handler && typeof uni !== 'undefined' && typeof uni.$off === 'function') {
+        uni.$off('lingyun:overlay-opened', handler)
+      }
+      this._onOverlayOpened = null
+    },
+    scheduleSettleThumbSync() {
+      this.clearSettleThumbSync()
+      ;[120, 280, 520, 800].forEach((delay) => {
+        this._settleTimers.push(
+          setTimeout(() => {
+            this.scheduleThumbSync()
+          }, delay),
+        )
+      })
+    },
+    clearSettleThumbSync() {
+      this._settleTimers.forEach((timer) => clearTimeout(timer))
+      this._settleTimers = []
     },
     bindThumbResize() {
       const onResize = () => this.scheduleThumbSync()
@@ -374,6 +409,20 @@ export default defineComponent({
         return
       }
       this.$nextTick(() => {
+        /* #ifdef H5 */
+        if (typeof document !== 'undefined') {
+          const trackEl = document.getElementById(this.trackId)
+          const segEl = document.getElementById(this.segmentId(activeIndex))
+          /* offsetLeft / offsetWidth 是布局尺寸，不受父级 transform 缩放影响 */
+          if (trackEl && segEl && segEl.offsetWidth > 0) {
+            this.applyThumbRect(
+              { left: Math.max(0, segEl.offsetLeft), width: segEl.offsetWidth },
+              liquid,
+            )
+            return
+          }
+        }
+        /* #endif */
         uni
           .createSelectorQuery()
           .in(this)
@@ -385,29 +434,34 @@ export default defineComponent({
             const track = res && res[0]
             const seg = res && res[1]
             if (!track || !seg || !seg.width) return
-            const toRect = {
-              left: Math.max(0, seg.left - track.left),
-              width: seg.width,
-            }
-            const canFlow =
-              liquid &&
-              this.thumb.ready &&
-              this.thumb.visible &&
-              this.thumb.width > 0 &&
-              !this.prefersReducedMotion()
-            this.thumb.visible = true
-            if (canFlow) {
-              this.flowLens(toRect)
-              return
-            }
-            this.snapLens(toRect)
-            if (!this.thumb.ready) {
-              this.$nextTick(() => {
-                this.thumb.ready = true
-              })
-            }
+            this.applyThumbRect(
+              {
+                left: Math.max(0, seg.left - track.left),
+                width: seg.width,
+              },
+              liquid,
+            )
           })
       })
+    },
+    applyThumbRect(rect: ThumbRect, liquid: boolean) {
+      const canFlow =
+        liquid &&
+        this.thumb.ready &&
+        this.thumb.visible &&
+        this.thumb.width > 0 &&
+        !this.prefersReducedMotion()
+      this.thumb.visible = true
+      if (canFlow) {
+        this.flowLens(rect)
+        return
+      }
+      this.snapLens(rect)
+      if (!this.thumb.ready) {
+        this.$nextTick(() => {
+          this.thumb.ready = true
+        })
+      }
     },
     isActive(item: SegmentItem | null | undefined) {
       if (!item) return false

@@ -38,7 +38,7 @@
             <view class="lingyun-popover__arrow-fill" />
             <view class="lingyun-popover__arrow-stroke" />
           </view>
-          <view ref="panel" class="lingyun-popover__panel">
+          <view ref="panel" class="lingyun-popover__panel" @transitionend="onPanelTransitionEnd">
             <view class="lingyun-popover__content">
               <slot />
             </view>
@@ -64,7 +64,7 @@
             <view class="lingyun-popover__arrow-fill" />
             <view class="lingyun-popover__arrow-stroke" />
           </view>
-          <view ref="panel" class="lingyun-popover__panel">
+          <view ref="panel" class="lingyun-popover__panel" @transitionend="onPanelTransitionEnd">
             <view class="lingyun-popover__content">
               <slot />
             </view>
@@ -106,6 +106,8 @@ const PANEL_RADIUS = 16
 const PANEL_RADIUS_MENU = 32
 const PANEL_MIN_W = 160
 const PANEL_MAX_W = 280
+/* 全宽菜单在 PC / PAD 的上限，约等于主流手机宽度 */
+const FULL_PANEL_MAX_W = 400
 const QUERY_TIMEOUT_MS = 600
 const EST_PANEL_H = 52
 
@@ -140,6 +142,8 @@ export default defineComponent({
     showArrow: { type: Boolean, default: true },
     /** 面板宽（px）。0 表示跟触发器，并限制在 160–280 */
     width: { type: [Number, String] as PropType<number | string>, default: 0 },
+    /** 全宽面板：手机铺满可用宽度，PC / PAD 上限 400 */
+    fullWidth: { type: Boolean, default: false },
     /** 箭头落在面板哪一侧（面板随之偏移），箭头始终指向触发器：auto / middle 居中，leading 靠前，trailing 靠后 */
     arrowAlign: { type: String, default: 'auto' },
     maskClosable: { type: Boolean, default: true },
@@ -170,6 +174,8 @@ export default defineComponent({
       noTrans: false,
       leaveTimer: null as ReturnType<typeof setTimeout> | null,
       enterTimer: null as ReturnType<typeof setTimeout> | null,
+      openSettleTimer: null as ReturnType<typeof setTimeout> | null,
+      openNotified: false,
       panelTop: 0,
       panelLeft: 16,
       panelWidth: 200,
@@ -360,6 +366,23 @@ export default defineComponent({
         clearTimeout(this.enterTimer)
         this.enterTimer = null
       }
+      if (this.openSettleTimer) {
+        clearTimeout(this.openSettleTimer)
+        this.openSettleTimer = null
+      }
+    },
+    notifyOverlayOpened() {
+      if (this.openNotified) return
+      this.openNotified = true
+      if (typeof uni !== 'undefined' && typeof uni.$emit === 'function') {
+        uni.$emit('lingyun:overlay-opened')
+      }
+    },
+    onPanelTransitionEnd(event?: { propertyName?: string; detail?: { propertyName?: string } }) {
+      if (!this.visible || this.phase !== 'open') return
+      const property = event?.propertyName || event?.detail?.propertyName
+      if (property && property !== 'border-radius' && property !== 'borderRadius') return
+      this.notifyOverlayOpened()
     },
     setVisible(val: boolean) {
       this.$emit('update:show', val)
@@ -566,6 +589,7 @@ export default defineComponent({
     resolvePanelWidth(triggerWidth: number, vw: number): number {
       const raw = Number(this.width)
       const cap = Math.max(PANEL_MIN_W, vw - 24)
+      if (this.fullWidth) return Math.round(Math.min(FULL_PANEL_MAX_W, cap))
       if (raw > 0) return Math.round(Math.min(Math.max(raw, 120), cap))
       const basis = Math.max(Number(triggerWidth) || 0, PANEL_MIN_W)
       return Math.round(Math.min(PANEL_MAX_W, Math.max(PANEL_MIN_W, Math.min(basis, cap))))
@@ -591,6 +615,7 @@ export default defineComponent({
     },
     openAnim() {
       this.clearTimers()
+      this.openNotified = false
       const seq = ++this.openSeq
       const alive = () => seq === this.openSeq && this.visible
       const estimate = this.estimateHeight > 0 ? this.estimateHeight : EST_PANEL_H
@@ -618,6 +643,11 @@ export default defineComponent({
                   if (!alive()) return
                   this.noTrans = false
                   this.phase = 'open'
+                  /* transitionend 不可用时兜底通知内容已完成展开 */
+                  this.openSettleTimer = setTimeout(() => {
+                    this.openSettleTimer = null
+                    this.notifyOverlayOpened()
+                  }, 900)
                 }, 48)
               })
             })

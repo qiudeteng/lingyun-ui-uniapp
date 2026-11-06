@@ -93,12 +93,25 @@
         </view>
       </lingyun-section>
 
+      <lingyun-section title="Grouped trailing buttons" hint="二维数组 · 多组胶囊">
+        <view class="preview">
+          <lingyun-toolbars
+            :safe-area="false"
+            title="Groups"
+            :trailing-buttons="groupedButtons"
+            @trailing-action="onGroupedAction"
+          />
+        </view>
+        <text class="grouped-hint">最近点击：{{ groupedAction }}</text>
+      </lingyun-section>
+
       <lingyun-section title="Right action group" hint="trailing-buttons + trailing-menu" is-last>
         <view class="preview">
           <lingyun-toolbars
             :safe-area="false"
             title="Actions"
             :trailing-buttons="actionButtons"
+            trailing-menu-enabled
             @trailing-action="onAction"
           >
             <template #trailing-menu="{ button, close }">
@@ -119,10 +132,29 @@
 </template>
 
 <script setup lang="ts">
+  import { ref } from 'vue'
+
   const actionButtons = [
     { key: 'search', icon: 'search', label: 'Search' },
     { key: 'more', icon: 'more', label: 'More' },
   ]
+
+  const groupedButtons = [
+    [
+      { key: 'search', icon: 'search', label: 'Search' },
+      { key: 'share', icon: 'upload', label: 'Share' },
+    ],
+    [{ key: 'filter', icon: 'tune', label: 'Filter' }],
+  ]
+  const groupedAction = ref('—')
+
+  function onGroupedAction(payload: {
+    key?: string
+    groupIndex?: number
+    buttonIndex?: number
+  }): void {
+    groupedAction.value = `第 ${(payload.groupIndex ?? 0) + 1} 组 / 第 ${(payload.buttonIndex ?? 0) + 1} 个 · ${payload.key || '—'}`
+  }
 
   function toast(msg: string): void {
     uni.showToast({ title: msg, icon: 'none' })
@@ -183,6 +215,14 @@
 
   .action-menu {
     padding: 4px 0;
+  }
+
+  .grouped-hint {
+    display: block;
+    margin-top: 12px;
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--lingyun-label-secondary, #6a6a6a);
   }
 
   .action-menu__item {

@@ -49,6 +49,9 @@ export const LINGYUN_TOOLBAR_LARGE_EXTRA_REGULAR_PX = 48
 /** Title 2 Line Large 额外高度：iPhone 131 − 60，iPad 125 − 54，同为 71 */
 export const LINGYUN_TOOLBAR_2LINE_LARGE_EXTRA_PX = 71
 
+/** 顶栏下方分段控制行高度：Small 32 + 下边距 8 */
+export const LINGYUN_TOOLBAR_SEGMENT_ROW_PX = 40
+
 /**
  * 从状态栏挪到内容行下边距的 px（仅有真实状态栏时生效）。
  * 总高度不变：status 少 5，bar 下边距多 5（8→13）。

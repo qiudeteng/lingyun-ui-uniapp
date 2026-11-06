@@ -5,6 +5,7 @@
     :mask="true"
     mask-transparent
     :z-index="1200"
+    :anchor="anchor"
     @select="onThemeSelect"
     @closed="onMenuClosed"
   >
@@ -26,7 +27,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, type PropType } from 'vue'
 import { useLingyunTheme, type LingyunThemePreference } from '../../utils/theme'
 
 /**
@@ -40,6 +41,13 @@ export default defineComponent({
   props: {
     grouped: { type: Boolean, default: false },
     iconSize: { type: [Number, String], default: 20 },
+    /** 菜单锚点；按钮组隐藏时由工具栏传入整组右上角，避免按单个按钮定位 */
+    anchor: {
+      type: Object as PropType<
+        { top?: number; left?: number; width?: number; height?: number } | null
+      >,
+      default: null,
+    },
   },
   data() {
     return {
