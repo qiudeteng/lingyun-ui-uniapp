@@ -6,6 +6,8 @@
 
 `Menus/Light/iPhone`：宽 **250**，内边距 **10**，圆角 **32**。无箭头。遮罩点按关闭。
 
+全宽模式：`full-width` 时面板宽取 `min(400, 视口宽 - 24)`——手机上铺满可用宽度（左右各留 12 安全边距），PC / PAD 上限 **400**（约等于主流手机宽度）。定位规则不变，仍按触发按钮贴左上角 / 右上角，上下空间不足时翻转，不水平居中。
+
 ## 2. 行
 
 | 行 | 尺寸 |
@@ -46,6 +48,7 @@
 - 点击父项展开，再次点击或点击外部关闭；左侧栏二级菜单传 `mask-transparent`，保留透明遮罩用于点击外部关闭，页面不压暗；
 - 传 `trigger-block` 让触发器撑满父级，导航项保持整格宽度与居中。
 - 传 `placement="right"`，面板贴着父项右侧弹出，不加遮罩、不改内容区。
+- 传 `full-width` 切换为全宽面板；手机铺满可用宽度，PC / PAD 上限 400，定位与动效仍按触发按钮计算。
 
 ## 3.1 打开 / 关闭动效（强制）
 
@@ -59,6 +62,26 @@
 - 菜单无箭头；`lingyun-menu` / `lingyun-toolbars #trailing-menu` 共用 `lingyun-popover variant="menu"` 的实现。
 - ❌ 不要再用普通浮层的 `scale(1.16→1)` Alert 缩放入场。
 
+## 3.2 自定义内容（默认插槽）
+
+菜单只负责弹出、定位、遮罩与动效时，不传 `actions`（为空数组），把表单放进默认插槽即可；插槽作用域提供 `{ close, show }`，点「应用」等按钮时调用 `close()` 收起。`actions` 非空时优先渲染内置菜单行，默认插槽不生效。
+
+```vue
+<lingyun-menu v-model:show="open" full-width>
+  <template #trigger="{ toggle }">
+    <view @click="toggle">筛选</view>
+  </template>
+  <template #default="{ close }">
+    <view class="filter-form">
+      <!-- 自定义表单：segmented / switch / button 等 -->
+      <lingyun-button text="应用" block @click="apply(close)" />
+    </view>
+  </template>
+</lingyun-menu>
+```
+
+插槽内容由页面自行排版；面板仍保留菜单的 32 圆角、10 内边距和 70vh 最大高度。
+
 ## 4. Context Menu（lingyun-context-menu）
 
 长按弹出同一套行。面板同样 250 / 圆角 32 / 内边距 10。
@@ -71,9 +94,10 @@
 
 ## 5. 自检
 
-- [ ] 面板宽 250、圆角 32、玻璃透底、无箭头
+- [ ] 面板宽 250、圆角 32、玻璃透底、无箭头；`full-width` 时手机铺满可用宽度、PC / PAD 上限 400，定位仍贴触发按钮
 - [ ] 打开时触发按钮隐藏，水滴从按钮中心长出并覆盖按钮位置；关闭时菜单先收缩淡出，几乎消失后按钮再出现
 - [ ] 圆角落定 32，轻微回弹；内容晚一步淡入；H5 有 blur → 清晰，小程序只淡入
 - [ ] 标题 17、副标题 13、destructive 为 System Red
 - [ ] 分隔、分组标题、选中勾、子菜单箭头、顶部快捷操作
+- [ ] 不传 `actions` 时默认插槽正常渲染，插槽内调用 `close()` 可收起
 - [ ] mp-weixin 可点选 / 长按

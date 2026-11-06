@@ -38,6 +38,7 @@
 | `placement` | 相对触发器的方向：`top` / `bottom` / `left` / `right`。这一侧放不下时翻到对侧 | bottom |
 | `showArrow` | 显示箭头 | true |
 | `width` | 面板宽度（px）。0 跟触发器，并限制在 160–280 | 0 |
+| `fullWidth` | 全宽面板：手机铺满可用宽度，PC / PAD 上限 400；优先于 `width` | false |
 | `arrowAlign` | 箭头落在面板哪一侧：`auto` / `middle` 居中，`leading` 靠前（面板向后展开），`trailing` 靠后（面板向前展开）。箭头都指向触发器 | auto |
 | `maskClosable` | 点外面关闭 | true |
 | `zIndex` | 层级 | 1100 |

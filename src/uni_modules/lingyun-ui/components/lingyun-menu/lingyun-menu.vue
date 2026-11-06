@@ -4,12 +4,14 @@
     variant="menu"
     :show-arrow="false"
     :width="250"
+    :full-width="fullWidth"
     :placement="placement"
     :mask-closable="maskClosable"
     :mask="mask"
     :mask-transparent="maskTransparent"
     :trigger-block="triggerBlock"
     :z-index="zIndex"
+    :anchor="anchor"
     :instant-close="instantClose"
     @close="onClose"
     @closed="onClosed"
@@ -17,62 +19,65 @@
     <template #trigger="{ show, toggle }">
       <slot name="trigger" :show="show" :toggle="toggle" />
     </template>
-    <view class="lingyun-menu">
-      <view
-        v-for="(action, index) in normalizedActions"
-        :key="action.key || index"
-        :class="rowClass(action)"
-        :hover-class="hoverClass(action)"
-        :hover-start-time="20"
-        :hover-stay-time="70"
-        @click="onRow(action, index)"
-      >
-        <view v-if="action.kind === 'separator'" class="lingyun-menu__sep-line" />
-        <text v-else-if="action.kind === 'title'" class="lingyun-menu__heading-text">{{ action.label }}</text>
-        <template v-else-if="action.kind === 'controls'">
-          <view
-            v-for="item in action.items"
-            :key="item.key"
-            class="lingyun-menu__control"
-            :class="controlClass(item)"
-            :hover-class="item.disabled ? '' : 'lingyun-menu__control--hover'"
-            :hover-start-time="20"
-            :hover-stay-time="70"
-            @click.stop="onControl(item)"
-          >
+    <view class="lingyun-menu" :class="{ 'lingyun-menu--custom': !hasActions }">
+      <template v-if="hasActions">
+        <view
+          v-for="(action, index) in normalizedActions"
+          :key="action.key || index"
+          :class="rowClass(action)"
+          :hover-class="hoverClass(action)"
+          :hover-start-time="20"
+          :hover-stay-time="70"
+          @click="onRow(action, index)"
+        >
+          <view v-if="action.kind === 'separator'" class="lingyun-menu__sep-line" />
+          <text v-else-if="action.kind === 'title'" class="lingyun-menu__heading-text">{{ action.label }}</text>
+          <template v-else-if="action.kind === 'controls'">
+            <view
+              v-for="item in action.items"
+              :key="item.key"
+              class="lingyun-menu__control"
+              :class="controlClass(item)"
+              :hover-class="item.disabled ? '' : 'lingyun-menu__control--hover'"
+              :hover-start-time="20"
+              :hover-stay-time="70"
+              @click.stop="onControl(item)"
+            >
+              <lingyun-icon
+                v-if="item.icon"
+                :type="item.icon"
+                :size="22"
+                :color="iconColor(item)"
+              />
+              <text class="lingyun-menu__control-label">{{ item.label }}</text>
+            </view>
+          </template>
+          <template v-else>
+            <view v-if="action.icon" class="lingyun-menu__symbol">
+              <lingyun-icon :type="action.icon" :size="20" :color="iconColor(action)" />
+            </view>
+            <view class="lingyun-menu__text">
+              <text class="lingyun-menu__label">{{ action.label }}</text>
+              <text v-if="action.subtitle" class="lingyun-menu__subtitle">{{ action.subtitle }}</text>
+            </view>
             <lingyun-icon
-              v-if="item.icon"
-              :type="item.icon"
-              :size="22"
-              :color="iconColor(item)"
+              v-if="action.selected"
+              class="lingyun-menu__trail"
+              type="checkmarkempty"
+              :size="17"
+              :color="iconColor(action)"
             />
-            <text class="lingyun-menu__control-label">{{ item.label }}</text>
-          </view>
-        </template>
-        <template v-else>
-          <view v-if="action.icon" class="lingyun-menu__symbol">
-            <lingyun-icon :type="action.icon" :size="20" :color="iconColor(action)" />
-          </view>
-          <view class="lingyun-menu__text">
-            <text class="lingyun-menu__label">{{ action.label }}</text>
-            <text v-if="action.subtitle" class="lingyun-menu__subtitle">{{ action.subtitle }}</text>
-          </view>
-          <lingyun-icon
-            v-if="action.selected"
-            class="lingyun-menu__trail"
-            type="checkmarkempty"
-            :size="17"
-            :color="iconColor(action)"
-          />
-          <lingyun-icon
-            v-if="action.submenu"
-            class="lingyun-menu__trail"
-            type="right"
-            :size="12"
-            color="secondary"
-          />
-        </template>
-      </view>
+            <lingyun-icon
+              v-if="action.submenu"
+              class="lingyun-menu__trail"
+              type="right"
+              :size="12"
+              color="secondary"
+            />
+          </template>
+        </view>
+      </template>
+      <slot v-else :close="closeMenu" :show="innerShow" />
     </view>
   </lingyun-popover>
 </template>
@@ -105,6 +110,15 @@ export default defineComponent({
     zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
     /** 关闭时不播退场，用于菜单间直接切换 */
     instantClose: { type: Boolean, default: false },
+    /** 全宽菜单：手机铺满可用宽度，PC / PAD 上限 400；定位仍跟随触发器 */
+    fullWidth: { type: Boolean, default: false },
+    /** 视口坐标锚点；传了就不再依赖 trigger 插槽，用于 toolbar 按钮等外部触发点 */
+    anchor: {
+      type: Object as PropType<
+        { top?: number; left?: number; width?: number; height?: number } | null
+      >,
+      default: null,
+    },
   },
   computed: {
     innerShow: {
@@ -121,8 +135,15 @@ export default defineComponent({
     normalizedActions(): MenuAction[] {
       return normalizeMenuActions(this.actions)
     },
+    hasActions(): boolean {
+      return this.normalizedActions.length > 0
+    },
   },
   methods: {
+    /** 供自定义默认插槽关闭菜单 */
+    closeMenu() {
+      this.innerShow = false
+    },
     iconColor(action: Pick<MenuItem, 'disabled' | 'role'>): string {
       if (action.disabled) return 'tertiary'
       if (action.role === 'destructive') return 'red'

@@ -59,7 +59,54 @@
 | `navMode` | `auto / tabbar / sidebar / none`。页面级最高优先 | auto |
 | `autoBottomInset` | 自动为底部 Tab 留白（仅当前页实际渲染 Tab 时生效）。关掉后组件不再加 padding，但 CSS 变量与注入仍给出真实值 | true |
 | `autoTopInset` | 自动计算顶部工具栏 / 状态栏留白；被宿主页嵌入时也保持 true，由嵌入页自己承接（小程序宿主节点接不到外层 padding，设 false 会丢状态栏安全区） | true |
-| `trailingButtons` | 顶栏右侧自定义按钮组，`{ key, icon?, label?, disabled? }[]`；点击发 `trailing-action` | [] |
+| `trailingButtons` | 顶栏右侧自定义按钮组；一维为一组，二维按组渲染多个胶囊；点击发 `trailing-action` | [] |
+| `trailingButtonsHidden` | 隐藏顶栏按钮组；页面打开自己的锚点浮层时使用 | false |
+| `trailingMenuEnabled` | 显式启用 `#trailing-menu` 内置浮层；小程序必须开启 | false |
+| `searchable` | 开启顶部搜索：右侧多一个独立分组的搜索按钮 | false |
+| `searching` | 搜索模式；支持 `v-model:searching` | false |
+| `searchValue` | 搜索关键词；支持 `v-model:search-value` | '' |
+| `searchPlaceholder` | 搜索占位文案 | 搜索 |
+| `segments` | 顶栏下方分段控制数据 `{ key, text?, icon?, disabled? }[]`；为空不占高度 | [] |
+| `segmentValue` | 当前分段 key；支持 `v-model:segment-value` | '' |
+
+### 顶部搜索
+
+```vue
+<lingyun-app-page
+  ref="pageRef"
+  title="订单"
+  searchable
+  v-model:searching="searching"
+  v-model:search-value="keyword"
+  search-placeholder="搜索订单"
+  @search-open="onSearchOpen"
+  @search-cancel="onSearchCancel"
+  @search-input="onSearchInput"
+  @search="onSearch"
+>
+  <!-- 搜索模式打开时页面可以只渲染搜索专用内容 -->
+</lingyun-app-page>
+```
+
+按钮和输入框的实际渲染在 `lingyun-toolbars` 内，`app-page` 只负责透传属性 / 事件，并提供 `openSearch()` / `closeSearch()` 方法；搜索模式打开时右侧搜索按钮变为取消按钮。
+
+### 顶栏分段
+
+```vue
+<lingyun-app-page
+  title="订单"
+  :segments="[
+    { key: 'all', text: '全部' },
+    { key: 'active', text: '进行中' },
+    { key: 'done', text: '已完成' },
+  ]"
+  v-model:segment-value="segment"
+  @segment-click="onSegmentClick"
+  @segment-change="onSegmentChange"
+/>
+```
+
+分段行显示在 toolbar 下方，高度 **40**（Small 32 + 下边距 8），页面顶部留白会自动增加；`segments` 为空时不渲染也不占高度。
 | `glassDistance` | 滚动多少 px 后顶栏玻璃铺满 | 56 |
 
 ## 一级导航（数据驱动）
@@ -111,12 +158,22 @@ setLingyunPageConfig({
 | `leading` | 顶栏左侧；Duo 内屏竖屏下接管 48×48 Leading，提供后不再渲染默认返回钮 |
 | `trailing` | 顶栏右侧；Duo 内屏竖屏作为 `duo-tools` 的兼容回退 |
 | `duo-tools` | Duo 工具项；内屏竖屏进入顶部 164×48 玻璃工具组（1~3 个 36×36），其他姿态进入右侧全高栏 |
-| `trailing-menu` | `trailingButtons` 点击后的自定义菜单内容；参数 `{ button, index, close }`，可放 menu / activity view |
+| `trailing-menu` | 配合 `trailing-menu-enabled` 使用；`trailingButtons` 点击后的自定义菜单内容，参数 `{ button, index, groupIndex, buttonIndex, close }`，可放 menu / activity view |
 | `nav-avatar` | 宽屏左栏顶部头像 |
 | `nav-name` | 宽屏左栏顶部名称，对齐原来的「凌云UI」 |
 | `nav-subtitle` | 宽屏左栏顶部副标题，挂在名称下面 |
 
 H5 侧栏在页面外面，这三个插槽会送进那一列。微信小程序直接嵌在当前页。离开页面后，顶部回到没有插槽时的样子。
+
+## 方法
+
+通过组件 `ref` 调用，属性 / 事件两种方式可同时使用：
+
+| 方法 | 说明 |
+| --- | --- |
+| `openSearch()` | 打开搜索模式；未开启 `searchable` 时忽略 |
+| `closeSearch(cancel = true)` | 关闭搜索；默认发 `search-cancel`，传 `false` 可静默关闭 |
+| `toggleSearch()` | 切换搜索模式 |
 
 ## 事件
 
@@ -125,7 +182,16 @@ H5 侧栏在页面外面，这三个插槽会送进那一列。微信小程序�
 | `back` | 点返回 |
 | `close` | 点关闭 |
 | `trailing` | 点右侧按钮 |
-| `trailing-action` | 点 `trailingButtons`，参数 `{ key, button, index }` |
+| `trailing-action` | 点 `trailingButtons`，参数 `{ key, button, index, groupIndex, buttonIndex, anchor }`；`anchor` 是整组矩形，可直接传给 `lingyun-menu` 的 `anchor` |
+| `update:searching` | 搜索模式变化，配合 `v-model:searching` |
+| `update:searchValue` | 搜索关键词变化，配合 `v-model:search-value` |
+| `search-open` | 搜索模式打开 |
+| `search-cancel` | 点取消 / 调 `closeSearch()`，参数为当前关键词 |
+| `search-input` | 搜索输入变化，参数为当前关键词 |
+| `search` | 键盘确认搜索，参数为当前关键词 |
+| `update:segmentValue` | 分段值变化，配合 `v-model:segment-value` |
+| `segment-click` | 点击分段项，参数 `{ value, item }` |
+| `segment-change` | 分段切换，参数 `{ value, item }` |
 | `tab-change` | 点底部 Tab，参数 `{ key, tab }` |
 
 含文本输入的页面不要设 `:page-scroll="false"`。横向滑动行需要锁竖向滚动时才关。

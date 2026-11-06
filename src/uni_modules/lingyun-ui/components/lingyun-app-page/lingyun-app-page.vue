@@ -67,6 +67,14 @@
       :show-trailing="showTrailing"
       :show-window-controls="navDocked || tabbarVisible ? false : 'auto'"
       :trailing-buttons="trailingButtons"
+      :trailing-buttons-hidden="trailingButtonsHidden"
+      :trailing-menu-enabled="trailingMenuEnabled"
+      :searchable="searchable"
+      :searching="searchActive"
+      :search-value="searchText"
+      :search-placeholder="searchPlaceholder"
+      :segments="segments"
+      :segment-value="segmentValue"
       :fixed="true"
       :safe-area="safeArea"
       :glass-progress="glassProgress"
@@ -74,6 +82,13 @@
       @close="onClose"
       @trailing="onTrailing"
       @trailing-action="onTrailingAction"
+      @search-open="onToolbarSearchOpen"
+      @search-cancel="onToolbarSearchCancel"
+      @update:searchValue="onSearchInput"
+      @search="onSearchConfirm"
+      @update:segmentValue="onSegmentUpdate"
+      @segment-click="onSegmentClick"
+      @segment-change="onSegmentChange"
     >
       <template #leading>
         <slot name="leading" />
@@ -81,8 +96,18 @@
       <template #trailing>
         <slot name="trailing" />
       </template>
-      <template v-if="$slots['trailing-menu']" #trailing-menu="{ button, index, close }">
-        <slot name="trailing-menu" :button="button" :index="index" :close="close" />
+      <template
+        v-if="$slots['trailing-menu']"
+        #trailing-menu="{ button, index, groupIndex, buttonIndex, close }"
+      >
+        <slot
+          name="trailing-menu"
+          :button="button"
+          :index="index"
+          :groupIndex="groupIndex"
+          :buttonIndex="buttonIndex"
+          :close="close"
+        />
       </template>
     </lingyun-toolbars>
 
@@ -272,6 +297,7 @@ import {
   LINGYUN_TOOLBAR_2LINE_LARGE_EXTRA_PX,
   LINGYUN_TOOLBAR_BAR_DESIGN_PX,
   LINGYUN_TOOLBAR_LARGE_EXTRA_PX,
+  LINGYUN_TOOLBAR_SEGMENT_ROW_PX,
   readLingyunResizeWidth,
   readLingyunWindowWidth,
 } from '../lingyun-toolbars/getLingyunNavSafeInset'
@@ -365,7 +391,25 @@ const LINGYUN_APP_PAGE_EMBEDDED = Symbol('lingyun-app-page-embedded')
 
 export default defineComponent({
   name: 'LingyunAppPage',
-  emits: ['back', 'close', 'trailing', 'trailing-action', 'scroll', 'tab-change', 'duo-search', 'duo-overflow'],
+  emits: [
+    'back',
+    'close',
+    'trailing',
+    'trailing-action',
+    'scroll',
+    'tab-change',
+    'duo-search',
+    'duo-overflow',
+    'update:searching',
+    'update:searchValue',
+    'search-open',
+    'search-cancel',
+    'search-input',
+    'search',
+    'update:segmentValue',
+    'segment-click',
+    'segment-change',
+  ],
   props: {
     title: { type: String, default: '' },
     subtitle: { type: String, default: '' },
@@ -401,13 +445,32 @@ export default defineComponent({
     autoBottomInset: { type: Boolean, default: true },
     /** 关掉后壳不加顶部留白；仅被宿主页嵌入的页面使用 */
     autoTopInset: { type: Boolean, default: true },
-    /** 顶栏右侧自定义按钮组；点击发 trailing-action */
+    /** 顶栏右侧按钮组；一维为一组，二维按组渲染多个玻璃胶囊；点击发 trailing-action */
     trailingButtons: {
       type: Array as PropType<
-        Array<{ key: string; icon?: string; label?: string; disabled?: boolean }>
+        | Array<{ key: string; icon?: string; label?: string; disabled?: boolean }>
+        | Array<Array<{ key: string; icon?: string; label?: string; disabled?: boolean }>>
       >,
       default: () => [],
     },
+    /** 外部浮层打开期间隐藏顶栏按钮组，避免按钮从菜单边缘露出 */
+    trailingButtonsHidden: { type: Boolean, default: false },
+    /** 显式启用 #trailing-menu 浮层；小程序插槽检测不可靠，需手动开启 */
+    trailingMenuEnabled: { type: Boolean, default: false },
+    /** 开启顶部搜索：右侧多一个独立搜索按钮；搜索模式用输入框替换顶部内容 */
+    searchable: { type: Boolean, default: false },
+    /** 搜索模式开关；支持 v-model:searching */
+    searching: { type: Boolean, default: false },
+    searchValue: { type: String, default: '' },
+    searchPlaceholder: { type: String, default: '搜索' },
+    /** 顶栏下方分段控制；数据为空时不占高度 */
+    segments: {
+      type: Array as PropType<
+        Array<{ key: string; text?: string; icon?: string; disabled?: boolean }>
+      >,
+      default: () => [],
+    },
+    segmentValue: { type: [String, Number] as PropType<string | number>, default: '' },
     glassDistance: { type: Number, default: 56 },
   },
   data() {
@@ -430,6 +493,9 @@ export default defineComponent({
       /** Duo 顶部 / 右侧工具栏的主题菜单打开期间隐去工具组，避免玻璃胶囊从菜单边缘漏出 */
       duoToolsMenuMounted: false,
       duoRailToolsMenuMounted: false,
+      /** 顶部搜索：内部状态兼容未绑定 v-model 的页面 */
+      searchActive: false,
+      searchText: '',
       /** H5：顶部插槽目标节点出现后再传送 */
       navHeaderReady: false,
       _scrollSettleTimer: null as ReturnType<typeof setTimeout> | null,
@@ -553,6 +619,27 @@ export default defineComponent({
     }
   },
   watch: {
+    searching: {
+      immediate: true,
+      handler(val: boolean) {
+        this.searchActive = !!val
+      },
+    },
+    searchValue: {
+      immediate: true,
+      handler(val: string) {
+        this.searchText = String(val == null ? '' : val)
+      },
+    },
+    segments: {
+      deep: true,
+      handler() {
+        this.syncTopInset()
+      },
+    },
+    searchActive() {
+      this.syncTopInset()
+    },
     safeArea() {
       this.syncNavLayout()
     },
@@ -613,10 +700,15 @@ export default defineComponent({
     },
     toolbarStackPx() {
       let h = this.barHeightPx
-      const style = this.titleStyle || 'title'
-      if (style === 'large') h += this.largeExtraPx
-      if (style === 'title2LineLarge') h += this.title2LineLargeExtraPx
+      if (!this.searchActive) {
+        const style = this.titleStyle || 'title'
+        if (style === 'large') h += this.largeExtraPx
+        if (style === 'title2LineLarge') h += this.title2LineLargeExtraPx
+      }
       if (this.placement === 'sheet' || this.showGrabberEffective) h += 16
+      if (this.segments && this.segments.length && !this.isDuoTopBottom && !this.isDuoSplit) {
+        h += LINGYUN_TOOLBAR_SEGMENT_ROW_PX
+      }
       return h
     },
     pageVars() {
@@ -1363,6 +1455,49 @@ export default defineComponent({
     },
     onTrailingAction(payload: Record<string, unknown>) {
       this.$emit('trailing-action', payload)
+    },
+    /** 打开顶部搜索；searchable=false 时忽略 */
+    openSearch() {
+      if (!this.searchable || this.searchActive) return
+      this.searchActive = true
+      this.$emit('update:searching', true)
+      this.$emit('search-open')
+    },
+    /** 关闭顶部搜索；cancel=false 时不发取消事件，用于父级主动收起 */
+    closeSearch(cancel = true) {
+      if (!this.searchActive) return
+      this.searchActive = false
+      this.$emit('update:searching', false)
+      if (cancel) this.$emit('search-cancel', this.searchText)
+    },
+    toggleSearch() {
+      if (this.searchActive) this.closeSearch()
+      else this.openSearch()
+    },
+    onToolbarSearchOpen() {
+      this.openSearch()
+    },
+    onToolbarSearchCancel() {
+      this.closeSearch(true)
+    },
+    onSearchInput(value: string | number) {
+      this.searchText = String(value == null ? '' : value)
+      this.$emit('update:searchValue', this.searchText)
+      this.$emit('search-input', this.searchText)
+    },
+    onSearchConfirm(value: string | number) {
+      this.searchText = String(value == null ? '' : value)
+      this.$emit('update:searchValue', this.searchText)
+      this.$emit('search', this.searchText)
+    },
+    onSegmentUpdate(value: string | number) {
+      this.$emit('update:segmentValue', value)
+    },
+    onSegmentClick(payload: Record<string, unknown>) {
+      this.$emit('segment-click', payload)
+    },
+    onSegmentChange(payload: Record<string, unknown>) {
+      this.$emit('segment-change', payload)
     },
   },
 })

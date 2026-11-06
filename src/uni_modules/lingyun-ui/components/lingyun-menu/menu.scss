@@ -7,6 +7,13 @@
   overflow-y: auto;
 }
 
+/* 默认插槽：菜单只负责弹出，内容按表单自行排版 */
+.lingyun-menu--custom {
+  display: block;
+  min-width: 0;
+  padding: 0;
+}
+
 .lingyun-menu__item {
   box-sizing: border-box;
   min-height: 42px;
