@@ -1,3 +1,8 @@
+## 1.0.42（2026-11-06）
+- `lingyun-tabbars` 支持图片图标：`items` 可传 `iconSrc` / `activeIconSrc`，优先于 `icon` / `iconMode`；选中态优先 `activeIconSrc`，未传时回退 `iconSrc`，搜索项同样支持。`lingyun-app-page` 全局 tabs 同步透传。
+- `lingyun-text-field` 新增 `name` / `autocomplete`，H5 浏览器自动填充后主动同步原生值并隐藏占位符；自动填充底色与文字跟随浅色 / 暗黑主题。
+- `lingyun-text-field` 隐藏浏览器原生密码眼睛 / 清除装饰，避免和组件自己的显隐、清除按钮重复。
+- demo 的 Tab Bars 增加「5 项 · 图片图标」示例；同步 Tab Bars / Text Field 文档。
 ## 1.0.41（2026-11-06）
 - 新增底部日期切换器 `lingyun-date-switcher`：支持天 / 周 / 月 / 年 / 自定义日期段，前后切换、模式菜单、范围限制，`change` / `center` 统一返回 `value` 与 `range`。
 - `lingyun-menu` 新增 `full-width`、`anchor` 与默认插槽自定义内容；不传 `actions` 时菜单只负责弹出、定位、遮罩和动效，内容完全由页面接管。

@@ -120,6 +120,7 @@ const componentSidebar = [
       { text: '平板与电脑', link: '/components/pc.html' },
       { text: '宽屏目录', link: '/components/page-nav.html' },
       { text: '顶栏', link: '/components/toolbars.html' },
+      { text: '主题切换', link: '/components/theme-action.html' },
       { text: '底栏', link: '/components/tabbars.html' },
       { text: '搜索栏', link: '/components/search-bar.html' },
       { text: '侧栏浮层', link: '/components/sidebar.html' },

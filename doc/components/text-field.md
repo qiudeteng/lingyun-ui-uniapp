@@ -25,6 +25,8 @@
 | `rows` | 多行行数 | 3 |
 | `maxlength` | 最大长度，-1 不限制 | -1 |
 | `type` | 键盘类型 | text |
+| `name` | 原生字段名，H5 密码管理器用它匹配账号密码 | '' |
+| `autocomplete` | H5 自动填充提示，如 `username` / `current-password` | '' |
 | `disabled / readonly` | 禁用 / 只读 | false |
 | `variant` | `auto`：在 form-item 内为行内，否则为独立胶囊 | auto |
 ## 事件
@@ -34,3 +36,5 @@
 | `update:modelValue` | 输入 |
 | `confirm` | 键盘完成 |
 | `focus / blur` | 聚焦 / 失焦 |
+
+H5 浏览器自动填充会自动同步到组件并隐藏占位符；原生密码框自带的眼睛 / 清除装饰已隐藏，只保留组件自己的显隐与清除按钮。登录页账号传 `autocomplete="username"`，密码传 `autocomplete="current-password"`。

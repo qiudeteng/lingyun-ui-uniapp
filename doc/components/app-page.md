@@ -1,6 +1,6 @@
 # lingyun-app-page
 
-业务页的外壳：自定义顶栏、滚动时顶栏变玻璃、宽屏左侧导航留位。反馈 Toast / HUD 也挂在这一层里。
+业务页的外壳：自定义顶栏、滚动时顶栏变玻璃、宽屏左侧导航留位。反馈 Toast / HUD 也挂在这一层里。搜索 / 分段 / 综合示例见 `pages/demo/toolbar-search`、`pages/demo/toolbar-segments`、`pages/demo/toolbar-comprehensive`。
 
 ## 示例
 

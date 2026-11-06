@@ -833,6 +833,8 @@ export default defineComponent({
         key: tab.key,
         text: tab.text,
         icon: tab.icon,
+        iconSrc: tab.iconSrc,
+        activeIconSrc: tab.activeIconSrc,
         badge: tab.badge,
       }))
     },

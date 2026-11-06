@@ -22,8 +22,15 @@
           :class="{ 'lingyun-tabbars__icon-wrap--pop': isPopping(item) }"
         >
           <slot :name="`icon-${item.key}`" :item="item" :active="isActive(item)">
+            <image
+              v-if="item.iconSrc"
+              class="lingyun-tabbars__icon-image"
+              :src="isActive(item) && item.activeIconSrc ? item.activeIconSrc : item.iconSrc"
+              mode="aspectFit"
+              :style="iconImageStyle"
+            />
             <lingyun-icon
-              v-if="iconMode === 'icon' && item.icon"
+              v-else-if="iconMode === 'icon' && item.icon"
               :type="item.icon"
               :size="iconSize"
               :color="isActive(item) ? 'var(--lingyun-system-blue, #0088ff)' : 'var(--lingyun-label-glass, #1a1a1a)'"
@@ -53,7 +60,14 @@
       @click="onSelect(searchItem)"
     >
       <slot name="search-icon" :item="searchItem" :active="isActive(searchItem)">
-        <text v-if="searchItem.icon" class="lingyun-tabbars__search-icon">{{ searchItem.icon }}</text>
+        <image
+          v-if="searchItem.iconSrc"
+          class="lingyun-tabbars__search-image"
+          :src="isActive(searchItem) && searchItem.activeIconSrc ? searchItem.activeIconSrc : searchItem.iconSrc"
+          mode="aspectFit"
+          :style="iconImageStyle"
+        />
+        <text v-else-if="searchItem.icon" class="lingyun-tabbars__search-icon">{{ searchItem.icon }}</text>
         <lingyun-icon
           v-else
           class="lingyun-tabbars__search-icon"
@@ -84,6 +98,10 @@ type TabItem = {
   key?: string | number
   text?: string
   icon?: string
+  /** 图片图标地址；设置后优先于 icon / iconMode */
+  iconSrc?: string
+  /** 选中态图片图标地址；不传时继续用 iconSrc */
+  activeIconSrc?: string
   badge?: TabBadge | null
   role?: string
 }
@@ -225,6 +243,12 @@ export default defineComponent({
     },
     iconSize(): number {
       return this.size === 'duo' ? 22 : 25
+    },
+    iconImageStyle(): { width: string; height: string } {
+      return {
+        width: `${this.iconSize}px`,
+        height: `${this.iconSize}px`,
+      }
     },
     rootClass() {
       return [
@@ -881,6 +905,12 @@ $ly-tab-item-w: 68px;
     color: inherit;
   }
 
+  &__icon-image {
+    display: block;
+    flex-shrink: 0;
+    object-fit: contain;
+  }
+
   &__label {
     margin-top: 2px;
     max-width: 100%;
@@ -926,6 +956,11 @@ $ly-tab-item-w: 68px;
 
   &__search-icon {
     line-height: 1;
+  }
+
+  &__search-image {
+    display: block;
+    flex-shrink: 0;
   }
 }
 

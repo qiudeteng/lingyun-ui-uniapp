@@ -8,4 +8,4 @@
 - `v-model:segment-value` 双向绑定当前值
 - 切换时同时发 `segment-click` 和 `segment-change`，参数 `{ value, item }`
 - 分段行高度 40（Small 32 + 下边距 8），页面顶部留白自动增加
-- 相关规范：[`TOOLBARS.md`](../../../TOOLBARS.md)、[`SEGMENTED_CONTROLS.md`](../../../SEGMENTED_CONTROLS.md)
+- 相关规范：[`TOOLBARS.md`](../../TOOLBARS.md)、[`SEGMENTED_CONTROLS.md`](../../SEGMENTED_CONTROLS.md)

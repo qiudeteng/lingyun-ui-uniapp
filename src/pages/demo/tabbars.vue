@@ -37,12 +37,15 @@
     key: string
     text?: string
     icon?: string
+    iconSrc?: string
+    activeIconSrc?: string
     role?: 'search'
     badge?: number | { text?: number; color?: string; dot?: boolean }
   }
 
   const layouts = [
     { key: 'five', text: '无搜索 · 5 项' },
+    { key: 'imageFive', text: '无搜索 · 5 项 · 图片图标' },
     { key: 'four', text: '无搜索 · 4 项' },
     { key: 'fourSearch', text: '4 + 搜索' },
     { key: 'threeSearch', text: '3 + 搜索' },
@@ -70,7 +73,7 @@
   const items = computed((): TabDemoItem[] => {
     const withSearch = layoutKey.value.endsWith('Search')
     const mainCount =
-      layoutKey.value === 'five'
+      layoutKey.value === 'five' || layoutKey.value === 'imageFive'
         ? 5
         : layoutKey.value === 'four' || layoutKey.value === 'fourSearch'
           ? 4
@@ -89,9 +92,12 @@
     ]
 
     const mains = catalog.slice(0, mainCount).map((item) => {
-      if (showBadge.value) return { ...item }
       const next = { ...item }
-      delete next.badge
+      if (layoutKey.value === 'imageFive') {
+        next.iconSrc = `/static/demo/tabbar/${item.key}.png`
+        next.activeIconSrc = `/static/demo/tabbar/${item.key}-active.png`
+      }
+      if (!showBadge.value) delete next.badge
       return next
     })
 
