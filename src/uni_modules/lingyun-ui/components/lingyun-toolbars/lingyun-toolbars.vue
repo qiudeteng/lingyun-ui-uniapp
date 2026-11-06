@@ -28,7 +28,7 @@
             class="lingyun-toolbars__search-input"
             type="text"
             :value="searchValue"
-            :focus="searching"
+            :focus="searchFocusReady"
             :disabled="!searching"
             :placeholder="searchPlaceholder"
             placeholder-class="lingyun-toolbars__search-ph"
@@ -51,20 +51,10 @@
             <lingyun-icon type="clear" :size="17" color="secondary" />
           </view>
         </view>
-        <view
-          class="lingyun-toolbars__action-group lingyun-toolbars__action-group--single lingyun-toolbars__search-cancel"
-          hover-class="lingyun-toolbars__search-cancel--hover"
-          :hover-start-time="20"
-          :hover-stay-time="70"
-          role="button"
-          aria-label="取消搜索"
-          @click.stop="onSearchCancel"
-        >
-          <lingyun-icon type="closeempty" :size="28" color="label" />
-        </view>
       </view>
 
       <view class="lingyun-toolbars__bar-content">
+        <view class="lingyun-toolbars__bar-left">
         <view class="lingyun-toolbars__leading">
         <view v-if="windowControls" class="lingyun-toolbars__windows" aria-hidden="true">
           <view class="lingyun-toolbars__window lingyun-toolbars__window--close" />
@@ -113,6 +103,7 @@
 
       <view
         class="lingyun-toolbars__trailing"
+        :style="searchable ? undefined : { marginRight: `${rightActionGapPx}px` }"
         :class="{
           'lingyun-toolbars__trailing--menu-open': themeMenuMounted || trailingMenuMounted,
           'lingyun-toolbars__trailing--buttons-hidden': trailingButtonsHidden,
@@ -123,6 +114,7 @@
           :id="trailingGroupId(groupIndex)"
           :key="groupIndex"
           class="lingyun-toolbars__action-group"
+          :style="groupIndex > 0 ? { marginLeft: `${gapPx}px` } : undefined"
           :class="{
             'lingyun-toolbars__action-group--single':
               group.length + (themeSwitchEnabled && groupIndex === 0 ? 1 : 0) === 1,
@@ -158,23 +150,6 @@
             <text v-else class="lingyun-toolbars__group-text">{{ button.label }}</text>
           </view>
         </view>
-        <view
-          v-if="searchable"
-          :id="searchGroupId"
-          class="lingyun-toolbars__action-group lingyun-toolbars__action-group--single lingyun-toolbars__search-group"
-        >
-          <view
-            class="lingyun-toolbars__group-button"
-            hover-class="lingyun-toolbars__group-button--hover"
-            :hover-start-time="20"
-            :hover-stay-time="70"
-            role="button"
-            aria-label="搜索"
-            @click.stop="onSearchOpen"
-          >
-            <lingyun-icon type="search" :size="28" color="label" />
-          </view>
-        </view>
         <slot name="trailing" />
         <view
           v-if="showTrailing"
@@ -188,6 +163,33 @@
         >
           <!-- 分享：lingyun-icon upload（近似 square.and.arrow.up） -->
           <lingyun-icon class="lingyun-toolbars__glyph" type="upload" :size="26" color="white" />
+        </view>
+      </view>
+      </view>
+      <view
+        v-if="searchable"
+        :id="searchGroupId"
+        class="lingyun-toolbars__action-group lingyun-toolbars__action-group--single lingyun-toolbars__search-group"
+        :style="{
+          marginLeft: `${gapPx}px`,
+          marginRight: `${rightActionGapPx}px`,
+        }"
+        :class="{
+          'lingyun-toolbars__search-group--active': searching,
+          'lingyun-toolbars__search-group--hidden':
+            trailingButtonsHidden || themeMenuMounted || trailingMenuMounted,
+        }"
+      >
+        <view
+          class="lingyun-toolbars__group-button"
+          hover-class="lingyun-toolbars__group-button--hover"
+          :hover-start-time="20"
+          :hover-stay-time="70"
+          role="button"
+          :aria-label="searching ? '取消搜索' : '搜索'"
+          @click.stop="onSearchAction"
+        >
+          <lingyun-icon :type="searching ? 'closeempty' : 'search'" :size="28" color="label" />
         </view>
       </view>
       </view>
@@ -336,6 +338,11 @@ export default defineComponent({
     trailingButtonsHidden: { type: Boolean, default: false },
     /** 显式启用 #trailing-menu 浮层；小程序插槽检测不可靠，不开启会在点击按钮时弹出空菜单 */
     trailingMenuEnabled: { type: Boolean, default: false },
+    /** 页面级主题钮开关：auto 跟随全局；false 只隐藏当前 toolbar，不改进程全局状态 */
+    showThemeSwitch: {
+      type: [Boolean, String] as PropType<boolean | string>,
+      default: 'auto',
+    },
     /** 开启顶部搜索：右侧多一个独立搜索按钮，点击进入搜索模式 */
     searchable: { type: Boolean, default: false },
     /** 搜索模式；输入框替换左侧内容，原搜索按钮变为取消 */
@@ -382,6 +389,9 @@ export default defineComponent({
       windowControls: false,
       largeExtraPx: LINGYUN_TOOLBAR_LARGE_EXTRA_PX,
       title2LineLargeExtraPx: LINGYUN_TOOLBAR_2LINE_LARGE_EXTRA_PX,
+      /** 搜索滑入结束后再聚焦，避免小程序过渡期间键盘反复触发布局抖动 */
+      searchFocusReady: false,
+      _searchFocusTimer: null as ReturnType<typeof setTimeout> | null,
       trailingMenuOpen: false,
       trailingMenuMounted: false,
       themeMenuMounted: false,
@@ -418,11 +428,30 @@ export default defineComponent({
     this.bindResize()
   },
   beforeUnmount() {
+    if (this._searchFocusTimer) {
+      clearTimeout(this._searchFocusTimer)
+      this._searchFocusTimer = null
+    }
     this._themeAnchorTimers.forEach((timer) => clearTimeout(timer))
     this._themeAnchorTimers = []
     this.unbindResize()
   },
   watch: {
+    searching: {
+      immediate: true,
+      handler(val: boolean) {
+        if (this._searchFocusTimer) {
+          clearTimeout(this._searchFocusTimer)
+          this._searchFocusTimer = null
+        }
+        this.searchFocusReady = false
+        if (!val) return
+        this._searchFocusTimer = setTimeout(() => {
+          this._searchFocusTimer = null
+          this.searchFocusReady = true
+        }, 360)
+      },
+    },
     safeArea() {
       this.syncNavLayout()
     },
@@ -442,7 +471,10 @@ export default defineComponent({
   computed: {
     themeSwitchEnabled(): boolean {
       /* 只挂页面级固定顶栏，demo 里的嵌套预览不重复出现主题钮 */
-      return this.fixed && useLingyunThemeSwitchVisible().value
+      if (!this.fixed) return false
+      if (this.showThemeSwitch === false) return false
+      if (this.showThemeSwitch === true) return true
+      return useLingyunThemeSwitchVisible().value
     },
     /** 归一化按钮组：一维当作一组，二维按子数组拆组；空组过滤 */
     buttonGroups(): LingyunToolbarButton[][] {
@@ -466,6 +498,10 @@ export default defineComponent({
     },
     searchGroupId(): string {
       return 'ly-toolbar-search-group'
+    },
+    /** 胶囊下才额外留 8；H5/无胶囊直接贴内容区右边距，与普通按钮组一致 */
+    rightActionGapPx(): number {
+      return this.safeArea && this.rightInsetPx > this.padXPx ? this.gapPx : 0
     },
     placementKey() {
       return this.placement === 'sheet' ? 'sheet' : 'standard'
@@ -571,11 +607,14 @@ export default defineComponent({
         marginRight: `-${extra}px`,
       }
     },
-    searchLayerStyle() {      const right =
-        this.safeArea && this.rightInsetPx > this.padXPx ? this.rightInsetPx : this.padXPx
+    searchLayerStyle() {
+      /* 只覆盖搜索按钮左侧区域；搜索/关闭按钮位置固定，不参与动画 */
+      const actionWidth = this.searchable
+        ? 44 + this.gapPx + this.rightActionGapPx
+        : 0
       return {
-        left: `${this.padXPx}px`,
-        right: `${right}px`,
+        left: '0px',
+        right: `${actionWidth}px`,
         top: `${this.padTopPx}px`,
         bottom: `${this.padBottomPx + this.barBottomExtraPx}px`,
       }
@@ -756,6 +795,10 @@ export default defineComponent({
     onSearchOpen() {
       this.$emit('update:searching', true)
       this.$emit('search-open')
+    },
+    onSearchAction() {
+      if (this.searching) this.onSearchCancel()
+      else this.onSearchOpen()
     },
     onSearchCancel() {
       this.$emit('update:searching', false)
@@ -964,10 +1007,18 @@ $ly-toolbar-gap: 8px;
   min-height: $ly-toolbar-bar;
   padding-top: $ly-toolbar-bar-pad-top;
   padding-bottom: $ly-toolbar-bar-pad-bottom;
-  overflow: hidden;
 }
 
 .lingyun-toolbars__bar-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lingyun-toolbars__bar-left {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
@@ -979,7 +1030,7 @@ $ly-toolbar-gap: 8px;
     transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-.lingyun-toolbars__bar--search .lingyun-toolbars__bar-content {
+.lingyun-toolbars__bar--search .lingyun-toolbars__bar-left {
   opacity: 0;
   transform: translateX(-28px);
   pointer-events: none;
@@ -998,6 +1049,7 @@ $ly-toolbar-gap: 8px;
 
 .lingyun-toolbars__trailing {
   justify-content: flex-end;
+  gap: 0;
   transition: opacity 0.12s ease;
 }
 
@@ -1024,6 +1076,15 @@ $ly-toolbar-gap: 8px;
   pointer-events: auto;
 }
 
+.lingyun-toolbars__search-group {
+  flex-shrink: 0;
+}
+
+.lingyun-toolbars__search-group--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .lingyun-toolbars__search-field {
   flex: 1 1 auto;
   min-width: 0;
@@ -1048,8 +1109,9 @@ $ly-toolbar-gap: 8px;
   color: var(--lingyun-label, #{$lingyun-label});
 }
 
-.lingyun-toolbars__search-ph {
+:deep(.lingyun-toolbars__search-ph) {
   color: var(--lingyun-label-secondary, #{$lingyun-label-secondary});
+  font-size: 17px;
 }
 
 .lingyun-toolbars__search-clear {
@@ -1064,11 +1126,6 @@ $ly-toolbar-gap: 8px;
 
 .lingyun-toolbars__search-clear--hover {
   opacity: 0.6;
-}
-
-.lingyun-toolbars__search-cancel--hover {
-  opacity: 0.82;
-  transform: scale(0.96);
 }
 
 /* 菜单打开期间整个右侧操作区隐去，避免玻璃胶囊或其它按钮从菜单边缘漏出来 */
