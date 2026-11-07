@@ -66,8 +66,11 @@ type LingyunOrderCart = Record<string, number> // 商品 key → 数量
 - `categories`：`[{ key, text, title?, iconSrc?, icon?, iconColor?, badge?, goods }]`。`text` 是左侧分类名，`title` 是右侧分组标题（默认同 `text`）。
   - `iconSrc`：分类名左侧小图标地址，后台返回的图片 URL，14px 与文字同高，作为行内元素和文字一起换行；没有图片时可用 `icon` 字形，`iconColor` 控制颜色。
   - 分类名最多两行，超出省略；购物车数字角标浮在右上角，不占文字宽度、不影响换行。
-- `goods`：`{ key, name, image?, price, originalPrice?, priceUnit?, quantityUnit?, salesText?, specText?, details?, badge?, multiSpec?, step?, max?, soldOut? }`。图片为空用名称首字兜底。
+- `goods`：`{ key, name, image, images?, price, originalPrice?, priceUnit?, quantityUnit?, salesText?, specText?, details?, attributes?, description?, badge?, multiSpec?, step?, max?, soldOut? }`。图片为空用名称首字兜底。
+  - `images`：商品详情多图；有值时详情页用 `lingyun-swiper` 显示大图，支持左右滑动 / 自动轮播，底部横排缩略图作为指示器，点击缩略图切换；不传则用 `image` 单图。
   - `details`：商品下方逐行说明（发货仓库、规格描述、截单时间、预计配送等），原样按行渲染。
+  - `attributes`：商品详情 Sheet 的属性行 `[{ label, value }]`，如主料 / 口味 / 口感 / 制作方式。
+  - `description`：商品详情介绍，支持 `\n` 分段；不传时回退到 `details`。
   - `priceUnit` / `quantityUnit`：价格后缀（如「元/件」）与步进器右侧单位（如「件」）。
   - `multiSpec` 且 `price=0` 时不显示价格，只显示「选规格」按钮；SKU 价格由业务在规格面板里处理。
 - 加购数量只认 `modelValue` 里出现过的商品 key；数量为 0 时组件会从购物车对象里删掉该项。
@@ -80,11 +83,17 @@ type LingyunOrderCart = Record<string, number> // 商品 key → 数量
 | `categories` | 分类与商品 | `[]` |
 | `modelValue` | 购物车（`v-model`） | `{}` |
 | `banner` | 店铺 Banner 图；用 `#banner` 插槽可完全自定义 | '' |
-| `bannerHeight` | Banner 高度，`0` 时不显示 | 140 |
+| `bannerHeight` | Banner 高度，`0` 时不显示；无 Banner 时自动恢复顶部工具栏留白，店铺卡片从工具栏下方开始 | 140 |
 | `showBack` | 返回钮（Banner 左上角；无 Banner 时单独占一行）；点击抛 `back` | true |
 | `showNav` | 透传 `lingyun-app-page`；宽屏是否保留应用导航列 | true |
 | `showToolbar` | 透传 `lingyun-app-page` 顶栏 | false |
+| `searchable` | 顶部工具栏显示搜索入口（需 `showToolbar`）：搜索时隐藏店铺头 / 分类栏，显示内置搜索视图 | true |
+| `searchHintText` | 搜索未输入关键字时的提示 | 输入商品名称 / 规格搜索 |
+| `searchEmptyText` | 搜索无结果文案 | 没有找到相关商品 |
 | `title` | 顶栏标题（`showToolbar` 为 true 时使用） | '' |
+| `autoTopInset` | 工具栏是否自动给页面留出顶部安全区。`false` 时 Banner 顶到页面顶部、垫在透明工具栏下（Banner 顶部按主题加渐隐，保证标题可读）；进入搜索视图时自动恢复留白 | true |
+| `toolbarButtons` | 顶部工具栏自定义按钮组，与主题钮同一玻璃组；一维一组、二维多组，按钮 `{ key, icon?, label?, disabled? }` | [] |
+| `toolbarMenuEnabled` | 工具栏按钮点击弹出 `#toolbar-menu` 浮层；小程序需显式开启 | false |
 | `minPrice` | 起送价；未达到时结算钮显示「¥xx起送」并禁用 | 0 |
 | `deliveryFee` | 配送费；大于 0 时购物车栏显示「另需配送费」 | 0 |
 | `currency` | 货币符号 | ¥ |
@@ -109,6 +118,9 @@ type LingyunOrderCart = Record<string, number> // 商品 key → 数量
 | `windowedThreshold` | auto：商品数大于该值启用分段加载 | 100 |
 | `categoryThreshold` | auto：商品数大于该值启用按分类加载 | 500 |
 | `totalGoodsCount` | 商品总数；按分类懒加载、`categories` 不是全量数据时传入，auto 判断更准确 | 0 |
+| `goodsDetail` | 点商品图 / 名称打开内置商品详情 Sheet；`false` 时只抛 `goods-click` | true |
+| `goodsDetailTitle` | 商品详情 Sheet 标题（宽屏显示；移动端头图模式隐藏） | 商品详情 |
+| `addToCartText` | 商品详情加购按钮文案 | 加入购物车 |
 
 ## 事件
 
@@ -117,7 +129,8 @@ type LingyunOrderCart = Record<string, number> // 商品 key → 数量
 | `update:modelValue` | 加购数量变化，回写新的购物车对象 |
 | `change` | 数量变化，参数 `{ item, quantity, cart, count, totalPrice }` |
 | `category-change` | 左右联动切换分类，参数 `{ key, index }` |
-| `goods-click` | 点击商品，参数 `{ item, categoryKey }` |
+| `goods-click` | 点击商品，参数 `{ item, categoryKey }`；内置详情开启时同时打开商品详情 Sheet |
+| `search` | 搜索值变化，参数 `{ value, count }` |
 | `spec-request` | 多规格商品点 `+`，参数 `{ item, categoryKey }`；业务弹自己的规格面板 |
 | `cart-clear` | 点详情面板里的清空，参数 `{ cart, count, totalPrice }` |
 | `checkout` | 达到起送价后点结算，参数 `{ cart, lines, count, totalPrice, deliveryFee }` |
@@ -131,12 +144,17 @@ type LingyunOrderCart = Record<string, number> // 商品 key → 数量
 | `banner-actions` | Banner 右上角操作区 |
 | `store-extra` | 店铺卡片底部扩展，作用域 `{ store }` |
 | `empty` | 无商品时的空态 |
+| `toolbar-menu` | 工具栏按钮点击后弹出的菜单内容，作用域 `{ button, index, groupIndex, buttonIndex, close }`；配合 `toolbarButtons` + `toolbarMenuEnabled` |
 
 ## 交互
 
 - 左侧分类与右侧列表双向联动：点击分类平滑滚到对应分组；右侧滚动时自动高亮当前分组，并把左侧分类滚进可视区。
 - 左侧选中背景是圆角胶囊，切换分类时上下滑动过渡（类似 tabbar 的选中透镜），点击的分类文字做一次轻微回弹；分类有已选商品时右上角显示数量角标，角标数字优先于分类自身的 `badge`。
 - 商品数量由 `v-model` 控制；数量大于 0 且不是多规格商品时，`+` 变成步进器。
+- 顶部工具栏（`showToolbar`）支持搜索：点搜索入口进入搜索态，隐藏 Banner / 店铺卡片 / 左侧分类，列表区域切换为搜索结果（按原分类分组，显示「找到 n 个结果」）；未输入时显示提示，无结果时显示空文案。搜索结果可直接加购 / 改数量，也能点开商品详情；关闭搜索回到原列表并定位到当前分类。搜索值变化抛 `search`。
+- 顶栏是页面唯一的头部：开启 `showToolbar` 后 Banner 自带的返回钮与右上角操作区自动隐藏。`autoTopInset="false"` 时 Banner 顶到页面顶部，`lingyun-app-page` 的工具栏透明覆盖在上面（单一头部、顶部透明），Banner 顶部按当前主题加一层渐隐托住标题与按钮；搜索态自动恢复顶部留白，避免结果压在工具栏下。
+- 工具栏右侧可以用 `toolbarButtons` 增加自定义按钮（与主题钮同一组）；设置 `toolbarMenuEnabled` 并传入 `#toolbar-menu` 插槽后，点按钮会像主题钮一样弹出菜单，插槽作用域带 `close`，选中项可在菜单里自己画勾。
+- 点商品图 / 名称区域打开大模式商品详情 Sheet（`lingyun-sheets`）：4:3 头图、价格 / 月售 / 划线原价、商品名、属性行与「商品介绍」，不包含评价。加购按钮固定在 Sheet 底部 `footer` 操作区，移动端 / 宽屏一致，并与列表共用购物车：普通商品数量 > 0 时显示步进器，多规格显示「选规格」+ 数量角标，售罄置灰。多图时头图为「大图 + 底部横排缩略图」，使用 `lingyun-swiper` 支持左右滑动与自动轮播，点缩略图切换。移动端头图通过 `bleedTop` 延伸到面板顶部、关闭钮浮在图片左上角；宽屏（≥690）左侧为图片 + 图下商品介绍、右侧为价格 / 名称 / 属性，商品介绍自动填满左栏剩余高度（`contentFill`），标题固定、内容在自身区域滚动，不再带动整页滚动；图片列固定 42% 宽、图片左距与右侧文字右距一致（32px）。购物车数量增加时底部购物车圆钮会做一次放大回弹。
 - `multiSpec` 商品始终显示 `+`，点击抛 `spec-request`，由业务打开规格面板并自行回写 `modelValue`。
 - 底部购物车栏复用 `lingyun-goods-nav` 的 `variant="cart"`：悬浮玻璃胶囊、购物车角标、合计 / 配送费 / 起送价与结算钮都由该组件渲染；购物车固定悬浮在列表之上，分类栏与商品列表通高到页面底部，商品可以从购物车底部穿过，列表尾部预留 `78 + 安全区` 的让位。点购物车图标会让整张购物车卡向上增高展示「已选商品」详情，详情与购物车是同一张卡（左上角关闭钮、点卡片外收起），不是独立弹窗；结算钮始终可点。
 

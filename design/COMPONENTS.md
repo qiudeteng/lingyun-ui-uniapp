@@ -25,6 +25,7 @@
 | ✅ | `lingyun-list` / `lingyun-list-item` | 分组列表；附属含 toggle / stepper / slider | [`LISTS.md`](./LISTS.md) |
 | ✅ | `lingyun-table` | 分组表格；固定列、吸顶表头、排序、筛选、分页、多选、分组收起 | [`TABLES.md`](./TABLES.md) |
 | ✅ | `lingyun-swipe-action` / `lingyun-swipe-action-item` | 列表左右滑菜单 | [`SWIPE_ACTIONS.md`](./SWIPE_ACTIONS.md) |
+| ✅ | `lingyun-swiper` | 图片轮播（滑动 / 自动轮播 / 指示器） | [`SWIPER.md`](./SWIPER.md) |
 | ✅ | `lingyun-alert` | 弹窗 | [`ALERTS.md`](./ALERTS.md) |
 | ✅ | `lingyun-activity-indicator` | 转圈加载 | [`ACTIVITY_INDICATORS.md`](./ACTIVITY_INDICATORS.md) |
 | ✅ | `lingyun-toast` / `lingyun-hud` | 轻提示 · 加载遮罩 | [`TOASTS.md`](./TOASTS.md) |

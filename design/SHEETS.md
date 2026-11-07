@@ -98,10 +98,14 @@ Sketch 画板 1210×834 上面板为 **936×770**，左右各 137、上下各 32
 | `zIndex` | number | `1000` | 层级 |
 | `width` | number | `0` | 宽屏居中卡片宽（px）；`0` 用默认上限 **936**，实际夹在 `[320, 视口-64]` |
 | `height` | number | `0` | 宽屏居中卡片高（px）；`0` 用默认上限 **770**，实际夹在 `[240, 视口-64]` |
+| `bleedTop` | boolean | `false` | 内容从面板顶部开始，顶栏关闭 / 标题浮在内容上；隐藏 Grabber，body 顶部内边距归 0。适合头图铺满（商品详情），首屏全宽由内容自己做 |
+| `contentFill` | boolean | `false` | body 不滚动，内容自行填满 body 高度并在内部滚动；适合左右分栏的详情页（左栏图片 + 内部滚动介绍，底部 footer CTA） |
 
 右侧优先级：`trailingIcon` / `trailingText` 内置按钮 > `#trailing` 插槽 > `showTrailing` 默认分享圆钮。内置按钮与插槽同时设置时以内置为准（小程序插槽为静态声明，无法可靠判断是否渲染内容）。内置按钮复用 **`lingyun-button`（`borderedProminent` / `medium`）**：仅 icon 时 40×40 蓝色圆钮，带文字时蓝色胶囊（icon 18 + 16px 白字）；点击发 `trailing`。`maskClosable=false` 时点遮罩不关闭，面板水平轻抖 + `uni.vibrateShort` 短震动（对齐 Alert 拒绝反馈）。
 
 事件：`update:show`、`update:modelValue`、`close`、`update:detent`、`trailing`  
+
+插槽：默认插槽（body 滚动区）、`footer`（固定在面板底部的操作区，不参与 body 滚动；底部安全区由组件承接，适合商品详情「加入购物车」这类 CTA）。
 插槽：默认内容；`leading` / `trailing` / `title` 透传 toolbars
 
 ---

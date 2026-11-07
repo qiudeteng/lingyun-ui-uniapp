@@ -9,7 +9,13 @@
     :render-mode="renderMode"
     :window-size="2"
     :category-loading="categoryLoading"
-    banner-height="150"
+    show-toolbar
+    :auto-top-inset="false"
+    searchable
+    title="点单"
+    :toolbar-buttons="toolbarButtons"
+    toolbar-menu-enabled
+    :banner-height="bannerEnabled ? bannerHeight : 0"
     @back="goBack"
     @checkout="onCheckout"
     @spec-request="onSpecRequest"
@@ -20,15 +26,55 @@
       <view class="order-banner">
         <image class="order-banner__bg" :src="bannerImage" mode="aspectFill" />
         <view class="order-banner__shade" />
-        <view class="order-banner__copy">
-          <text class="order-banner__title">八喜 · 冰淇淋蛋糕</text>
-          <text class="order-banner__sub">鲜奶冰淇淋 · 冷链直送</text>
-        </view>
       </view>
     </template>
-    <template #banner-actions>
-      <view class="order-mode" @click="toggleRenderMode">
-        <text class="order-mode__text">{{ modeText }}</text>
+    <template #toolbar-menu="{ close }">
+      <view class="order-toolbar-filter">
+        <text class="order-toolbar-filter__title">加载模式</text>
+        <view class="order-toolbar-filter__chips">
+          <view
+            v-for="option in renderModeOptions"
+            :key="option.key"
+            class="order-toolbar-filter__chip"
+            :class="{ 'order-toolbar-filter__chip--active': renderMode === option.key }"
+            hover-class="order-toolbar-filter__chip--hover"
+            :hover-start-time="20"
+            :hover-stay-time="70"
+            @click="pickRenderMode(option.key)"
+          >
+            <text class="order-toolbar-filter__chip-text">{{ option.text }}</text>
+          </view>
+        </view>
+        <view class="order-toolbar-filter__sep" />
+        <text class="order-toolbar-filter__title">Banner</text>
+        <view class="order-toolbar-filter__row">
+          <text class="order-toolbar-filter__row-label">显示 Banner</text>
+          <lingyun-switch v-model="bannerEnabled" />
+        </view>
+        <view v-if="bannerEnabled" class="order-toolbar-filter__slider">
+          <view class="order-toolbar-filter__slider-head">
+            <text class="order-toolbar-filter__row-label">高度</text>
+            <text class="order-toolbar-filter__value">{{ bannerHeight }}px</text>
+          </view>
+          <lingyun-slider
+            v-model="bannerHeight"
+            :min="60"
+            :max="300"
+            :step="10"
+            flush
+          />
+        </view>
+        <view class="order-toolbar-filter__actions">
+          <view
+            class="order-toolbar-filter__done"
+            hover-class="order-toolbar-filter__done--hover"
+            :hover-start-time="20"
+            :hover-stay-time="70"
+            @click="closeToolbarMenu(close)"
+          >
+            <text class="order-toolbar-filter__done-text">完成</text>
+          </view>
+        </view>
       </view>
     </template>
   </lingyun-order-goods>
@@ -44,24 +90,25 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onBeforeUnmount, ref } from 'vue'
+  import { onBeforeUnmount, ref } from 'vue'
   import type {
     LingyunOrderCart,
     LingyunOrderCategory,
     LingyunOrderGoods,
+    LingyunOrderGoodsAttribute,
     LingyunOrderSpecPayload,
     LingyunOrderStore,
   } from '@/uni_modules/lingyun-ui-page/components/lingyun-order-goods/types'
 
-  const cakeImage = (id: string): string =>
-    `https://images.unsplash.com/${id}?w=200&h=200&fit=crop&q=80`
+  const cakeImage = (id: string, width = 480, height = 360): string =>
+    `https://images.unsplash.com/${id}?w=${width}&h=${height}&fit=crop&q=80`
 
   const bannerImage =
     'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=1200&h=500&fit=crop&q=80'
 
   const store: LingyunOrderStore = {
     name: '八喜冰淇淋蛋糕（北京酒仙桥店）',
-    logo: cakeImage('photo-1578985545062-69928b1d9587'),
+    logo: cakeImage('photo-1578985545062-69928b1d9587', 160, 160),
     rating: 4.8,
     salesText: '月售 1000+',
     deliveryText: '约 30 分钟',
@@ -79,12 +126,25 @@
         {
           key: 'hot-classic',
           image: cakeImage('photo-1578985545062-69928b1d9587'),
+          images: [
+            cakeImage('photo-1578985545062-69928b1d9587'),
+            cakeImage('photo-1563729784474-d77dbb933a9e'),
+            cakeImage('photo-1519869325930-281384150729'),
+          ],
           name: '八喜经典冰淇淋蛋糕',
           price: 168,
           originalPrice: 198,
           salesText: '月售 600+',
           specText: '6 寸 / 约 1.5 磅',
           badge: '招牌',
+          description:
+            '八喜经典冰淇淋蛋糕选用门店当日现做的蛋糕坯与鲜奶冰淇淋，外层手工抹面，冷链配送到家。\n' +
+            '主料：鲜奶冰淇淋、稀奶油、小麦粉、鸡蛋、白砂糖。\n' +
+            '过敏原提示：含乳制品、蛋类、小麦制品，可能含坚果碎，请按需选购。\n' +
+            '规格：6 寸 / 约 1.5 磅，适合 2-4 人分享；含生日帽、蜡烛与餐具。\n' +
+            '保存方式：收到后请立即放入冰箱冷冻保存，建议 2 小时内食用；解冻后请勿重复冷冻。\n' +
+            '配送说明：门店周边 5 公里内支持冷链配送，超出范围请选择到店自提；节假日配送时间可能延长。\n' +
+            '温馨提示：图片为实物拍摄，蛋糕装饰与颜色以门店实际出品为准；如有生日牌、数字蜡烛等需求，请在下单时备注。',
         },
         {
           key: 'hot-choco',
@@ -104,6 +164,11 @@
         {
           key: 'birthday-strawberry',
           image: cakeImage('photo-1565958011703-44f9829ba187'),
+          images: [
+            cakeImage('photo-1565958011703-44f9829ba187'),
+            cakeImage('photo-1464349095431-e9a21285b5f3'),
+            cakeImage('photo-1535141192574-5d4897c12636'),
+          ],
           name: '草莓鲜奶生日蛋糕',
           price: 199,
           salesText: '月售 400+',
@@ -145,6 +210,10 @@
         {
           key: 'ice-rum',
           image: cakeImage('photo-1488477181946-6428a0291777'),
+          images: [
+            cakeImage('photo-1488477181946-6428a0291777'),
+            cakeImage('photo-1558636508-e0db3814bd1d'),
+          ],
           name: '朗姆葡萄冰淇淋蛋糕',
           price: 178,
           salesText: '月售 300+',
@@ -236,6 +305,11 @@
         {
           key: 'gift-classic',
           image: cakeImage('photo-1624353365286-3f8d62daad51'),
+          images: [
+            cakeImage('photo-1624353365286-3f8d62daad51'),
+            cakeImage('photo-1578985545062-69928b1d9587'),
+            cakeImage('photo-1563729784474-d77dbb933a9e'),
+          ],
           name: '八喜经典礼盒装',
           price: 268,
           priceUnit: '/盒',
@@ -311,24 +385,99 @@
     },
   ]
 
+  const categoryAttributes: Record<string, LingyunOrderGoodsAttribute[]> = {
+    hot: [
+      { label: '主料', value: '鲜奶' },
+      { label: '口味', value: '香甜' },
+      { label: '口感', value: '绵密' },
+      { label: '制作', value: '冷链' },
+    ],
+    birthday: [
+      { label: '主料', value: '鲜奶' },
+      { label: '口味', value: '果香' },
+      { label: '口感', value: '松软' },
+      { label: '制作', value: '现做' },
+    ],
+    icecream: [
+      { label: '主料', value: '冰淇淋' },
+      { label: '口味', value: '奶香' },
+      { label: '口感', value: '冰爽' },
+      { label: '制作', value: '冷链' },
+    ],
+    dessert: [
+      { label: '主料', value: '芝士' },
+      { label: '口味', value: '甜' },
+      { label: '口感', value: '细腻' },
+      { label: '制作', value: '现做' },
+    ],
+    drink: [
+      { label: '主料', value: '当日鲜制' },
+      { label: '口味', value: '冰' },
+      { label: '口感', value: '清爽' },
+      { label: '制作', value: '现制' },
+    ],
+    gift: [
+      { label: '主料', value: '鲜奶' },
+      { label: '口味', value: '综合' },
+      { label: '口感', value: '丰富' },
+      { label: '制作', value: '冷链' },
+    ],
+    package: [
+      { label: '材质', value: '环保' },
+      { label: '用途', value: '保温' },
+      { label: '规格', value: '标准' },
+      { label: '说明', value: '按件' },
+    ],
+  }
+
+  const categoryIntroductions: Record<string, string> = {
+    hot: '八喜门店招牌，鲜奶冰淇淋搭配现烤蛋糕坯，冷链配送；图片为实物拍摄，装饰以门店实际出品为准。',
+    birthday: '生日蛋糕支持备注生日牌与蜡烛，门店当日制作、冷藏配送；建议收到后尽快食用。',
+    icecream: '冰淇淋蛋糕全程冷链配送，收到后请立即冷藏；含生日餐具与蜡烛，规格以实际下单为准。',
+    dessert: '门店现做甜点，冷藏配送；图片为实物拍摄，口味与装饰以门店实际出品为准。',
+    drink: '门店现制饮品，建议尽快饮用；冰量与甜度可在备注中说明。',
+    gift: '礼盒装需提前 1 天预订，含蛋糕、餐具与生日配件；节日期间请以门店库存为准。',
+    package: '门店打包配件，按件下单；规格与数量以商品说明和实际发货为准。',
+  }
+
+  categories.forEach((category) => {
+    const attrs = categoryAttributes[category.key] || []
+    const intro = categoryIntroductions[category.key] || ''
+    category.goods.forEach((item) => {
+      if (!item.attributes || !item.attributes.length) {
+        item.attributes = attrs.map((attr) => ({ ...attr }))
+      }
+      if (!item.description) {
+        item.description = `${item.name}。${intro}`
+      }
+    })
+  })
+
   const cart = ref<LingyunOrderCart>({})
   type RenderMode = 'auto' | 'all' | 'windowed' | 'category'
-  const RENDER_MODES: RenderMode[] = ['auto', 'all', 'windowed', 'category']
+  const renderModeOptions: { key: RenderMode; text: string }[] = [
+    { key: 'auto', text: '自动加载' },
+    { key: 'all', text: '全部加载' },
+    { key: 'windowed', text: '分段加载' },
+    { key: 'category', text: '按分类加载' },
+  ]
   const renderMode = ref<RenderMode>('auto')
+  const bannerEnabled = ref(true)
+  const bannerHeight = ref(150)
   const categoryLoading = ref(false)
   let lazyTimer: ReturnType<typeof setTimeout> | null = null
 
-  const modeText = computed(() => {
-    if (renderMode.value === 'category') return '按分类加载'
-    if (renderMode.value === 'windowed') return '分段加载'
-    if (renderMode.value === 'all') return '全部加载'
-    return '自动加载'
-  })
+  const toolbarButtons = [
+    { key: 'filter', icon: 'tune', label: '筛选' },
+  ]
 
-  function toggleRenderMode(): void {
-    const index = RENDER_MODES.indexOf(renderMode.value)
-    renderMode.value = RENDER_MODES[(index + 1) % RENDER_MODES.length]
+  function pickRenderMode(key: RenderMode): void {
+    renderMode.value = key
     categoryLoading.value = false
+  }
+
+  function closeToolbarMenu(close?: () => void): void {
+    if (typeof close === 'function') close()
   }
 
   function onCategoryChange(): void {
@@ -394,11 +543,6 @@
     position: relative;
     width: 100%;
     height: 100%;
-    box-sizing: border-box;
-    padding: 32px 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
     overflow: hidden;
     background:
       radial-gradient(120% 120% at 85% 10%, rgba(255, 255, 255, 0.22), transparent 55%),
@@ -428,43 +572,123 @@
     );
   }
 
-  .order-banner__copy {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
+  .order-toolbar-filter {
+    padding: 8px 4px 4px;
   }
 
-  .order-banner__title {
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 30px;
-    color: #ffffff;
-    letter-spacing: 1px;
-    text-shadow: 0 2px 10px rgba(90, 30, 0, 0.28);
-  }
-
-  .order-banner__sub {
-    margin-top: 4px;
+  .order-toolbar-filter__title {
+    display: block;
+    padding: 0 8px 8px;
     font-size: 13px;
-    line-height: 18px;
-    color: rgba(255, 255, 255, 0.86);
+    font-weight: 600;
+    line-height: 16px;
+    color: var(--lingyun-label-secondary, #6a6a6a);
   }
 
-  .order-mode {
-    height: 28px;
-    padding: 0 12px;
-    border-radius: 14px;
+  .order-toolbar-filter__chips {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 8px;
+  }
+
+  .order-toolbar-filter__chip {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+    height: 36px;
+    border-radius: 18px;
     display: flex;
     align-items: center;
-    background-color: rgba(255, 255, 255, 0.18);
+    justify-content: center;
+    background-color: var(--lingyun-fill-tertiary, rgba(120, 120, 128, 0.12));
   }
 
-  .order-mode__text {
-    font-size: 12px;
-    line-height: 16px;
+  .order-toolbar-filter__chip--hover {
+    opacity: 0.72;
+  }
+
+  .order-toolbar-filter__chip--active {
+    background-color: var(--lingyun-primary, #0088ff);
+  }
+
+  .order-toolbar-filter__chip-text {
+    font-size: 14px;
+    line-height: 18px;
+    color: var(--lingyun-label, #000000);
+  }
+
+  .order-toolbar-filter__chip--active .order-toolbar-filter__chip-text {
     color: #ffffff;
-    white-space: nowrap;
+    font-weight: 600;
+  }
+
+  .order-toolbar-filter__sep {
+    height: 1px;
+    margin: 14px 8px;
+    background-color: var(--lingyun-separator, rgba(0, 0, 0, 0.12));
+  }
+
+  .order-toolbar-filter__row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0 8px;
+  }
+
+  .order-toolbar-filter__row-label {
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+    line-height: 20px;
+    color: var(--lingyun-label, #000000);
+  }
+
+  .order-toolbar-filter__slider {
+    padding: 8px 8px 0;
+  }
+
+  .order-toolbar-filter__slider-head {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2px;
+  }
+
+  .order-toolbar-filter__value {
+    font-size: 13px;
+    line-height: 16px;
+    color: var(--lingyun-label-secondary, #6a6a6a);
+  }
+
+  .order-toolbar-filter__actions {
+    display: flex;
+    flex-direction: row;
+    padding: 12px 8px 4px;
+  }
+
+  .order-toolbar-filter__done {
+    flex: 1;
+    height: 36px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--lingyun-primary, #0088ff);
+  }
+
+  .order-toolbar-filter__done--hover {
+    opacity: 0.72;
+  }
+
+  .order-toolbar-filter__done-text {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #ffffff;
   }
 
 </style>

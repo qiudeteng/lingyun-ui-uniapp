@@ -49,6 +49,50 @@
   display: block;
 }
 
+/* CSS 绘制的菜单图标（iconClass）；颜色跟 label，暗黑自动反白 */
+.lingyun-menu__symbol-icon {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--lingyun-label, #000000);
+}
+
+/* 浅色：太阳（圆心 + 8 条短射线） */
+.lingyun-menu__symbol-icon--sun::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background-color: currentColor;
+  box-shadow:
+    0 -6px 0 -2.4px currentColor,
+    0 6px 0 -2.4px currentColor,
+    -6px 0 0 -2.4px currentColor,
+    6px 0 0 -2.4px currentColor,
+    4.2px -4.2px 0 -2.7px currentColor,
+    -4.2px 4.2px 0 -2.7px currentColor,
+    4.2px 4.2px 0 -2.7px currentColor,
+    -4.2px -4.2px 0 -2.7px currentColor;
+}
+
+/* 暗黑：月牙（内阴影留出弯月） */
+.lingyun-menu__symbol-icon--moon::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 2px;
+  width: 15px;
+  height: 15px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  box-shadow: inset -4px -2px 0 0 currentColor;
+}
+
 .lingyun-menu__text {
   flex: 1;
   min-width: 0;

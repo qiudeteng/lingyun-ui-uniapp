@@ -14,7 +14,7 @@
 |----|------|
 | 标题项 | 高 42；标题 17 / 行高 20 / Regular；主标签色 |
 | 标题 + 副标题 | 高 60；副标题 13 / 行高 16 / Secondary |
-| 图标 | 20，占位宽 24，与文字间距 6 |
+| 图标 | 20，占位宽 24，与文字间距 6；可用 `icon` 字形、`iconSrc` 图片或 `iconClass` CSS 图标（如内置 `lingyun-menu__symbol-icon--sun` / `--moon`） |
 | 按下 | Fill Secondary，圆角 22 |
 | Destructive | 文字与图标 System Red `#FF383C` |
 | Disabled | Tertiary，不可点 |
@@ -36,7 +36,7 @@
 
 `actions[]`：
 
-- 普通项 `{ key, label, subtitle?, icon?, role?: 'destructive', disabled?, selected?, submenu? }`
+- 普通项 `{ key, label, subtitle?, icon?, iconSrc?, activeIconSrc?, iconClass?, role?: 'destructive', disabled?, selected?, submenu? }`
 - 分隔 `{ type: 'separator' }`
 - 分组标题 `{ type: 'title', label }`
 - 顶部快捷操作 `{ type: 'controls', items: [...] }`（项字段同普通项）

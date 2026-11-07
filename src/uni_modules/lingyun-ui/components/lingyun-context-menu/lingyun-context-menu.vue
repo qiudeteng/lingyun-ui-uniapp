@@ -49,8 +49,13 @@
                   </view>
                 </template>
                 <template v-else>
-                  <view v-if="action.icon" class="lingyun-menu__symbol">
-                    <lingyun-icon :type="action.icon" :size="20" :color="iconColor(action)" />
+                  <view v-if="action.icon || action.iconClass" class="lingyun-menu__symbol">
+                    <view
+                      v-if="action.iconClass"
+                      class="lingyun-menu__symbol-icon"
+                      :class="action.iconClass"
+                    />
+                    <lingyun-icon v-else :type="action.icon" :size="20" :color="iconColor(action)" />
                   </view>
                   <view class="lingyun-menu__text">
                     <text class="lingyun-menu__label">{{ action.label }}</text>
@@ -124,8 +129,13 @@
                   </view>
                 </template>
                 <template v-else>
-                  <view v-if="action.icon" class="lingyun-menu__symbol">
-                    <lingyun-icon :type="action.icon" :size="20" :color="iconColor(action)" />
+                  <view v-if="action.icon || action.iconClass" class="lingyun-menu__symbol">
+                    <view
+                      v-if="action.iconClass"
+                      class="lingyun-menu__symbol-icon"
+                      :class="action.iconClass"
+                    />
+                    <lingyun-icon v-else :type="action.icon" :size="20" :color="iconColor(action)" />
                   </view>
                   <view class="lingyun-menu__text">
                     <text class="lingyun-menu__label">{{ action.label }}</text>

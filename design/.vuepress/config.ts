@@ -97,6 +97,7 @@ export default defineUserConfig({
           { text: 'Tables · 表格', link: '/TABLES.md' },
           { text: 'Swipe Actions · 滑动操作', link: '/SWIPE_ACTIONS.md' },
           { text: 'Images · 图片', link: '/IMAGES.md' },
+          { text: 'Swipers · 图片轮播', link: '/SWIPER.md' },
           { text: 'Charts · 图表', link: '/CHARTS.md' },
           { text: 'Avatars · 头像', link: '/AVATARS.md' },
           { text: 'Badges · 角标', link: '/BADGES.md' },

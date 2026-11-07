@@ -77,7 +77,16 @@
             </lingyun-toolbars>
           </view>
 
+          <view
+            v-if="contentFill"
+            class="lingyun-sheets__body lingyun-sheets__body--fill"
+          >
+            <view class="lingyun-sheets__body-inner" :style="bodyInnerStyle">
+              <slot />
+            </view>
+          </view>
           <scroll-view
+            v-else
             class="lingyun-sheets__body"
             scroll-y
             :show-scrollbar="false"
@@ -86,6 +95,9 @@
               <slot />
             </view>
           </scroll-view>
+          <view v-if="hasFooter" class="lingyun-sheets__footer" :style="footerStyle">
+            <slot name="footer" />
+          </view>
         </view>
       </view>
     </root-portal>
@@ -166,7 +178,16 @@
             </lingyun-toolbars>
           </view>
 
+          <view
+            v-if="contentFill"
+            class="lingyun-sheets__body lingyun-sheets__body--fill"
+          >
+            <view class="lingyun-sheets__body-inner" :style="bodyInnerStyle">
+              <slot />
+            </view>
+          </view>
           <scroll-view
+            v-else
             class="lingyun-sheets__body"
             scroll-y
             :show-scrollbar="false"
@@ -175,6 +196,9 @@
               <slot />
             </view>
           </scroll-view>
+          <view v-if="hasFooter" class="lingyun-sheets__footer" :style="footerStyle">
+            <slot name="footer" />
+          </view>
         </view>
       </view>
     </teleport>
@@ -292,6 +316,22 @@ export default defineComponent({
       type: Number,
       default: 0,
     },
+    /**
+     * 内容从面板顶部开始，顶栏（关闭 / 标题）浮在内容上。
+     * 适合商品详情这类头图铺满的需求：隐藏 Grabber，body 去掉顶部内边距。
+     */
+    bleedTop: {
+      type: Boolean,
+      default: false,
+    },
+    /**
+     * body 不滚动，由内容自行填满 body 高度并在内部滚动（左右分栏、内部滚动详情）。
+     * 开启后 body 变成普通 view，高度 100%；内容需自己处理滚动。
+     */
+    contentFill: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -402,9 +442,9 @@ export default defineComponent({
       if (this.isRegular) return RADIUS_REGULAR
       return this.isLarge ? RADIUS_LARGE : RADIUS_MEDIUM
     },
-    /** iPad 卡片不可换档，不出 Grabber */
+    /** iPad 卡片不可换档，不出 Grabber；头图模式顶栏浮在图片上，也不出 Grabber */
     showGrabber() {
-      return !this.isRegular
+      return !this.isRegular && !this.bleedTop
     },
     rootClass() {
       let themeClass = 'theme-light'
@@ -416,6 +456,7 @@ export default defineComponent({
       return [
         themeClass,
         `lingyun-sheets--${this.detentKey}`,
+        this.bleedTop ? 'lingyun-sheets--bleed-top' : '',
         this.phase ? `lingyun-sheets--${this.phase}` : '',
         this.reduceMotion ? 'lingyun-sheets--reduce-motion' : '',
         this.dragging ? 'lingyun-sheets--dragging' : '',
@@ -465,7 +506,19 @@ export default defineComponent({
       return style
     },
     bodyInnerStyle() {
-      const bottom = 16 + (this.safeAreaBottom ? this.safeBottom : 0)
+      const bottom = this.contentFill
+        ? 0
+        : 16 + (this.hasFooter || !this.safeAreaBottom ? 0 : this.safeBottom)
+      return {
+        paddingBottom: `${bottom}px`,
+      }
+    },
+    hasFooter(): boolean {
+      return !!(this.$slots && this.$slots.footer)
+    },
+    /** 底部操作区：贴面板底部，安全区由它承接 */
+    footerStyle(): Record<string, string> {
+      const bottom = this.hasFooter && this.safeAreaBottom ? this.safeBottom : 0
       return {
         paddingBottom: `${bottom}px`,
       }
@@ -932,6 +985,23 @@ export default defineComponent({
   background-color: #cfcfcf;
 }
 
+/* 头图模式：内容从面板顶部开始，顶栏（关闭 / 标题）浮在内容上 */
+.lingyun-sheets--bleed-top .lingyun-sheets__chrome {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 3;
+}
+
+.lingyun-sheets--bleed-top .lingyun-sheets__grabber {
+  display: none;
+}
+
+.lingyun-sheets--bleed-top .lingyun-sheets__body-inner {
+  padding-top: 0;
+}
+
 .lingyun-sheets.theme-dark .lingyun-sheets__grabber {
   background-color: #8e8e93;
 }
@@ -949,6 +1019,17 @@ export default defineComponent({
   box-sizing: border-box;
   touch-action: pan-y;
   overscroll-behavior: contain;
+}
+
+/* contentFill：body 不滚动，内部布局自己填满并处理滚动 */
+.lingyun-sheets__body--fill {
+  overflow: hidden;
+}
+
+.lingyun-sheets__body--fill .lingyun-sheets__body-inner {
+  height: 100%;
+  min-height: 0;
+  padding-top: 0;
 }
 
 /* 小程序上转发给顶栏的 title 插槽总是存在，顶栏不会再画默认标题，这里补上同款样式 */
@@ -969,6 +1050,13 @@ export default defineComponent({
   box-sizing: border-box;
   padding: 8px 16px 16px;
   min-height: 100%;
+}
+
+/* 底部操作区：不参与 body 滚动，始终贴面板底部 */
+.lingyun-sheets__footer {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 /* 内置 trailing 复用 lingyun-button（borderedProminent · medium） */

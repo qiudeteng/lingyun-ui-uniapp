@@ -15,12 +15,21 @@ export interface LingyunOrderStore {
   notice?: string
 }
 
+export interface LingyunOrderGoodsAttribute {
+  /** 属性名，如「主料」「口味」「口感」「制作方式」 */
+  label: string
+  /** 属性值，如「猪肉」「咸鲜」「鲜」「水煮」 */
+  value: string
+}
+
 export interface LingyunOrderGoods {
   /** 商品唯一 key，购物车数量按它存 */
   key: string
   name: string
   /** 商品图；空则用名称首字兜底 */
   image?: string
+  /** 商品详情多图；有值时详情页显示「大图 + 底部横排缩略图」，第一张为主图 */
+  images?: string[]
   /** 现价 */
   price: number
   /** 划线原价 */
@@ -31,6 +40,10 @@ export interface LingyunOrderGoods {
   specText?: string
   /** 商品下方多行说明：发货仓库、规格描述、截单时间、预计配送等 */
   details?: string[]
+  /** 商品详情 Sheet 的属性行：主料 / 口味 / 口感 / 制作方式等 */
+  attributes?: LingyunOrderGoodsAttribute[]
+  /** 商品详情介绍，支持 \n 分段；不传时回退到 details */
+  description?: string
   /** 价格单位，如「元/件」；显示在金额后面 */
   priceUnit?: string
   /** 数量单位，如「件」；列表与已选商品步进器右侧显示 */
@@ -104,3 +117,16 @@ export interface LingyunOrderSpecPayload {
   item: LingyunOrderGoods
   categoryKey: string
 }
+
+/** 顶部工具栏自定义按钮；一维一组，二维拆成多个玻璃胶囊 */
+export interface LingyunOrderToolbarButton {
+  key: string
+  /** lingyun-icon 字形；没有时显示 label 文本 */
+  icon?: string
+  label?: string
+  disabled?: boolean
+}
+
+export type LingyunOrderToolbarButtonGroups =
+  | LingyunOrderToolbarButton[]
+  | LingyunOrderToolbarButton[][]

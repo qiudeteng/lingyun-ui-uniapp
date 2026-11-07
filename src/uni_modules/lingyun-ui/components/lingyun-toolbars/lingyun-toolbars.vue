@@ -235,7 +235,6 @@
         class="lingyun-toolbars__segment-control"
         :items="segments"
         :model-value="segmentValue"
-        size="small"
         @update:model-value="onSegmentUpdate"
         @change="onSegmentChange"
       />
@@ -1295,7 +1294,7 @@ $ly-toolbar-gap: 8px;
   z-index: 1;
   box-sizing: border-box;
   width: 100%;
-  height: 40px;
+  height: 56px;
   padding-bottom: 8px;
   display: flex;
   flex-direction: row;

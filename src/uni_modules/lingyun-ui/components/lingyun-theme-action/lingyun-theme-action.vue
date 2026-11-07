@@ -69,13 +69,13 @@ export default defineComponent({
         {
           key: 'light',
           label: '浅色',
-          icon: 'circle-filled',
+          iconClass: 'lingyun-menu__symbol-icon--sun',
           selected: preference === 'light',
         },
         {
           key: 'dark',
           label: '暗黑',
-          icon: 'circle',
+          iconClass: 'lingyun-menu__symbol-icon--moon',
           selected: preference === 'dark',
         },
         {

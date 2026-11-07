@@ -40,7 +40,7 @@
 
 ## 订单商品加购
 
-左右布局的标准点单页：店铺头 + 左侧分类 + 右侧商品 + 底部购物车结算栏，数据驱动，参考美团外卖点单页。
+左右布局的标准点单页：店铺头 + 左侧分类 + 右侧商品 + 底部悬浮购物车，数据驱动，参考美团外卖点单页。点商品图 / 名称打开大模式商品详情 Sheet（属性行 + 商品介绍）。
 
 ```vue
 <lingyun-order-goods
@@ -60,11 +60,14 @@
 | `store` | 店铺信息 `{ name, logo, rating, salesText, deliveryText, notice }` | 必填 |
 | `categories` | 分类与商品 `[{ key, text, title, badge, goods }]` | `[]` |
 | `modelValue` | 购物车 `{ [商品 key]: 数量 }`，支持 `v-model` | `{}` |
-| `details` / `priceUnit` / `quantityUnit` | 商品行扩展：多行说明、价格后缀、步进器单位（写在商品的字段里） | — |
+| `details` / `attributes` / `description` / `images` / `priceUnit` / `quantityUnit` | 商品扩展：列表说明 / 详情属性行 / 详情介绍 / 详情多图 / 价格后缀 / 步进器单位（写在商品的字段里） | — |
 | `banner` / `bannerHeight` | 店铺 Banner 图 / 高度，0 不显示；也可用 `#banner` 插槽 | '' / 140 |
 | `minPrice` / `deliveryFee` | 起送价 / 配送费 | 0 / 0 |
 | `showBack` | 返回钮（Banner 左上角 / 无 Banner 时顶行），点击抛 `back` | true |
 | `showNav` / `showToolbar` / `title` | 透传 `lingyun-app-page`；`showNav` 默认保留宽屏导航列 | true / false / '' |
+| `autoTopInset` | 工具栏是否自动给页面留出顶部安全区；`false` 时 Banner 顶到页面顶部、垫在透明工具栏下（搜索时自动恢复留白） | true |
+| `toolbarButtons` / `toolbarMenuEnabled` | 顶部工具栏自定义按钮组（与主题钮同一组）/ 点击按钮弹出 `#toolbar-menu` 浮层（小程序需显式开启） | [] / false |
+| `searchable` / `searchHintText` / `searchEmptyText` | 顶部工具栏搜索入口（需 `showToolbar`）/ 搜索提示 / 无结果文案 | true / 输入商品名称 / 规格搜索 / 没有找到相关商品 |
 | `soldOutText` / `specButtonText` | 售罄文案 / 多规格按钮文案 | 商品已售罄 / 选规格 |
 | `quantityUnit` / `priceDecimals` | 默认数量单位 / 价格小数位 | '' / -1 |
 | `accentColor` | 选中 / 加购 / 结算主色 | 系统蓝 |
@@ -73,6 +76,7 @@
 | `renderMode` | `auto` / `all` / `windowed` / `category` | auto |
 | `windowedThreshold` / `categoryThreshold` | auto 阈值：>100 分段、>500 按分类 | 100 / 500 |
 | `totalGoodsCount` | 商品总数，懒加载时传入 | 0 |
+| `goodsDetail` / `goodsDetailTitle` / `addToCartText` | 内置商品详情 Sheet：开关 / 标题（宽屏显示；移动端头图模式隐藏）/ 加购文案 | true / 商品详情 / 加入购物车 |
 | `safeArea` | 购物车栏预留安全区 | true |
 
 | 事件 | 说明 |
@@ -81,6 +85,11 @@
 | `category-change` | 左右联动切换分类 `{ key, index }` |
 | `checkout` | 达到起送价后结算 `{ cart, lines, count, totalPrice, deliveryFee }` |
 | `spec-request` | 多规格商品点 +，业务弹自己的规格面板 |
-| `goods-click` / `cart-clear` / `back` | 点商品 / 清空购物车 / 返回 |
+| `goods-click` / `cart-clear` / `back` | 点商品 / 清空购物车 / 返回；`goods-click` 在内置详情开启时同时打开 Sheet |
+| `search` | 工具栏搜索值变化 `{ value, count }` |
+
+| 插槽 | 说明 |
+|------|------|
+| `toolbar-menu` | 工具栏按钮点击后弹出的菜单内容，作用域 `{ button, index, groupIndex, buttonIndex, close }`；需要配合 `toolbarButtons` + `toolbarMenuEnabled` |
 
 大数据量：默认 auto，商品 ≤100 全部加载、100～500 分段加载、>500 按分类加载；可用 `renderMode` 强制。按分类模式只渲染当前分类、关闭滚动联动，商品图带 `lazy-load`。数据结构与完整说明见手册 `/page/order-goods`，演示页 `pages/demo/order-goods`（Banner 右上角可切换全部 / 分段 / 按分类）。

@@ -1,7 +1,7 @@
 <template>
   <view class="lingyun-goods-nav" :class="rootClass" :style="barStyle">
     <template v-if="isCartVariant">
-      <!-- 点击购物车卡片以外的区域收起详情 -->
+      <!-- 点击卡片外收起：遮罩与卡片同层，卡片在上；全屏根节点让遮罩覆盖整页并拦截手势 -->
       <view
         v-if="detailMounted"
         class="lingyun-goods-nav__detail-mask"
@@ -9,7 +9,7 @@
         @touchmove.stop.prevent
       />
       <!-- 详情与购物车同一张卡：详情在上、购物车栏在下，展开时整卡向上增高 -->
-      <view class="lingyun-goods-nav__card">
+      <view class="lingyun-goods-nav__card" :style="cardStyle">
         <view
           v-if="detailMounted"
           class="lingyun-goods-nav__detail"
@@ -44,10 +44,10 @@
             </view>
           </scroll-view>
         </view>
-        <view v-if="detailMounted" class="lingyun-goods-nav__detail-divider" />
         <view class="lingyun-goods-nav__cart-bar">
           <view
             class="lingyun-goods-nav__cart-icon-wrap"
+            :class="{ 'lingyun-goods-nav__cart-icon-wrap--pop': cartPop }"
             role="button"
             aria-label="购物车"
             @click="onCartTap"
@@ -167,8 +167,6 @@ type DetailOpenOptions = {
 
 /** cart 变体购物车栏内容高度 */
 const CART_BAR_HEIGHT_PX = 62
-/** 详情与购物车栏之间的分割线 */
-const DETAIL_DIVIDER_PX = 1
 /** 详情最小可视高度，窗口极矮时也不至于不可用 */
 const DETAIL_MIN_PX = 80
 /** 测量失败时的详情顶栏兜底高度 */
@@ -299,6 +297,8 @@ export default defineComponent({
       safeBottom: 0,
       windowHeight: 667,
       windowWidth: 375,
+      /** 加购时购物车圆钮放大回弹 */
+      cartPop: false,
       /** 详情已挂载（含收起动画期） */
       detailMounted: false,
       detailUncontrolled: false,
@@ -319,6 +319,7 @@ export default defineComponent({
       _detailMeasureTimer: null as ReturnType<typeof setTimeout> | null,
       _detailPageMounted: false,
       _detailResizeHandler: null as (() => void) | null,
+      _cartPopTimer: null as ReturnType<typeof setTimeout> | null,
     }
   },
   computed: {
@@ -347,17 +348,21 @@ export default defineComponent({
       if (this.isCartVariant) {
         style['--ly-goods-nav-accent'] =
           this.accentColor || 'var(--lingyun-system-blue, #0088ff)'
-        if (this.fixed) {
-          const inset = Math.max(0, Number(this.pageNavInset) || 0)
-          style.left = `${inset + 12}px`
-          style.right = '12px'
-          style.bottom = `${8 + (this.safeArea ? this.safeBottom : 0)}px`
-        }
         return style
       }
       if (this.safeArea) style.paddingBottom = `${this.safeBottom}px`
       if (this.fixed) style.left = `${Math.max(0, Number(this.pageNavInset) || 0)}px`
       return style
+    },
+    /** 贴底时卡片自己定位在底部，外层 fixed 根节点负责整屏遮罩 */
+    cardStyle(): Record<string, string> {
+      if (!this.isCartVariant || !this.fixed) return {}
+      const inset = Math.max(0, Number(this.pageNavInset) || 0)
+      return {
+        left: `${inset + 12}px`,
+        right: '12px',
+        bottom: `${8 + (this.safeArea ? this.safeBottom : 0)}px`,
+      }
     },
     /** 详情能力：cart 变体 + detail 开启 */
     detailEnabled(): boolean {
@@ -445,7 +450,8 @@ export default defineComponent({
       }
       if (this.detailVisible && !this.detailMounted) this.openDetailAnim()
     },
-    cartCountValue(value: number) {
+    cartCountValue(value: number, oldValue: number) {
+      if (value > (Number(oldValue) || 0)) this.playCartPop()
       if (value <= 0) {
         if (this.detailVisible) this.requestDetailClose()
         return
@@ -481,6 +487,10 @@ export default defineComponent({
     this._detailPageMounted = false
     this.clearDetailTimers()
     this.unbindDetailResize()
+    if (this._cartPopTimer) {
+      clearTimeout(this._cartPopTimer)
+      this._cartPopTimer = null
+    }
   },
   methods: {
     syncSafe() {
@@ -533,6 +543,21 @@ export default defineComponent({
         this._detailMeasureTimer = null
       }
     },
+    /** 加购（数量增加）时购物车圆钮放大回弹一次 */
+    playCartPop(): void {
+      if (this._cartPopTimer) {
+        clearTimeout(this._cartPopTimer)
+        this._cartPopTimer = null
+      }
+      this.cartPop = false
+      this.$nextTick(() => {
+        this.cartPop = true
+        this._cartPopTimer = setTimeout(() => {
+          this.cartPop = false
+          this._cartPopTimer = null
+        }, 400)
+      })
+    },
     /** 详情区域最大高度：卡片底边到屏幕顶部留白之间，扣掉购物车栏与分割线 */
     recalcDetailMax(): void {
       const bottom = this.fixed ? 8 + (this.safeArea ? this.safeBottom : 0) : 0
@@ -541,8 +566,7 @@ export default defineComponent({
         this.windowHeight -
           this.effectiveDetailTopGap -
           bottom -
-          CART_BAR_HEIGHT_PX -
-          DETAIL_DIVIDER_PX,
+          CART_BAR_HEIGHT_PX,
       )
       const explicit = Math.max(0, this.effectiveDetailMaxHeight)
       this.detailMaxPx = explicit > 0 ? Math.min(explicit, available) : available
@@ -904,14 +928,28 @@ export default defineComponent({
   -webkit-backdrop-filter: none;
 }
 
+/* 贴底时整层铺满视口：遮罩与卡片同在一个全屏 fixed 上下文里，
+   遮罩用 absolute 撑满，卡片固定在底部；根节点不吃事件，交给遮罩 / 卡片 */
 .lingyun-goods-nav--cart.lingyun-goods-nav--fixed {
   position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
   z-index: 900;
   width: auto;
   margin: 0;
+  pointer-events: none;
 }
 
-/* 点击卡片外收起：透明点击层，压在卡片下方、页面内容上方 */
+.lingyun-goods-nav--cart.lingyun-goods-nav--fixed .lingyun-goods-nav__card {
+  position: absolute;
+  z-index: 1;
+  width: auto;
+  pointer-events: auto;
+}
+
+/* 点击卡片外收起：全屏遮罩，压在页面内容之上、卡片之下；拦截滚动与点击穿透 */
 .lingyun-goods-nav__detail-mask {
   position: fixed;
   left: 0;
@@ -919,7 +957,12 @@ export default defineComponent({
   right: 0;
   bottom: 0;
   z-index: 0;
-  background-color: transparent;
+  background-color: var(--lingyun-mask, #{$lingyun-mask});
+}
+
+.lingyun-goods-nav--cart.lingyun-goods-nav--fixed .lingyun-goods-nav__detail-mask {
+  position: absolute;
+  pointer-events: auto;
 }
 
 /* 一张连续玻璃卡：展开时整卡向上增高，购物车栏始终在最底部 */
@@ -1006,13 +1049,6 @@ export default defineComponent({
   box-sizing: border-box;
 }
 
-.lingyun-goods-nav__detail-divider {
-  flex-shrink: 0;
-  height: 0.5px;
-  margin: 0 16px;
-  background-color: var(--lingyun-separator, #{$lingyun-separator});
-}
-
 /* 购物车栏：玻璃底由整张卡提供，这里只负责一行内容 */
 .lingyun-goods-nav__cart-bar {
   flex-shrink: 0;
@@ -1031,6 +1067,26 @@ export default defineComponent({
   width: 48px;
   height: 48px;
   flex-shrink: 0;
+}
+
+/* 加购时圆钮（含角标）放大回弹 */
+.lingyun-goods-nav__cart-icon-wrap--pop {
+  animation: lingyun-goods-nav-cart-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes lingyun-goods-nav-cart-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.12);
+  }
+  72% {
+    transform: scale(0.97);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .lingyun-goods-nav__cart-icon {
