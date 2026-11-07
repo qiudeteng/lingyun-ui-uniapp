@@ -18,7 +18,6 @@
     :banner-height="bannerEnabled ? bannerHeight : 0"
     @back="goBack"
     @checkout="onCheckout"
-    @spec-request="onSpecRequest"
     @cart-clear="onCartClear"
     @category-change="onCategoryChange"
   >
@@ -78,15 +77,6 @@
       </view>
     </template>
   </lingyun-order-goods>
-
-  <lingyun-action-sheet
-    v-model:show="specOpen"
-    :title="specItem ? specItem.name : '选择规格'"
-    message="选择规格后加入购物车"
-    :actions="specActions"
-    @action="onSpecAction"
-    @cancel="specOpen = false"
-  />
 </template>
 
 <script setup lang="ts">
@@ -94,9 +84,6 @@
   import type {
     LingyunOrderCart,
     LingyunOrderCategory,
-    LingyunOrderGoods,
-    LingyunOrderGoodsAttribute,
-    LingyunOrderSpecPayload,
     LingyunOrderStore,
   } from '@/uni_modules/lingyun-ui-page/components/lingyun-order-goods/types'
 
@@ -137,6 +124,94 @@
           salesText: '月售 600+',
           specText: '6 寸 / 约 1.5 磅',
           badge: '招牌',
+          specs: [
+            {
+              key: '6',
+              text: '6 寸 · 2-4 人',
+              price: 168,
+              originalPrice: 198,
+              stock: 5,
+              image: cakeImage('photo-1578985545062-69928b1d9587', 160, 160),
+            },
+            {
+              key: '8',
+              text: '8 寸 · 4-6 人',
+              price: 228,
+              stock: 2,
+              image: cakeImage('photo-1565958011703-44f9829ba187', 160, 160),
+            },
+          ],
+          attributeGroups: [
+            {
+              key: 'top-flavor',
+              title: '上层口味',
+              required: true,
+              max: 1,
+              options: [
+                {
+                  key: 'original',
+                  text: '原味',
+                  image: cakeImage('photo-1578985545062-69928b1d9587', 160, 160),
+                },
+                {
+                  key: 'strawberry',
+                  text: '草莓',
+                  image: cakeImage('photo-1565958011703-44f9829ba187', 160, 160),
+                },
+                {
+                  key: 'chocolate',
+                  text: '巧克力',
+                  image: cakeImage('photo-1563729784474-d77dbb933a9e', 160, 160),
+                },
+              ],
+            },
+            {
+              key: 'bottom-flavor',
+              title: '下层口味',
+              required: true,
+              max: 1,
+              options: [
+                {
+                  key: 'vanilla',
+                  text: '香草',
+                  image: cakeImage('photo-1558636508-e0db3814bd1d', 160, 160),
+                },
+                {
+                  key: 'mango',
+                  text: '芒果',
+                  image: cakeImage('photo-1464349095431-e9a21285b5f3', 160, 160),
+                },
+                {
+                  key: 'chocolate',
+                  text: '巧克力',
+                  image: cakeImage('photo-1519869325930-281384150729', 160, 160),
+                },
+              ],
+            },
+            {
+              key: 'extras',
+              title: '配件',
+              max: 2,
+              options: [
+                {
+                  key: 'hat',
+                  text: '生日帽',
+                  image: cakeImage('photo-1558636508-e0db3814bd1d', 160, 160),
+                },
+                {
+                  key: 'candle',
+                  text: '蜡烛',
+                  image: cakeImage('photo-1464349095431-e9a21285b5f3', 160, 160),
+                },
+                {
+                  key: 'cutlery',
+                  text: '餐具',
+                  enabled: false,
+                  image: cakeImage('photo-1551024506-0bccd828d307', 160, 160),
+                },
+              ],
+            },
+          ],
           description:
             '八喜经典冰淇淋蛋糕选用门店当日现做的蛋糕坯与鲜奶冰淇淋，外层手工抹面，冷链配送到家。\n' +
             '主料：鲜奶冰淇淋、稀奶油、小麦粉、鸡蛋、白砂糖。\n' +
@@ -154,6 +229,23 @@
           originalPrice: 218,
           salesText: '月售 300+',
           specText: '6 寸 / 约 1.5 磅',
+          specs: [
+            {
+              key: '6',
+              text: '6 寸 · 2-4 人',
+              price: 188,
+              originalPrice: 218,
+              stock: 10,
+              image: cakeImage('photo-1563729784474-d77dbb933a9e', 160, 160),
+            },
+            {
+              key: '8',
+              text: '8 寸 · 4-6 人',
+              price: 258,
+              stock: 0,
+              image: cakeImage('photo-1519869325930-281384150729', 160, 160),
+            },
+          ],
         },
       ],
     },
@@ -174,7 +266,22 @@
           salesText: '月售 400+',
           specText: '6 寸 / 2-4 人',
           badge: '人气',
-          multiSpec: true,
+          specs: [
+            {
+              key: '6',
+              text: '6 寸 · 2-4 人',
+              price: 199,
+              stock: 8,
+              image: cakeImage('photo-1565958011703-44f9829ba187', 160, 160),
+            },
+            {
+              key: '8',
+              text: '8 寸 · 4-6 人',
+              price: 259,
+              stock: 4,
+              image: cakeImage('photo-1464349095431-e9a21285b5f3', 160, 160),
+            },
+          ],
         },
         {
           key: 'birthday-mango',
@@ -246,6 +353,7 @@
           image: cakeImage('photo-1499636136210-6f4ee915583e'),
           name: '提拉米苏',
           price: 38,
+          stock: 3,
           salesText: '月售 500+',
           specText: '1 份',
         },
@@ -262,6 +370,7 @@
           image: cakeImage('photo-1558024920-b41e1887dc32'),
           name: '马卡龙礼盒',
           price: 68,
+          stock: 0,
           salesText: '月售 200+',
           specText: '12 枚装',
         },
@@ -284,8 +393,54 @@
           image: cakeImage('photo-1517701604599-bb29b565090c'),
           name: '拿铁',
           price: 22,
+          stock: 5,
           salesText: '月售 500+',
           specText: '350ml',
+          attributeGroups: [
+            {
+              key: 'temperature',
+              title: '温度',
+              required: true,
+              max: 1,
+              options: [
+                { key: 'hot', text: '热' },
+                { key: 'iced', text: '冰' },
+              ],
+            },
+            {
+              key: 'sugar',
+              title: '糖度',
+              required: true,
+              max: 1,
+              options: [
+                { key: 'none', text: '无糖' },
+                { key: 'less', text: '少糖' },
+                { key: 'normal', text: '标准' },
+              ],
+            },
+            {
+              key: 'addons',
+              title: '加料',
+              max: 2,
+              options: [
+                {
+                  key: 'oat',
+                  text: '燕麦奶',
+                  image: cakeImage('photo-1517701604599-bb29b565090c', 160, 160),
+                },
+                {
+                  key: 'shot',
+                  text: '浓缩咖啡',
+                  image: cakeImage('photo-1544145945-f90425340c7e', 160, 160),
+                },
+                {
+                  key: 'vanilla',
+                  text: '香草糖浆',
+                  image: cakeImage('photo-1570968915860-54d5c301fa9f', 160, 160),
+                },
+              ],
+            },
+          ],
         },
         {
           key: 'drink-orange',
@@ -314,7 +469,22 @@
           price: 268,
           priceUnit: '/盒',
           quantityUnit: '盒',
-          multiSpec: true,
+          specs: [
+            {
+              key: 'classic',
+              text: '经典礼盒',
+              price: 268,
+              stock: 10,
+              image: cakeImage('photo-1624353365286-3f8d62daad51', 160, 160),
+            },
+            {
+              key: 'deluxe',
+              text: '豪华礼盒',
+              price: 328,
+              stock: 0,
+              image: cakeImage('photo-1578985545062-69928b1d9587', 160, 160),
+            },
+          ],
           details: ['含 6 寸冰淇淋蛋糕 1 个', '含生日帽、蜡烛、餐具'],
         },
         {
@@ -353,7 +523,22 @@
           price: 12,
           priceUnit: '/个',
           quantityUnit: '个',
-          multiSpec: true,
+          specs: [
+            {
+              key: 'low',
+              text: '低保温款',
+              price: 12,
+              stock: 20,
+              image: cakeImage('photo-1551024506-0bccd828d307', 160, 160),
+            },
+            {
+              key: 'high',
+              text: '高保温款',
+              price: 16,
+              stock: 20,
+              image: cakeImage('photo-1558024920-b41e1887dc32', 160, 160),
+            },
+          ],
           details: ['6寸低保温袋，剩余库存：886个', '6寸高保温袋，剩余库存：884个'],
         },
         {
@@ -385,51 +570,6 @@
     },
   ]
 
-  const categoryAttributes: Record<string, LingyunOrderGoodsAttribute[]> = {
-    hot: [
-      { label: '主料', value: '鲜奶' },
-      { label: '口味', value: '香甜' },
-      { label: '口感', value: '绵密' },
-      { label: '制作', value: '冷链' },
-    ],
-    birthday: [
-      { label: '主料', value: '鲜奶' },
-      { label: '口味', value: '果香' },
-      { label: '口感', value: '松软' },
-      { label: '制作', value: '现做' },
-    ],
-    icecream: [
-      { label: '主料', value: '冰淇淋' },
-      { label: '口味', value: '奶香' },
-      { label: '口感', value: '冰爽' },
-      { label: '制作', value: '冷链' },
-    ],
-    dessert: [
-      { label: '主料', value: '芝士' },
-      { label: '口味', value: '甜' },
-      { label: '口感', value: '细腻' },
-      { label: '制作', value: '现做' },
-    ],
-    drink: [
-      { label: '主料', value: '当日鲜制' },
-      { label: '口味', value: '冰' },
-      { label: '口感', value: '清爽' },
-      { label: '制作', value: '现制' },
-    ],
-    gift: [
-      { label: '主料', value: '鲜奶' },
-      { label: '口味', value: '综合' },
-      { label: '口感', value: '丰富' },
-      { label: '制作', value: '冷链' },
-    ],
-    package: [
-      { label: '材质', value: '环保' },
-      { label: '用途', value: '保温' },
-      { label: '规格', value: '标准' },
-      { label: '说明', value: '按件' },
-    ],
-  }
-
   const categoryIntroductions: Record<string, string> = {
     hot: '八喜门店招牌，鲜奶冰淇淋搭配现烤蛋糕坯，冷链配送；图片为实物拍摄，装饰以门店实际出品为准。',
     birthday: '生日蛋糕支持备注生日牌与蜡烛，门店当日制作、冷藏配送；建议收到后尽快食用。',
@@ -441,12 +581,8 @@
   }
 
   categories.forEach((category) => {
-    const attrs = categoryAttributes[category.key] || []
     const intro = categoryIntroductions[category.key] || ''
     category.goods.forEach((item) => {
-      if (!item.attributes || !item.attributes.length) {
-        item.attributes = attrs.map((attr) => ({ ...attr }))
-      }
       if (!item.description) {
         item.description = `${item.name}。${intro}`
       }
@@ -494,30 +630,6 @@
     clearTimeout(lazyTimer ?? undefined)
     lazyTimer = null
   })
-
-  const specOpen = ref(false)
-  const specItem = ref<LingyunOrderGoods | null>(null)
-  const specActions = [
-    { key: '6', text: '6 寸 · 2-4 人' },
-    { key: '8', text: '8 寸 · 4-6 人' },
-  ]
-
-  function onSpecRequest(payload: LingyunOrderSpecPayload): void {
-    specItem.value = payload.item
-    specOpen.value = true
-  }
-
-  function onSpecAction(payload: { action?: { key?: string | number; text?: string } }): void {
-    const item = specItem.value
-    const action = payload.action
-    specOpen.value = false
-    if (!item || !action) return
-    const next: LingyunOrderCart = { ...cart.value }
-    next[item.key] = (next[item.key] || 0) + 1
-    cart.value = next
-    uni.showToast({ title: `已选 ${action.text || '规格'}`, icon: 'none' })
-    specItem.value = null
-  }
 
   function onCheckout(payload: { totalPrice?: number }): void {
     uni.showToast({ title: `去结算 ¥${payload.totalPrice || 0}`, icon: 'none' })
