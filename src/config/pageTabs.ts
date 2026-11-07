@@ -88,6 +88,7 @@ const COMPONENT_CHILDREN: LingyunPageTabChild[] = [
     navChild('/pages/demo/segmented-controls', '分段控件'),
     navChild('/pages/demo/tags', '标签与胶囊'),
     navChild('/pages/demo/texts', '文本'),
+    navChild('/pages/demo/amount-text', '金额显示'),
     navChild('/pages/demo/images', '图片'),
     navChild('/pages/demo/avatars', '头像'),
     navChild('/pages/demo/page-controls', '分页点'),
@@ -101,6 +102,7 @@ const COMPONENT_CHILDREN: LingyunPageTabChild[] = [
     navChild('/pages/demo/pickers', '选择器'),
     navChild('/pages/demo/date-time-pickers', '日期与时间'),
     navChild('/pages/demo/date-switcher', '日期切换器'),
+    navChild('/pages/demo/date-text', '日期显示'),
   ]),
   group('components-content', '列表与内容', [
     navChild('/pages/demo/lists', '列表'),

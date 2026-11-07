@@ -253,6 +253,20 @@
 			}
 		},
 		{
+			"path": "pages/demo/date-text",
+			"style": {
+				"navigationBarTitleText": "Date Text",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/amount-text",
+			"style": {
+				"navigationBarTitleText": "Amount Text",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/checks",
 			"style": {
 				"navigationBarTitleText": "Checkbox & Radio",

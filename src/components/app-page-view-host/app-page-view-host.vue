@@ -16,6 +16,8 @@
   <sliders-page v-else-if="currentPath === 'pages/demo/sliders'" />
   <pickers-page v-else-if="currentPath === 'pages/demo/pickers'" />
   <date-time-pickers-page v-else-if="currentPath === 'pages/demo/date-time-pickers'" />
+  <date-text-page v-else-if="currentPath === 'pages/demo/date-text'" />
+  <amount-text-page v-else-if="currentPath === 'pages/demo/amount-text'" />
   <toolbars-page v-else-if="currentPath === 'pages/demo/toolbars'" />
   <screen-page v-else-if="currentPath === 'pages/demo/screen'" />
   <responsive-page v-else-if="currentPath === 'pages/demo/responsive'" />
@@ -91,6 +93,8 @@ import ChecksPage from '@/pages/demo/checks.vue'
 import SlidersPage from '@/pages/demo/sliders.vue'
 import PickersPage from '@/pages/demo/pickers.vue'
 import DateTimePickersPage from '@/pages/demo/date-time-pickers.vue'
+import DateTextPage from '@/pages/demo/date-text.vue'
+import AmountTextPage from '@/pages/demo/amount-text.vue'
 import ToolbarsPage from '@/pages/demo/toolbars.vue'
 import ScreenPage from '@/pages/demo/screen.vue'
 import ResponsivePage from '@/pages/demo/responsive.vue'

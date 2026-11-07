@@ -39,6 +39,8 @@
 | ✅ | `lingyun-slider` | 独立滑条 | [`SLIDERS.md`](./SLIDERS.md) |
 | ✅ | `lingyun-tag` / `lingyun-chip` | 标签 · 筛选胶囊 | [`TAGS.md`](./TAGS.md) |
 | ✅ | `lingyun-text` | 语义文本 · 字阶 / 颜色 | [`TEXTS.md`](./TEXTS.md) |
+| ✅ | `lingyun-date-text` | 日期显示 · 今天 / 昨天 / 明天 · MM-DD / YYYY-MM-DD · 精度与样式 | [`DATE_TEXT.md`](./DATE_TEXT.md) |
+| ✅ | `lingyun-amount-text` | 金额显示 · 万 / 百万 / 千万 / 亿 / 百亿 / 千亿 / 万亿 · 小数位与样式 | [`AMOUNT_TEXT.md`](./AMOUNT_TEXT.md) |
 | ✅ | `lingyun-image` | 图片包装 · 懒加载 / 占位 / 圆角 | [`IMAGES.md`](./IMAGES.md) |
 | ✅ | `lingyun-avatar` | 头像 | [`AVATARS.md`](./AVATARS.md) |
 | ✅ | `lingyun-page-control` | 轮播指示点 | [`PAGE_CONTROLS.md`](./PAGE_CONTROLS.md) |

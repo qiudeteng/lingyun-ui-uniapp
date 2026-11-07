@@ -56,6 +56,8 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
       { title: 'Pickers', url: '/pages/demo/pickers', note: '选择器 · 级联 data-picker', icon: 'bars' },
       { title: 'Date & Time', url: '/pages/demo/date-time-pickers', note: '日期 / 时间 / 日期时间 · 起止 · 表单', icon: 'calendar' },
       { title: 'Date Switcher', url: '/pages/demo/date-switcher', note: '底部日期切换条 · 天 / 周 / 月 / 年 / 日期段', icon: 'calendar' },
+      { title: 'Date Text', url: '/pages/demo/date-text', note: '日期显示 · 今天 / 昨天 / 明天 · 精度', icon: 'calendar' },
+      { title: 'Amount Text', url: '/pages/demo/amount-text', note: '金额显示 · 万 / 亿 / 万亿 · 小数位', icon: 'wallet' },
       // 导航与栏
       { title: 'Toolbars', url: '/pages/demo/toolbars', note: '顶栏 · 滚动玻璃', icon: 'bars' },
       { title: 'Screen', url: '/pages/demo/screen', note: '窗口档 · 系统 · 折叠 · 硬件', icon: 'tune' },

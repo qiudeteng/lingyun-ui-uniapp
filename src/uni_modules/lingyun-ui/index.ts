@@ -10,6 +10,8 @@ import { installLingyunPageNav } from './components/lingyun-page-nav/mountLingyu
 import { installLingyunH5Scrollbar } from './utils/h5Scrollbar'
 // #endif
 
+export * from './utils/amountFormat'
+export * from './utils/dateFormat'
 export * from './utils/feedback'
 export * from './utils/layoutAdapter'
 export * from './utils/pageNavAdapter'

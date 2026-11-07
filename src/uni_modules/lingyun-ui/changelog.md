@@ -1,3 +1,9 @@
+## 1.0.47（2026-11-07）
+- 新增日期显示组件 `lingyun-date-text`：自动显示今天 / 昨天 / 明天，同年 `MM-DD`、跨年 `YYYY-MM-DD`；`precision` 支持到天 / 时 / 分 / 秒，字阶 / 颜色 / 加粗复用 `lingyun-text`，并支持自定义相对文案与 `fallback`。
+- 新增并导出 `formatLingyunDate` / `parseLingyunDate` 日期格式化与解析函数；纯日期按本地零点解析，避免 UTC 跨天。
+- 新增金额显示组件 `lingyun-amount-text`：按数量级自动使用 万 / 百万 / 千万 / 亿 / 百亿 / 千亿 / 万亿，支持 `decimals`（0–6）、`prefix`、`fallback`；字阶 / 颜色 / 加粗复用 `lingyun-text`。
+- 新增并导出 `formatLingyunAmount` / `parseLingyunAmount` 金额格式化与解析函数。
+- 新增 Date Text / Amount Text demo、`design/DATE_TEXT.md` / `design/AMOUNT_TEXT.md` 规范与组件文档。
 ## 1.0.46（2026-11-07）
 - `lingyun-goods-nav` 新增 `variant="cart"` 购物车结算栏：悬浮玻璃胶囊 + 购物车圆钮（数量角标）+ 合计 / 配送费 + 主色结算钮；未达起送价时置灰并显示「¥xx起送」。
 - cart 变体新增 `cartCount` / `total` / `minPrice` / `deliveryFee` / `currency` / `emptyText` / `checkoutText` / `priceDecimals` / `accentColor` 属性，以及 `cart` / `checkout` 事件；默认变体保持不变。

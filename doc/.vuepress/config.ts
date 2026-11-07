@@ -138,6 +138,8 @@ const componentSidebar = [
       { text: '标签', link: '/components/tag.html' },
       { text: '筛选胶囊', link: '/components/chip.html' },
       { text: '文本', link: '/components/text.html' },
+      { text: '日期显示', link: '/components/date-text.html' },
+      { text: '金额显示', link: '/components/amount-text.html' },
       { text: '图片', link: '/components/image.html' },
       { text: '头像', link: '/components/avatar.html' },
       { text: '分页点', link: '/components/page-control.html' },

@@ -186,6 +186,16 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Date Switcher' }
 	},
 	{
+		path: '/pages/demo/date-text',
+		name: 'pagesDemoDateText',
+		meta: { title: 'Date Text' }
+	},
+	{
+		path: '/pages/demo/amount-text',
+		name: 'pagesDemoAmountText',
+		meta: { title: 'Amount Text' }
+	},
+	{
 		path: '/pages/demo/checks',
 		name: 'pagesDemoChecks',
 		meta: { title: 'Checkbox & Radio' }

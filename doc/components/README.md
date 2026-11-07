@@ -24,6 +24,8 @@
 - [标签](./tag.md)
 - [筛选胶囊](./chip.md)
 - [文本](./text.md)
+- [日期显示](./date-text.md)
+- [金额显示](./amount-text.md)
 - [图片](./image.md)
 - [头像](./avatar.md)
 - [分页点](./page-control.md)
