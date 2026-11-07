@@ -27,14 +27,17 @@ export interface LingyunPageNavSection {
 
 export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
   {
-    title: '接入',
+    title: '页面',
     items: [
       { title: '接入', url: '/pages/guide/start', note: '安装 · 页面壳 · 宽屏与 Tab', icon: 'info' },
+      { title: '点单加购', url: '/pages/demo/order-goods', note: '标准页 · 分类联动 / 购物车', icon: 'cart' },
+      { title: '工作台', url: '/pages/demo/workbench', note: '二级 / 三级菜单工作台', icon: 'bars' },
     ],
   },
   {
-    title: '基础控件',
+    title: '组件',
     items: [
+      // 基础控件
       { title: 'Buttons', url: '/pages/demo/buttons', note: '按钮 · Glass / Prominent', icon: 'circle' },
       { title: 'Icons', url: '/pages/demo/icons', note: '图标字体 · lingyun-icon', icon: 'star' },
       { title: 'Badges', url: '/pages/demo/badges', note: '角标', icon: 'notification' },
@@ -44,11 +47,7 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
       { title: 'Image', url: '/pages/demo/images', note: '图片 · 懒加载 / 圆角', icon: 'image' },
       { title: 'Avatars', url: '/pages/demo/avatars', note: '头像', icon: 'person' },
       { title: 'Page Control', url: '/pages/demo/page-controls', note: '轮播指示点', icon: 'more' },
-    ],
-  },
-  {
-    title: '表单输入',
-    items: [
+      // 表单输入
       { title: 'Forms', url: '/pages/demo/forms', note: '表单容器 · Grouped 行布局', icon: 'list' },
       { title: 'Text Fields', url: '/pages/demo/text-fields', note: '输入框 · Label / Secure / Multiline', icon: 'compose' },
       { title: 'Switch & Stepper', url: '/pages/demo/switches', note: '开关与步进器', icon: 'settings' },
@@ -57,11 +56,7 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
       { title: 'Pickers', url: '/pages/demo/pickers', note: '选择器 · 级联 data-picker', icon: 'bars' },
       { title: 'Date & Time', url: '/pages/demo/date-time-pickers', note: '日期 / 时间 / 日期时间 · 起止 · 表单', icon: 'calendar' },
       { title: 'Date Switcher', url: '/pages/demo/date-switcher', note: '底部日期切换条 · 天 / 周 / 月 / 年 / 日期段', icon: 'calendar' },
-    ],
-  },
-  {
-    title: '导航与栏',
-    items: [
+      // 导航与栏
       { title: 'Toolbars', url: '/pages/demo/toolbars', note: '顶栏 · 滚动玻璃', icon: 'bars' },
       { title: 'Screen', url: '/pages/demo/screen', note: '窗口档 · 系统 · 折叠 · 硬件', icon: 'tune' },
       { title: 'Mobile / PC', url: '/pages/demo/responsive', note: '窄屏与平板、电脑分开展示', icon: 'tune' },
@@ -69,11 +64,7 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
       { title: 'Tab Bars', url: '/pages/demo/tabbars', note: '底部标签栏', icon: 'list' },
       { title: 'Sidebar', url: '/pages/demo/sidebars', note: '悬浮玻璃侧栏', icon: 'bars' },
       { title: 'Search Bar', url: '/pages/demo/search-bar', note: '搜索栏', icon: 'search' },
-    ],
-  },
-  {
-    title: '列表与内容',
-    items: [
+      // 列表与内容
       { title: 'Lists', url: '/pages/demo/lists', note: '分组列表', icon: 'list' },
       { title: 'Tables', url: '/pages/demo/tables', note: '分组表格 · 固定列 · 分页', icon: 'list' },
       { title: 'Grid', url: '/pages/demo/grid', note: '宫格 · 快捷入口', icon: 'bars' },
@@ -84,19 +75,11 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
       { title: 'Empty', url: '/pages/demo/empty', note: '空态', icon: 'info' },
       { title: 'Skeleton', url: '/pages/demo/skeletons', note: '骨架屏', icon: 'more' },
       { title: 'Refresh', url: '/pages/demo/refresh', note: '下拉刷新', icon: 'refresh' },
-    ],
-  },
-  {
-    title: '反馈与进度',
-    items: [
+      // 反馈与进度
       { title: 'Activity Indicator', url: '/pages/demo/activity-indicator', note: '转圈加载', icon: 'loop' },
       { title: 'Progress', url: '/pages/demo/progress', note: '线性 / 环形进度', icon: 'download' },
       { title: 'Toast & HUD', url: '/pages/demo/toasts', note: '轻提示 · 加载遮罩', icon: 'chat' },
-    ],
-  },
-  {
-    title: '浮层与菜单',
-    items: [
+      // 浮层与菜单
       { title: 'Alerts', url: '/pages/demo/alerts', note: '居中弹窗', icon: 'info' },
       { title: 'Sheets', url: '/pages/demo/sheets', note: '底部 Sheet · medium / large', icon: 'list' },
       { title: 'Action Sheets', url: '/pages/demo/action-sheets', note: '底部操作列表 · Cancel', icon: 'bars' },

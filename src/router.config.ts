@@ -276,6 +276,11 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Goods Nav' }
 	},
 	{
+		path: '/pages/demo/order-goods',
+		name: 'pagesDemoOrderGoods',
+		meta: { title: 'Order Goods' }
+	},
+	{
 		path: '/pages/demo/grid',
 		name: 'pagesDemoGrid',
 		meta: { title: 'Grid' }

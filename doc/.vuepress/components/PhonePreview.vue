@@ -38,6 +38,7 @@ const DEMO: Record<string, string> = {
   picker: '/pages/demo/pickers',
   'date-picker': '/pages/demo/date-time-pickers',
   'date-switcher': '/pages/demo/date-switcher',
+  'order-goods': '/pages/demo/order-goods',
   'data-picker': '/pages/demo/pickers',
   list: '/pages/demo/lists',
   'list-item': '/pages/demo/lists',

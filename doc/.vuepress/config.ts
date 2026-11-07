@@ -72,6 +72,7 @@ const pageSidebar = [
     children: [
       { text: '页面扩展', link: '/page/' },
       { text: '登录', link: '/page/login.html' },
+      { text: '点单加购', link: '/page/order-goods.html' },
     ],
   },
 ]

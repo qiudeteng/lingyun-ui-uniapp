@@ -379,6 +379,13 @@
 			}
 		},
 		{
+			"path": "pages/demo/order-goods",
+			"style": {
+				"navigationBarTitleText": "Order Goods",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/grid",
 			"style": {
 				"navigationBarTitleText": "Grid",

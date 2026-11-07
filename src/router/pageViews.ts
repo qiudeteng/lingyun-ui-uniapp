@@ -78,10 +78,12 @@ registerLingyunPageViews(
         '/pages/demo/search-bar',
         '/pages/demo/refresh',
         '/pages/demo/indexed-list',
+        '/pages/demo/order-goods',
       ].includes(item.url),
       pageScroll: ![
         '/pages/demo/swipe-actions',
         '/pages/demo/indexed-list',
+        '/pages/demo/order-goods',
       ].includes(item.url),
     })),
   ),

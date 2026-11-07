@@ -147,6 +147,13 @@ const PAGE_CHILDREN: LingyunPageTabChild[] = [
       '账号密码登录 · 协议 Sheet',
     ),
     pageChild('page-404', '404', 'info', '/pages/404/404', '缺失页面'),
+    pageChild(
+      'page-order-goods',
+      '点单加购',
+      'cart',
+      '/pages/demo/order-goods',
+      '标准页 · 左右分类 / 购物车',
+    ),
   ]),
 ]
 

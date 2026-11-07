@@ -45,6 +45,7 @@
   <menus-page v-else-if="currentPath === 'pages/demo/menus'" />
   <fab-page v-else-if="currentPath === 'pages/demo/fab'" />
   <goods-nav-page v-else-if="currentPath === 'pages/demo/goods-nav'" />
+  <order-goods-page v-else-if="currentPath === 'pages/demo/order-goods'" />
   <charts-column-page v-else-if="currentPath === 'pages/demo/charts/column'" />
   <charts-stack-page v-else-if="currentPath === 'pages/demo/charts/stack'" />
   <charts-bar-page v-else-if="currentPath === 'pages/demo/charts/bar'" />
@@ -119,6 +120,7 @@ import PopoversPage from '@/pages/demo/popovers.vue'
 import MenusPage from '@/pages/demo/menus.vue'
 import FabPage from '@/pages/demo/fab.vue'
 import GoodsNavPage from '@/pages/demo/goods-nav.vue'
+import OrderGoodsPage from '@/pages/demo/order-goods.vue'
 import ChartsColumnPage from '@/pages/demo/charts/column.vue'
 import ChartsStackPage from '@/pages/demo/charts/stack.vue'
 import ChartsBarPage from '@/pages/demo/charts/bar.vue'
