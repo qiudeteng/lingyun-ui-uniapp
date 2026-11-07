@@ -275,21 +275,24 @@
                   <view class="lingyun-order-goods__bottom">
                     <view v-if="showPrice(item)" class="lingyun-order-goods__price">
                       <text class="lingyun-order-goods__currency">{{ currency }}</text>
-                      <text class="lingyun-order-goods__amount">{{ formatPrice(item.price) }}</text>
+                      <text class="lingyun-order-goods__amount">{{ priceAmountText(item) }}</text>
                       <text v-if="item.priceUnit" class="lingyun-order-goods__price-unit">
                         {{ item.priceUnit }}
                       </text>
-                      <text v-if="item.originalPrice" class="lingyun-order-goods__original">
+                      <text
+                        v-if="item.originalPrice && !priceIsStarting(item)"
+                        class="lingyun-order-goods__original"
+                      >
                         {{ currency }}{{ formatPrice(item.originalPrice) }}
                       </text>
                     </view>
                     <view class="lingyun-order-goods__action" @click.stop>
                       <text
-                        v-if="item.soldOut"
+                        v-if="isItemSoldOut(item)"
                         class="lingyun-order-goods__soldout"
                       >{{ soldOutText }}</text>
                       <lingyun-stepper
-                        v-else-if="quantityOf(item) > 0 && !item.multiSpec"
+                        v-else-if="quantityOf(item) > 0 && !isVariantItem(item) && !item.multiSpec"
                         :value="quantityOf(item)"
                         :min="0"
                         :max="itemMax(item)"
@@ -298,6 +301,26 @@
                         show-value
                         @change="onItemQuantity(item, $event)"
                       />
+                      <view
+                        v-else-if="isVariantItem(item)"
+                        class="lingyun-order-goods__plus"
+                        hover-class="lingyun-order-goods__plus--hover"
+                        :hover-start-time="20"
+                        :hover-stay-time="70"
+                        role="button"
+                        :aria-label="hasSpecs(item) ? specButtonText : attributeButtonText"
+                        @click="onPlus(item, category)"
+                      >
+                        <lingyun-icon type="plus" :size="16" color="#ffffff" />
+                        <view
+                          v-if="quantityOf(item) > 0"
+                          class="lingyun-order-goods__plus-count"
+                        >
+                          <text class="lingyun-order-goods__plus-count-text">
+                            {{ quantityOf(item) }}
+                          </text>
+                        </view>
+                      </view>
                       <view
                         v-else-if="item.multiSpec"
                         class="lingyun-order-goods__spec-btn"
@@ -394,14 +417,14 @@
           <view class="lingyun-order-goods__cart-sheet">
             <view
               v-for="line in cartLines"
-              :key="line.item.key"
+              :key="line.key"
               class="lingyun-order-goods__cart-line"
             >
               <view class="lingyun-order-goods__cart-media">
                 <image
-                  v-if="line.item.image"
+                  v-if="cartLineImage(line)"
                   class="lingyun-order-goods__cart-media-img"
-                  :src="line.item.image"
+                  :src="cartLineImage(line)"
                   mode="aspectFill"
                   lazy-load
                 />
@@ -413,24 +436,31 @@
               </view>
               <view class="lingyun-order-goods__cart-line-main">
                 <text class="lingyun-order-goods__cart-line-name">{{ line.item.name }}</text>
-                <text v-if="line.item.specText" class="lingyun-order-goods__cart-line-spec">
-                  {{ line.item.specText }}
-                </text>
+                <view
+                  v-if="cartLineSelections(line).length"
+                  class="lingyun-order-goods__cart-line-options"
+                >
+                  <text
+                    v-for="(option, optionIndex) in cartLineSelections(line)"
+                    :key="optionIndex"
+                    class="lingyun-order-goods__cart-line-option"
+                  >{{ option }}</text>
+                </view>
                 <view class="lingyun-order-goods__cart-line-price">
                   <text class="lingyun-order-goods__currency">{{ currency }}</text>
                   <text class="lingyun-order-goods__cart-line-amount">
-                    {{ formatPrice(line.item.price) }}
+                    {{ formatPrice(linePrice(line)) }}
                   </text>
                 </view>
               </view>
               <lingyun-stepper
                 :value="line.quantity"
                 :min="0"
-                :max="itemMax(line.item)"
+                :max="lineMax(line)"
                 :step="itemStep(line.item)"
                 :right-text="quantityUnitOf(line.item)"
                 show-value
-                @change="onItemQuantity(line.item, $event)"
+                @change="onCartLineQuantity(line, $event)"
               />
             </view>
             <view v-if="!cartLines.length" class="lingyun-order-goods__cart-empty-state">
@@ -513,14 +543,14 @@
               >
                 <text class="lingyun-order-goods__goods-detail-currency">{{ currency }}</text>
                 <text class="lingyun-order-goods__goods-detail-amount">
-                  {{ formatPrice(goodsDetailItem.price) }}
+                  {{ priceAmountText(goodsDetailItem) }}
                 </text>
                 <text
                   v-if="goodsDetailItem.priceUnit"
                   class="lingyun-order-goods__goods-detail-unit"
                 >{{ goodsDetailItem.priceUnit }}</text>
                 <text
-                  v-if="goodsDetailItem.originalPrice"
+                  v-if="goodsDetailItem.originalPrice && !priceIsStarting(goodsDetailItem)"
                   class="lingyun-order-goods__goods-detail-original"
                 >{{ currency }}{{ formatPrice(goodsDetailItem.originalPrice) }}</text>
               </view>
@@ -541,26 +571,6 @@
                   v-if="goodsDetailItem.badge"
                   class="lingyun-order-goods__goods-detail-badge"
                 >{{ goodsDetailItem.badge }}</text>
-              </view>
-            </view>
-            <view
-              v-if="goodsDetailAttributes.length"
-              class="lingyun-order-goods__goods-detail-attrs"
-            >
-              <view
-                v-for="(attr, index) in goodsDetailAttributes"
-                :key="index"
-                class="lingyun-order-goods__goods-detail-attr"
-                :class="{
-                  'lingyun-order-goods__goods-detail-attr--first': index === 0,
-                }"
-              >
-                <text class="lingyun-order-goods__goods-detail-attr-value">
-                  {{ attr.value }}
-                </text>
-                <text class="lingyun-order-goods__goods-detail-attr-label">
-                  {{ attr.label }}
-                </text>
               </view>
             </view>
           </view>
@@ -599,7 +609,7 @@
               v-else
               class="lingyun-order-goods__goods-detail-add"
               :class="{
-                'lingyun-order-goods__goods-detail-add--disabled': goodsDetailItem.soldOut,
+                'lingyun-order-goods__goods-detail-add--disabled': isItemSoldOut(goodsDetailItem),
               }"
               hover-class="lingyun-order-goods__goods-detail-add--hover"
               :hover-start-time="20"
@@ -611,7 +621,7 @@
                 {{ goodsDetailAddLabel }}
               </text>
               <view
-                v-if="goodsDetailItem.multiSpec && goodsDetailQuantity > 0"
+                v-if="(isVariantItem(goodsDetailItem) || goodsDetailItem.multiSpec) && goodsDetailQuantity > 0"
                 class="lingyun-order-goods__plus-count"
               >
                 <text class="lingyun-order-goods__plus-count-text">
@@ -622,6 +632,21 @@
           </view>
         </template>
       </lingyun-sheets>
+
+      <!-- 规格 / 属性选择：页面专用子组件 -->
+      <lingyun-order-goods-variant-sheet
+        v-model:show="variantOpen"
+        :item="variantItem"
+        :cart="cartMap"
+        :currency="currency"
+        :price-decimals="priceDecimals"
+        :max-count="maxCount"
+        :quantity-unit="quantityUnit"
+        :accent-color="accentColor"
+        :add-to-cart-text="addToCartText"
+        :sold-out-text="soldOutText"
+        @quantity-change="onVariantQuantityChange"
+      />
     </view>
 
     <template #trailing-menu="scope">
@@ -640,16 +665,19 @@
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
 import { useLingyunTheme } from '../../../lingyun-ui/utils/theme'
+import LingyunOrderGoodsVariantSheet from './lingyun-order-goods-variant-sheet.vue'
+import { attributesOf, findSpec, finiteStock, parseLineKey } from './cartKey'
 import type {
   LingyunOrderCart,
+  LingyunOrderCartAttribute,
   LingyunOrderCartLine,
   LingyunOrderCategory,
   LingyunOrderCategoryChangePayload,
   LingyunOrderChangePayload,
   LingyunOrderCheckoutPayload,
   LingyunOrderGoods,
-  LingyunOrderGoodsAttribute,
   LingyunOrderGoodsClickPayload,
+  LingyunOrderSpec,
   LingyunOrderSpecPayload,
   LingyunOrderStore,
   LingyunOrderToolbarButtonGroups,
@@ -657,6 +685,15 @@ import type {
 
 type ScrollEvent = {
   detail?: { scrollTop?: number }
+}
+
+type VariantQuantityPayload = {
+  item: LingyunOrderGoods
+  key: string
+  quantity: number
+  spec?: LingyunOrderSpec
+  attributes?: LingyunOrderCartAttribute[]
+  categoryKey?: string
 }
 
 const FALLBACK_ACCENT = 'var(--lingyun-system-blue, #0088ff)'
@@ -670,13 +707,13 @@ function sanitizeKey(value: unknown): string {
 /**
  * lingyun-order-goods
  * @description 标准「订单商品加购」页：店铺头 + 左侧分类 + 右侧商品 + 底部悬浮购物车。
- * 点商品图 / 名称打开大模式商品详情 Sheet（属性行 + 商品介绍）；加购数量走 v-model，
- * 提交和跳转抛事件，由页面接业务。
+ * 点商品图 / 名称打开大模式商品详情 Sheet（商品介绍）；商品数据带 specs / attributeGroups 时
+ * 自动进入规格列表或「规格 + 属性」组合选择；加购数量走 v-model，提交和跳转抛事件。
  * @see design/pages/demo/order-goods.md
  *
  * @property {Object} store 店铺信息 { name, logo, rating, salesText, deliveryText, notice }
- * @property {Array} categories 分类与商品 [{ key, text, title, iconSrc, icon, iconColor, badge, goods }]；商品支持 image / images / details / attributes / description / priceUnit / quantityUnit / multiSpec / soldOut 等字段
- * @property {Object} modelValue 购物车 { [goodsKey]: quantity }
+ * @property {Array} categories 分类与商品 [{ key, text, title, iconSrc, icon, iconColor, badge, goods }]；商品支持 image / images / details / description / priceUnit / quantityUnit / specs / attributeGroups / multiSpec / soldOut 等字段
+ * @property {Object} modelValue 购物车 { [lineKey]: quantity }；无规格商品行 key 即商品 key，组合行 key 由组件生成
  * @property {String} banner 店铺 Banner 图；用 #banner 插槽可完全自定义
  * @property {Number} bannerHeight Banner 高度，0 时不显示
  * @property {Boolean} showBack 显示 Banner 左上角返回钮（默认 true，点击抛 back）
@@ -697,7 +734,8 @@ function sanitizeKey(value: unknown): string {
  * @property {String} emptyText 无商品时空态文案
  * @property {String} emptyCartText 购物车为空时的文案
  * @property {String} soldOutText 售罄商品在加购位置显示的文案
- * @property {String} specButtonText 多规格商品按钮文案
+ * @property {String} specButtonText 规格选择按钮文案
+ * @property {String} attributeButtonText 只有属性、没有规格时的按钮文案
  * @property {String} quantityUnit 步进器默认数量单位；商品上的 quantityUnit 优先
  * @property {Number} priceDecimals 价格小数位；-1 去掉多余的 0，2 固定两位
  * @property {String} accentColor 选中 / 加购 / 结算的主色；默认系统蓝
@@ -717,18 +755,20 @@ function sanitizeKey(value: unknown): string {
  * @property {Boolean} goodsDetail 点商品图 / 名称打开内置商品详情 Sheet，默认 true
  * @property {String} goodsDetailTitle 商品详情 Sheet 标题（宽屏显示；移动端头图模式隐藏）
  * @property {String} addToCartText 商品详情加购按钮文案
+ * @property {String} attributeButtonText 只有属性、没有规格的商品详情按钮文案
  * @event update:modelValue 加购数量变化
- * @event change 加购数量变化 { item, quantity, cart, count, totalPrice }
+ * @event change 加购数量变化 { item, quantity, cart, count, totalPrice, key, spec, attributes }
  * @event category-change 左右联动切换分类 { key, index }
  * @event goods-click 点击商品 { item, categoryKey }；内置详情开启时同时打开 Sheet
  * @event search 搜索值变化 { value, count }
- * @event spec-request 多规格商品点 +；业务弹自己的规格面板
+ * @event spec-request 旧用法：multiSpec 商品点 +；配置 specs / attributeGroups 后由内置 Sheet 处理
  * @event cart-clear 清空购物车
  * @event checkout 可结算时点结算 { cart, lines, count, totalPrice, deliveryFee }
  * @event back 点 Banner 返回钮
  */
 export default defineComponent({
   name: 'LingyunOrderGoods',
+  components: { LingyunOrderGoodsVariantSheet },
   emits: [
     'update:modelValue',
     'change',
@@ -814,6 +854,8 @@ export default defineComponent({
     goodsDetailTitle: { type: String, default: '商品详情' },
     /** 商品详情 Sheet 加购按钮文案 */
     addToCartText: { type: String, default: '加入购物车' },
+    /** 只有属性、没有规格的商品，详情底部按钮文案 */
+    attributeButtonText: { type: String, default: '选属性' },
   },
   data() {
     return {
@@ -856,6 +898,10 @@ export default defineComponent({
       /** 商品详情缩略图横向滚动容器 / 目标 id */
       detailThumbUid: `ogd${Math.random().toString(36).slice(2, 8)}`,
       detailThumbInto: '',
+      /** 规格 / 属性选择 Sheet（页面专用子组件） */
+      variantOpen: false,
+      variantItem: null as LingyunOrderGoods | null,
+      variantCategoryKey: '',
     }
   },
   computed: {
@@ -889,32 +935,23 @@ export default defineComponent({
     cartMap(): LingyunOrderCart {
       return this.modelValue || {}
     },
+    /** 每个商品（含所有规格 / 属性组合行）的已选总数量 */
+    cartItemTotals(): Record<string, number> {
+      const totals: Record<string, number> = {}
+      this.cartLines.forEach((line) => {
+        totals[line.item.key] = (totals[line.item.key] || 0) + line.quantity
+      })
+      return totals
+    },
     cartLines(): LingyunOrderCartLine[] {
-      const lines: LingyunOrderCartLine[] = []
-      const seen = new Set<string>()
-      this.categories.forEach((category) => {
-        ;(category.goods || []).forEach((item) => {
-          seen.add(item.key)
-          const quantity = this.quantityOf(item)
-          if (quantity > 0) lines.push({ item, categoryKey: category.key, quantity })
-        })
-      })
-      Object.keys(this.cartSnapshots).forEach((key) => {
-        if (seen.has(key)) return
-        const snapshot = this.cartSnapshots[key]
-        const quantity = this.quantityOfKey(key)
-        if (quantity > 0) {
-          lines.push({ item: snapshot.item, categoryKey: snapshot.categoryKey, quantity })
-        }
-      })
-      return lines
+      return this.buildCartLines(this.cartMap)
     },
     cartCount(): number {
       return this.cartLines.reduce((sum, line) => sum + line.quantity, 0)
     },
     cartTotal(): number {
       const total = this.cartLines.reduce(
-        (sum, line) => sum + line.item.price * line.quantity,
+        (sum, line) => sum + this.linePrice(line) * line.quantity,
         0,
       )
       return Math.round(total * 100) / 100
@@ -984,10 +1021,21 @@ export default defineComponent({
       const result: LingyunOrderCategory[] = []
       this.categories.forEach((category) => {
         const goods = (category.goods || []).filter((item) => {
+          const specTexts = (item.specs || []).map((spec) => spec.text)
+          const attributeTexts = (item.attributeGroups || []).reduce<string[]>(
+            (texts, group) => [
+              ...texts,
+              group.title,
+              ...(group.options || []).map((option) => option.text),
+            ],
+            [],
+          )
           const haystack = [
             item.name,
             item.specText,
             ...(item.details || []),
+            ...specTexts,
+            ...attributeTexts,
             category.text,
           ]
             .join(' ')
@@ -1010,10 +1058,13 @@ export default defineComponent({
     searchTopId(): string {
       return `${this.uid}-search-top`
     },
-    /** 购物车详情内容版本：行数 / 数量的变化会触发重新测高 */
+    /** 购物车详情内容版本：行 key / 数量 / 选择变化会触发重新测高 */
     cartVersion(): string {
       return this.cartLines
-        .map((line) => `${line.item.key}:${line.quantity}`)
+        .map(
+          (line) =>
+            `${line.key}:${line.quantity}:${this.cartLineSelections(line).join('/')}`,
+        )
         .join('|')
     },
     /** 列表 / 分类栏尾部预留：底栏 62 + 底部 8 + 顶部间隙 8 + 安全区 */
@@ -1038,10 +1089,6 @@ export default defineComponent({
     goodsDetailWide(): boolean {
       return this.windowWidth >= 690
     },
-    goodsDetailAttributes(): LingyunOrderGoodsAttribute[] {
-      const item = this.goodsDetailItem
-      return item && Array.isArray(item.attributes) ? item.attributes : []
-    },
     /** 详情图集：优先 images，没有时回退到单张 image */
     goodsDetailImages(): string[] {
       const item = this.goodsDetailItem
@@ -1065,7 +1112,9 @@ export default defineComponent({
     goodsDetailAddLabel(): string {
       const item = this.goodsDetailItem
       if (!item) return this.addToCartText
-      if (item.soldOut) return this.soldOutText
+      if (this.isItemSoldOut(item)) return this.soldOutText
+      if (this.hasSpecs(item)) return this.specButtonText
+      if (this.hasAttributes(item)) return this.attributeButtonText
       if (item.multiSpec) return this.specButtonText
       return this.addToCartText
     },
@@ -1074,10 +1123,16 @@ export default defineComponent({
       const item = this.goodsDetailItem
       return item ? this.quantityOf(item) : 0
     },
-    /** 已加购的普通商品在详情底部显示步进器；多规格 / 售罄仍走按钮 */
+    /** 已加购的普通商品在详情底部显示步进器；规格 / 属性商品打开选择 Sheet */
     goodsDetailShowStepper(): boolean {
       const item = this.goodsDetailItem
-      return !!item && !item.soldOut && !item.multiSpec && this.goodsDetailQuantity > 0
+      return (
+        !!item &&
+        !this.isItemSoldOut(item) &&
+        !item.multiSpec &&
+        !this.isVariantItem(item) &&
+        this.goodsDetailQuantity > 0
+      )
     },
   },
   watch: {
@@ -1232,72 +1287,228 @@ export default defineComponent({
       const quantity = Number(this.cartMap[key])
       return Number.isFinite(quantity) && quantity > 0 ? Math.floor(quantity) : 0
     },
+    /** 有规格或属性：点 + 打开选择 Sheet，不再直接加购 */
+    isVariantItem(item: LingyunOrderGoods | null | undefined): boolean {
+      return !!item && (this.hasSpecs(item) || this.hasAttributes(item))
+    },
+    hasSpecs(item: LingyunOrderGoods | null | undefined): boolean {
+      return !!item && Array.isArray(item.specs) && item.specs.length > 0
+    },
+    hasAttributes(item: LingyunOrderGoods | null | undefined): boolean {
+      return (
+        !!item &&
+        Array.isArray(item.attributeGroups) &&
+        item.attributeGroups.length > 0
+      )
+    },
+    /** 商品下所有规格 / 属性组合行的数量合计 */
     quantityOf(item: LingyunOrderGoods): number {
-      return this.quantityOfKey(item.key)
+      return this.cartItemTotals[item.key] || 0
     },
     categoryQuantity(category: LingyunOrderCategory): number {
-      const known = new Set<string>()
-      const sum = (category.goods || []).reduce((total, item) => {
-        known.add(item.key)
-        return total + this.quantityOf(item)
-      }, 0)
-      return Object.keys(this.cartSnapshots).reduce((total, key) => {
-        if (known.has(key)) return total
-        const snapshot = this.cartSnapshots[key]
-        return snapshot.categoryKey === category.key
-          ? total + this.quantityOfKey(key)
-          : total
-      }, sum)
+      return this.cartLines.reduce(
+        (total, line) => (line.categoryKey === category.key ? total + line.quantity : total),
+        0,
+      )
     },
-    /** 多规格商品没有统一价（price=0）时不画价格，只留「选规格」 */
+    /** 规格价格区间：主列表 / 详情用区间价，避免只显示基础价造成误解 */
+    specPriceRange(item: LingyunOrderGoods): {
+      min: number
+      max: number
+      hasPrice: boolean
+      range: boolean
+    } {
+      const base = Number(item.price) || 0
+      const specs = Array.isArray(item.specs) ? item.specs : []
+      if (!specs.length) {
+        return { min: base, max: base, hasPrice: base > 0, range: false }
+      }
+      const prices = specs
+        .map((spec) => {
+          const price = Number(spec.price)
+          return Number.isFinite(price) ? price : base
+        })
+        .filter((price) => price > 0)
+      if (!prices.length) {
+        return { min: 0, max: 0, hasPrice: false, range: false }
+      }
+      const min = Math.min(...prices)
+      const max = Math.max(...prices)
+      return { min, max, hasPrice: true, range: max > min }
+    },
+    priceAmountText(item: LingyunOrderGoods): string {
+      const stats = this.specPriceRange(item)
+      if (this.isVariantItem(item) && stats.hasPrice) {
+        const amount = this.formatPrice(stats.min)
+        return this.priceIsStarting(item) ? `${amount}起` : amount
+      }
+      return this.formatPrice(item.price)
+    },
+    /** 多规格显示最低价 + 起；此时不显示划线原价，避免误导 */
+    priceIsStarting(item: LingyunOrderGoods): boolean {
+      if (!this.isVariantItem(item)) return false
+      return (
+        this.specPriceRange(item).hasPrice &&
+        Array.isArray(item.specs) &&
+        item.specs.length > 1
+      )
+    },
+    /** 有规格 / 属性但没有任何价格时不画价格；普通商品保持原行为 */
     showPrice(item: LingyunOrderGoods): boolean {
-      return !item.multiSpec || Number(item.price) > 0
+      if (this.isVariantItem(item)) return this.specPriceRange(item).hasPrice
+      if (item.multiSpec) return Number(item.price) > 0
+      return true
     },
+    /** 单行上限：商品 / 规格 max；无规格商品再受库存限制。库存为规格 / 商品级，组合行按已占用数量扣减 */
     itemMax(item: LingyunOrderGoods): number {
-      return item.max != null && Number.isFinite(Number(item.max))
-        ? Number(item.max)
-        : this.maxCount
+      const base =
+        item.max != null && Number.isFinite(Number(item.max))
+          ? Number(item.max)
+          : this.maxCount
+      if (this.hasSpecs(item)) return base
+      const stock = finiteStock(item.stock)
+      return stock != null ? Math.min(base, stock) : base
     },
     itemStep(item: LingyunOrderGoods): number {
       return item.step != null && Number(item.step) > 0 ? Number(item.step) : 1
     },
     countOf(cart: LingyunOrderCart): number {
-      let count = 0
-      const known = new Set<string>()
-      this.categories.forEach((category) => {
-        ;(category.goods || []).forEach((item) => {
-          known.add(item.key)
-          const quantity = Number(cart[item.key])
-          if (Number.isFinite(quantity) && quantity > 0) count += quantity
-        })
-      })
-      Object.keys(this.cartSnapshots).forEach((key) => {
-        if (known.has(key)) return
-        const quantity = Number(cart[key])
-        if (Number.isFinite(quantity) && quantity > 0) count += quantity
-      })
-      return count
+      return this.buildCartLines(cart).reduce((sum, line) => sum + line.quantity, 0)
     },
     totalOf(cart: LingyunOrderCart): number {
-      let total = 0
-      const known = new Set<string>()
+      const total = this.buildCartLines(cart).reduce(
+        (sum, line) => sum + this.linePrice(line) * line.quantity,
+        0,
+      )
+      return Math.round(total * 100) / 100
+    },
+    linePrice(line: LingyunOrderCartLine): number {
+      const price = Number(line.spec?.price)
+      return Number.isFinite(price) ? price : Number(line.item.price) || 0
+    },
+    isSpecSoldOut(spec: LingyunOrderSpec): boolean {
+      return !!spec.soldOut || finiteStock(spec.stock) === 0
+    },
+    isItemSoldOut(item: LingyunOrderGoods): boolean {
+      if (item.soldOut) return true
+      if (this.hasSpecs(item)) {
+        return (item.specs || []).every((spec) => this.isSpecSoldOut(spec))
+      }
+      const stock = finiteStock(item.stock)
+      return stock != null && stock <= 0
+    },
+    /** 当前行允许的最大数量：受 max 与库存限制；库存按规格 / 商品扣减其它组合行 */
+    lineMax(line: LingyunOrderCartLine): number {
+      const spec = line.spec
+      const specMax = Number(spec?.max)
+      const base =
+        Number.isFinite(specMax) && specMax > 0
+          ? Math.floor(specMax)
+          : this.itemMax(line.item)
+      let stock: number | null = null
+      if (spec) stock = finiteStock(spec.stock)
+      else if (!this.hasSpecs(line.item)) stock = finiteStock(line.item.stock)
+      if (stock == null) return base
+      const usedOther = this.cartLines.reduce((sum, other) => {
+        if (other.key === line.key) return sum
+        if (other.item.key !== line.item.key) return sum
+        if (spec) {
+          if (!other.spec || other.spec.key !== spec.key) return sum
+        } else if (other.spec) {
+          return sum
+        }
+        return sum + other.quantity
+      }, 0)
+      return Math.max(line.quantity, Math.min(base, stock - usedOther))
+    },
+    itemLookup(): Map<string, { item: LingyunOrderGoods; categoryKey: string }> {
+      const lookup = new Map<string, { item: LingyunOrderGoods; categoryKey: string }>()
       this.categories.forEach((category) => {
         ;(category.goods || []).forEach((item) => {
-          known.add(item.key)
-          const quantity = Number(cart[item.key])
-          if (Number.isFinite(quantity) && quantity > 0) total += quantity * item.price
+          lookup.set(item.key, { item, categoryKey: category.key })
         })
       })
-      Object.keys(this.cartSnapshots).forEach((key) => {
-        if (!known.has(key)) {
-          const quantity = Number(cart[key])
-          const snapshot = this.cartSnapshots[key]
-          if (Number.isFinite(quantity) && quantity > 0) {
-            total += quantity * snapshot.item.price
-          }
-        }
+      return lookup
+    },
+    /** 把规格 / 属性行 key 还原成购物车行；找不到商品时回退到快照 */
+    resolveCartLine(
+      key: string,
+      quantity: number,
+      lookup: Map<string, { item: LingyunOrderGoods; categoryKey: string }>,
+    ): LingyunOrderCartLine | null {
+      const parsed = parseLineKey(key)
+      const current = lookup.get(parsed.itemKey)
+      const snapshot = this.cartSnapshots[key]
+      const item = current ? current.item : snapshot ? snapshot.item : null
+      if (!item) return null
+      return {
+        key,
+        item,
+        categoryKey: current ? current.categoryKey : snapshot?.categoryKey || '',
+        quantity,
+        spec: findSpec(item, parsed.specKey),
+        attributes: attributesOf(item, parsed.optionTokens),
+      }
+    },
+    /** 同一商品内按规格顺序、属性分组顺序排列组合行 */
+    compareItemLines(a: LingyunOrderCartLine, b: LingyunOrderCartLine): number {
+      const item = a.item
+      const specIndex = (line: LingyunOrderCartLine): number => {
+        const key = line.spec?.key || ''
+        if (!key) return -1
+        return (item.specs || []).findIndex((spec) => spec.key === key)
+      }
+      const specDiff = specIndex(a) - specIndex(b)
+      if (specDiff) return specDiff
+      const attributeKey = (line: LingyunOrderCartLine): string =>
+        (line.attributes || [])
+          .map((attribute) => {
+            const groupIndex = (item.attributeGroups || []).findIndex(
+              (group) => group.key === attribute.groupKey,
+            )
+            const group = (item.attributeGroups || [])[groupIndex]
+            const optionIndex = group
+              ? (group.options || []).findIndex(
+                  (option) => option.key === attribute.optionKey,
+                )
+              : -1
+            return `${groupIndex}:${optionIndex}`
+          })
+          .join(',')
+      return attributeKey(a).localeCompare(attributeKey(b))
+    },
+    /** 生成购物车行：按分类 / 商品 / 规格 / 属性顺序，快照行排在最后 */
+    buildCartLines(cart: LingyunOrderCart): LingyunOrderCartLine[] {
+      const lookup = this.itemLookup()
+      const byItem = new Map<string, LingyunOrderCartLine[]>()
+      Object.keys(cart).forEach((key) => {
+        const quantity = Number(cart[key])
+        if (!Number.isFinite(quantity) || quantity <= 0) return
+        const line = this.resolveCartLine(key, Math.floor(quantity), lookup)
+        if (!line) return
+        const list = byItem.get(line.item.key)
+        if (list) list.push(line)
+        else byItem.set(line.item.key, [line])
       })
-      return Math.round(total * 100) / 100
+      const lines: LingyunOrderCartLine[] = []
+      this.categories.forEach((category) => {
+        ;(category.goods || []).forEach((item) => {
+          const list = byItem.get(item.key)
+          if (!list) return
+          list.sort((a, b) => this.compareItemLines(a, b))
+          lines.push(...list)
+          byItem.delete(item.key)
+        })
+      })
+      const orphan: LingyunOrderCartLine[] = []
+      byItem.forEach((list) => orphan.push(...list))
+      orphan.sort((a, b) =>
+        a.categoryKey === b.categoryKey
+          ? a.item.key.localeCompare(b.item.key)
+          : a.categoryKey.localeCompare(b.categoryKey),
+      )
+      lines.push(...orphan)
+      return lines
     },
     syncCartSnapshots(): void {
       const cart = this.cartMap
@@ -1306,15 +1517,17 @@ export default defineComponent({
       Object.keys(this.cartSnapshots).forEach((key) => {
         if (this.quantityOfKey(key) > 0) next[key] = this.cartSnapshots[key]
       })
-      this.categories.forEach((category) => {
-        ;(category.goods || []).forEach((item) => {
-          const quantity = Number(cart[item.key])
-          if (!Number.isFinite(quantity) || quantity <= 0) return
-          next[item.key] = {
-            item: { ...item },
-            categoryKey: category.key,
-          }
-        })
+      const lookup = this.itemLookup()
+      Object.keys(cart).forEach((key) => {
+        const quantity = Number(cart[key])
+        if (!Number.isFinite(quantity) || quantity <= 0) return
+        const parsed = parseLineKey(key)
+        const found = lookup.get(parsed.itemKey)
+        if (!found) return
+        next[key] = {
+          item: { ...found.item },
+          categoryKey: found.categoryKey,
+        }
       })
       this.cartSnapshots = next
     },
@@ -1327,7 +1540,7 @@ export default defineComponent({
       return ''
     },
     setQuantity(item: LingyunOrderGoods, value: unknown): void {
-      if (item.soldOut) return
+      if (this.isItemSoldOut(item) || this.isVariantItem(item)) return
       const raw = Number(value)
       const safe = Number.isFinite(raw) ? Math.floor(raw) : 0
       const quantity = Math.max(0, Math.min(this.itemMax(item), safe))
@@ -1350,11 +1563,16 @@ export default defineComponent({
         cart,
         count: this.countOf(cart),
         totalPrice: this.totalOf(cart),
+        key: item.key,
       }
       this.$emit('change', payload)
     },
     onPlus(item: LingyunOrderGoods, category: LingyunOrderCategory): void {
-      if (item.soldOut) return
+      if (this.isItemSoldOut(item)) return
+      if (this.isVariantItem(item)) {
+        this.openVariantSheet(item, category.key)
+        return
+      }
       if (item.multiSpec) {
         const payload: LingyunOrderSpecPayload = { item, categoryKey: category.key }
         this.$emit('spec-request', payload)
@@ -1364,6 +1582,112 @@ export default defineComponent({
     },
     onItemQuantity(item: LingyunOrderGoods, value: unknown): void {
       this.setQuantity(item, value)
+    },
+    /** 打开规格 / 属性选择 Sheet（页面专用子组件） */
+    openVariantSheet(item: LingyunOrderGoods, categoryKey: string): void {
+      if (this.isItemSoldOut(item)) return
+      this.variantItem = { ...item }
+      this.variantCategoryKey = categoryKey
+      this.variantOpen = true
+    },
+    onVariantQuantityChange(payload: VariantQuantityPayload): void {
+      this.applyLineQuantity({
+        ...payload,
+        categoryKey: this.variantCategoryKey,
+      })
+    },
+    /** 购物车详情里直接调整某一行的数量 */
+    onCartLineQuantity(line: LingyunOrderCartLine, value: unknown): void {
+      this.applyLineQuantity({
+        item: line.item,
+        key: line.key,
+        quantity: Number(value),
+        spec: line.spec,
+        attributes: line.attributes || [],
+        categoryKey: line.categoryKey,
+      })
+    },
+    /** 规格 / 属性行的统一写回：更新 cart、快照并抛事件 */
+    applyLineQuantity(payload: VariantQuantityPayload): void {
+      const item = payload.item
+      const key = payload.key
+      if (!item || !key) return
+      const raw = Math.floor(Number(payload.quantity))
+      if (!Number.isFinite(raw)) return
+      const spec = payload.spec
+      const specMax = Number(spec?.max)
+      const base =
+        Number.isFinite(specMax) && specMax > 0
+          ? Math.floor(specMax)
+          : this.itemMax(item)
+      let limit = base
+      let stock: number | null = null
+      if (spec) stock = finiteStock(spec.stock)
+      else if (!this.hasSpecs(item)) stock = finiteStock(item.stock)
+      if (stock != null) {
+        const parsed = parseLineKey(key)
+        let usedOther = 0
+        Object.keys(this.cartMap).forEach((otherKey) => {
+          if (otherKey === key) return
+          const otherQuantity = Math.floor(Number(this.cartMap[otherKey]))
+          if (!Number.isFinite(otherQuantity) || otherQuantity <= 0) return
+          const otherParsed = parseLineKey(otherKey)
+          if (otherParsed.itemKey !== parsed.itemKey) return
+          if (spec) {
+            if (otherParsed.specKey !== spec.key) return
+          } else if (otherParsed.specKey) {
+            return
+          }
+          usedOther += otherQuantity
+        })
+        limit = Math.min(base, Math.max(0, stock - usedOther))
+        const currentQuantity = this.quantityOfKey(key)
+        if (currentQuantity > limit) limit = currentQuantity
+      }
+      const quantity = Math.max(0, Math.min(limit, raw))
+      if (quantity === this.quantityOfKey(key)) return
+      const cart: LingyunOrderCart = { ...this.cartMap }
+      if (quantity > 0) {
+        cart[key] = quantity
+        this.cartSnapshots[key] = {
+          item: { ...item },
+          categoryKey: payload.categoryKey || this.categoryKeyOf(item),
+        }
+      } else {
+        delete cart[key]
+        delete this.cartSnapshots[key]
+      }
+      this.$emit('update:modelValue', cart)
+      const change: LingyunOrderChangePayload = {
+        item,
+        quantity,
+        cart,
+        count: this.countOf(cart),
+        totalPrice: this.totalOf(cart),
+        key,
+        spec: payload.spec,
+        attributes: payload.attributes || [],
+      }
+      this.$emit('change', change)
+    },
+    /** 购物车行按「每行一个选择」排列：规格一行，每个已选属性选项各一行 */
+    cartLineSelections(line: LingyunOrderCartLine): string[] {
+      const lines: string[] = []
+      if (line.spec?.text) lines.push(`规格：${line.spec.text}`)
+      ;(line.attributes || []).forEach((attribute) => {
+        const quantity = Math.floor(Number(attribute.quantity))
+        const suffix = Number.isFinite(quantity) && quantity > 1 ? ` ×${quantity}` : ''
+        lines.push(`${attribute.groupTitle}：${attribute.optionText}${suffix}`)
+      })
+      if (!lines.length && line.item.specText) lines.push(line.item.specText)
+      return lines
+    },
+    /** 购物车行缩略图：优先第一个有图的属性选项，其次规格图，最后商品图 */
+    cartLineImage(line: LingyunOrderCartLine): string {
+      const attribute = (line.attributes || []).find((entry) => entry.optionImage)
+      if (attribute && attribute.optionImage) return attribute.optionImage
+      if (line.spec?.image) return line.spec.image
+      return line.item.image || ''
     },
     onGoodsClick(item: LingyunOrderGoods, category: LingyunOrderCategory): void {
       this.goodsDetailItem = { ...item }
@@ -1425,10 +1749,16 @@ export default defineComponent({
         this.detailThumbInto = this.detailThumbIdOf(index)
       })
     },
-    /** 商品详情内加购：多规格先收起详情再抛 spec-request */
+    /** 商品详情内加购：规格 / 属性商品先收起详情再打开选择 Sheet */
     addFromGoodsDetail(): void {
       const item = this.goodsDetailItem
-      if (!item || item.soldOut) return
+      if (!item || this.isItemSoldOut(item)) return
+      if (this.isVariantItem(item)) {
+        const categoryKey = this.goodsDetailCategoryKey
+        this.goodsDetailOpen = false
+        this.openVariantSheet(item, categoryKey)
+        return
+      }
       if (item.multiSpec) {
         const payload: LingyunOrderSpecPayload = {
           item,
@@ -1881,7 +2211,7 @@ export default defineComponent({
 
 .lingyun-order-goods__rail-inner {
   position: relative;
-  padding: 6px 0 18px;
+  padding: 0 0 18px;
   box-sizing: border-box;
 }
 
@@ -2352,22 +2682,22 @@ export default defineComponent({
 }
 
 .lingyun-order-goods__cart-media {
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 42px;
   flex-shrink: 0;
   border-radius: 8px;
   overflow: hidden;
 }
 
 .lingyun-order-goods__cart-media-img {
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 42px;
   display: block;
 }
 
 .lingyun-order-goods__cart-media-empty {
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2392,14 +2722,18 @@ export default defineComponent({
   text-overflow: ellipsis;
 }
 
-.lingyun-order-goods__cart-line-spec {
-  margin-top: 1px;
+.lingyun-order-goods__cart-line-options {
+  margin-top: 2px;
+  display: flex;
+  flex-direction: column;
+}
+
+.lingyun-order-goods__cart-line-option {
+  display: block;
   font-size: 12px;
   line-height: 16px;
   color: var(--lingyun-label-secondary, #{$lingyun-label-secondary});
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  word-break: break-all;
 }
 
 .lingyun-order-goods__cart-line-price {
@@ -2738,47 +3072,6 @@ export default defineComponent({
 
 .lingyun-order-goods__goods-detail-add--disabled .lingyun-order-goods__goods-detail-add-text {
   color: var(--lingyun-label-tertiary, #{$lingyun-label-tertiary});
-}
-
-.lingyun-order-goods__goods-detail-attrs {
-  margin-top: 16px;
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  padding: 12px 4px;
-  box-sizing: border-box;
-  border-radius: 14px;
-  background-color: var(--lingyun-fill-quaternary, #{$lingyun-fill-quaternary});
-}
-
-.lingyun-order-goods__goods-detail-attr {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 0 4px;
-  box-sizing: border-box;
-  border-left: 0.5px solid var(--lingyun-separator, #{$lingyun-separator});
-}
-
-.lingyun-order-goods__goods-detail-attr--first {
-  border-left: 0;
-}
-
-.lingyun-order-goods__goods-detail-attr-value {
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 20px;
-  color: var(--lingyun-label, #{$lingyun-label});
-}
-
-.lingyun-order-goods__goods-detail-attr-label {
-  margin-top: 4px;
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--lingyun-label-secondary, #{$lingyun-label-secondary});
 }
 
 .lingyun-order-goods__goods-detail-desc {
