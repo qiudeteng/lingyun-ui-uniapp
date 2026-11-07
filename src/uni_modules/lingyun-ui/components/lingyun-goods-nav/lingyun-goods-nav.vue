@@ -453,7 +453,8 @@ export default defineComponent({
 .lingyun-goods-nav--cart {
   width: auto;
   min-height: 62px;
-  padding: 0 14px;
+  /* 左侧和购物车圆钮的上下间距对齐（62 - 48）/ 2 */
+  padding: 0 14px 0 7px;
   gap: 0;
   margin: 0 12px 8px;
   border-radius: 31px;
@@ -486,7 +487,8 @@ export default defineComponent({
 .lingyun-goods-nav__cart-badge {
   position: absolute;
   top: -3px;
-  right: -4px;
+  /* 左侧固定，数字变多往右撑开，不往左盖住购物车图标和价格 */
+  left: 26px;
 }
 
 .lingyun-goods-nav__cart-info {
