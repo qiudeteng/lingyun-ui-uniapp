@@ -1,3 +1,15 @@
+## 1.0.49（2026-11-07）
+- 新增图片轮播 `lingyun-swiper`：基于内置 swiper，支持左右滑动、`autoplay` / `interval` / `circular`、`ratio`（默认 4:3）、`radius`、内置圆点、懒加载；配合 `v-model:current` 可用缩略图作为指示器。
+- `lingyun-goods-nav` cart 变体恢复加购反馈：购物车数量增加时，底部购物车圆钮（含角标）做一次 0.4s 放大回弹。
+- `lingyun-sheets` 新增 `footer` 插槽：底部操作区固定在面板底部、不参与 body 滚动，底部安全区由组件承接；body 顶部内边距与安全区随之调整。
+- `lingyun-sheets` 新增 `contentFill`：body 不滚动，内容自行填满 body 高度并在内部滚动；配合 `footer` 可做左右分栏、左栏内部滚动的详情页。
+- `lingyun-sheets` 新增 `bleedTop`：内容从面板顶部开始，顶部 Chrome（关闭钮 / 标题）改为绝对定位浮在内容上；同时隐藏 Grabber，并把 body 顶部内边距归 0。适合商品详情这类头图铺满的场景，窄屏 / 宽屏卡片都生效。
+- `lingyun-toolbars` 的 `segments` 分段控制改为默认大小（Large 48 高），行高由 40 调整为 56，真机更易点按；`lingyun-app-page` 顶部留白同步。
+- `lingyun-menu` 行新增 `iconClass`：用 CSS 绘制图标，支持跟随主题色；内置 `lingyun-menu__symbol-icon--sun` / `--moon` 太阳与月牙。`lingyun-context-menu` 同步支持。
+- `lingyun-theme-action` 主题菜单的浅色 / 暗黑图标改为太阳 / 月亮，选中态只由右侧勾选表示，避免圆形图标被误解为选中。
+- `lingyun-goods-nav` cart 详情展开时改为可见全屏遮罩（`--lingyun-mask`，浅色 0.2 / 暗黑 0.48）：贴底时外层 fixed 根节点铺满视口，遮罩用 absolute 撑满、卡片固定在底部并在遮罩之上；遮罩拦截 `touchmove`，点上方收起，修复小程序上触摸穿透、页面跟着滚动、点上方不收起的问题。
+- `lingyun-goods-nav` cart 详情移除详情与购物车栏之间的分割线，只保留列表最后一行自身的分隔线；详情高度上限同步不再扣分割线。
+- 同步组件文档、SHEETS / SWIPER / TOOLBARS / MENUS 规范与组件清单。
 ## 1.0.48（2026-11-07）
 - `lingyun-goods-nav` 的 cart 变体新增购物车详情 `detail`：点购物车 / 合计区域，整张购物车玻璃卡向上增高；详情与购物车栏是同一张卡、同一圆角轮廓，关闭时即 62 高胶囊，不再使用独立弹窗，购物车栏始终贴底。
 - 详情左上角新增 36px 玻璃关闭钮；右侧 `#detail-header` 插槽放标题 / 件数 / 清空，`#detail` 插槽放内容。点卡片外的透明点击层收起，结算钮始终在点击层之上、随时可点；购物车归零自动收起，点「去结算」先收起。

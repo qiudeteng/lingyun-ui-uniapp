@@ -1,7 +1,15 @@
 ## 1.1.1（2026-11-07）
 - `lingyun-order-goods` 改为悬浮购物车布局：左侧分类栏与右侧商品列表通高到页面底部，商品从购物车底部穿过；购物车固定悬浮在列表上方，列表与分类栏尾部预留 `78 + 安全区` 的让位，不再像底栏下面多一条安全区。
 - 已选商品改为 `lingyun-goods-nav` 的 `detail` 一体卡：详情与购物车是同一张玻璃卡、展开时整卡向上增高；左上角关闭钮，点卡片外收起，结算钮始终可点；详情顶栏拆到 `#detail-header` 插槽，内容在 `#detail` 插槽，随行数变化重新测高。
-- 演示数据改为「八喜冰淇淋蛋糕」，商品、店铺 logo 与 Banner 使用真实蛋糕图片（Unsplash）；微信小程序真机需配置 `images.unsplash.com` 合法域名或勾选「不校验合法域名」。
+- 新增内置商品详情 Sheet（`lingyun-sheets` 大模式）：点商品图 / 名称打开，包含 4:3 头图、价格 / 月售 / 划线原价、商品名、属性行与「商品介绍」，用商品介绍替代评价；加购按钮统一放到 Sheet 底部 `footer` 操作区（移动端 / 宽屏一致），并与列表联动：普通商品已加购时显示步进器，多规格显示「选规格」+ 数量角标，售罄置灰。
+- 商品新增 `images` 多图：详情页使用 `lingyun-swiper` 显示大图，支持左右滑动 / 自动轮播（5s），底部横排缩略图作为指示器，点击缩略图切换；不传时回退到单张 `image`。
+- 移动端头图通过 `lingyun-sheets` 的 `bleedTop` 延伸到面板顶部、关闭钮浮在图片左上角；宽屏（≥690）左侧为图片 + 图下商品介绍、右侧为价格 / 名称 / 属性；商品介绍自动填满左栏剩余高度（`contentFill`），标题固定、内容在自身区域滚动，不再带动整页滚动；图片列固定 42% 宽，图片左距与右侧文字右距一致；缩略图切换增加高亮过渡与列表平滑滚动。
+- `lingyun-order-goods` 顶部工具栏支持搜索（`showToolbar` + `searchable`）：搜索时隐藏 Banner / 店铺卡片 / 分类栏，列表切换为搜索结果视图，按原分类分组并显示结果数、未输入提示与无结果空态；结果可直接加购 / 步进 / 打开详情，关闭后回到原列表并定位当前分类。新增 `search` 事件与 `searchHintText` / `searchEmptyText`。
+- 顶栏改为页面唯一头部：开启 `showToolbar` 后 Banner 自带返回钮与右上角操作区自动隐藏；新增 `autoTopInset`（默认 true），设为 `false` 时 Banner 顶到页面顶部、由 `lingyun-app-page` 工具栏透明覆盖，Banner 顶部按主题加渐隐保证标题可读；搜索视图自动恢复顶部留白。
+- 新增 `toolbarButtons` / `toolbarMenuEnabled` 与 `#toolbar-menu` 插槽：顶部工具栏可加自定义按钮（与主题钮同一组），点击弹出菜单内容，作用域带 `close`；demo 把加载方式移到工具栏的「筛选」面板，面板内可切换加载模式、开关 Banner，并用滑块实时调整 Banner 高度（60–300px）。
+- 暗黑下页面 / 分类栏背景改用 `bg-grouped-primary`（黑），店铺卡片保持 `bg-grouped-secondary`（#1c1c1e），与浅色一样能看出「卡片浮在页面上」的层级；Banner 高度为 0 时不显示 Banner，自动恢复顶部工具栏留白，店铺卡片从工具栏下方开始，不会垫到工具栏下面。
+- 商品数据结构新增 `attributes` / `description`；新增 `goodsDetail`（默认 true）/ `goodsDetailTitle` / `addToCartText` 属性，`goods-click` 仍会抛出。
+- 演示数据改为「八喜冰淇淋蛋糕」，商品、店铺 logo 与 Banner 使用真实蛋糕图片（Unsplash），并补齐属性行与商品介绍；微信小程序真机需配置 `images.unsplash.com` 合法域名或勾选「不校验合法域名」。
 ## 1.1.0（2026-11-07）
 - 新增标准页 `lingyun-order-goods`「订单商品加购」：店铺头 + 左侧分类 + 右侧商品列表 + 底部购物车结算栏；左右双向滚动联动（点击分类滚动、滚动回写分类高亮）。
 - 数据驱动：`store` / `categories` / `v-model` 购物车；商品支持图片、规格、销量、招牌角标、划线原价、售罄、步进数量、多规格；无图时用名称首字兜底。
