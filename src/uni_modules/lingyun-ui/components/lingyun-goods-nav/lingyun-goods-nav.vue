@@ -9,7 +9,11 @@
         @touchmove.stop.prevent
       />
       <!-- 详情与购物车同一张卡：详情在上、购物车栏在下，展开时整卡向上增高 -->
-      <view class="lingyun-goods-nav__card" :style="cardStyle">
+      <view
+        class="lingyun-goods-nav__card"
+        :style="cardStyle"
+        @touchmove.stop="onCardTouchMove"
+      >
         <view
           v-if="detailMounted"
           class="lingyun-goods-nav__detail"
@@ -765,6 +769,10 @@ export default defineComponent({
         total: this.totalValue,
       })
       if (this.detailEnabled) this.toggleDetail()
+    },
+    /** 展开详情时阻止触摸冒泡到页面；内部 scroll-view 仍自行滚动 */
+    onCardTouchMove(): void {
+      /* 空实现：只靠 .stop 阻止冒泡，不 prevent，避免掐死内部 scroll-view */
     },
     onCheckoutTap() {
       if (!this.canCheckout) return

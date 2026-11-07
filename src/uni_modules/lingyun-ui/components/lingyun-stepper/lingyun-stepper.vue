@@ -1,7 +1,13 @@
 <template>
   <view class="lingyun-stepper-host" :class="{ 'lingyun-stepper-host--disabled': disabled }">
     <text v-if="leftTextClipped" class="lingyun-stepper__side-text">{{ leftTextClipped }}</text>
-    <view class="lingyun-stepper" :class="{ 'lingyun-stepper--disabled': disabled }">
+    <view
+      class="lingyun-stepper"
+      :class="{
+        'lingyun-stepper--disabled': disabled,
+        'lingyun-stepper--large': isLarge,
+      }"
+    >
       <view
         class="lingyun-stepper__btn"
         :class="{ 'lingyun-stepper__btn--disabled': atMin }"
@@ -77,6 +83,8 @@ export default defineComponent({
     leftText: { type: String, default: '' },
     /** 步进器右侧灰色说明文字，最多 4 个字 */
     rightText: { type: String, default: '' },
+    /** 尺寸：default 30 高；large 38 高，按钮更宽，适合真机大点击区 */
+    size: { type: String, default: 'default' },
   },
   data() {
     return {
@@ -109,6 +117,9 @@ export default defineComponent({
     },
     rightTextClipped(): string {
       return clipSideText(this.rightText)
+    },
+    isLarge(): boolean {
+      return this.size === 'large'
     },
     valueStyle(): { width: string } {
       const text = this.editing ? String(this.draft) : this.format(this.current)
@@ -221,6 +232,32 @@ export default defineComponent({
 
 .lingyun-stepper--disabled {
   opacity: 0.45;
+}
+
+/* 大号：真机大点击区 */
+.lingyun-stepper--large {
+  height: 38px;
+  border-radius: 10px;
+}
+
+.lingyun-stepper--large .lingyun-stepper__btn {
+  width: 46px;
+}
+
+.lingyun-stepper--large .lingyun-stepper__mark {
+  font-size: 21px;
+  line-height: 24px;
+}
+
+.lingyun-stepper--large .lingyun-stepper__div {
+  margin: 8px 0;
+}
+
+.lingyun-stepper--large .lingyun-stepper__value {
+  height: 38px;
+  min-height: 38px;
+  font-size: 17px;
+  line-height: 38px;
 }
 
 .lingyun-stepper__btn {
