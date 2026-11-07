@@ -54,6 +54,12 @@ export interface LingyunOrderCategory {
   text: string
   /** 右侧分组标题，默认同 text */
   title?: string
+  /** 分类名左侧小图标地址（后台返回的图片 URL），与文字同大小；优先于 icon */
+  iconSrc?: string
+  /** 分类名左侧小图标字形；没有 iconSrc 时使用 */
+  icon?: string
+  /** 图标颜色，默认跟随次要文字色 */
+  iconColor?: string
   /** 分类角标 */
   badge?: string | number
   goods: LingyunOrderGoods[]

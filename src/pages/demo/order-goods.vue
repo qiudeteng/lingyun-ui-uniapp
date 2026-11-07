@@ -6,11 +6,15 @@
     :min-price="20"
     :delivery-fee="5"
     :price-decimals="2"
+    :render-mode="renderMode"
+    :window-size="2"
+    :category-loading="categoryLoading"
     banner-height="150"
     @back="goBack"
     @checkout="onCheckout"
     @spec-request="onSpecRequest"
     @cart-clear="onCartClear"
+    @category-change="onCategoryChange"
   >
     <template #banner>
       <view class="order-banner">
@@ -18,6 +22,11 @@
           <text class="order-banner__title">立冬到 · 吃水饺</text>
           <text class="order-banner__sub">喜家德 · 现包现煮 · 门店直送</text>
         </view>
+      </view>
+    </template>
+    <template #banner-actions>
+      <view class="order-mode" @click="toggleRenderMode">
+        <text class="order-mode__text">{{ modeText }}</text>
       </view>
     </template>
   </lingyun-order-goods>
@@ -33,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { computed, onBeforeUnmount, ref } from 'vue'
   import type {
     LingyunOrderCart,
     LingyunOrderCategory,
@@ -55,7 +64,8 @@
       key: 'flash',
       text: '神抢手',
       title: '神抢手 · 限时补贴',
-      badge: '热',
+      icon: 'fire',
+      iconColor: '#ff8d28',
       goods: [
         {
           key: 'flash-double',
@@ -230,8 +240,8 @@
     },
     {
       key: 'package',
-      text: '包装耗材',
-      title: '包装耗材 · 按件起订',
+      text: '包装耗材与餐巾纸',
+      title: '包装耗材与餐巾纸 · 按件起订',
       goods: [
         {
           key: 'bag-8-insulated',
@@ -287,6 +297,39 @@
   ]
 
   const cart = ref<LingyunOrderCart>({})
+  type RenderMode = 'auto' | 'all' | 'windowed' | 'category'
+  const RENDER_MODES: RenderMode[] = ['auto', 'all', 'windowed', 'category']
+  const renderMode = ref<RenderMode>('auto')
+  const categoryLoading = ref(false)
+  let lazyTimer: ReturnType<typeof setTimeout> | null = null
+
+  const modeText = computed(() => {
+    if (renderMode.value === 'category') return '按分类加载'
+    if (renderMode.value === 'windowed') return '分段加载'
+    if (renderMode.value === 'all') return '全部加载'
+    return '自动加载'
+  })
+
+  function toggleRenderMode(): void {
+    const index = RENDER_MODES.indexOf(renderMode.value)
+    renderMode.value = RENDER_MODES[(index + 1) % RENDER_MODES.length]
+    categoryLoading.value = false
+  }
+
+  function onCategoryChange(): void {
+    if (renderMode.value !== 'category') return
+    categoryLoading.value = true
+    clearTimeout(lazyTimer ?? undefined)
+    lazyTimer = setTimeout(() => {
+      categoryLoading.value = false
+      lazyTimer = null
+    }, 260)
+  }
+
+  onBeforeUnmount(() => {
+    clearTimeout(lazyTimer ?? undefined)
+    lazyTimer = null
+  })
 
   const specOpen = ref(false)
   const specItem = ref<LingyunOrderGoods | null>(null)
@@ -366,6 +409,22 @@
     font-size: 13px;
     line-height: 18px;
     color: rgba(255, 255, 255, 0.86);
+  }
+
+  .order-mode {
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.18);
+  }
+
+  .order-mode__text {
+    font-size: 12px;
+    line-height: 16px;
+    color: #ffffff;
+    white-space: nowrap;
   }
 
 </style>

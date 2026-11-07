@@ -63,7 +63,9 @@ type LingyunOrderCart = Record<string, number> // 商品 key → 数量
 ```
 
 - `store`：`{ name, logo, rating, salesText, deliveryText, notice }`。logo 为空用名称首字兜底。
-- `categories`：`[{ key, text, title?, badge?, goods }]`。`text` 是左侧分类名，`title` 是右侧分组标题（默认同 `text`）。
+- `categories`：`[{ key, text, title?, iconSrc?, icon?, iconColor?, badge?, goods }]`。`text` 是左侧分类名，`title` 是右侧分组标题（默认同 `text`）。
+  - `iconSrc`：分类名左侧小图标地址，后台返回的图片 URL，14px 与文字同高，作为行内元素和文字一起换行；没有图片时可用 `icon` 字形，`iconColor` 控制颜色。
+  - 分类名最多两行，超出省略；购物车数字角标浮在右上角，不占文字宽度、不影响换行。
 - `goods`：`{ key, name, image?, price, originalPrice?, priceUnit?, quantityUnit?, salesText?, specText?, details?, badge?, multiSpec?, step?, max?, soldOut? }`。图片为空用名称首字兜底。
   - `details`：商品下方逐行说明（发货仓库、规格描述、截单时间、预计配送等），原样按行渲染。
   - `priceUnit` / `quantityUnit`：价格后缀（如「元/件」）与步进器右侧单位（如「件」）。
@@ -98,6 +100,15 @@ type LingyunOrderCart = Record<string, number> // 商品 key → 数量
 | `priceDecimals` | 价格小数位；`-1` 去掉多余的 0，`2` 固定两位 | -1 |
 | `accentColor` | 选中 / 加购 / 结算的主色；默认系统蓝 | '' |
 | `safeArea` | 购物车栏预留底部安全区 | true |
+| `loadByCategory` | 按分类加载：右侧只渲染当前分类，关闭滚动联动；点击分类抛 `category-change` | false |
+| `categoryLoading` | 按分类加载时显示加载态 | false |
+| `loadingText` | 加载态文案 | 加载中… |
+| `windowed` | 全量模式分段渲染：先渲染前 `windowSize` 个分类，滚到底部追加 | false |
+| `windowSize` | 分段加载每次追加的分类数 | 2 |
+| `renderMode` | `auto` / `all` / `windowed` / `category`；默认按商品总数自动选择 | auto |
+| `windowedThreshold` | auto：商品数大于该值启用分段加载 | 100 |
+| `categoryThreshold` | auto：商品数大于该值启用按分类加载 | 500 |
+| `totalGoodsCount` | 商品总数；按分类懒加载、`categories` 不是全量数据时传入，auto 判断更准确 | 0 |
 
 ## 事件
 
@@ -124,9 +135,33 @@ type LingyunOrderCart = Record<string, number> // 商品 key → 数量
 ## 交互
 
 - 左侧分类与右侧列表双向联动：点击分类平滑滚到对应分组；右侧滚动时自动高亮当前分组，并把左侧分类滚进可视区。
+- 左侧选中背景是圆角胶囊，切换分类时上下滑动过渡（类似 tabbar 的选中透镜），点击的分类文字做一次轻微回弹；分类有已选商品时右上角显示数量角标，角标数字优先于分类自身的 `badge`。
 - 商品数量由 `v-model` 控制；数量大于 0 且不是多规格商品时，`+` 变成步进器。
 - `multiSpec` 商品始终显示 `+`，点击抛 `spec-request`，由业务打开规格面板并自行回写 `modelValue`。
 - 底部购物车栏复用 `lingyun-goods-nav` 的 `variant="cart"`：悬浮玻璃胶囊、购物车角标、合计 / 配送费 / 起送价与结算钮都由该组件渲染；点购物车图标打开「已选商品」Sheet，可逐项增减或清空。
+
+## 大数据量模式
+
+默认 `render-mode="auto"` 按商品总数自动选择：
+
+- **≤100 个**：全部加载，所有分类一次性渲染，保留左右滚动联动。
+- **100～500 个**：分段加载，先渲染前 `window-size` 个分类，右侧滚到底部再追加下一段；点击靠后的分类会自动展开到目标分类并滚过去。
+- **>500 个**：按分类加载，右侧只渲染当前选中的分类，关闭滚动联动；点击分类抛 `category-change`，宿主取当前分类数据后回写 `categories`，加载期间用 `category-loading` 显示转圈。已选商品会保留本地快照，切换分类或卸载其它分类数据时不会丢购物车、合计和分类角标。
+
+需要强制某一种渲染方式时传 `render-mode="all" | "windowed" | "category"`；按分类懒加载时建议同时传 `:total-goods-count`，让 auto 用后台总数而不是当前已加载的数据判断。商品图已加 `lazy-load`，分段/按分类模式下不会一次性请求全部图片。
+
+```vue
+<!-- 按分类加载 -->
+<lingyun-order-goods
+  :load-by-category="true"
+  :category-loading="loading"
+  :categories="categories"
+  @category-change="loadCategory"
+/>
+
+<!-- 分段加载 -->
+<lingyun-order-goods :windowed="true" :window-size="2" :categories="categories" />
+```
 
 ## 接入说明
 

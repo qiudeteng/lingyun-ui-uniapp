@@ -68,6 +68,11 @@
 | `soldOutText` / `specButtonText` | 售罄文案 / 多规格按钮文案 | 商品已售罄 / 选规格 |
 | `quantityUnit` / `priceDecimals` | 默认数量单位 / 价格小数位 | '' / -1 |
 | `accentColor` | 选中 / 加购 / 结算主色 | 系统蓝 |
+| `loadByCategory` / `categoryLoading` | 按分类加载 / 加载态；点击分类抛 `category-change` | false / false |
+| `windowed` / `windowSize` | 全量模式分段渲染，每次追加分类数 | false / 2 |
+| `renderMode` | `auto` / `all` / `windowed` / `category` | auto |
+| `windowedThreshold` / `categoryThreshold` | auto 阈值：>100 分段、>500 按分类 | 100 / 500 |
+| `totalGoodsCount` | 商品总数，懒加载时传入 | 0 |
 | `safeArea` | 购物车栏预留安全区 | true |
 
 | 事件 | 说明 |
@@ -78,4 +83,4 @@
 | `spec-request` | 多规格商品点 +，业务弹自己的规格面板 |
 | `goods-click` / `cart-clear` / `back` | 点商品 / 清空购物车 / 返回 |
 
-数据结构与完整说明见手册 `/page/order-goods`，演示页 `pages/demo/order-goods`。
+大数据量：默认 auto，商品 ≤100 全部加载、100～500 分段加载、>500 按分类加载；可用 `renderMode` 强制。按分类模式只渲染当前分类、关闭滚动联动，商品图带 `lazy-load`。数据结构与完整说明见手册 `/page/order-goods`，演示页 `pages/demo/order-goods`（Banner 右上角可切换全部 / 分段 / 按分类）。

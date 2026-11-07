@@ -115,6 +115,17 @@
         >
           <view class="lingyun-order-goods__rail-inner">
             <view
+              v-if="railIndicatorVisible"
+              class="lingyun-order-goods__rail-indicator"
+              :class="{ 'lingyun-order-goods__rail-indicator--ready': railIndicatorReady }"
+              :style="{
+                top: `${railIndicatorTop}px`,
+                height: `${railIndicatorHeight}px`,
+              }"
+            >
+              <view class="lingyun-order-goods__rail-indicator-bar" />
+            </view>
+            <view
               v-for="(category, index) in categories"
               :id="railIdOf(category)"
               :key="category.key"
@@ -126,10 +137,42 @@
               role="button"
               @click="selectCategory(category, index)"
             >
-              <view class="lingyun-order-goods__rail-bar" />
-              <text class="lingyun-order-goods__rail-text">{{ category.text }}</text>
-              <view v-if="hasCategoryBadge(category)" class="lingyun-order-goods__rail-badge">
+              <view
+                class="lingyun-order-goods__rail-content"
+                :class="{
+                  'lingyun-order-goods__rail-content--pulse': railPulseKey === category.key,
+                }"
+              >
+                <view
+                  v-if="category.iconSrc || category.icon"
+                  class="lingyun-order-goods__rail-icon"
+                >
+                  <image
+                    v-if="category.iconSrc"
+                    class="lingyun-order-goods__rail-icon-image"
+                    :src="category.iconSrc"
+                    mode="aspectFit"
+                  />
+                  <lingyun-icon
+                    v-else
+                    :type="category.icon"
+                    :size="14"
+                    :color="category.iconColor || 'var(--lingyun-label-secondary, #8e8e93)'"
+                  />
+                </view>
+                <text class="lingyun-order-goods__rail-text">{{ category.text }}</text>
+              </view>
+              <view
+                v-if="hasCategoryBadge(category) && categoryQuantity(category) <= 0"
+                class="lingyun-order-goods__rail-badge"
+              >
                 <lingyun-badge :text="category.badge" color="orange" />
+              </view>
+              <view
+                v-if="categoryQuantity(category) > 0"
+                class="lingyun-order-goods__rail-cart-badge"
+              >
+                <lingyun-badge :text="categoryQuantity(category)" :max="99" />
               </view>
             </view>
           </view>
@@ -141,11 +184,20 @@
           scroll-with-animation
           :show-scrollbar="false"
           :scroll-into-view="listIntoId"
+          :lower-threshold="80"
           @scroll="onListScroll"
+          @scrolltolower="onListScrollToLower"
         >
           <view class="lingyun-order-goods__list-inner">
             <view
-              v-for="category in categories"
+              v-if="categoryMode && categoryLoading"
+              class="lingyun-order-goods__list-loading"
+            >
+              <lingyun-activity-indicator size="large" />
+              <text class="lingyun-order-goods__list-loading-text">{{ loadingText }}</text>
+            </view>
+            <view
+              v-for="category in visibleCategories"
               :id="sectionIdOf(category)"
               :key="category.key"
               class="lingyun-order-goods__section"
@@ -165,6 +217,7 @@
                     class="lingyun-order-goods__media-img"
                     :src="item.image"
                     mode="aspectFill"
+                    lazy-load
                     @load="scheduleMeasure()"
                   />
                   <view v-else class="lingyun-order-goods__media-empty">
@@ -251,7 +304,10 @@
               </view>
             </view>
 
-            <view v-if="!hasGoods" class="lingyun-order-goods__empty">
+            <view
+              v-if="!(categoryMode && categoryLoading) && !hasVisibleGoods"
+              class="lingyun-order-goods__empty"
+            >
               <slot name="empty">
                 <lingyun-empty variant="plain" :title="emptyText" />
               </slot>
@@ -316,6 +372,7 @@
                 class="lingyun-order-goods__cart-media-img"
                 :src="line.item.image"
                 mode="aspectFill"
+                lazy-load
               />
               <view v-else class="lingyun-order-goods__cart-media-empty">
                 <text class="lingyun-order-goods__media-char">{{ firstChar(line.item.name) }}</text>
@@ -387,7 +444,7 @@ function sanitizeKey(value: unknown): string {
  * @see design/pages/demo/order-goods.md
  *
  * @property {Object} store 店铺信息 { name, logo, rating, salesText, deliveryText, notice }
- * @property {Array} categories 分类与商品 [{ key, text, title, badge, goods }]；商品支持 details / priceUnit / quantityUnit / multiSpec / soldOut 等字段
+ * @property {Array} categories 分类与商品 [{ key, text, title, iconSrc, icon, iconColor, badge, goods }]；商品支持 details / priceUnit / quantityUnit / multiSpec / soldOut 等字段
  * @property {Object} modelValue 购物车 { [goodsKey]: quantity }
  * @property {String} banner 店铺 Banner 图；用 #banner 插槽可完全自定义
  * @property {Number} bannerHeight Banner 高度，0 时不显示
@@ -410,6 +467,15 @@ function sanitizeKey(value: unknown): string {
  * @property {Number} priceDecimals 价格小数位；-1 去掉多余的 0，2 固定两位
  * @property {String} accentColor 选中 / 加购 / 结算的主色；默认系统蓝
  * @property {Boolean} safeArea 购物车栏预留底部安全区
+ * @property {Boolean} loadByCategory 按分类加载：只渲染当前分类，点击分类抛 category-change
+ * @property {Boolean} categoryLoading 按分类加载时显示加载态
+ * @property {String} loadingText 加载态文案
+ * @property {Boolean} windowed 全量模式分段渲染，先渲染前 windowSize 个分类
+ * @property {Number} windowSize 分段加载每次追加的分类数
+ * @property {String} renderMode auto / all / windowed / category，默认 auto
+ * @property {Number} windowedThreshold auto：超过该商品数启用分段加载
+ * @property {Number} categoryThreshold auto：超过该商品数启用按分类加载
+ * @property {Number} totalGoodsCount 商品总数，懒加载时传入
  * @event update:modelValue 加购数量变化
  * @event change 加购数量变化 { item, quantity, cart, count, totalPrice }
  * @event category-change 左右联动切换分类 { key, index }
@@ -467,6 +533,23 @@ export default defineComponent({
     priceDecimals: { type: Number, default: -1 },
     accentColor: { type: String, default: '' },
     safeArea: { type: Boolean, default: true },
+    /** 按分类加载：右侧只渲染当前分类，关闭滚动联动；点击分类抛 category-change 由宿主取数 */
+    loadByCategory: { type: Boolean, default: false },
+    /** 按分类加载时宿主正在取当前分类数据，显示加载态 */
+    categoryLoading: { type: Boolean, default: false },
+    loadingText: { type: String, default: '加载中…' },
+    /** 全量模式下按分类分段渲染：先渲染前 N 个分类，滚到底部再追加，点击分类自动展开到目标 */
+    windowed: { type: Boolean, default: false },
+    /** windowed 每次追加的分类数 */
+    windowSize: { type: Number, default: 2 },
+    /** 渲染模式：auto 按商品总数自动选择；all / windowed / category 显式指定 */
+    renderMode: { type: String, default: 'auto' },
+    /** auto：商品数大于该值时启用分段加载 */
+    windowedThreshold: { type: Number, default: 100 },
+    /** auto：商品数大于该值时启用按分类加载 */
+    categoryThreshold: { type: Number, default: 500 },
+    /** 商品总数；宿主按分类懒加载、categories 里不是全量商品时传入，auto 判断更准确 */
+    totalGoodsCount: { type: Number, default: 0 },
   },
   data() {
     return {
@@ -479,6 +562,18 @@ export default defineComponent({
       offsetsReady: false,
       spyLockedUntil: 0,
       cartOpen: false,
+      railIndicatorTop: 0,
+      railIndicatorHeight: 0,
+      railIndicatorVisible: false,
+      railIndicatorReady: false,
+      railPulseKey: '',
+      renderUntil: 0,
+      /** 已选商品快照：分类数据按需加载后，切换分类仍能保留其它分类的已选商品 */
+      cartSnapshots: {} as Record<
+        string,
+        { item: LingyunOrderGoods; categoryKey: string }
+      >,
+      _pulseTimer: null as ReturnType<typeof setTimeout> | null,
       _measureTimer: null as ReturnType<typeof setTimeout> | null,
       _spyTimers: [] as ReturnType<typeof setTimeout>[],
     }
@@ -505,11 +600,21 @@ export default defineComponent({
     },
     cartLines(): LingyunOrderCartLine[] {
       const lines: LingyunOrderCartLine[] = []
+      const seen = new Set<string>()
       this.categories.forEach((category) => {
         ;(category.goods || []).forEach((item) => {
+          seen.add(item.key)
           const quantity = this.quantityOf(item)
           if (quantity > 0) lines.push({ item, categoryKey: category.key, quantity })
         })
+      })
+      Object.keys(this.cartSnapshots).forEach((key) => {
+        if (seen.has(key)) return
+        const snapshot = this.cartSnapshots[key]
+        const quantity = this.quantityOfKey(key)
+        if (quantity > 0) {
+          lines.push({ item: snapshot.item, categoryKey: snapshot.categoryKey, quantity })
+        }
       })
       return lines
     },
@@ -523,8 +628,60 @@ export default defineComponent({
       )
       return Math.round(total * 100) / 100
     },
-    hasGoods(): boolean {
-      return this.categories.some((category) => (category.goods || []).length > 0)
+    goodsTotal(): number {
+      if (Number(this.totalGoodsCount) > 0) return Number(this.totalGoodsCount)
+      return this.categories.reduce(
+        (sum, category) => sum + (category.goods || []).length,
+        0,
+      )
+    },
+    effectiveRenderMode(): 'all' | 'windowed' | 'category' {
+      const mode = String(this.renderMode || 'auto')
+      if (mode === 'all' || mode === 'windowed' || mode === 'category') return mode
+      if (this.loadByCategory) return 'category'
+      if (this.windowed) return 'windowed'
+      const total = this.goodsTotal
+      if (total > Number(this.categoryThreshold) || 0) return 'category'
+      if (total > Number(this.windowedThreshold) || 0) return 'windowed'
+      return 'all'
+    },
+    categoryMode(): boolean {
+      return this.effectiveRenderMode === 'category'
+    },
+    windowedMode(): boolean {
+      return this.effectiveRenderMode === 'windowed'
+    },
+    activeCategory(): LingyunOrderCategory | null {
+      const list = this.categories || []
+      return list.find((category) => category.key === this.activeKey) || list[0] || null
+    },
+    /** windowed：当前已展开的分类数量；点击靠后的分类会自动展开到目标 */
+    renderedCount(): number {
+      const length = this.categories.length
+      if (!this.windowedMode) return length
+      const size = Math.max(1, Number(this.windowSize) || 1)
+      const activeIndex = this.categories.findIndex(
+        (category) => category.key === this.activeKey,
+      )
+      const activeNeed = activeIndex >= 0 ? activeIndex + size : 0
+      return Math.min(
+        length,
+        Math.max(Number(this.renderUntil) || 0, activeNeed, size),
+      )
+    },
+    /** 默认渲染全部分类；按分类加载时只渲染当前分类；windowed 按分类分段渲染 */
+    visibleCategories(): LingyunOrderCategory[] {
+      if (this.categoryMode) {
+        if (this.categoryLoading) return []
+        return this.activeCategory ? [this.activeCategory] : []
+      }
+      if (!this.windowedMode) return this.categories
+      return this.categories.slice(0, this.renderedCount)
+    },
+    hasVisibleGoods(): boolean {
+      return this.visibleCategories.some(
+        (category) => (category.goods || []).length > 0,
+      )
     },
   },
   watch: {
@@ -533,23 +690,58 @@ export default defineComponent({
       deep: true,
       handler() {
         this.initActive()
+        this.syncCartSnapshots()
         this.scheduleMeasure()
+        this.syncRailIndicator(false)
+      },
+    },
+    modelValue: {
+      deep: true,
+      handler() {
+        this.syncCartSnapshots()
       },
     },
     activeKey(key: string) {
       if (key) this.railIntoId = this.railIdOfKey(key)
+      this.syncRailIndicator(true)
+      if (this.categoryMode) this.resetListScroll()
+    },
+    categoryMode(value: boolean) {
+      if (value) {
+        this.offsetsReady = false
+        this.resetListScroll()
+        return
+      }
+      this.scheduleMeasure()
+      setTimeout(() => this.measureSections(), 120)
+    },
+    windowedMode(value: boolean) {
+      if (value) {
+        this.renderUntil = Math.max(
+          this.renderUntil,
+          Math.max(1, Number(this.windowSize) || 1),
+        )
+      }
+      this.$nextTick(() => {
+        this.scheduleMeasure()
+        setTimeout(() => this.measureSections(), 80)
+      })
     },
   },
   mounted() {
     this.initActive()
     this.scheduleMeasure()
+    this.syncRailIndicator(false)
+    setTimeout(() => this.syncRailIndicator(false), 160)
     this._spyTimers = [120, 420].map((delay) =>
       setTimeout(() => this.measureSections(), delay),
     )
   },
   beforeUnmount() {
+    clearTimeout(this._pulseTimer ?? undefined)
     clearTimeout(this._measureTimer ?? undefined)
     this._spyTimers.forEach((timer) => clearTimeout(timer))
+    this._pulseTimer = null
     this._measureTimer = null
     this._spyTimers = []
   },
@@ -592,9 +784,26 @@ export default defineComponent({
       if (list.some((category) => category.key === this.activeKey)) return
       this.activeKey = list[0].key
     },
-    quantityOf(item: LingyunOrderGoods): number {
-      const quantity = Number(this.cartMap[item.key])
+    quantityOfKey(key: string): number {
+      const quantity = Number(this.cartMap[key])
       return Number.isFinite(quantity) && quantity > 0 ? Math.floor(quantity) : 0
+    },
+    quantityOf(item: LingyunOrderGoods): number {
+      return this.quantityOfKey(item.key)
+    },
+    categoryQuantity(category: LingyunOrderCategory): number {
+      const known = new Set<string>()
+      const sum = (category.goods || []).reduce((total, item) => {
+        known.add(item.key)
+        return total + this.quantityOf(item)
+      }, 0)
+      return Object.keys(this.cartSnapshots).reduce((total, key) => {
+        if (known.has(key)) return total
+        const snapshot = this.cartSnapshots[key]
+        return snapshot.categoryKey === category.key
+          ? total + this.quantityOfKey(key)
+          : total
+      }, sum)
     },
     /** 多规格商品没有统一价（price=0）时不画价格，只留「选规格」 */
     showPrice(item: LingyunOrderGoods): boolean {
@@ -609,27 +818,69 @@ export default defineComponent({
       return item.step != null && Number(item.step) > 0 ? Number(item.step) : 1
     },
     countOf(cart: LingyunOrderCart): number {
-      return this.categories.reduce(
-        (sum, category) =>
-          sum +
-          (category.goods || []).reduce((groupSum, item) => {
-            const quantity = Number(cart[item.key])
-            return groupSum + (Number.isFinite(quantity) && quantity > 0 ? quantity : 0)
-          }, 0),
-        0,
-      )
+      let count = 0
+      const known = new Set<string>()
+      this.categories.forEach((category) => {
+        ;(category.goods || []).forEach((item) => {
+          known.add(item.key)
+          const quantity = Number(cart[item.key])
+          if (Number.isFinite(quantity) && quantity > 0) count += quantity
+        })
+      })
+      Object.keys(this.cartSnapshots).forEach((key) => {
+        if (known.has(key)) return
+        const quantity = Number(cart[key])
+        if (Number.isFinite(quantity) && quantity > 0) count += quantity
+      })
+      return count
     },
     totalOf(cart: LingyunOrderCart): number {
-      const total = this.categories.reduce(
-        (sum, category) =>
-          sum +
-          (category.goods || []).reduce((groupSum, item) => {
-            const quantity = Number(cart[item.key])
-            return groupSum + (Number.isFinite(quantity) && quantity > 0 ? quantity : 0) * item.price
-          }, 0),
-        0,
-      )
+      let total = 0
+      const known = new Set<string>()
+      this.categories.forEach((category) => {
+        ;(category.goods || []).forEach((item) => {
+          known.add(item.key)
+          const quantity = Number(cart[item.key])
+          if (Number.isFinite(quantity) && quantity > 0) total += quantity * item.price
+        })
+      })
+      Object.keys(this.cartSnapshots).forEach((key) => {
+        if (!known.has(key)) {
+          const quantity = Number(cart[key])
+          const snapshot = this.cartSnapshots[key]
+          if (Number.isFinite(quantity) && quantity > 0) {
+            total += quantity * snapshot.item.price
+          }
+        }
+      })
       return Math.round(total * 100) / 100
+    },
+    syncCartSnapshots(): void {
+      const cart = this.cartMap
+      const next: Record<string, { item: LingyunOrderGoods; categoryKey: string }> = {}
+      /* 先保留已选但当前分类数据还没加载回来的快照 */
+      Object.keys(this.cartSnapshots).forEach((key) => {
+        if (this.quantityOfKey(key) > 0) next[key] = this.cartSnapshots[key]
+      })
+      this.categories.forEach((category) => {
+        ;(category.goods || []).forEach((item) => {
+          const quantity = Number(cart[item.key])
+          if (!Number.isFinite(quantity) || quantity <= 0) return
+          next[item.key] = {
+            item: { ...item },
+            categoryKey: category.key,
+          }
+        })
+      })
+      this.cartSnapshots = next
+    },
+    categoryKeyOf(item: LingyunOrderGoods): string {
+      for (const category of this.categories) {
+        if ((category.goods || []).some((entry) => entry.key === item.key)) {
+          return category.key
+        }
+      }
+      return ''
     },
     setQuantity(item: LingyunOrderGoods, value: unknown): void {
       if (item.soldOut) return
@@ -638,8 +889,16 @@ export default defineComponent({
       const quantity = Math.max(0, Math.min(this.itemMax(item), safe))
       if (quantity === this.quantityOf(item)) return
       const cart: LingyunOrderCart = { ...this.cartMap }
-      if (quantity > 0) cart[item.key] = quantity
-      else delete cart[item.key]
+      if (quantity > 0) {
+        cart[item.key] = quantity
+        this.cartSnapshots[item.key] = {
+          item: { ...item },
+          categoryKey: this.categoryKeyOf(item),
+        }
+      } else {
+        delete cart[item.key]
+        delete this.cartSnapshots[item.key]
+      }
       this.$emit('update:modelValue', cart)
       const payload: LingyunOrderChangePayload = {
         item,
@@ -688,6 +947,11 @@ export default defineComponent({
     },
     selectCategory(category: LingyunOrderCategory, index: number): void {
       this.applyActive(category, index, true)
+      this.pulseRail(category.key)
+      if (this.categoryMode) {
+        this.resetListScroll()
+        return
+      }
       const target = this.sectionIdOf(category)
       /* 同一个分类重复点击也要能回到顶部：先清空再下一帧写入 */
       this.listIntoId = ''
@@ -695,13 +959,91 @@ export default defineComponent({
         this.listIntoId = target
       })
       this.spyLockedUntil = Date.now() + 460
+      if (this.windowedMode) {
+        this.$nextTick(() => {
+          this.scheduleMeasure()
+          setTimeout(() => this.measureSections(), 80)
+        })
+      }
+    },
+    /** 按分类加载：切分类后右侧回到顶部 */
+    resetListScroll(): void {
+      const category = this.activeCategory
+      if (!category) return
+      const target = this.sectionIdOf(category)
+      this.listIntoId = ''
+      this.$nextTick(() => {
+        this.listIntoId = target
+      })
+    },
+    /** 点击分类时文字做一次轻微回弹，和 tabbar 选中反馈一致 */
+    pulseRail(key: string): void {
+      clearTimeout(this._pulseTimer ?? undefined)
+      this.railPulseKey = ''
+      this.$nextTick(() => {
+        this.railPulseKey = key
+        this._pulseTimer = setTimeout(() => {
+          this.railPulseKey = ''
+          this._pulseTimer = null
+        }, 360)
+      })
+    },
+    /** 左侧选中背景：测量当前分类位置，切换时滑动过去 */
+    syncRailIndicator(animate = true): void {
+      if (!this.activeKey) return
+      this.$nextTick(() => {
+        try {
+          const query = uni.createSelectorQuery().in(this)
+          query.select('.lingyun-order-goods__rail-inner').boundingClientRect()
+          query.select(`#${this.railIdOfKey(this.activeKey)}`).boundingClientRect()
+          query.exec((res) => {
+            const inner = res && res[0]
+            const item = res && res[1]
+            if (!inner || !item || !item.height) return
+            this.railIndicatorTop = Number(item.top) - Number(inner.top)
+            this.railIndicatorHeight = Number(item.height)
+            if (!this.railIndicatorVisible) {
+              this.railIndicatorVisible = true
+              this.railIndicatorReady = false
+              this.$nextTick(() => {
+                setTimeout(() => {
+                  this.railIndicatorReady = true
+                }, 20)
+              })
+              return
+            }
+            if (!animate) {
+              this.railIndicatorReady = false
+              this.$nextTick(() => {
+                setTimeout(() => {
+                  this.railIndicatorReady = true
+                }, 20)
+              })
+            }
+          })
+        } catch {
+          /* 初始未布局时测不到，等下一次切换再测 */
+        }
+      })
     },
     onListScroll(event: ScrollEvent): void {
+      if (this.categoryMode) return
       const top = Number(event && event.detail && event.detail.scrollTop)
       if (!Number.isFinite(top) || top < 0) return
       this.listScrollTop = top
       if (!this.offsetsReady || Date.now() < this.spyLockedUntil) return
       this.syncActiveFromScroll(top)
+    },
+    onListScrollToLower(): void {
+      if (this.categoryMode || !this.windowedMode) return
+      const size = Math.max(1, Number(this.windowSize) || 1)
+      const next = Math.min(this.categories.length, this.renderedCount + size)
+      if (next <= this.renderedCount) return
+      this.renderUntil = next
+      this.$nextTick(() => {
+        this.scheduleMeasure()
+        setTimeout(() => this.measureSections(), 60)
+      })
     },
     syncActiveFromScroll(top: number): void {
       const tops = this.sectionTops
@@ -732,6 +1074,7 @@ export default defineComponent({
       }
     },
     scheduleMeasure(): void {
+      if (this.categoryMode) return
       clearTimeout(this._measureTimer ?? undefined)
       this._measureTimer = setTimeout(() => {
         this._measureTimer = null
@@ -739,12 +1082,13 @@ export default defineComponent({
       }, 90)
     },
     measureSections(): void {
-      if (!this.categories.length) return
+      if (this.categoryMode || !this.categories.length) return
+      const categories = this.visibleCategories
       this.$nextTick(() => {
         try {
           const query = uni.createSelectorQuery().in(this)
           query.select('.lingyun-order-goods__list').boundingClientRect()
-          this.categories.forEach((category) => {
+          categories.forEach((category) => {
             query.select(`#${this.sectionIdOf(category)}`).boundingClientRect()
           })
           query.exec((result) => {
@@ -754,7 +1098,7 @@ export default defineComponent({
               return
             }
             const tops: number[] = []
-            for (let i = 0; i < this.categories.length; i += 1) {
+            for (let i = 0; i < categories.length; i += 1) {
               const rect = result[i + 1]
               tops.push(
                 rect
@@ -986,31 +1330,30 @@ export default defineComponent({
 }
 
 .lingyun-order-goods__rail-inner {
+  position: relative;
   padding: 6px 0 18px;
   box-sizing: border-box;
 }
 
-.lingyun-order-goods__rail-item {
-  position: relative;
-  min-height: 54px;
-  padding: 8px 8px 8px 12px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  transition: background-color 0.16s ease;
-}
-
-.lingyun-order-goods__rail-item--active {
-  background-color: var(--lingyun-bg-tertiary, #{$lingyun-bg-tertiary});
+/* 选中背景：切换分类时上下滑动，形状始终是圆角 */
+.lingyun-order-goods__rail-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 0;
   border-radius: 0 12px 12px 0;
+  background-color: var(--lingyun-bg-tertiary, #{$lingyun-bg-tertiary});
+  pointer-events: none;
+  will-change: top, height;
 }
 
-.lingyun-order-goods__rail-item--hover {
-  background-color: var(--lingyun-fill-quaternary, #{$lingyun-fill-quaternary});
+.lingyun-order-goods__rail-indicator--ready {
+  transition:
+    top 0.32s cubic-bezier(0.32, 1.24, 0.6, 1),
+    height 0.32s cubic-bezier(0.32, 1.24, 0.6, 1);
 }
 
-.lingyun-order-goods__rail-bar {
+.lingyun-order-goods__rail-indicator-bar {
   position: absolute;
   left: 0;
   top: 50%;
@@ -1018,20 +1361,61 @@ export default defineComponent({
   height: 18px;
   margin-top: -9px;
   border-radius: 0 2px 2px 0;
-  background-color: transparent;
-}
-
-.lingyun-order-goods__rail-item--active .lingyun-order-goods__rail-bar {
   background-color: var(--ly-og-accent, #{$lingyun-system-blue});
 }
 
-.lingyun-order-goods__rail-text {
+.lingyun-order-goods__rail-item {
+  position: relative;
+  z-index: 1;
+  min-height: 54px;
+  padding: 8px 8px 8px 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border-radius: 0 12px 12px 0;
+  transition: background-color 0.16s ease;
+}
+
+.lingyun-order-goods__rail-item--hover {
+  background-color: var(--lingyun-fill-quaternary, #{$lingyun-fill-quaternary});
+}
+
+.lingyun-order-goods__rail-content {
   flex: 1;
   min-width: 0;
+  /* 图标作为行内元素和文字一起换行，最多两行 */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  white-space: normal;
+  line-height: 18px;
+}
+
+.lingyun-order-goods__rail-icon {
+  display: inline-flex;
+  vertical-align: -2px;
+  width: 14px;
+  height: 14px;
+  margin-right: 2px;
+  align-items: center;
+  justify-content: center;
+}
+
+.lingyun-order-goods__rail-icon-image {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.lingyun-order-goods__rail-text {
+  display: inline;
   font-size: 13px;
   font-weight: 400;
   line-height: 18px;
   color: var(--lingyun-label-secondary, #{$lingyun-label-secondary});
+  white-space: normal;
 }
 
 .lingyun-order-goods__rail-item--active .lingyun-order-goods__rail-text {
@@ -1044,6 +1428,33 @@ export default defineComponent({
   margin-left: 2px;
   display: flex;
   align-items: center;
+}
+
+/* 分类已加购数量：右上角数字角标 */
+.lingyun-order-goods__rail-cart-badge {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+}
+
+.lingyun-order-goods__rail-content--pulse {
+  animation: lingyun-order-goods-rail-pop 0.34s cubic-bezier(0.32, 0.72, 0, 1);
+  transform-origin: left center;
+}
+
+@keyframes lingyun-order-goods-rail-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .lingyun-order-goods__list {
@@ -1299,6 +1710,20 @@ export default defineComponent({
 
 .lingyun-order-goods__empty {
   padding: 48px 0;
+}
+
+.lingyun-order-goods__list-loading {
+  padding: 72px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.lingyun-order-goods__list-loading-text {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--lingyun-label-secondary, #{$lingyun-label-secondary});
 }
 
 .lingyun-order-goods__list-pad {

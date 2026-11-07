@@ -4,8 +4,13 @@
 - 商品行支持多行说明 `details`（发货仓库、规格描述、截单时间、预计配送等）、价格后缀 `priceUnit`、步进器单位 `quantityUnit`；售罄显示 `soldOutText`，多规格商品使用「选规格」按钮（`specButtonText`），`price=0` 时隐藏价格；新增 `priceDecimals` 控制价格小数位。
 - 加购交互：`+` 变步进器；多规格商品抛 `spec-request`；底部购物车栏复用 `lingyun-goods-nav` 的 cart 变体，显示合计 / 配送费 / 起送价，未达起送价禁用结算。
 - 修复非多规格商品从 `+` 切换为步进器时行高变化导致的轻微抖动：加购操作区固定 30px 高。
+- 左侧分类选中背景改为圆角胶囊，切换时上下滑动（类似 tabbar 透镜），点击文字回弹；分类有已选商品时右上角显示数量角标。
+- 分类支持名称左侧小图标：`iconSrc`（后台图片 URL）/ `icon` + `iconColor`，14px 与文字同高，作为行内元素参与换行；分类名最多两行，购物车数字角标浮在右上角、不影响换行。
 - 已选商品使用 `lingyun-sheets` 半屏面板，逐项步进器与一键清空；结算、清空、返回、分类切换均抛事件，标准页不请求接口。
-- demo 新增 `pages/demo/order-goods`（参考美团外卖点单页的布局与交互）。
+- 新增 `loadByCategory` / `categoryLoading`：按分类加载，右侧只渲染当前分类、不做滚动联动，点击分类抛 `category-change` 由宿主取数；已选商品保留快照，切换分类不会丢购物车。`windowed` / `windowSize` 支持全量模式分段渲染（先渲染前 N 个分类，滚到底部追加，点击靠后分类自动展开）。
+- 新增 `renderMode="auto"` 默认策略：商品数 ≤100 全部加载、>100 分段加载、>500 按分类加载；阈值可用 `windowedThreshold` / `categoryThreshold` 调整，`totalGoodsCount` 供懒加载场景传入真实总数。
+- 商品图与已选商品图加入 `lazy-load`。
+- demo 新增 `pages/demo/order-goods`（参考美团外卖点单页的布局与交互），Banner 右上角可切换自动 / 全部 / 分段 / 按分类四种加载方式。
 ## 1.0.3（2026-11-06）
 - 登录页账号 / 密码输入框补充 `name` 与 `autocomplete`（`username` / `current-password`），浏览器密码管理器可正确识别并自动填充。
 - 配合 `lingyun-text-field` 1.0.42：H5 自动填充后同步值、隐藏占位符，自动填充底色跟随主题，浏览器原生密码眼睛不再与组件显隐按钮重复。
