@@ -1,3 +1,8 @@
+## 1.0.46（2026-11-07）
+- `lingyun-goods-nav` 新增 `variant="cart"` 购物车结算栏：悬浮玻璃胶囊 + 购物车圆钮（数量角标）+ 合计 / 配送费 + 主色结算钮；未达起送价时置灰并显示「¥xx起送」。
+- cart 变体新增 `cartCount` / `total` / `minPrice` / `deliveryFee` / `currency` / `emptyText` / `checkoutText` / `priceDecimals` / `accentColor` 属性，以及 `cart` / `checkout` 事件；默认变体保持不变。
+- 修复 cart 变体从「未选购商品」切换到合计金额时两行文字抖动：空车文案与金额统一 26px 行高，信息区固定 42px 高并顶部对齐。
+- demo 的 Goods Nav 改为 cart 变体，可用按钮验证加购 / 清空 / 起送价状态；同步组件文档与 GOODS_NAV 规范。
 ## 1.0.45（2026-11-07）
 - 新增后台菜单树统一换算 `buildLingyunPageFromMenus` / `applyLingyunPageFromMenus` / `buildLingyunSectionsFromMenus`：一次得到一级 Tab、220 目录分组与工作台分组，二级 / 三级子项保留 `iconSrc` / `activeIconSrc` 图片图标，宿主不用各写一份菜单转换。
 - 菜单图标支持图片地址与字形名混用：图片自动转 `iconSrc` / `activeIconSrc`，缺失时按标题关键词与序号取兜底字形，可用 `iconKeywords` / `iconFallbacks` / `fallbackIcon` 覆盖；`homeTab` + `homePath` 处理固定首页节点，`meta.hideInMenu` 的节点自动跳过。

@@ -1,6 +1,6 @@
 # Goods Nav 规范（强制 · lingyun-goods-nav）
 
-> 商品详情底栏。结构对齐 `uni-goods-nav`：左侧图标入口 + 右侧主操作按钮组。  
+> 商品详情底栏。结构对齐 `uni-goods-nav`：左侧图标入口 + 右侧主操作按钮组；`variant="cart"` 为点单页购物车结算栏。  
 > 视觉必须是 Liquid Glass，禁止原组件的白底实条 + 红橙渐变按钮。
 
 ## 权威来源
@@ -58,3 +58,44 @@
 |------|------|
 | `click` | `{ index, content }` 左侧入口 |
 | `buttonClick` | `{ index, content }` 右侧按钮 |
+
+---
+
+## 4. Cart 变体（`variant="cart"`）
+
+点单页同款购物车结算栏，和 `lingyun-order-goods` 的底部购物车保持一致：
+
+| 区域 | 规格 |
+|------|------|
+| 外层 | 悬浮玻璃胶囊：左右 12、底部 8 + 安全区，高 62，圆角 31，`lingyun-glass-control`；禁止实底白条 |
+| 购物车钮 | 48 圆，主色（默认系统蓝）实心，`cart-filled` 24 白；右上角 `lingyun-badge` 数量角标 |
+| 合计 | `¥` 13 / 金额 22 Semibold，主文本色；下方 11/15 次要色显示「另需配送费¥x」或「共 n 件」 |
+| 空车 | 「未选购商品」15 三级色 +「¥xx起送」11 次要色 |
+| 结算钮 | 40 高、最小宽 104、圆角 20、主色实底白字；未达起送价置灰，文案为「¥xx起送」 |
+| 宽屏 | `fixed` 时左边让开 `--lingyun-page-nav-width`，再加 12 外边距 |
+
+```vue
+<lingyun-goods-nav
+  variant="cart"
+  :cart-count="2"
+  :total="59.9"
+  :min-price="20"
+  :delivery-fee="5"
+  @cart="openCart"
+  @checkout="onCheckout"
+/>
+```
+
+| 属性 | 说明 | 默认 |
+|------|------|------|
+| `variant` | `default` / `cart` | default |
+| `cartCount` | 购物车数量 | 0 |
+| `total` | 合计金额 | 0 |
+| `minPrice` / `deliveryFee` | 起送价 / 配送费 | 0 / 0 |
+| `currency` / `checkoutText` / `emptyText` | 货币符号 / 结算文案 / 空车文案 | ¥ / 去结算 / 未选购商品 |
+| `priceDecimals` / `accentColor` | 价格小数位 / 主色 | -1 / 系统蓝 |
+
+| 事件 | 载荷 |
+|------|------|
+| `cart` | `{ count, total }` |
+| `checkout` | `{ count, total, minPrice, deliveryFee }` |

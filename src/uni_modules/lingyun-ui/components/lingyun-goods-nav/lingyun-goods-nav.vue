@@ -1,5 +1,47 @@
 <template>
   <view class="lingyun-goods-nav" :class="rootClass" :style="barStyle">
+    <template v-if="isCartVariant">
+      <view
+        class="lingyun-goods-nav__cart-icon-wrap"
+        role="button"
+        aria-label="购物车"
+        @click="onCartTap"
+      >
+        <view class="lingyun-goods-nav__cart-icon">
+          <lingyun-icon type="cart-filled" :size="24" color="#ffffff" />
+        </view>
+        <view v-if="cartCountValue > 0" class="lingyun-goods-nav__cart-badge">
+          <lingyun-badge :text="cartCountValue" :max="99" />
+        </view>
+      </view>
+      <view class="lingyun-goods-nav__cart-info" @click="onCartTap">
+        <template v-if="cartCountValue > 0">
+          <view class="lingyun-goods-nav__cart-price">
+            <text class="lingyun-goods-nav__cart-currency">{{ currency }}</text>
+            <text class="lingyun-goods-nav__cart-amount">{{ formatPrice(totalValue) }}</text>
+          </view>
+          <text class="lingyun-goods-nav__cart-sub">{{ cartSubText }}</text>
+        </template>
+        <template v-else>
+          <text class="lingyun-goods-nav__cart-empty">{{ emptyText }}</text>
+          <text v-if="minPrice > 0" class="lingyun-goods-nav__cart-sub">
+            {{ currency }}{{ formatPrice(minPrice) }}起送
+          </text>
+        </template>
+      </view>
+      <view
+        class="lingyun-goods-nav__checkout"
+        :class="{ 'lingyun-goods-nav__checkout--disabled': !canCheckout }"
+        hover-class="lingyun-goods-nav__checkout--hover"
+        :hover-start-time="20"
+        :hover-stay-time="70"
+        role="button"
+        @click="onCheckoutTap"
+      >
+        <text class="lingyun-goods-nav__checkout-text">{{ checkoutLabel }}</text>
+      </view>
+    </template>
+    <template v-else>
     <view v-if="options.length" class="lingyun-goods-nav__options">
       <view
         v-for="(item, index) in options"
@@ -39,6 +81,7 @@
         <text class="lingyun-goods-nav__btn-text">{{ item.text }}</text>
       </view>
     </view>
+    </template>
   </view>
 </template>
 
@@ -67,17 +110,30 @@ type ResolvedGoodsButton = {
 
 /**
  * lingyun-goods-nav
- * @description 商品底栏。结构对齐 uni-goods-nav：左侧图标入口 + 右侧胶囊按钮组。
- * 视觉走 Liquid Glass：左侧图标栏用控件玻璃，按钮用系统蓝，禁止红橙渐变实心条。
+ * @description 商品底栏。默认结构对齐 uni-goods-nav：左侧图标入口 + 右侧胶囊按钮组；
+ * `variant="cart"` 时是点单页同款购物车结算栏：玻璃胶囊 + 购物车角标 + 合计 + 结算。
+ * 视觉走 Liquid Glass：控件玻璃，按钮用系统蓝，禁止红橙渐变实心条。
  * @see design/GOODS_NAV.md
  *
- * @property {Array} options [{ icon, text, info, badge }]
- * @property {Array} buttonGroup [{ text }] 末项为 Bordered Prominent，其余为 Bordered
+ * @property {String} variant default / cart
+ * @property {Array} options [{ icon, text, info, badge }]（default）
+ * @property {Array} buttonGroup [{ text }] 末项为 Bordered Prominent，其余为 Bordered（default）
  * @property {Boolean} fill 按钮组占满剩余宽度（默认 true）
  * @property {Boolean} fixed 贴底悬浮（默认 true）
  * @property {Boolean} safeArea 预留底部安全区（默认 true）
+ * @property {Number|String} cartCount cart 变体：购物车数量
+ * @property {Number|String} total cart 变体：合计金额
+ * @property {Number} minPrice cart 变体：起送价
+ * @property {Number} deliveryFee cart 变体：配送费
+ * @property {String} currency cart 变体：货币符号
+ * @property {String} emptyText cart 变体：购物车为空文案
+ * @property {String} checkoutText cart 变体：结算按钮文案
+ * @property {Number} priceDecimals cart 变体：价格小数位，-1 去掉多余的 0
+ * @property {String} accentColor cart 变体：购物车钮 / 结算钮主色
  * @event click 左侧入口 { index, content }
  * @event buttonClick 右侧按钮 { index, content }
+ * @event cart cart 变体点购物车 { count, total }
+ * @event checkout cart 变体点结算 { count, total, minPrice, deliveryFee }
  */
 export default defineComponent({
   name: 'LingyunGoodsNav',
@@ -86,7 +142,7 @@ export default defineComponent({
       pageNavInset: inject(LINGYUN_APP_PAGE_NAV_INSET, ref(0)),
     }
   },
-  emits: ['click', 'buttonClick'],
+  emits: ['click', 'buttonClick', 'cart', 'checkout'],
   props: {
     options: {
       type: Array as PropType<GoodsNavOption[]>,
@@ -111,6 +167,26 @@ export default defineComponent({
       type: Boolean,
       default: true,
     },
+    /** default：左侧入口 + 按钮组；cart：点单页同款购物车结算栏 */
+    variant: { type: String, default: 'default' },
+    /** cart 变体：购物车数量角标 */
+    cartCount: { type: [Number, String] as PropType<number | string>, default: 0 },
+    /** cart 变体：商品合计金额 */
+    total: { type: [Number, String] as PropType<number | string>, default: 0 },
+    /** cart 变体：起送价 */
+    minPrice: { type: Number, default: 0 },
+    /** cart 变体：配送费 */
+    deliveryFee: { type: Number, default: 0 },
+    /** cart 变体：货币符号 */
+    currency: { type: String, default: '¥' },
+    /** cart 变体：购物车为空文案 */
+    emptyText: { type: String, default: '未选购商品' },
+    /** cart 变体：可结算按钮文案 */
+    checkoutText: { type: String, default: '去结算' },
+    /** cart 变体：价格小数位；-1 去掉多余的 0 */
+    priceDecimals: { type: Number, default: -1 },
+    /** cart 变体：购物车圆钮 / 结算按钮主色 */
+    accentColor: { type: String, default: '' },
   },
   data() {
     return {
@@ -118,19 +194,58 @@ export default defineComponent({
     }
   },
   computed: {
+    isCartVariant(): boolean {
+      return this.variant === 'cart'
+    },
     rootClass() {
       return [
         this.fixed ? 'lingyun-goods-nav--fixed' : '',
         this.safeArea ? 'lingyun-goods-nav--safe' : '',
+        this.isCartVariant ? 'lingyun-goods-nav--cart' : '',
       ]
         .filter(Boolean)
         .join(' ')
     },
     barStyle() {
       const style: Record<string, string> = {}
+      if (this.isCartVariant) {
+        style['--ly-goods-nav-accent'] =
+          this.accentColor || 'var(--lingyun-system-blue, #0088ff)'
+        if (this.fixed) {
+          const inset = Math.max(0, Number(this.pageNavInset) || 0)
+          style.left = `${inset + 12}px`
+          style.right = '12px'
+          style.bottom = `${8 + (this.safeArea ? this.safeBottom : 0)}px`
+        }
+        return style
+      }
       if (this.safeArea) style.paddingBottom = `${this.safeBottom}px`
       if (this.fixed) style.left = `${Math.max(0, Number(this.pageNavInset) || 0)}px`
       return style
+    },
+    cartCountValue(): number {
+      const value = Number(this.cartCount)
+      return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0
+    },
+    totalValue(): number {
+      const value = Number(this.total)
+      return Number.isFinite(value) ? value : 0
+    },
+    canCheckout(): boolean {
+      return this.cartCountValue > 0 && this.totalValue + 1e-6 >= this.minPrice
+    },
+    checkoutLabel(): string {
+      if (this.canCheckout) return this.checkoutText
+      if (this.minPrice > 0) {
+        return `${this.currency}${this.formatPrice(this.minPrice)}起送`
+      }
+      return this.checkoutText
+    },
+    cartSubText(): string {
+      if (this.deliveryFee > 0) {
+        return `另需配送费${this.currency}${this.formatPrice(this.deliveryFee)}`
+      }
+      return `共 ${this.cartCountValue} 件`
     },
     buttons(): ResolvedGoodsButton[] {
       const list = Array.isArray(this.buttonGroup) ? this.buttonGroup : []
@@ -180,6 +295,27 @@ export default defineComponent({
     buttonClass(index: number): string {
       const last = index === this.buttons.length - 1
       return last ? 'lingyun-goods-nav__btn--prominent' : 'lingyun-goods-nav__btn--bordered'
+    },
+    formatPrice(value: unknown): string {
+      const number = Number(value)
+      const safe = Number.isFinite(number) ? number : 0
+      if (this.priceDecimals >= 0) return safe.toFixed(this.priceDecimals)
+      return String(Number(safe.toFixed(2)))
+    },
+    onCartTap() {
+      this.$emit('cart', {
+        count: this.cartCountValue,
+        total: this.totalValue,
+      })
+    },
+    onCheckoutTap() {
+      if (!this.canCheckout) return
+      this.$emit('checkout', {
+        count: this.cartCountValue,
+        total: this.totalValue,
+        minPrice: this.minPrice,
+        deliveryFee: this.deliveryFee,
+      })
     },
     onOption(index: number, item: GoodsNavOption) {
       this.$emit('click', { index, content: item })
@@ -311,5 +447,133 @@ export default defineComponent({
     line-height: 20px;
     color: inherit;
   }
+}
+
+/* cart 变体：与 lingyun-order-goods 的底部购物车一致 */
+.lingyun-goods-nav--cart {
+  width: auto;
+  min-height: 62px;
+  padding: 0 14px;
+  gap: 0;
+  margin: 0 12px 8px;
+  border-radius: 31px;
+  @include lingyun-glass-control;
+}
+
+.lingyun-goods-nav--cart.lingyun-goods-nav--fixed {
+  width: auto;
+  margin: 0;
+}
+
+.lingyun-goods-nav__cart-icon-wrap {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.lingyun-goods-nav__cart-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--ly-goods-nav-accent, #{$lingyun-system-blue});
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.18);
+}
+
+.lingyun-goods-nav__cart-badge {
+  position: absolute;
+  top: -3px;
+  right: -4px;
+}
+
+.lingyun-goods-nav__cart-info {
+  flex: 1;
+  min-width: 0;
+  /* 空车文案与合计金额的上下两行占同样的高度，切换时不抖动 */
+  min-height: 42px;
+  margin-left: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.lingyun-goods-nav__cart-price {
+  height: 26px;
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+}
+
+.lingyun-goods-nav__cart-currency {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  color: var(--lingyun-label, #{$lingyun-label});
+}
+
+.lingyun-goods-nav__cart-amount {
+  margin-left: 1px;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 26px;
+  color: var(--lingyun-label, #{$lingyun-label});
+}
+
+.lingyun-goods-nav__cart-empty {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 26px;
+  color: var(--lingyun-label-tertiary, #{$lingyun-label-tertiary});
+}
+
+.lingyun-goods-nav__cart-sub {
+  margin-top: 1px;
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--lingyun-label-secondary, #{$lingyun-label-secondary});
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.lingyun-goods-nav__checkout {
+  flex-shrink: 0;
+  height: 40px;
+  min-width: 104px;
+  margin-left: 10px;
+  padding: 0 18px;
+  box-sizing: border-box;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--ly-goods-nav-accent, #{$lingyun-system-blue});
+}
+
+.lingyun-goods-nav__checkout--hover {
+  transform: scale(0.97);
+}
+
+.lingyun-goods-nav__checkout--disabled {
+  background-color: var(--lingyun-fill-tertiary, #{$lingyun-fill-tertiary});
+  pointer-events: none;
+}
+
+.lingyun-goods-nav__checkout-text {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 20px;
+  color: #ffffff;
+}
+
+.lingyun-goods-nav__checkout--disabled .lingyun-goods-nav__checkout-text {
+  color: var(--lingyun-label-tertiary, #{$lingyun-label-tertiary});
+}
+
+.theme-dark .lingyun-goods-nav__cart-icon {
+  box-shadow: none;
 }
 </style>
