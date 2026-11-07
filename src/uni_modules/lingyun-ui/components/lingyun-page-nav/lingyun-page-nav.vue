@@ -1,7 +1,13 @@
 <template>
   <view
     class="lingyun-page-nav"
-    :class="[themeRootClass, { 'lingyun-page-nav--rail': railMode }]"
+    :class="[
+      themeRootClass,
+      {
+        'lingyun-page-nav--rail': railMode,
+        'lingyun-page-nav--inline': inlineMenuVisible,
+      },
+    ]"
   >
     <!-- 窄栏通高背景层：实底 + 固定 tint，不随滚动变化 -->
     <view v-if="railMode" class="lingyun-page-nav__rail-panel" />
@@ -9,7 +15,7 @@
     <!-- #ifdef MP-WEIXIN -->
     <root-portal>
       <view
-        v-if="childMenuKey"
+        v-if="childMenuKey && !inlineMode"
         class="lingyun-page-nav__submenu-mask"
         :style="{ left: railMode ? '84px' : '220px' }"
         @click="closeChildMenu"
@@ -18,12 +24,13 @@
     <!-- #endif -->
     <!-- #ifndef MP-WEIXIN -->
     <view
-      v-if="childMenuKey"
+      v-if="childMenuKey && !inlineMode"
       class="lingyun-page-nav__submenu-mask"
       :style="{ left: railMode ? '84px' : '220px' }"
       @click="closeChildMenu"
     />
     <!-- #endif -->
+    <view class="lingyun-page-nav__rail-col">
     <view class="lingyun-page-nav__head" :style="navHeadStyle">
       <view class="lingyun-page-nav__bar" :style="navBarStyle">
         <view v-if="windowControls && !railMode" class="lingyun-page-nav__windows" aria-hidden="true">
@@ -179,7 +186,7 @@
                 <view
                   :id="navItemId(item.url)"
                   class="lingyun-page-nav__item"
-                  :class="{ 'lingyun-page-nav__item--selected': isNavItemCurrent(item) }"
+                  :class="{ 'lingyun-page-nav__item--selected': isRailItemCurrent(item) }"
                   hover-class="lingyun-page-nav__item--hover"
                   :hover-start-time="20"
                   :hover-stay-time="70"
@@ -187,7 +194,11 @@
                   <image
                     v-if="item.iconSrc"
                     class="lingyun-page-nav__glyph"
-                    :src="item.iconSrc"
+                    :src="
+                      isRailItemCurrent(item) && item.activeIconSrc
+                        ? item.activeIconSrc
+                        : item.iconSrc
+                    "
                     mode="aspectFit"
                   />
                   <lingyun-icon
@@ -212,6 +223,70 @@
         </view>
       </view>
     </scroll-view>
+    </view>
+
+    <!-- PC 三栏：窄栏右侧常驻二级 / 三级菜单列，点击一级 Tab 直接换列，不再弹出 menu -->
+    <view v-if="inlineMenuVisible" class="lingyun-page-nav__inline-col">
+      <view class="lingyun-page-nav__inline-head">
+        <text class="lingyun-page-nav__inline-title">{{ inlineMenuTitle }}</text>
+      </view>
+      <scroll-view
+        :key="(inlineMenuItem && inlineMenuItem.key) || inlineMenuTitle"
+        class="lingyun-page-nav__inline-scroll"
+        :scroll-y="navScrollY"
+        :show-scrollbar="false"
+      >
+        <view class="lingyun-page-nav__inline-body">
+          <template
+            v-for="(child, childIndex) in inlineMenuChildren"
+            :key="child.key + '-' + childIndex"
+          >
+            <text
+              v-if="child.kind === 'title'"
+              class="lingyun-page-nav__inline-heading"
+            >{{ child.title }}</text>
+            <view
+              v-else
+              class="lingyun-page-nav__inline-item"
+              :class="{
+                'lingyun-page-nav__inline-item--selected': isChildCurrent(child),
+                'lingyun-page-nav__inline-item--plain': !child.icon && !child.iconSrc,
+              }"
+              hover-class="lingyun-page-nav__inline-item--hover"
+              :hover-start-time="20"
+              :hover-stay-time="70"
+              @click="onInlineChildTap(child)"
+            >
+              <image
+                v-if="child.iconSrc"
+                class="lingyun-page-nav__glyph"
+                :src="
+                  isChildCurrent(child) && child.activeIconSrc
+                    ? child.activeIconSrc
+                    : child.iconSrc
+                "
+                mode="aspectFit"
+              />
+              <lingyun-icon
+                v-else-if="child.icon"
+                :type="child.icon"
+                :size="20"
+                color="var(--lingyun-label, #000)"
+              />
+              <text class="lingyun-page-nav__inline-label">{{ child.title }}</text>
+              <view v-if="hasItemBadge(child)" class="lingyun-page-nav__badge">
+                <lingyun-badge
+                  :text="itemBadgeText(child)"
+                  :color="itemBadgeColor(child)"
+                  :dot="itemBadgeDot(child)"
+                  :max="itemBadgeMax(child)"
+                />
+              </view>
+            </view>
+          </template>
+        </view>
+      </scroll-view>
+    </view>
   </view>
 </template>
 
@@ -240,15 +315,18 @@ import {
   getLingyunPageNavStoreName,
   getLingyunPageNavStoreOptions,
   isLingyunPageNavLoggedIn,
+  lingyunPageNavInline,
   lingyunPageNavRail,
   normalizeLingyunPagePath,
   openLingyunHostedPage,
   openLingyunTabPage,
   resolveLingyunPageUrl,
   selectLingyunPageNavStore,
+  setLingyunPageNavInlineMenu,
   setLingyunPageNavIntent,
   setLingyunPageNavScrollTop,
   useLingyunPageNavIntent,
+  type LingyunPageNavChild,
   type LingyunPageNavItem,
   type LingyunPageNavSection,
 } from '../../utils/pageNavAdapter'
@@ -320,6 +398,8 @@ export default defineComponent({
       indicatorReady: false,
       /** 窄栏点击二级菜单 */
       childMenuKey: '',
+      /** PC 三栏：右侧内联菜单列当前展示的一级 Tab key */
+      inlineMenuKey: '',
       /** 切换到另一个二级菜单时，让旧菜单立即关闭，避免两个面板重叠 */
       instantMenuKey: '',
       _instantMenuTimer: null as ReturnType<typeof setTimeout> | null,
@@ -379,6 +459,37 @@ export default defineComponent({
     /** 由 lingyun-app-page 统一决定：PC + 全局 tabs 时窄栏 */
     railMode(): boolean {
       return lingyunPageNavRail.value
+    },
+    /** PC 宽屏：窄栏右侧常驻二级 / 三级菜单列 */
+    inlineMode(): boolean {
+      return lingyunPageNavInline.value
+    },
+    inlineNavItems(): LingyunPageNavItem[] {
+      const items: LingyunPageNavItem[] = []
+      ;(this.pageNavSections || []).forEach((section) => {
+        items.push(...(section.items || []))
+      })
+      return items
+    },
+    /** 内联菜单列当前展示的一级 Tab；用户点选优先，否则跟随当前路由 */
+    inlineMenuItem(): LingyunPageNavItem | null {
+      const items = this.inlineNavItems
+      if (!items.length) return null
+      const picked = items.find((item) => !!item.key && item.key === this.inlineMenuKey)
+      if (picked) return picked
+      const current = items.find((item) => this.isNavItemCurrent(item))
+      return current || items[0]
+    },
+    inlineMenuTitle(): string {
+      return this.inlineMenuItem ? this.inlineMenuItem.title : ''
+    },
+    inlineMenuChildren(): LingyunPageNavChild[] {
+      const item = this.inlineMenuItem
+      return item && Array.isArray(item.children) ? item.children : []
+    },
+    /** 当前一级 Tab 没有二级 / 三级菜单时收起菜单列，不占内容区宽度 */
+    inlineMenuVisible(): boolean {
+      return this.inlineMode && this.inlineMenuChildren.length > 0
     },
     railBrand(): string {
       const name = (this.profileName || '').trim()
@@ -494,7 +605,25 @@ export default defineComponent({
         })
       },
     },
+    inlineMode: {
+      immediate: true,
+      handler() {
+        this.$nextTick(() => {
+          this.syncInlineSelection()
+        })
+      },
+    },
+    inlineMenuVisible: {
+      immediate: true,
+      handler(value: boolean) {
+        setLingyunPageNavInlineMenu(value)
+      },
+    },
     currentPath() {
+      this.syncInlineSelection()
+      this.syncIndicator(true)
+    },
+    inlineMenuKey() {
       this.syncIndicator(true)
     },
     pageNavSections() {
@@ -728,10 +857,21 @@ export default defineComponent({
       if (this.showHome && this.isNavCurrent(this.navHome)) return this.navHome
       for (const section of this.pageNavSections || []) {
         for (const item of section.items || []) {
-          if (this.isNavItemCurrent(item)) return item.url
+          if (this.isRailItemCurrent(item)) return item.url
         }
       }
       return ''
+    },
+    /** 路由变化时让内联菜单列跟回当前一级 Tab */
+    syncInlineSelection(): void {
+      if (!this.inlineMode) {
+        this.inlineMenuKey = ''
+        return
+      }
+      const items = this.inlineNavItems
+      const current =
+        items.find((item) => this.isNavItemCurrent(item)) || items[0]
+      this.inlineMenuKey = current && current.key ? current.key : ''
     },
     /** 选中胶囊：首次落位不动画，之后上下滑动 */
     syncIndicator(animate = true, retry = 0): void {
@@ -796,26 +936,45 @@ export default defineComponent({
       const matches = Array.isArray(item.match) ? item.match : item.match ? [item.match] : []
       return matches.some((match) => normalizeLingyunPagePath(match) === selected)
     },
-    hasItemBadge(item: LingyunPageNavItem): boolean {
+    /** 三栏模式下选中态跟随内联列；其余模式仍按路由 */
+    isRailItemCurrent(item: LingyunPageNavItem): boolean {
+      if (this.inlineMode) {
+        const active = this.inlineMenuItem
+        return !!active && !!item.key && active.key === item.key
+      }
+      return this.isNavItemCurrent(item)
+    },
+    isChildCurrent(child: LingyunPageNavChild): boolean {
+      if (!child.url) return false
+      const selected = normalizeLingyunPagePath(getLingyunHostedPath() || this.currentPath)
+      if (normalizeLingyunPagePath(child.url) === selected) return true
+      const matches = Array.isArray(child.match)
+        ? child.match
+        : child.match
+          ? [child.match]
+          : []
+      return matches.some((match) => normalizeLingyunPagePath(match) === selected)
+    },
+    hasItemBadge(item: LingyunPageNavItem | LingyunPageNavChild): boolean {
       const badge = item.badge
       return badge !== undefined && badge !== null && badge !== false && badge !== ''
     },
-    itemBadgeText(item: LingyunPageNavItem): string | number {
+    itemBadgeText(item: LingyunPageNavItem | LingyunPageNavChild): string | number {
       const badge = item.badge
       if (badge && typeof badge === 'object') {
         return badge.text != null ? badge.text : ''
       }
       return typeof badge === 'boolean' ? '' : (badge ?? '')
     },
-    itemBadgeColor(item: LingyunPageNavItem): string | undefined {
+    itemBadgeColor(item: LingyunPageNavItem | LingyunPageNavChild): string | undefined {
       const badge = item.badge
       return badge && typeof badge === 'object' ? badge.color : undefined
     },
-    itemBadgeDot(item: LingyunPageNavItem): boolean {
+    itemBadgeDot(item: LingyunPageNavItem | LingyunPageNavChild): boolean {
       const badge = item.badge
       return badge === true || (!!badge && typeof badge === 'object' && !!badge.dot)
     },
-    itemBadgeMax(item: LingyunPageNavItem): number | string | undefined {
+    itemBadgeMax(item: LingyunPageNavItem | LingyunPageNavChild): number | string | undefined {
       const badge = item.badge
       return badge && typeof badge === 'object' ? badge.max : undefined
     },
@@ -848,8 +1007,15 @@ export default defineComponent({
         key: child.key,
         label: child.title,
         icon: child.icon,
+        iconSrc: child.iconSrc,
+        activeIconSrc: child.activeIconSrc,
         kind: child.kind,
+        selected: this.isChildCurrent(child),
       }))
+    },
+    onInlineChildTap(child: LingyunPageNavChild) {
+      if (!child || child.kind === 'title' || !child.url) return
+      this.onNavTap(child.url)
     },
     onChildMenuShow(item: LingyunPageNavItem, show: boolean) {
       if (!show && this.childMenuKey === item.key) this.childMenuKey = ''
@@ -867,6 +1033,13 @@ export default defineComponent({
       const previous = this.childMenuKey
       const wasOpen = previous === item.key
       this.childMenuKey = ''
+      /* PC 三栏：一级 Tab 只切换右侧菜单列，不再弹出 menu */
+      if (this.inlineMode) {
+        this.inlineMenuKey = item.key || ''
+        if (item.children && item.children.length) return
+        this.onNavTap(item.url)
+        return
+      }
       /* 宽屏左侧（Web 与小程序一致）：有二级菜单点击只弹 menu，再点关闭 */
       if (this.railMode && item.children && item.children.length) {
         if (wasOpen) return
@@ -1405,5 +1578,131 @@ export default defineComponent({
 .lingyun-page-nav--rail .lingyun-page-nav__indicator {
   left: 12px;
   right: 12px;
+}
+
+/* 窄栏列：包住 head + scroll，普通模式和窄栏模式都占满 */
+.lingyun-page-nav__rail-col {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* PC 三栏：84 窄栏 + 220 内联二级 / 三级菜单列 */
+.lingyun-page-nav--inline {
+  flex-direction: row;
+  border-right: 1px solid var(--lingyun-separator, #{$lingyun-separator});
+}
+
+.lingyun-page-nav--inline .lingyun-page-nav__rail-col {
+  flex: 0 0 84px;
+  width: 84px;
+}
+
+.lingyun-page-nav--inline .lingyun-page-nav__rail-panel {
+  right: auto;
+  width: 84px;
+}
+
+.lingyun-page-nav__inline-col {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  border-left: 1px solid var(--lingyun-separator, #{$lingyun-separator});
+  background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
+}
+
+.lingyun-page-nav__inline-head {
+  flex-shrink: 0;
+  padding: calc(var(--lingyun-page-nav-safe-top, 0px) + 20px) 20px 8px;
+  box-sizing: border-box;
+}
+
+.lingyun-page-nav__inline-title {
+  display: block;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 26px;
+  color: var(--lingyun-label, #{$lingyun-label});
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.lingyun-page-nav__inline-scroll {
+  flex: 1;
+  height: 0;
+  min-height: 0;
+  width: 100%;
+}
+
+.lingyun-page-nav__inline-body {
+  padding: 2px 10px 24px;
+  box-sizing: border-box;
+}
+
+.lingyun-page-nav__inline-heading {
+  display: block;
+  padding: 14px 10px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--lingyun-label-secondary, #{$lingyun-label-secondary});
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.lingyun-page-nav__inline-item {
+  min-height: 40px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border-radius: 10px;
+}
+
+.lingyun-page-nav__inline-item--hover {
+  background-color: rgba(120, 120, 128, 0.1);
+}
+
+.lingyun-page-nav__inline-item--selected {
+  background-color: rgba(120, 120, 128, 0.16);
+}
+
+.theme-dark .lingyun-page-nav__inline-item--selected {
+  background-color: rgba(120, 120, 128, 0.32);
+}
+
+.lingyun-page-nav__inline-label {
+  flex: 1;
+  min-width: 0;
+  margin-left: 10px;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 20px;
+  color: var(--lingyun-label, #{$lingyun-label});
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.lingyun-page-nav__inline-item--plain .lingyun-page-nav__inline-label {
+  margin-left: 0;
+}
+
+.lingyun-page-nav__inline-item--selected .lingyun-page-nav__inline-label {
+  font-weight: 600;
+}
+
+.lingyun-page-nav__inline-item .lingyun-page-nav__badge {
+  margin-left: 6px;
 }
 </style>

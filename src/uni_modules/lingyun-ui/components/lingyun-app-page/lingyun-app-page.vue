@@ -315,6 +315,8 @@ import {
   hostedFromText,
   hostedPagePath,
   isLingyunTabHostPage,
+  LINGYUN_PAGE_NAV_RAIL_MENU_WIDTH,
+  lingyunPageNavInlineMenu,
   lingyunPageRequiresLogin,
   normalizeLingyunPagePath,
   openLingyunHostedPage,
@@ -323,6 +325,7 @@ import {
   releaseLingyunPageNavHeaderSlots,
   resolveLingyunPageUrl,
   setLingyunPageNavIntent,
+  setLingyunPageNavInline,
   setLingyunPageNavRail,
   subscribeLingyunPageRoute,
   useLingyunHostedPath,
@@ -676,12 +679,23 @@ export default defineComponent({
     autoBottomInset() {
       this.applyPageLayout()
     },
+    pageNavWidth() {
+      /* PC 内联菜单列展开 / 收起时，同步注入的导航占位给 tabbar、日期切换器等固定底栏 */
+      this.applyPageLayout()
+    },
     pageNavRail: {
       immediate: true,
       handler(value: boolean) {
         /* 宽屏宿主的嵌入页也会挂 app-page，但它自己不渲染左侧导航，不能覆盖外层宿主的窄栏状态 */
         if (this.embedded) return
         setLingyunPageNavRail(value)
+      },
+    },
+    pageNavInline: {
+      immediate: true,
+      handler(value: boolean) {
+        if (this.embedded) return
+        setLingyunPageNavInline(value)
       },
     },
     usePageScroll(enabled: boolean) {
@@ -912,8 +926,16 @@ export default defineComponent({
     pageNavRail() {
       return this.pageLayout.railVariant === 'rail'
     },
+    pageNavInline() {
+      return this.pageLayout.inlineNavMenu
+    },
     pageNavWidth() {
-      return this.pageLayout.navSide === 'left' ? this.pageLayout.railWidth : 0
+      if (this.pageLayout.navSide !== 'left') return 0
+      /* PC 三栏：一级 Tab 没有二级菜单时菜单列收起，只让出 84 窄栏 */
+      if (this.pageLayout.inlineNavMenu && !lingyunPageNavInlineMenu.value) {
+        return this.pageLayout.railWidth - LINGYUN_PAGE_NAV_RAIL_MENU_WIDTH
+      }
+      return this.pageLayout.railWidth
     },
     /** 未登录的受保护页先藏起来，避免冷启动先画出首页和侧栏再跳登录 */
     authHold() {

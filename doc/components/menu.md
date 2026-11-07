@@ -8,8 +8,8 @@
 <lingyun-menu
   v-model:show="open"
   :actions="[
-    { text: '编辑', icon: 'compose' },
-    { text: '删除', role: 'destructive' },
+    { key: 'edit', label: '编辑', icon: 'compose' },
+    { key: 'remove', label: '删除', role: 'destructive' },
   ]"
   @select="onSelect"
 />
@@ -65,7 +65,7 @@ function onToolbarAction(payload: { key?: string; anchor?: object | null }): voi
 | 属性 | 说明 | 默认值 |
 | --- | --- | --- |
 | `show / modelValue` | 是否打开 | — |
-| `actions` | 行：`{ text, icon, role, disabled }` | [] |
+| `actions` | 行：`{ key, label, subtitle, icon, iconSrc, activeIconSrc, selected, submenu, role, disabled }`；`iconSrc` 优先于 `icon` 字形，`selected` 时用 `activeIconSrc` 并显示勾选 | [] |
 | `placement` | 弹出方向 | — |
 | `maskClosable` | 点外面关闭 | true |
 | `fullWidth` | 全宽面板：手机铺满可用宽度，PC / PAD 上限 400；定位仍跟随触发器 | false |

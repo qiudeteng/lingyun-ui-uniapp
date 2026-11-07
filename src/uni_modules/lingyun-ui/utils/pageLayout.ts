@@ -17,6 +17,7 @@ import {
   LINGYUN_DUO_TABBAR_HEIGHT_NO_SAFE,
 } from './duoMetrics'
 import {
+  LINGYUN_PAGE_NAV_RAIL_MENU_WIDTH,
   LINGYUN_PAGE_NAV_RAIL_WIDTH,
   LINGYUN_PAGE_NAV_WIDTH,
 } from './pageNavAdapter'
@@ -67,6 +68,8 @@ export interface LingyunPageTabChild {
   key: string
   text: string
   icon?: string
+  iconSrc?: string
+  activeIconSrc?: string
   /** 叶子菜单目标；分组只写 children */
   url?: string
   note?: string
@@ -161,6 +164,8 @@ export interface LingyunPageLayoutResult {
   navSide: 'left' | 'right' | ''
   railWidth: number
   railVariant: LingyunRailVariant
+  /** PC 宽屏 + 全局 tabs：窄栏右侧显示内联二级 / 三级菜单列 */
+  inlineNavMenu: boolean
   toolbarPlacement: 'top' | 'hidden'
   splitView: boolean
   foldBand: LingyunFoldBand
@@ -270,6 +275,7 @@ export function resolveLingyunPageLayout(
       navSide: '',
       railWidth: 0,
       railVariant: 'none',
+      inlineNavMenu: false,
       toolbarPlacement,
       splitView: false,
       foldBand: 'none',
@@ -339,11 +345,15 @@ export function resolveLingyunPageLayout(
       ? 'rail'
       : 'directory'
     : 'none'
+  const inlineNavMenu =
+    sidebarVisible && hasTabs && !isDuo && layoutClass === 'desktop'
   const railWidth = sidebarVisible
     ? isDuo
       ? LINGYUN_DUO_RAIL_WIDTH
       : hasTabs
-        ? LINGYUN_PAGE_NAV_RAIL_WIDTH
+        ? inlineNavMenu
+          ? LINGYUN_PAGE_NAV_RAIL_WIDTH + LINGYUN_PAGE_NAV_RAIL_MENU_WIDTH
+          : LINGYUN_PAGE_NAV_RAIL_WIDTH
         : LINGYUN_PAGE_NAV_WIDTH
     : 0
   const navSide: 'left' | 'right' | '' = sidebarVisible
@@ -359,6 +369,7 @@ export function resolveLingyunPageLayout(
     navSide,
     railWidth,
     railVariant,
+    inlineNavMenu,
     toolbarPlacement,
     splitView,
     foldBand,

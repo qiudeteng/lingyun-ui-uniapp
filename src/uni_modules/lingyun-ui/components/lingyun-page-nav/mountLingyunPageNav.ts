@@ -1,10 +1,14 @@
 import { h, render, watch, type App, type AppContext } from 'vue'
 import LingyunPageNav from './lingyun-page-nav.vue'
 import {
+  LINGYUN_PAGE_NAV_RAIL_MENU_WIDTH,
   LINGYUN_PAGE_NAV_RAIL_WIDTH,
   LINGYUN_PAGE_NAV_WIDTH,
+  lingyunPageNavInline,
+  lingyunPageNavInlineMenu,
   lingyunPageNavRail,
 } from '../../utils/pageNavAdapter'
+import { LINGYUN_SCREEN_PC_MIN } from '../../utils/screenResolve'
 import { getLingyunPageConfig } from '../../utils/pageConfig'
 import { LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH } from '../lingyun-toolbars/getLingyunNavSafeInset'
 
@@ -58,16 +62,29 @@ function mountHost(appContext: AppContext): void {
   document.body.appendChild(host)
 
   const applyWidth = (): void => {
+    const rail = lingyunPageNavRail.value
+    const inlineMenu = lingyunPageNavInline.value && lingyunPageNavInlineMenu.value
     host.style.width = `${
-      lingyunPageNavRail.value ? LINGYUN_PAGE_NAV_RAIL_WIDTH : LINGYUN_PAGE_NAV_WIDTH
+      inlineMenu
+        ? LINGYUN_PAGE_NAV_RAIL_WIDTH + LINGYUN_PAGE_NAV_RAIL_MENU_WIDTH
+        : rail
+          ? LINGYUN_PAGE_NAV_RAIL_WIDTH
+          : LINGYUN_PAGE_NAV_WIDTH
     }px`
   }
+  const syncMode = (): void => {
+    const tabs = getLingyunPageConfig().tabs || []
+    lingyunPageNavRail.value =
+      window.innerWidth >= LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH && tabs.length > 0
+    lingyunPageNavInline.value =
+      lingyunPageNavRail.value &&
+      window.innerWidth >= LINGYUN_SCREEN_PC_MIN &&
+      tabs.length > 0
+    applyWidth()
+  }
   /* 宿主比组件更早创建，先按宽屏 + 全局 tabs 判断一次，避免首帧宽度闪一下 */
-  lingyunPageNavRail.value =
-    window.innerWidth >= LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH &&
-    (getLingyunPageConfig().tabs || []).length > 0
-  applyWidth()
-  watch(lingyunPageNavRail, applyWidth)
+  syncMode()
+  watch([lingyunPageNavRail, lingyunPageNavInline, lingyunPageNavInlineMenu], applyWidth)
 
   const vnode = h(LingyunPageNav)
   vnode.appContext = appContext
@@ -78,5 +95,8 @@ function mountHost(appContext: AppContext): void {
     host.style.display = wide && pageAllowsNav ? 'flex' : 'none'
   }
   applyHostVisibility()
-  window.addEventListener('resize', applyHostVisibility)
+  window.addEventListener('resize', () => {
+    syncMode()
+    applyHostVisibility()
+  })
 }

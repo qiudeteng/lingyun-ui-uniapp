@@ -6,6 +6,8 @@ export type MenuActionInput = {
   label?: string | number
   subtitle?: string | number
   icon?: string | number
+  iconSrc?: string
+  activeIconSrc?: string
   role?: string
   disabled?: boolean
   selected?: boolean
@@ -21,6 +23,8 @@ export type MenuItem = {
   label: string
   subtitle: string
   icon: string
+  iconSrc: string
+  activeIconSrc: string
   role: MenuRole
   disabled: boolean
   selected: boolean
@@ -62,6 +66,8 @@ function normalizeItem(raw: MenuActionInput | null | undefined, index: number | 
     label: textOf(item.label),
     subtitle: textOf(item.subtitle),
     icon: textOf(item.icon),
+    iconSrc: textOf(item.iconSrc),
+    activeIconSrc: textOf(item.activeIconSrc),
     role: item.role === 'destructive' ? 'destructive' : 'default',
     disabled: !!item.disabled,
     selected: !!item.selected,

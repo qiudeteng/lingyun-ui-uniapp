@@ -131,8 +131,8 @@ setLingyunPageConfig({
 ```
 
 - 选中态从当前路由推导；详情页可用 `match` 归入某个 Tab。
-- iPad（690–1199）与 PC（≥1200）配置全局 tabs 后，左侧导航收窄为 **84** 通高窄栏，图标在上、文字在下；整列铺满左侧区域（无外边距、无圆角、无侧边线），底色与内容卡片相同的 grouped 背景，叠加固定的顶栏同款 tint（不随滚动变化），滚动后与顶栏玻璃同亮度。`.lingyun-page-safe-left` 保留兼容。未配置 tabs 的完整目录仍为 220。
-- Tab 支持 `children` 二级菜单；二级项还可再带 `children` 作为三级菜单：工作台把有三级的分组渲染成带标题的分组卡片，三级项是卡片里的按钮；只有二级菜单的 Tab 渲染成一张没有标题的卡片。宽屏左侧菜单用分组标题分隔。宽屏左侧（Web / 小程序一致）点击父项用 `lingyun-menu` 弹出（透明遮罩，点击外部关闭）；底部 Tab / Duo Tab 点击有 children 的父项进入固定工作台页（`workspaceUrl?tab=<key>`），没有 children 直接进 `url`。工作台子项用 `navigateTo` 压栈，返回父 Tab 工作台。子项路径自动归入父 Tab 高亮。
+- iPad（690–1199）与 PC（≥1200）配置全局 tabs 后，左侧导航收窄为 **84** 通高窄栏，图标在上、文字在下；整列铺满左侧区域（无外边距、无圆角、无侧边线），底色与内容卡片相同的 grouped 背景，叠加固定的顶栏同款 tint（不随滚动变化），滚动后与顶栏玻璃同亮度。`.lingyun-page-safe-left` 保留兼容。未配置 tabs 的完整目录仍为 220。PC 再向右多一列 **220** 的内联二级 / 三级菜单（合计让出 304），当前一级 Tab 没有子项时菜单列自动收起、只让出 84。
+- Tab 支持 `children` 二级菜单；二级项还可再带 `children` 作为三级菜单：工作台把有三级的分组渲染成带标题的分组卡片，三级项是卡片里的按钮；只有二级菜单的 Tab 渲染成一张没有标题的卡片。PC 宽屏点一级 Tab 直接切换右侧内联菜单列，点菜单项跳转，不再弹出 `lingyun-menu`；平板（690–1199）仍点击父项弹出菜单（透明遮罩，点击外部关闭）；底部 Tab / Duo Tab 点击有 children 的父项进入固定工作台页（`workspaceUrl?tab=<key>`），没有 children 直接进 `url`。工作台子项用 `navigateTo` 压栈，返回父 Tab 工作台。子项路径自动归入父 Tab 高亮。tabs 与子项均可用 `iconSrc` / `activeIconSrc` 图片图标，选中态优先 `activeIconSrc`。
 - 优先级：props > `pages[path]` 页面覆盖 > `layout` > 宽度自动规则。
 - 窄屏由首页 / 目录宿主页在页内切换一级 Tab，页面栈不增长；H5 地址保持为宿主路由的 `?tab=<key>`，刷新或从子页返回后按这个 key 恢复。微信宽屏优先走 `openLingyunHostedPage`，不增加页面栈；从其他页面直接进入工作台时仍走一次路由。
 - 页面壳默认不接管底部 Tab：只有一级 Tab 根页或带 children 的工作台页渲染 Tab；子页/详情页/首页默认没有 Tab，也不会留出底部空间。其他页面需要 Tab 请自行使用 `lingyun-tabbars`。
