@@ -25,7 +25,7 @@
 <lingyun-date-switcher v-model="range" mode="range" :max="'2026-12-31'" />
 ```
 
-点击中间会打开内置日期选择器（天 / 周 / 月 / 年 / 日期段自动映射到 `lingyun-picker` 的对应模式）。右侧的圆形模式按钮显示当前模式字（天 / 周 / 月 / 年 / 自），点击弹出菜单切换；用 `v-model:mode` 接收切换结果，`modes` 决定菜单里出现哪些模式，`showModeSwitch=false` 或 `modes` 为空时按钮整体不显示。固定条默认在页面底部；页面内容底部留出约 140px。与底部 Tab 同时存在时，本页需要隐藏 Tab 栏（`<lingyun-app-page :show-tabbar="false">` 或页面覆盖 `hideTabbar`）。
+点击中间会打开内置日期选择器（天 / 周 / 月 / 年 / 日期段自动映射到 `lingyun-picker` 的对应模式）。右侧的圆形模式按钮显示当前模式字（天 / 周 / 月 / 年 / 自），点击弹出菜单切换；用 `v-model:mode` 接收切换结果，`modes` 决定菜单里出现哪些模式，`showModeSwitch=false` 或 `modes` 为空时按钮整体不显示。固定条默认在页面底部；宽屏下和 `lingyun-tabbars`、`lingyun-search-bar` 一样让开左侧导航列（84 / 304），只在右侧内容区居中。页面内容底部留出约 140px。与底部 Tab 同时存在时，本页需要隐藏 Tab 栏（`<lingyun-app-page :show-tabbar="false">` 或页面覆盖 `hideTabbar`）。
 
 ## 属性
 

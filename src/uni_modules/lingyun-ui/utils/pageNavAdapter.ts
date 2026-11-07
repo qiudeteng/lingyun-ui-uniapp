@@ -4,20 +4,41 @@ import type { LingyunPageBadge } from './pageLayout'
 export const LINGYUN_PAGE_NAV_WIDTH = 220
 /** 全局 tabs 驱动的窄侧栏：图标在上、文字在下 */
 export const LINGYUN_PAGE_NAV_RAIL_WIDTH = 84
+/** 宽屏三栏布局：窄栏右侧的内联二级 / 三级菜单列 */
+export const LINGYUN_PAGE_NAV_RAIL_MENU_WIDTH = 220
 export const LINGYUN_PAGE_NAV_HOME = '/pages/index/index'
 export const LINGYUN_PAGE_NAV_GUEST_HOME = '/pages/demo/demo'
 
 /** H5 常驻侧栏宿主据此切换宽度；页面内导航直接读组件 computed */
 export const lingyunPageNavRail = ref(false)
 
+/** PC + 全局 tabs：左侧窄栏改为「窄栏 + 内联菜单列」三栏布局 */
+export const lingyunPageNavInline = ref(false)
+
+/**
+ * 内联菜单列当前是否真的有内容。
+ * 一级 Tab 没有二级 / 三级菜单（如首页）时收起这一列，内容区只让出 84 窄栏。
+ */
+export const lingyunPageNavInlineMenu = ref(false)
+
 export function setLingyunPageNavRail(value: boolean): void {
   lingyunPageNavRail.value = !!value
+}
+
+export function setLingyunPageNavInline(value: boolean): void {
+  lingyunPageNavInline.value = !!value
+}
+
+export function setLingyunPageNavInlineMenu(value: boolean): void {
+  lingyunPageNavInlineMenu.value = !!value
 }
 
 export interface LingyunPageNavChild {
   key: string
   title: string
   icon?: string
+  iconSrc?: string
+  activeIconSrc?: string
   /** 分组标题没有目标地址 */
   url?: string
   badge?: LingyunPageBadge
@@ -34,6 +55,7 @@ export interface LingyunPageNavItem {
   note?: string
   icon?: string
   iconSrc?: string
+  activeIconSrc?: string
   badge?: LingyunPageBadge
   /** 详情页归入当前项高亮的额外路径 */
   match?: string | string[]

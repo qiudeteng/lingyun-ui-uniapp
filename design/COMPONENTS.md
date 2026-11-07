@@ -51,7 +51,7 @@
 | ✅ | `lingyun-goods-nav` | 商品底栏（对齐 uni-goods-nav） | [`GOODS_NAV.md`](./GOODS_NAV.md) |
 | ✅ | `lingyun-grid` / `lingyun-grid-item` | 宫格（对齐 uni-grid） | [`GRID.md`](./GRID.md) |
 | ✅ | `lingyun-indexed-list` | 索引列表（对齐 uni-indexed-list） | [`INDEXED_LIST.md`](./INDEXED_LIST.md) |
-| ✅ | `lingyun-app-page` | 页面壳（顶栏 + 滚动 + 主题 class；宽屏左侧导航，顶部可带头像 / 名称 / 副标题）。1.0.31 起 iPad/PC + 全局 tabs 使用 84 悬浮玻璃窄栏（通高留 8，页面背景透出）；全局 tabs 支持 `children` 二级菜单：宽屏左侧点击浮层、窄屏/Duo 工作台；Duo 内屏竖屏使用 Duo Toolbar + Duo Tab | [`TOOLBARS.md`](./TOOLBARS.md) · [`SIDEBARS.md`](./SIDEBARS.md) §4 · [`TABBARS.md`](./TABBARS.md) §3.1 |
+| ✅ | `lingyun-app-page` | 页面壳（顶栏 + 滚动 + 主题 class；宽屏左侧导航，顶部可带头像 / 名称 / 副标题）。iPad/PC + 全局 tabs 使用 84 通高窄栏；PC（≥1200）再增加 220 内联二级/三级菜单列（合计 304），平板保持 84 + 点击浮层；全局 tabs 支持 `children` 与图片图标 `iconSrc` / `activeIconSrc`；窄屏/Duo 走工作台；Duo 内屏竖屏使用 Duo Toolbar + Duo Tab | [`TOOLBARS.md`](./TOOLBARS.md) · [`SIDEBARS.md`](./SIDEBARS.md) §4 · [`TABBARS.md`](./TABBARS.md) §3.1 |
 | ✅ | `lingyun-duo-toolbar` | iPhone Duo 内屏竖屏顶部工具栏（84 高，Leading 48 / 标题 17-22 左对齐 / 164×48 工具组 / 右侧状态预留 134） | [`TOOLBARS.md`](./TOOLBARS.md) · [`SIDEBARS.md`](./SIDEBARS.md) |
 | ✅ | `lingyun-theme-action` | 内置浅色 / 暗黑 / 自动切换钮；进入工具栏右侧按钮组或 Duo 工具组 | [`TOOLBARS.md`](./TOOLBARS.md) |
 | ✅ | `lingyun-duo-rail` | iPhone Duo 右侧全高栏（84 宽，工具组 / 仅图标 Tab / 搜索 / 外屏横屏溢出） | [`SIDEBARS.md`](./SIDEBARS.md) |

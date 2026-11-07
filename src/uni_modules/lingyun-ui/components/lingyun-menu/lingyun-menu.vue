@@ -53,8 +53,18 @@
             </view>
           </template>
           <template v-else>
-            <view v-if="action.icon" class="lingyun-menu__symbol">
-              <lingyun-icon :type="action.icon" :size="20" :color="iconColor(action)" />
+            <view v-if="action.iconSrc || action.icon" class="lingyun-menu__symbol">
+              <image
+                v-if="action.iconSrc"
+                class="lingyun-menu__symbol-image"
+                :src="
+                  action.selected && action.activeIconSrc
+                    ? action.activeIconSrc
+                    : action.iconSrc
+                "
+                mode="aspectFit"
+              />
+              <lingyun-icon v-else :type="action.icon" :size="20" :color="iconColor(action)" />
             </view>
             <view class="lingyun-menu__text">
               <text class="lingyun-menu__label">{{ action.label }}</text>

@@ -88,7 +88,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+import { defineComponent, inject, ref, type PropType } from 'vue'
+import { LINGYUN_APP_PAGE_NAV_INSET } from '../lingyun-app-page/useLingyunAppPageScroll'
 import type {
   LingyunDateSwitcherChange,
   LingyunDateSwitcherLimit,
@@ -188,6 +189,12 @@ function today(): Date {
 export default defineComponent({
   name: 'LingyunDateSwitcher',
   emits: ['update:modelValue', 'update:value', 'update:mode', 'mode-change', 'change', 'center'],
+  setup() {
+    return {
+      /** 宽屏左侧导航占位；固定底部时与 tabbar / 搜索栏一样让开这一列 */
+      pageNavInset: inject(LINGYUN_APP_PAGE_NAV_INSET, ref(0)),
+    }
+  },
   props: {
     /** date 单日 / week 周 / month 月 / range 自定义日期段 */
     mode: {
@@ -477,7 +484,12 @@ export default defineComponent({
       }
     },
     rootStyle(): Record<string, string> {
-      return this.fixed ? { zIndex: String(Number(this.zIndex) || 900) } : {}
+      const style: Record<string, string> = this.fixed
+        ? { zIndex: String(Number(this.zIndex) || 900) }
+        : {}
+      const inset = Math.max(0, Number(this.pageNavInset) || 0)
+      if (this.fixed && inset > 0) style.left = `${inset}px`
+      return style
     },
   },
   methods: {
