@@ -55,6 +55,6 @@
 
 `trailingButtons` 支持一维 / 二维数组：一维是一组，二维按子数组拆成多个玻璃胶囊。单个按钮是 44×44 圆钮，多个是 36×36 + gap 18 的胶囊组。点击后发 `trailing-action`，`anchor` 是**按钮组**的视口矩形（整组会隐藏，菜单按组右上角对齐），可直接作为 `lingyun-menu` 的 `anchor` 打开自定义浮层；如果设置 `trailing-menu-enabled` 并传入 `#trailing-menu="{ button, index, groupIndex, buttonIndex, close }"` 插槽，也会自动在按钮组下方弹出自定义菜单内容。主题钮菜单同样按第一组右上角定位。
 
-`segments` 会在 toolbar 下方渲染 Small 分段控制，行高 40；`segmentValue` 受控，切换发 `update:segmentValue`、`segment-click`、`segment-change`。搜索模式只让左侧输入框从右往左滑入，搜索/取消按钮位置固定不变，关闭时输入框反向滑出。
+`segments` 会在 toolbar 下方渲染默认大小（Large，48 高）分段控制，行高 56；`segmentValue` 受控，切换发 `update:segmentValue`、`segment-click`、`segment-change`。搜索模式只让左侧输入框从右往左滑入，搜索/取消按钮位置固定不变，关闭时输入框反向滑出。
 
 返回、关闭、分享都用 `lingyun-icon`。圆钮保持 **44**。返回是 `left`、字号 **28**；关闭是 `closeempty`、分享是 `upload`，字号都是 **26**。

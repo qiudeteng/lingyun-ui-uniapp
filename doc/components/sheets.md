@@ -50,8 +50,36 @@
 | `safeAreaBottom` | 底部安全区 | true |
 | `width` | 宽屏居中卡片宽度（px），夹在 `[320, 视口-64]` | 0（默认上限 936） |
 | `height` | 宽屏居中卡片高度（px），夹在 `[240, 视口-64]` | 0（默认上限 770） |
+| `bleedTop` | 内容从面板顶部开始、顶栏（关闭 / 标题）浮在内容上；隐藏 Grabber、body 去掉顶部内边距 | false |
+| `contentFill` | body 不滚动，内容自行填满 body 高度并在内部滚动（左右分栏、内部滚动详情） | false |
+
+`bleedTop` 适合商品详情这类头图铺满的场景：内容首屏自己做全宽（如负 margin），图片会延伸到面板顶部、关闭钮浮在图片左上角。
+
+```vue
+<lingyun-sheets v-model:show="detail" detent="large" bleed-top>
+  <view class="hero">
+    <image :src="image" mode="aspectFill" />
+  </view>
+</lingyun-sheets>
+```
 
 右侧优先级：`trailingIcon` / `trailingText` 内置按钮 > `trailing` 插槽 > `showTrailing` 默认分享圆钮；内置按钮与插槽同时设置时以内置为准。内置按钮复用 `lingyun-button`（`borderedProminent` / `medium`），仅 icon 时为蓝色圆钮。
+
+## 插槽
+
+| 插槽 | 说明 |
+| --- | --- |
+| 默认插槽 | 面板内容，放在 body 滚动区 |
+| `footer` | 底部操作区：固定在面板底部、不参与 body 滚动；底部安全区由组件承接 |
+
+```vue
+<lingyun-sheets v-model:show="open" title="商品详情" detent="large">
+  <view>内容</view>
+  <template #footer>
+    <view class="footer"><lingyun-button text="加入购物车" /></view>
+  </template>
+</lingyun-sheets>
+```
 
 ## 事件
 

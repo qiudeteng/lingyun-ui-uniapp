@@ -271,6 +271,11 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'All In One' }
 	},
 	{
+		path: '/pages/demo/records',
+		name: 'pagesDemoRecords',
+		meta: { title: '记录列表' }
+	},
+	{
 		path: '/pages/demo/sidebars',
 		name: 'pagesDemoSidebars',
 		meta: { title: 'Sidebar' }

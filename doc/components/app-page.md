@@ -58,7 +58,7 @@
 | `showTabbar` | 全局 tabs 的底部 Tab 栏。`auto` 时只有一级 Tab 根页 / 工作台页在窄屏显示；显式 `false` 永远隐藏 | auto |
 | `navMode` | `auto / tabbar / sidebar / none`。页面级最高优先 | auto |
 | `autoBottomInset` | 自动为底部 Tab 留白（仅当前页实际渲染 Tab 时生效）。关掉后组件不再加 padding，但 CSS 变量与注入仍给出真实值 | true |
-| `autoTopInset` | 自动计算顶部工具栏 / 状态栏留白；被宿主页嵌入时也保持 true，由嵌入页自己承接（小程序宿主节点接不到外层 padding，设 false 会丢状态栏安全区） | true |
+| `autoTopInset` | 自动计算顶部工具栏 / 状态栏留白。设为 `false` 时页面内容顶到视口顶部、可垫在透明工具栏下（如点单页 Banner）；被宿主页嵌入时仍应保持 true（小程序宿主节点接不到外层 padding，设 false 会丢状态栏安全区） | true |
 | `trailingButtons` | 顶栏右侧自定义按钮组；一维为一组，二维按组渲染多个胶囊；点击发 `trailing-action` | [] |
 | `trailingButtonsHidden` | 隐藏顶栏按钮组；页面打开自己的锚点浮层时使用 | false |
 | `trailingMenuEnabled` | 显式启用 `#trailing-menu` 内置浮层；小程序必须开启 | false |
@@ -107,7 +107,7 @@
 />
 ```
 
-分段行显示在 toolbar 下方，高度 **40**（Small 32 + 下边距 8），页面顶部留白会自动增加；`segments` 为空时不渲染也不占高度。
+分段行显示在 toolbar 下方，高度 **56**（Large 48 + 下边距 8），页面顶部留白会自动增加；`segments` 为空时不渲染也不占高度。
 | `glassDistance` | 滚动多少 px 后顶栏玻璃铺满 | 56 |
 
 ## 一级导航（数据驱动）

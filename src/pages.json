@@ -372,6 +372,13 @@
 			}
 		},
 		{
+			"path": "pages/demo/records",
+			"style": {
+				"navigationBarTitleText": "记录列表",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/sidebars",
 			"style": {
 				"navigationBarTitleText": "Sidebar",

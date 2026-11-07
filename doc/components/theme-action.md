@@ -1,6 +1,6 @@
 # lingyun-theme-action
 
-工具栏内置主题切换按钮。点击弹出「浅色 / 暗黑 / 自动」菜单，视觉与 `lingyun-menu` 一致。示例见 demo `pages/demo/toolbars` 和任意开启全局主题钮的页面。
+工具栏内置主题切换按钮。点击弹出「浅色 / 暗黑 / 自动」菜单，视觉与 `lingyun-menu` 一致：浅色用太阳、暗黑用月牙、自动用循环图标，选中态只由右侧勾选表示。示例见 demo `pages/demo/toolbars` 和任意开启全局主题钮的页面。
 
 ## 示例
 

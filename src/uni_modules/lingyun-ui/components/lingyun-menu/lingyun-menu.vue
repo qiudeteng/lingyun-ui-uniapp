@@ -53,7 +53,7 @@
             </view>
           </template>
           <template v-else>
-            <view v-if="action.iconSrc || action.icon" class="lingyun-menu__symbol">
+            <view v-if="action.iconSrc || action.icon || action.iconClass" class="lingyun-menu__symbol">
               <image
                 v-if="action.iconSrc"
                 class="lingyun-menu__symbol-image"
@@ -63,6 +63,11 @@
                     : action.iconSrc
                 "
                 mode="aspectFit"
+              />
+              <view
+                v-else-if="action.iconClass"
+                class="lingyun-menu__symbol-icon"
+                :class="action.iconClass"
               />
               <lingyun-icon v-else :type="action.icon" :size="20" :color="iconColor(action)" />
             </view>

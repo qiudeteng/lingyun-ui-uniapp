@@ -8,6 +8,8 @@ export type MenuActionInput = {
   icon?: string | number
   iconSrc?: string
   activeIconSrc?: string
+  /** CSS 绘制的图标类名；iconSrc / icon 都为空时使用，样式由调用方或菜单内置（如 sun / moon）提供 */
+  iconClass?: string
   role?: string
   disabled?: boolean
   selected?: boolean
@@ -25,6 +27,7 @@ export type MenuItem = {
   icon: string
   iconSrc: string
   activeIconSrc: string
+  iconClass: string
   role: MenuRole
   disabled: boolean
   selected: boolean
@@ -68,6 +71,7 @@ function normalizeItem(raw: MenuActionInput | null | undefined, index: number | 
     icon: textOf(item.icon),
     iconSrc: textOf(item.iconSrc),
     activeIconSrc: textOf(item.activeIconSrc),
+    iconClass: textOf(item.iconClass),
     role: item.role === 'destructive' ? 'destructive' : 'default',
     disabled: !!item.disabled,
     selected: !!item.selected,

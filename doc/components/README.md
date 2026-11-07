@@ -27,6 +27,7 @@
 - [日期显示](./date-text.md)
 - [金额显示](./amount-text.md)
 - [图片](./image.md)
+- [图片轮播](./swiper.md)
 - [头像](./avatar.md)
 - [分页点](./page-control.md)
 

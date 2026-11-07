@@ -209,8 +209,8 @@ HIG 规则：相关工具项应成组，不要手动加固定间距；每个非�
 
 ### 顶栏下方分段控制（segments）
 
-- `segments` 数据配置一组 `{ key, text?, icon?, disabled? }`，在 toolbar **下方**渲染 Small 分段控制
-- 行高 **40**（Small 32 + 下边距 8）；`segments` 为空不渲染、不占高度
+- `segments` 数据配置一组 `{ key, text?, icon?, disabled? }`，在 toolbar **下方**渲染默认大小（Large）分段控制
+- 行高 **56**（Large 48 + 下边距 8）；`segments` 为空不渲染、不占高度
 - 内边距与 toolbar 一致（iPhone 16 / iPad 20），右侧同样避开微信胶囊
 - `segmentValue` 受控；切换发 `update:segmentValue`，同时发 `segment-click` 和 `segment-change`，参数 `{ value, item }`
 - 搜索模式只替换 toolbar 主行，分段行保留
@@ -235,5 +235,5 @@ HIG 规则：相关工具项应成组，不要手动加固定间距；每个非�
 - [ ] 微信 PC（windows / mac）：栏身高度与同宽度 H5 一致，不按胶囊抬高
 - [ ] `searchable` 时搜索钮是独立 44px 胶囊；进入搜索后左侧内容与数据按钮组全部隐藏，搜索框 + 取消钮正常，微信胶囊不被遮挡
 - [ ] 搜索展开只有输入框从右往左滑入、关闭反向；搜索/取消按钮位置固定不变
-- [ ] `segments` 在 toolbar 下方渲染 40 高分段行，选中态正确；为空不占高度，页面顶部留白同步
+- [ ] `segments` 在 toolbar 下方渲染 56 高分段行（Large 48），选中态正确；为空不占高度，页面顶部留白同步
 - [ ] `segment-click` / `segment-change` 都带 `{ value, item }`；`searching` 与 `v-model:searching` 双向一致
