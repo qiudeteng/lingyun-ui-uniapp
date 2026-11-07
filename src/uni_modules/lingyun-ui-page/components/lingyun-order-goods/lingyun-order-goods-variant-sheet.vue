@@ -6,24 +6,6 @@
     :z-index="1350"
   >
     <view v-if="item" class="lingyun-order-goods-variant" :style="accentStyle">
-      <view v-if="mode === 'specs'" class="lingyun-order-goods-variant__spec-product">
-        <image
-          v-if="item.image"
-          class="lingyun-order-goods-variant__spec-product-img"
-          :src="item.image"
-          mode="aspectFill"
-          lazy-load
-        />
-        <view class="lingyun-order-goods-variant__spec-product-info">
-          <text v-if="item.specText" class="lingyun-order-goods-variant__spec-product-sub">
-            {{ item.specText }}
-          </text>
-          <text class="lingyun-order-goods-variant__spec-product-hint">
-            选择规格，可直接加减数量
-          </text>
-        </view>
-      </view>
-
       <!-- 只有规格：列出全部规格，各自加减 -->
       <view v-if="mode === 'specs'" class="lingyun-order-goods-variant__spec-list">
         <view
@@ -32,6 +14,18 @@
           class="lingyun-order-goods-variant__spec-row"
           :class="{ 'lingyun-order-goods-variant__spec-row--last': index === specs.length - 1 }"
         >
+          <view class="lingyun-order-goods-variant__spec-media">
+            <image
+              v-if="specImage(spec)"
+              class="lingyun-order-goods-variant__spec-media-img"
+              :src="specImage(spec)"
+              mode="aspectFill"
+              lazy-load
+            />
+            <text v-else class="lingyun-order-goods-variant__spec-media-char">
+              {{ firstChar(spec.text) }}
+            </text>
+          </view>
           <view class="lingyun-order-goods-variant__spec-main">
             <text class="lingyun-order-goods-variant__spec-name">{{ spec.text }}</text>
             <view v-if="showSpecPrice(spec)" class="lingyun-order-goods-variant__spec-price">
@@ -56,6 +50,7 @@
               :max="specMax(spec)"
               :step="step"
               :right-text="quantityUnitText"
+              size="large"
               show-value
               @change="onSpecQuantity(spec, $event)"
             />
@@ -69,7 +64,7 @@
               :aria-label="`增加${spec.text}`"
               @click="onSpecPlus(spec)"
             >
-              <lingyun-icon type="plus" :size="16" color="#ffffff" />
+              <lingyun-icon type="plus" :size="20" color="#ffffff" />
             </view>
           </view>
         </view>
@@ -131,7 +126,7 @@
                   <lingyun-icon
                     v-if="selectedSpecKey === spec.key"
                     type="checkmarkempty"
-                    :size="13"
+                    :size="15"
                     color="#ffffff"
                   />
                 </view>
@@ -213,7 +208,7 @@
                   <lingyun-icon
                     v-if="isOptionSelected(group, option)"
                     type="checkmarkempty"
-                    :size="13"
+                    :size="15"
                     color="#ffffff"
                   />
                 </view>
@@ -231,7 +226,7 @@
                   >
                     <lingyun-icon
                       type="plus"
-                      :size="12"
+                      :size="14"
                       :color="isGroupFull(group) ? 'secondary' : '#ffffff'"
                     />
                   </view>
@@ -244,7 +239,7 @@
                       class="lingyun-order-goods-variant__option-step lingyun-order-goods-variant__option-step--minus"
                       @click.stop="decreaseOption(group, option)"
                     >
-                      <lingyun-icon type="minus" :size="10" color="label" />
+                      <lingyun-icon type="minus" :size="12" color="label" />
                     </view>
                     <text class="lingyun-order-goods-variant__option-step-value">
                       {{ optionQuantity(group, option) }}
@@ -259,7 +254,7 @@
                     >
                       <lingyun-icon
                         type="plus"
-                        :size="10"
+                        :size="12"
                         :color="isGroupFull(group) ? 'secondary' : '#ffffff'"
                       />
                     </view>
@@ -308,7 +303,7 @@
                     class="lingyun-order-goods-variant__option-step lingyun-order-goods-variant__option-step--minus"
                     @click.stop="decreaseOption(group, option)"
                   >
-                    <lingyun-icon type="minus" :size="10" color="label" />
+                    <lingyun-icon type="minus" :size="12" color="label" />
                   </view>
                   <text class="lingyun-order-goods-variant__option-step-value">
                     {{ optionQuantity(group, option) }}
@@ -323,7 +318,7 @@
                   >
                     <lingyun-icon
                       type="plus"
-                      :size="10"
+                      :size="12"
                       :color="isGroupFull(group) ? 'secondary' : '#ffffff'"
                     />
                   </view>
@@ -938,56 +933,43 @@ export default defineComponent({
   box-sizing: border-box;
 }
 
-/* ---------- 只有规格：主商品大图 + 整行加减 ---------- */
-
-.lingyun-order-goods-variant__spec-product {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
-  padding: 2px 2px 12px;
-  box-sizing: border-box;
-  border-bottom: 0.5px solid var(--lingyun-separator, #{$lingyun-separator});
-}
-
-.lingyun-order-goods-variant__spec-product-img {
-  width: 76px;
-  height: 76px;
-  flex-shrink: 0;
-  display: block;
-  border-radius: 10px;
-}
-
-.lingyun-order-goods-variant__spec-product-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.lingyun-order-goods-variant__spec-product-sub {
-  font-size: 13px;
-  line-height: 18px;
-  color: var(--lingyun-label-secondary, #{$lingyun-label-secondary});
-}
-
-.lingyun-order-goods-variant__spec-product-hint {
-  margin-top: 2px;
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--lingyun-label-tertiary, #{$lingyun-label-tertiary});
-}
+/* ---------- 只有规格：整行加减 ---------- */
 
 .lingyun-order-goods-variant__spec-row {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  min-height: 64px;
+  min-height: 96px;
   padding: 10px 2px;
   box-sizing: border-box;
   border-bottom: 0.5px solid var(--lingyun-separator, #{$lingyun-separator});
+}
+
+.lingyun-order-goods-variant__spec-media {
+  width: 76px;
+  height: 76px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--lingyun-fill-tertiary, #{$lingyun-fill-tertiary});
+}
+
+.lingyun-order-goods-variant__spec-media-img {
+  width: 76px;
+  height: 76px;
+  display: block;
+}
+
+.lingyun-order-goods-variant__spec-media-char {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 22px;
+  color: var(--lingyun-label-secondary, #{$lingyun-label-secondary});
 }
 
 .lingyun-order-goods-variant__spec-row--last {
@@ -1046,6 +1028,7 @@ export default defineComponent({
 
 .lingyun-order-goods-variant__spec-action {
   flex-shrink: 0;
+  align-self: center;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -1058,8 +1041,8 @@ export default defineComponent({
 }
 
 .lingyun-order-goods-variant__plus {
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1192,7 +1175,7 @@ export default defineComponent({
   align-items: center;
   justify-content: space-between;
   gap: 4px;
-  min-height: 34px;
+  min-height: 38px;
 }
 
 /* 名称压在图片底部半透明条上，单行截断，节约卡片高度 */
@@ -1229,8 +1212,8 @@ export default defineComponent({
 }
 
 .lingyun-order-goods-variant__option-check {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   margin-left: auto;
   flex-shrink: 0;
   box-sizing: border-box;
@@ -1247,8 +1230,8 @@ export default defineComponent({
 }
 
 .lingyun-order-goods-variant__option-plus {
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   margin-left: auto;
   flex-shrink: 0;
   border-radius: 50%;
@@ -1271,8 +1254,8 @@ export default defineComponent({
 }
 
 .lingyun-order-goods-variant__option-step {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
   border-radius: 50%;
   display: flex;
@@ -1293,11 +1276,11 @@ export default defineComponent({
 }
 
 .lingyun-order-goods-variant__option-step-value {
-  min-width: 16px;
+  min-width: 18px;
   text-align: center;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  line-height: 16px;
+  line-height: 18px;
   color: var(--lingyun-label, #{$lingyun-label});
 }
 

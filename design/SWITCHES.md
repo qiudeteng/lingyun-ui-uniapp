@@ -26,7 +26,7 @@
 | 项 | 约定 |
 |----|------|
 | 形态 | − / + 双钮胶囊；中间分割。`showValue` 时在两钮之间插入当前值文本框 |
-| 高 | 约 **28–32** |
+| 高 | 默认约 **28–32**；`size="large"` 为 **38** 高，按钮 46 宽、数值 17 号，用于真机大点击区 |
 
 ```vue
 <lingyun-stepper v-model="n" :min="0" :max="10" show-value />
@@ -41,6 +41,7 @@
 | `showValue` | `false` | 在 − / + 之间展示当前值，可直接改数字 |
 | `leftText` | `''` | 控件左侧灰色说明文字，最多 **4** 个字 |
 | `rightText` | `''` | 控件右侧灰色说明文字，最多 **4** 个字 |
+| `size` | `default` | `default` / `large`（38 高，按钮 46） |
 
 事件：`update:modelValue`、`change`
 

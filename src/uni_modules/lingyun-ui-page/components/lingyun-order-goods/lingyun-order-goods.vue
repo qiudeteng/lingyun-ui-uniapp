@@ -126,7 +126,7 @@
         <scroll-view
           v-if="!searchActive"
           class="lingyun-order-goods__rail"
-          scroll-y
+          :scroll-y="!cartDetailOpen"
           scroll-with-animation
           :show-scrollbar="false"
           :scroll-into-view="railIntoId"
@@ -199,7 +199,7 @@
 
         <scroll-view
           class="lingyun-order-goods__list"
-          scroll-y
+          :scroll-y="!cartDetailOpen"
           scroll-with-animation
           :show-scrollbar="false"
           :scroll-into-view="listIntoId"
@@ -298,6 +298,7 @@
                         :max="itemMax(item)"
                         :step="itemStep(item)"
                         :right-text="quantityUnitOf(item)"
+                        size="large"
                         show-value
                         @change="onItemQuantity(item, $event)"
                       />
@@ -311,7 +312,7 @@
                         :aria-label="hasSpecs(item) ? specButtonText : attributeButtonText"
                         @click="onPlus(item, category)"
                       >
-                        <lingyun-icon type="plus" :size="16" color="#ffffff" />
+                        <lingyun-icon type="plus" :size="18" color="#ffffff" />
                         <view
                           v-if="quantityOf(item) > 0"
                           class="lingyun-order-goods__plus-count"
@@ -351,7 +352,7 @@
                         aria-label="加入购物车"
                         @click="onPlus(item, category)"
                       >
-                        <lingyun-icon type="plus" :size="16" color="#ffffff" />
+                        <lingyun-icon type="plus" :size="18" color="#ffffff" />
                       </view>
                     </view>
                   </view>
@@ -388,6 +389,8 @@
         :safe-area="safeArea"
         :detail-version="cartVersion"
         @checkout="onCheckout"
+        @detail-open="onCartDetailOpen"
+        @detail-close="onCartDetailClose"
       >
         <template #detail-header>
           <view class="lingyun-order-goods__cart-head">
@@ -459,6 +462,7 @@
                 :max="lineMax(line)"
                 :step="itemStep(line.item)"
                 :right-text="quantityUnitOf(line.item)"
+                size="large"
                 show-value
                 @change="onCartLineQuantity(line, $event)"
               />
@@ -602,6 +606,7 @@
               :max="itemMax(goodsDetailItem)"
               :step="itemStep(goodsDetailItem)"
               :right-text="quantityUnitOf(goodsDetailItem)"
+              size="large"
               show-value
               @change="onItemQuantity(goodsDetailItem, $event)"
             />
@@ -898,6 +903,8 @@ export default defineComponent({
       /** 商品详情缩略图横向滚动容器 / 目标 id */
       detailThumbUid: `ogd${Math.random().toString(36).slice(2, 8)}`,
       detailThumbInto: '',
+      /** 购物车详情展开时锁住列表 / 分类栏滚动，避免背景跟着滑动 */
+      cartDetailOpen: false,
       /** 规格 / 属性选择 Sheet（页面专用子组件） */
       variantOpen: false,
       variantItem: null as LingyunOrderGoods | null,
@@ -1775,6 +1782,12 @@ export default defineComponent({
       this.$emit('update:modelValue', cart)
       this.$emit('cart-clear', { cart, count: 0, totalPrice: 0 })
     },
+    onCartDetailOpen(): void {
+      this.cartDetailOpen = true
+    },
+    onCartDetailClose(): void {
+      this.cartDetailOpen = false
+    },
     onCheckout(): void {
       const payload: LingyunOrderCheckoutPayload = {
         cart: { ...this.cartMap },
@@ -2520,8 +2533,8 @@ export default defineComponent({
 
 .lingyun-order-goods__plus {
   position: relative;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
