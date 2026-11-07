@@ -1,3 +1,8 @@
+## 1.0.45（2026-11-07）
+- 新增后台菜单树统一换算 `buildLingyunPageFromMenus` / `applyLingyunPageFromMenus` / `buildLingyunSectionsFromMenus`：一次得到一级 Tab、220 目录分组与工作台分组，二级 / 三级子项保留 `iconSrc` / `activeIconSrc` 图片图标，宿主不用各写一份菜单转换。
+- 菜单图标支持图片地址与字形名混用：图片自动转 `iconSrc` / `activeIconSrc`，缺失时按标题关键词与序号取兜底字形，可用 `iconKeywords` / `iconFallbacks` / `fallbackIcon` 覆盖；`homeTab` + `homePath` 处理固定首页节点，`meta.hideInMenu` 的节点自动跳过。
+- `LingyunPageNavSection` 新增可选 `icon`，工作台分组卡片可直接使用。
+- 同步 App Page 文档「后台菜单树接入」与 readme。
 ## 1.0.44（2026-11-07）
 - PC 宽屏（≥1200）配置全局 tabs 后改为三栏：84 通高窄栏 + 220 内联二级 / 三级菜单列 + 内容区（内容左距 304）。点一级 Tab 直接切换右侧菜单列、不再弹出 `lingyun-menu`，点菜单项跳转并高亮；一级 Tab 没有子项时菜单列自动收起、只让出 84。平板（690–1199）保持 84 窄栏 + 点击弹出菜单。
 - 全局 tabs 与二级 / 三级子项支持图片图标 `iconSrc` / `activeIconSrc`，贯通 84 窄栏、内联菜单列和平板弹出菜单；选中态优先 `activeIconSrc`，未传时回退 `iconSrc`。

@@ -141,6 +141,29 @@ setLingyunPageConfig({
 - 跨页 `reLaunch` 本身没有页面动画：壳会在换页后让内容淡入。底部 Tab 指示器按 Tab 顺序左右滑动，左侧菜单的选中胶囊按菜单顺序上下滑动；工作台内切换只让内容区淡入。
 - 带商品底栏 / 底部搜索条的页面请配置 `pages[path].hideTabbar = true`。
 
+### 后台菜单树接入
+
+后台菜单（`name / path / meta.title / meta.icon / meta.activeIcon / meta.hideInMenu / children`）不用宿主自己转 tabs，包内已提供统一换算：
+
+```ts
+import { applyLingyunPageFromMenus } from '@/uni_modules/lingyun-ui'
+
+const result = applyLingyunPageFromMenus(menuTree, {
+  homeTab: { key: 'home', text: '首页', icon: 'home', url: '/pages/index/index' },
+  homePath: '/pages/index/index',
+  workspaceUrl: '/pages/index/workbench',
+})
+// result.tabs      已写入全局页面壳配置
+// result.sections  220 完整目录分组（首页列表 / 旧目录侧栏）
+// result.groups    一级 Tab key → 工作台分组
+```
+
+- 顶层叶子生成一级 Tab；有 `children` 的顶层节点生成带二级 / 三级菜单的 Tab，`meta.hideInMenu` 的节点会跳过。
+- `meta.icon` / `meta.activeIcon` 是图片地址时自动转成 `iconSrc` / `activeIconSrc`，二级 / 三级子项同样保留；是字形名时直接作为 `icon`。
+- 没有可用图标时按标题关键词与序号取兜底字形，可用 `iconKeywords` / `iconFallbacks` / `fallbackIcon` 覆盖。
+- `homeTab` + `homePath`：后台首页节点不重复生成 Tab，只把它的图片图标补到首页 Tab。
+- 只要纯映射不写配置时用 `buildLingyunPageFromMenus`；只取 220 目录分组时用 `buildLingyunSectionsFromMenus`。
+
 ## iPhone Duo（P1）
 
 - 设备形态由 `lingyun.formFactor` / `lingyun.duoPose` 决定；宿主可通过 `configureLingyunLayout({ getFormFactor, getDuoPose })` 接入已有型号判断。
