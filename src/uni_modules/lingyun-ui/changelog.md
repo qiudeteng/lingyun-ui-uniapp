@@ -1,3 +1,10 @@
+## 1.0.44（2026-11-07）
+- PC 宽屏（≥1200）配置全局 tabs 后改为三栏：84 通高窄栏 + 220 内联二级 / 三级菜单列 + 内容区（内容左距 304）。点一级 Tab 直接切换右侧菜单列、不再弹出 `lingyun-menu`，点菜单项跳转并高亮；一级 Tab 没有子项时菜单列自动收起、只让出 84。平板（690–1199）保持 84 窄栏 + 点击弹出菜单。
+- 全局 tabs 与二级 / 三级子项支持图片图标 `iconSrc` / `activeIconSrc`，贯通 84 窄栏、内联菜单列和平板弹出菜单；选中态优先 `activeIconSrc`，未传时回退 `iconSrc`。
+- `lingyun-menu` 的 `actions` 支持 `iconSrc` / `activeIconSrc`，`selected` 时使用选中图并显示勾选。
+- 修复 `lingyun-toolbars` 内置蓝色右侧按钮与按钮组 / 自定义 trailing 之间没有间距：按 `--ly-toolbar-gap` 补上组间距，右边缘位置不变。
+- 修复固定底部 `lingyun-date-switcher` 在宽屏按整个窗口居中：注入页面壳导航占位，和 `lingyun-tabbars` / `lingyun-search-bar` 一样只在右侧内容区居中；PC 三栏菜单列展开 / 收起时同步更新占位。
+- 同步 Page Nav / App Page / Menu / Date Switcher 文档与 SIDEBARS / COMPONENTS 设计说明。
 ## 1.0.43（2026-11-06）
 - 修复 `lingyun-row` 设置 `gutter` 后整行左移、右侧少一半间距：`gutter > 0` 时行宽按 `calc(100% + gutter)` 计算，配合左右负 margin 让列内容与父级左右边缘对齐；`gutter=0` 保持 `width: 100%` 不变。
 ## 1.0.42（2026-11-06）
