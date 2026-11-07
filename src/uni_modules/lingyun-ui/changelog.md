@@ -1,3 +1,6 @@
+## 1.0.50（2026-11-07）
+- `lingyun-stepper` 新增 `size="large"`：38 高、按钮 46 宽、数值 17 号，适合真机大点击区；默认尺寸保持不变。
+- `lingyun-goods-nav` cart 详情卡片增加 `touchmove.stop`：展开后触摸卡片不会把事件冒泡到后面的页面，内容不足一屏时背景也不会跟着滑动；内部 scroll-view 仍可正常滚动。
 ## 1.0.49（2026-11-07）
 - 新增图片轮播 `lingyun-swiper`：基于内置 swiper，支持左右滑动、`autoplay` / `interval` / `circular`、`ratio`（默认 4:3）、`radius`、内置圆点、懒加载；配合 `v-model:current` 可用缩略图作为指示器。
 - `lingyun-goods-nav` cart 变体恢复加购反馈：购物车数量增加时，底部购物车圆钮（含角标）做一次 0.4s 放大回弹。
