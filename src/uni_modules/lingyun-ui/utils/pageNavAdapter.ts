@@ -67,6 +67,8 @@ export interface LingyunPageNavItem {
 
 export interface LingyunPageNavSection {
   title: string
+  /** 分组标题左侧图片；目录侧栏不使用，工作台分组卡片可用 */
+  icon?: string
   items: LingyunPageNavItem[]
 }
 

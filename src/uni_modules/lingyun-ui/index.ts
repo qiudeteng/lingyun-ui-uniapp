@@ -15,6 +15,7 @@ export * from './utils/layoutAdapter'
 export * from './utils/pageNavAdapter'
 export * from './utils/pageConfig'
 export * from './utils/pageLayout'
+export * from './utils/pageMenu'
 export * from './utils/theme'
 export * from './utils/themeSwitch'
 // #ifdef H5
