@@ -175,6 +175,7 @@
                 <lingyun-badge :text="categoryQuantity(category)" :max="99" />
               </view>
             </view>
+            <view class="lingyun-order-goods__rail-pad" :style="cartPadStyle" />
           </view>
         </scroll-view>
 
@@ -312,100 +313,102 @@
                 <lingyun-empty variant="plain" :title="emptyText" />
               </slot>
             </view>
-            <view class="lingyun-order-goods__list-pad" />
+            <view class="lingyun-order-goods__list-pad" :style="cartPadStyle" />
           </view>
         </scroll-view>
       </view>
 
-      <!-- 底部购物车 / 结算栏：复用 lingyun-goods-nav 的 cart 变体 -->
-      <view
-        class="lingyun-order-goods__cart-wrap"
-        :class="{ 'lingyun-order-goods__cart-wrap--safe': safeArea }"
+      <!-- 悬浮购物车：详情与购物车同一张卡，卡片浮在列表上方 -->
+      <lingyun-goods-nav
+        variant="cart"
+        detail
+        :cart-count="cartCount"
+        :total="cartTotal"
+        :min-price="minPrice"
+        :delivery-fee="deliveryFee"
+        :currency="currency"
+        :empty-text="emptyCartText"
+        :checkout-text="checkoutText"
+        :price-decimals="priceDecimals"
+        :accent-color="accentColor"
+        :safe-area="safeArea"
+        :detail-version="cartVersion"
+        @checkout="onCheckout"
       >
-        <lingyun-goods-nav
-          variant="cart"
-          :fixed="false"
-          :cart-count="cartCount"
-          :total="cartTotal"
-          :min-price="minPrice"
-          :delivery-fee="deliveryFee"
-          :currency="currency"
-          :empty-text="emptyCartText"
-          :checkout-text="checkoutText"
-          :price-decimals="priceDecimals"
-          :accent-color="accentColor"
-          @cart="openCart"
-          @checkout="onCheckout"
-        />
-      </view>
-
-      <!-- 已选商品 -->
-      <lingyun-sheets
-        v-model:show="cartOpen"
-        :title="cartTitle"
-        detent="medium"
-        :z-index="1200"
-      >
-        <template #trailing>
-          <view
-            v-if="cartLines.length"
-            class="lingyun-order-goods__clear"
-            hover-class="lingyun-order-goods__clear--hover"
-            :hover-start-time="20"
-            :hover-stay-time="70"
-            role="button"
-            @click="clearCart"
-          >
-            <lingyun-icon type="trash" :size="16" color="var(--lingyun-label-secondary, #8e8e93)" />
-            <text class="lingyun-order-goods__clear-text">{{ clearText }}</text>
+        <template #detail-header>
+          <view class="lingyun-order-goods__cart-head">
+            <view class="lingyun-order-goods__cart-head-main">
+              <text class="lingyun-order-goods__cart-title">{{ cartTitle }}</text>
+              <text class="lingyun-order-goods__cart-count">共 {{ cartCount }} 件</text>
+            </view>
+            <view
+              v-if="cartLines.length"
+              class="lingyun-order-goods__clear"
+              hover-class="lingyun-order-goods__clear--hover"
+              :hover-start-time="20"
+              :hover-stay-time="70"
+              role="button"
+              @click="clearCart"
+            >
+              <lingyun-icon
+                type="trash"
+                :size="16"
+                color="var(--lingyun-label-secondary, #8e8e93)"
+              />
+              <text class="lingyun-order-goods__clear-text">{{ clearText }}</text>
+            </view>
           </view>
         </template>
-        <view class="lingyun-order-goods__cart-sheet">
-          <view
-            v-for="line in cartLines"
-            :key="line.item.key"
-            class="lingyun-order-goods__cart-line"
-          >
-            <view class="lingyun-order-goods__cart-media">
-              <image
-                v-if="line.item.image"
-                class="lingyun-order-goods__cart-media-img"
-                :src="line.item.image"
-                mode="aspectFill"
-                lazy-load
-              />
-              <view v-else class="lingyun-order-goods__cart-media-empty">
-                <text class="lingyun-order-goods__media-char">{{ firstChar(line.item.name) }}</text>
+        <template #detail>
+          <view class="lingyun-order-goods__cart-sheet">
+            <view
+              v-for="line in cartLines"
+              :key="line.item.key"
+              class="lingyun-order-goods__cart-line"
+            >
+              <view class="lingyun-order-goods__cart-media">
+                <image
+                  v-if="line.item.image"
+                  class="lingyun-order-goods__cart-media-img"
+                  :src="line.item.image"
+                  mode="aspectFill"
+                  lazy-load
+                />
+                <view v-else class="lingyun-order-goods__cart-media-empty">
+                  <text class="lingyun-order-goods__media-char">
+                    {{ firstChar(line.item.name) }}
+                  </text>
+                </view>
               </view>
-            </view>
-            <view class="lingyun-order-goods__cart-line-main">
-              <text class="lingyun-order-goods__cart-line-name">{{ line.item.name }}</text>
-              <text v-if="line.item.specText" class="lingyun-order-goods__cart-line-spec">
-                {{ line.item.specText }}
-              </text>
-              <view class="lingyun-order-goods__cart-line-price">
-                <text class="lingyun-order-goods__currency">{{ currency }}</text>
-                <text class="lingyun-order-goods__cart-line-amount">
-                  {{ formatPrice(line.item.price) }}
+              <view class="lingyun-order-goods__cart-line-main">
+                <text class="lingyun-order-goods__cart-line-name">{{ line.item.name }}</text>
+                <text v-if="line.item.specText" class="lingyun-order-goods__cart-line-spec">
+                  {{ line.item.specText }}
                 </text>
+                <view class="lingyun-order-goods__cart-line-price">
+                  <text class="lingyun-order-goods__currency">{{ currency }}</text>
+                  <text class="lingyun-order-goods__cart-line-amount">
+                    {{ formatPrice(line.item.price) }}
+                  </text>
+                </view>
               </view>
+              <lingyun-stepper
+                :value="line.quantity"
+                :min="0"
+                :max="itemMax(line.item)"
+                :step="itemStep(line.item)"
+                :right-text="quantityUnitOf(line.item)"
+                show-value
+                @change="onItemQuantity(line.item, $event)"
+              />
             </view>
-            <lingyun-stepper
-              :value="line.quantity"
-              :min="0"
-              :max="itemMax(line.item)"
-              :step="itemStep(line.item)"
-              :right-text="quantityUnitOf(line.item)"
-              show-value
-              @change="onItemQuantity(line.item, $event)"
-            />
+            <view v-if="!cartLines.length" class="lingyun-order-goods__cart-empty-state">
+              <text class="lingyun-order-goods__cart-empty-text">{{ emptyCartText }}</text>
+            </view>
+            <view class="lingyun-order-goods__sheet-pad" />
           </view>
-          <view v-if="!cartLines.length" class="lingyun-order-goods__cart-empty-state">
-            <text class="lingyun-order-goods__cart-empty-text">{{ emptyCartText }}</text>
-          </view>
-          <view class="lingyun-order-goods__sheet-pad" />
-        </view>
-      </lingyun-sheets>
+        </template>
+      </lingyun-goods-nav>
     </view>
   </lingyun-app-page>
 </template>
@@ -457,8 +460,8 @@ function sanitizeKey(value: unknown): string {
  * @property {String} currency 货币符号
  * @property {Number} maxCount 单个商品默认最大数量
  * @property {String} checkoutText 可结算时的按钮文案
- * @property {String} cartTitle 已选商品 Sheet 标题
- * @property {String} clearText Sheet 右上角清空文案
+ * @property {String} cartTitle 已选商品面板标题
+ * @property {String} clearText 面板右上角清空文案
  * @property {String} emptyText 无商品时空态文案
  * @property {String} emptyCartText 购物车为空时的文案
  * @property {String} soldOutText 售罄商品在加购位置显示的文案
@@ -561,7 +564,6 @@ export default defineComponent({
       sectionTops: [] as number[],
       offsetsReady: false,
       spyLockedUntil: 0,
-      cartOpen: false,
       railIndicatorTop: 0,
       railIndicatorHeight: 0,
       railIndicatorVisible: false,
@@ -576,6 +578,9 @@ export default defineComponent({
       _pulseTimer: null as ReturnType<typeof setTimeout> | null,
       _measureTimer: null as ReturnType<typeof setTimeout> | null,
       _spyTimers: [] as ReturnType<typeof setTimeout>[],
+      /** 页面底部安全区；购物车悬浮在列表上方，列表尾部要留出让位高度 */
+      safeBottom: 0,
+      _onWindowResize: null as (() => void) | null,
     }
   },
   computed: {
@@ -683,6 +688,21 @@ export default defineComponent({
         (category) => (category.goods || []).length > 0,
       )
     },
+    /** 购物车详情内容版本：行数 / 数量的变化会触发重新测高 */
+    cartVersion(): string {
+      return this.cartLines
+        .map((line) => `${line.item.key}:${line.quantity}`)
+        .join('|')
+    },
+    /** 列表 / 分类栏尾部预留：底栏 62 + 底部 8 + 顶部间隙 8 + 安全区 */
+    cartClearance(): number {
+      return 78 + (this.safeArea ? this.safeBottom : 0)
+    },
+    cartPadStyle(): Record<string, string> {
+      return {
+        height: `${this.cartClearance}px`,
+      }
+    },
   },
   watch: {
     categories: {
@@ -730,6 +750,8 @@ export default defineComponent({
   },
   mounted() {
     this.initActive()
+    this.syncSafeBottom()
+    this.bindCartResize()
     this.scheduleMeasure()
     this.syncRailIndicator(false)
     setTimeout(() => this.syncRailIndicator(false), 160)
@@ -741,6 +763,7 @@ export default defineComponent({
     clearTimeout(this._pulseTimer ?? undefined)
     clearTimeout(this._measureTimer ?? undefined)
     this._spyTimers.forEach((timer) => clearTimeout(timer))
+    this.unbindCartResize()
     this._pulseTimer = null
     this._measureTimer = null
     this._spyTimers = []
@@ -749,6 +772,37 @@ export default defineComponent({
     firstChar(value: unknown): string {
       const text = String(value == null ? '' : value).trim()
       return Array.from(text)[0] || '商'
+    },
+    syncSafeBottom(): void {
+      try {
+        const info =
+          typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
+        const inset = info && info.safeAreaInsets
+        this.safeBottom = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
+      } catch {
+        this.safeBottom = 0
+      }
+    },
+    bindCartResize(): void {
+      if (this._onWindowResize) return
+      const handler = () => this.syncSafeBottom()
+      this._onWindowResize = handler
+      try {
+        if (typeof uni.onWindowResize === 'function') uni.onWindowResize(handler)
+      } catch {
+        /* 端不支持 */
+      }
+    },
+    unbindCartResize(): void {
+      const handler = this._onWindowResize
+      try {
+        if (handler && typeof uni.offWindowResize === 'function') {
+          uni.offWindowResize(handler)
+        }
+      } catch {
+        /* 端不支持 */
+      }
+      this._onWindowResize = null
     },
     metaText(item: LingyunOrderGoods): string {
       return [item.specText || '', item.salesText || ''].filter(Boolean).join(' · ')
@@ -925,15 +979,10 @@ export default defineComponent({
       const payload: LingyunOrderGoodsClickPayload = { item, categoryKey: category.key }
       this.$emit('goods-click', payload)
     },
-    openCart(): void {
-      if (this.cartCount <= 0) return
-      this.cartOpen = true
-    },
     clearCart(): void {
       const cart: LingyunOrderCart = {}
       this.$emit('update:modelValue', cart)
       this.$emit('cart-clear', { cart, count: 0, totalPrice: 0 })
-      this.cartOpen = false
     },
     onCheckout(): void {
       const payload: LingyunOrderCheckoutPayload = {
@@ -1730,17 +1779,45 @@ export default defineComponent({
   height: 24px;
 }
 
-/* ---------- 购物车栏（使用 lingyun-goods-nav cart 变体） ---------- */
+/* ---------- 悬浮购物车（列表延伸到页面底部，购物车浮在上面） ---------- */
 
-.lingyun-order-goods__cart-wrap {
-  flex-shrink: 0;
+.lingyun-order-goods__rail-pad {
+  width: 100%;
 }
 
-.lingyun-order-goods__cart-wrap--safe {
-  padding-bottom: 21px;
+/* ---------- 购物车详情（lingyun-goods-nav 的 #detail-header / #detail 插槽） ---------- */
+
+.lingyun-order-goods__cart-head {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-/* ---------- 已选商品 ---------- */
+.lingyun-order-goods__cart-head-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+}
+
+.lingyun-order-goods__cart-title {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 22px;
+  color: var(--lingyun-label, #{$lingyun-label});
+}
+
+.lingyun-order-goods__cart-count {
+  margin-left: 8px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--lingyun-label-secondary, #{$lingyun-label-secondary});
+}
 
 .lingyun-order-goods__clear {
   display: flex;
@@ -1761,7 +1838,7 @@ export default defineComponent({
 }
 
 .lingyun-order-goods__cart-sheet {
-  padding: 4px 16px 0;
+  padding: 0 16px;
   box-sizing: border-box;
 }
 
@@ -1851,7 +1928,7 @@ export default defineComponent({
 }
 
 .lingyun-order-goods__sheet-pad {
-  height: 24px;
+  height: 16px;
 }
 
 /* 深色模式下加购钮阴影弱一些 */

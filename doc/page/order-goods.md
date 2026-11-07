@@ -28,24 +28,24 @@ import type {
 } from '@/uni_modules/lingyun-ui-page/components/lingyun-order-goods/types'
 
 const store: LingyunOrderStore = {
-  name: '喜家德虾仁水饺（北京酒仙桥店）',
+  name: '八喜冰淇淋蛋糕（北京酒仙桥店）',
   rating: 4.8,
   salesText: '月售 1000+',
-  deliveryText: '约 23 分钟',
-  notice: '温馨提示：请适量点餐，支持到店自提',
+  deliveryText: '约 30 分钟',
+  notice: '温馨提示：冰淇淋蛋糕请及时冷藏，支持到店自提',
 }
 
 const categories: LingyunOrderCategory[] = [
   {
-    key: 'dumpling',
-    text: '水饺',
+    key: 'cake',
+    text: '冰淇淋蛋糕',
     goods: [
       {
-        key: 'shen-xian',
-        name: '喜三鲜水饺',
-        price: 35,
-        originalPrice: 45,
-        specText: '12 只 / 1 人份',
+        key: 'baxi-classic',
+        name: '八喜经典冰淇淋蛋糕',
+        price: 168,
+        originalPrice: 198,
+        specText: '6 寸 / 约 1.5 磅',
         salesText: '月售 600+',
         badge: '招牌',
       },
@@ -90,8 +90,8 @@ type LingyunOrderCart = Record<string, number> // 商品 key → 数量
 | `currency` | 货币符号 | ¥ |
 | `maxCount` | 单个商品默认最大数量（商品上的 `max` 优先） | 99 |
 | `checkoutText` | 可结算时的按钮文案 | 去结算 |
-| `cartTitle` | 已选商品 Sheet 标题 | 已选商品 |
-| `clearText` | Sheet 右上角清空文案 | 清空 |
+| `cartTitle` | 购物车详情面板标题 | 已选商品 |
+| `clearText` | 详情面板右上角清空文案 | 清空 |
 | `emptyText` | 无商品时空态文案 | 暂无商品 |
 | `emptyCartText` | 购物车为空时的文案 | 未选购商品 |
 | `soldOutText` | 售罄商品在加购位置显示的文案 | 商品已售罄 |
@@ -119,7 +119,7 @@ type LingyunOrderCart = Record<string, number> // 商品 key → 数量
 | `category-change` | 左右联动切换分类，参数 `{ key, index }` |
 | `goods-click` | 点击商品，参数 `{ item, categoryKey }` |
 | `spec-request` | 多规格商品点 `+`，参数 `{ item, categoryKey }`；业务弹自己的规格面板 |
-| `cart-clear` | 点 Sheet 里的清空，参数 `{ cart, count, totalPrice }` |
+| `cart-clear` | 点详情面板里的清空，参数 `{ cart, count, totalPrice }` |
 | `checkout` | 达到起送价后点结算，参数 `{ cart, lines, count, totalPrice, deliveryFee }` |
 | `back` | 点 Banner 返回钮 |
 
@@ -138,7 +138,7 @@ type LingyunOrderCart = Record<string, number> // 商品 key → 数量
 - 左侧选中背景是圆角胶囊，切换分类时上下滑动过渡（类似 tabbar 的选中透镜），点击的分类文字做一次轻微回弹；分类有已选商品时右上角显示数量角标，角标数字优先于分类自身的 `badge`。
 - 商品数量由 `v-model` 控制；数量大于 0 且不是多规格商品时，`+` 变成步进器。
 - `multiSpec` 商品始终显示 `+`，点击抛 `spec-request`，由业务打开规格面板并自行回写 `modelValue`。
-- 底部购物车栏复用 `lingyun-goods-nav` 的 `variant="cart"`：悬浮玻璃胶囊、购物车角标、合计 / 配送费 / 起送价与结算钮都由该组件渲染；点购物车图标打开「已选商品」Sheet，可逐项增减或清空。
+- 底部购物车栏复用 `lingyun-goods-nav` 的 `variant="cart"`：悬浮玻璃胶囊、购物车角标、合计 / 配送费 / 起送价与结算钮都由该组件渲染；购物车固定悬浮在列表之上，分类栏与商品列表通高到页面底部，商品可以从购物车底部穿过，列表尾部预留 `78 + 安全区` 的让位。点购物车图标会让整张购物车卡向上增高展示「已选商品」详情，详情与购物车是同一张卡（左上角关闭钮、点卡片外收起），不是独立弹窗；结算钮始终可点。
 
 ## 大数据量模式
 

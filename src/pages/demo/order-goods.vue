@@ -18,9 +18,11 @@
   >
     <template #banner>
       <view class="order-banner">
+        <image class="order-banner__bg" :src="bannerImage" mode="aspectFill" />
+        <view class="order-banner__shade" />
         <view class="order-banner__copy">
-          <text class="order-banner__title">立冬到 · 吃水饺</text>
-          <text class="order-banner__sub">喜家德 · 现包现煮 · 门店直送</text>
+          <text class="order-banner__title">八喜 · 冰淇淋蛋糕</text>
+          <text class="order-banner__sub">鲜奶冰淇淋 · 冷链直送</text>
         </view>
       </view>
     </template>
@@ -51,143 +53,148 @@
     LingyunOrderStore,
   } from '@/uni_modules/lingyun-ui-page/components/lingyun-order-goods/types'
 
+  const cakeImage = (id: string): string =>
+    `https://images.unsplash.com/${id}?w=200&h=200&fit=crop&q=80`
+
+  const bannerImage =
+    'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=1200&h=500&fit=crop&q=80'
+
   const store: LingyunOrderStore = {
-    name: '喜家德虾仁水饺（北京酒仙桥店）',
+    name: '八喜冰淇淋蛋糕（北京酒仙桥店）',
+    logo: cakeImage('photo-1578985545062-69928b1d9587'),
     rating: 4.8,
     salesText: '月售 1000+',
-    deliveryText: '约 23 分钟',
-    notice: '温馨提示：请适量点餐，支持到店自提',
+    deliveryText: '约 30 分钟',
+    notice: '温馨提示：冰淇淋蛋糕请及时冷藏，支持到店自提',
   }
 
   const categories: LingyunOrderCategory[] = [
     {
-      key: 'flash',
-      text: '神抢手',
-      title: '神抢手 · 限时补贴',
+      key: 'hot',
+      text: '热销',
+      title: '热销 · 门店招牌',
       icon: 'fire',
       iconColor: '#ff8d28',
       goods: [
         {
-          key: 'flash-double',
-          name: '喜三鲜水饺双人餐',
-          price: 35,
-          originalPrice: 45,
+          key: 'hot-classic',
+          image: cakeImage('photo-1578985545062-69928b1d9587'),
+          name: '八喜经典冰淇淋蛋糕',
+          price: 168,
+          originalPrice: 198,
           salesText: '月售 600+',
-          specText: '24 只 / 双人份',
+          specText: '6 寸 / 约 1.5 磅',
           badge: '招牌',
         },
         {
-          key: 'flash-single',
-          name: '虾仁水饺单人餐',
-          price: 24.9,
-          originalPrice: 32,
+          key: 'hot-choco',
+          image: cakeImage('photo-1563729784474-d77dbb933a9e'),
+          name: '巧克力脆皮冰淇淋蛋糕',
+          price: 188,
+          originalPrice: 218,
           salesText: '月售 300+',
-          specText: '12 只 / 1 人份',
+          specText: '6 寸 / 约 1.5 磅',
         },
       ],
     },
     {
-      key: 'dumpling',
-      text: '水饺',
+      key: 'birthday',
+      text: '生日蛋糕',
       goods: [
         {
-          key: 'dumpling-three',
-          name: '喜三鲜水饺',
-          price: 35,
-          salesText: '月售 600+ · 门店销量第 2 名',
-          specText: '12 只 / 1 人份',
-          badge: '招牌',
+          key: 'birthday-strawberry',
+          image: cakeImage('photo-1565958011703-44f9829ba187'),
+          name: '草莓鲜奶生日蛋糕',
+          price: 199,
+          salesText: '月售 400+',
+          specText: '6 寸 / 2-4 人',
+          badge: '人气',
           multiSpec: true,
         },
         {
-          key: 'dumpling-shrimp',
-          name: '虾仁水饺',
-          price: 32,
-          salesText: '月售 400+',
-          specText: '12 只 / 1 人份',
-        },
-        {
-          key: 'dumpling-pork',
-          name: '猪肉白菜水饺',
-          price: 26,
+          key: 'birthday-mango',
+          image: cakeImage('photo-1464349095431-e9a21285b5f3'),
+          name: '芒果慕斯生日蛋糕',
+          price: 218,
           salesText: '月售 300+',
-          specText: '12 只 / 1 人份',
+          specText: '6 寸 / 2-4 人',
         },
         {
-          key: 'dumpling-chive',
-          name: '韭菜鸡蛋水饺',
-          price: 24,
+          key: 'birthday-blueberry',
+          image: cakeImage('photo-1535141192574-5d4897c12636'),
+          name: '蓝莓芝士生日蛋糕',
+          price: 238,
           salesText: '月售 200+',
-          specText: '12 只 / 1 人份',
+          specText: '8 寸 / 4-6 人',
         },
         {
-          key: 'dumpling-beef',
-          name: '一品牛肉水饺',
-          price: 30,
+          key: 'birthday-choco',
+          image: cakeImage('photo-1519869325930-281384150729'),
+          name: '巧克力梦想生日蛋糕',
+          price: 258,
           salesText: '月售 100+',
-          specText: '12 只 / 1 人份',
+          specText: '8 寸 / 4-6 人',
           soldOut: true,
         },
       ],
     },
     {
-      key: 'braise-mild',
-      text: '酱卤不辣',
+      key: 'icecream',
+      text: '冰淇淋蛋糕',
       goods: [
         {
-          key: 'braise-platter',
-          name: '卤肉拼盘',
-          price: 28,
+          key: 'ice-rum',
+          image: cakeImage('photo-1488477181946-6428a0291777'),
+          name: '朗姆葡萄冰淇淋蛋糕',
+          price: 178,
+          salesText: '月售 300+',
+          specText: '6 寸 / 约 1.5 磅',
+        },
+        {
+          key: 'ice-matcha',
+          image: cakeImage('photo-1571115177098-24ec42ed204d'),
+          name: '抹茶红豆冰淇淋蛋糕',
+          price: 188,
           salesText: '月售 200+',
-          specText: '冷盘',
+          specText: '6 寸 / 约 1.5 磅',
         },
         {
-          key: 'braise-beef',
-          name: '酱牛肉',
-          price: 38,
-          salesText: '月售 100+',
-          specText: '约 200g',
-        },
-        {
-          key: 'braise-egg',
-          name: '卤蛋',
-          price: 3,
-          salesText: '月售 800+',
-          specText: '1 个',
+          key: 'ice-vanilla',
+          image: cakeImage('photo-1558636508-e0db3814bd1d'),
+          name: '香草奥利奥冰淇淋蛋糕',
+          price: 168,
+          salesText: '月售 200+',
+          specText: '6 寸 / 约 1.5 磅',
         },
       ],
     },
     {
-      key: 'dish',
-      text: '菜品',
+      key: 'dessert',
+      text: '甜点',
       goods: [
         {
-          key: 'dish-cucumber',
-          name: '拍黄瓜',
-          price: 12,
+          key: 'dessert-tiramisu',
+          image: cakeImage('photo-1499636136210-6f4ee915583e'),
+          name: '提拉米苏',
+          price: 38,
           salesText: '月售 500+',
-          specText: '凉菜',
+          specText: '1 份',
         },
         {
-          key: 'dish-fungus',
-          name: '凉拌木耳',
-          price: 14,
-          salesText: '月售 200+',
-          specText: '凉菜',
-        },
-        {
-          key: 'dish-tomato',
-          name: '番茄炒蛋',
+          key: 'dessert-tart',
+          image: cakeImage('photo-1551024506-0bccd828d307'),
+          name: '芝士挞',
           price: 18,
-          salesText: '月售 100+',
-          specText: '热菜',
+          salesText: '月售 300+',
+          specText: '2 个装',
         },
         {
-          key: 'dish-rice',
-          name: '米饭',
-          price: 3,
-          salesText: '月售 1000+',
-          specText: '1 碗',
+          key: 'dessert-macaron',
+          image: cakeImage('photo-1558024920-b41e1887dc32'),
+          name: '马卡龙礼盒',
+          price: 68,
+          salesText: '月售 200+',
+          specText: '12 枚装',
         },
       ],
     },
@@ -196,101 +203,109 @@
       text: '饮品',
       goods: [
         {
-          key: 'drink-plum',
-          name: '酸梅汤',
-          price: 8,
+          key: 'drink-americano',
+          image: cakeImage('photo-1544145945-f90425340c7e'),
+          name: '冰美式',
+          price: 18,
           salesText: '月售 300+',
           specText: '冰 / 常温',
         },
         {
-          key: 'drink-cola',
-          name: '可口可乐',
-          price: 6,
+          key: 'drink-latte',
+          image: cakeImage('photo-1517701604599-bb29b565090c'),
+          name: '拿铁',
+          price: 22,
           salesText: '月售 500+',
-          specText: '330ml',
+          specText: '350ml',
         },
         {
-          key: 'drink-water',
-          name: '矿泉水',
-          price: 3,
+          key: 'drink-orange',
+          image: cakeImage('photo-1613478223719-2ab802602423'),
+          name: '鲜榨橙汁',
+          price: 26,
           salesText: '月售 200+',
-          specText: '550ml',
+          specText: '350ml',
         },
       ],
     },
     {
-      key: 'sauce',
-      text: '蘸料',
+      key: 'gift',
+      text: '冰淇淋蛋糕礼盒装',
+      title: '冰淇淋蛋糕礼盒装 · 需提前 1 天预订',
       goods: [
         {
-          key: 'sauce-garlic',
-          name: '蒜泥蘸料',
-          price: 2,
-          salesText: '月售 900+',
-          specText: '1 份',
+          key: 'gift-classic',
+          image: cakeImage('photo-1624353365286-3f8d62daad51'),
+          name: '八喜经典礼盒装',
+          price: 268,
+          priceUnit: '/盒',
+          quantityUnit: '盒',
+          multiSpec: true,
+          details: ['含 6 寸冰淇淋蛋糕 1 个', '含生日帽、蜡烛、餐具'],
         },
         {
-          key: 'sauce-chili',
-          name: '香辣蘸料',
-          price: 2,
-          salesText: '月售 700+',
-          specText: '1 份',
+          key: 'gift-party',
+          image: cakeImage('photo-1578985545062-69928b1d9587'),
+          name: '生日派对礼盒',
+          price: 328,
+          priceUnit: '/盒',
+          quantityUnit: '盒',
+          details: ['含 8 寸冰淇淋蛋糕 1 个', '含 6 份餐具、生日帽、蜡烛'],
+        },
+        {
+          key: 'gift-soldout',
+          image: cakeImage('photo-1519869325930-281384150729'),
+          name: '节日限定礼盒',
+          price: 298,
+          priceUnit: '/盒',
+          quantityUnit: '盒',
+          soldOut: true,
+          details: [
+            '含冰淇淋蛋糕、马卡龙、饮品',
+            '需提前 1 天预订，每日限量 20 盒',
+          ],
         },
       ],
     },
     {
       key: 'package',
-      text: '包装耗材与餐巾纸',
-      title: '包装耗材与餐巾纸 · 按件起订',
+      text: '配件与包装',
+      title: '配件与包装 · 按件起订',
       goods: [
         {
-          key: 'bag-8-insulated',
-          name: '8寸保温袋',
-          price: 269,
-          priceUnit: '/件',
-          quantityUnit: '件',
+          key: 'pkg-bag6',
+          image: cakeImage('photo-1551024506-0bccd828d307'),
+          name: '6寸保温袋',
+          price: 12,
+          priceUnit: '/个',
+          quantityUnit: '个',
           multiSpec: true,
-          details: ['8寸低保温袋，剩余库存：886件', '8寸高保温袋，剩余库存：884件'],
+          details: ['6寸低保温袋，剩余库存：886个', '6寸高保温袋，剩余库存：884个'],
         },
         {
-          key: 'bag-8-foil',
-          name: '8寸高铝箔袋',
-          price: 269,
-          priceUnit: '/件',
-          quantityUnit: '件',
-          soldOut: true,
-          details: [
-            '发货仓库：天通苑仓库-01',
-            '规格描述：80个/件',
-            '截单时间：2026-11-11 10:30:00',
-            '预计 2026-11-26 开始配送，2026-11-26 送达',
-          ],
+          key: 'pkg-bag8',
+          image: cakeImage('photo-1558024920-b41e1887dc32'),
+          name: '8寸保温袋',
+          price: 16,
+          priceUnit: '/个',
+          quantityUnit: '个',
+          details: ['8寸保温袋，剩余库存：520个', '含冰袋 2 个，冷链配送更稳定'],
         },
         {
-          key: 'bag-4-insulated',
-          name: '新4寸保温袋',
-          price: 520,
-          priceUnit: '/件',
-          quantityUnit: '件',
-          details: [
-            '发货仓库：天通苑仓库-01，剩余库存：4件',
-            '规格描述：200个/件',
-            '截单时间：2026-11-11 10:30:00',
-            '预计 2026-11-26 开始配送，2026-11-26 送达',
-          ],
+          key: 'pkg-candle',
+          image: cakeImage('photo-1519869325930-281384150729'),
+          name: '生日蜡烛套装',
+          price: 5,
+          quantityUnit: '套',
+          details: ['含数字蜡烛 1 套、火柴 1 盒', '下单请备注生日数字'],
         },
         {
-          key: 'bag-6-insulated',
-          name: '新6寸低保温袋',
-          price: 340,
-          priceUnit: '/件',
-          quantityUnit: '件',
-          details: [
-            '发货仓库：天通苑仓库-01',
-            '规格描述：100个/件',
-            '截单时间：2026-11-11 10:30:00',
-            '预计 2026-11-26 开始配送，2026-11-26 送达',
-          ],
+          key: 'pkg-cutlery',
+          image: cakeImage('photo-1499636136210-6f4ee915583e'),
+          name: '一次性餐具',
+          price: 2,
+          quantityUnit: '份',
+          details: ['含餐盘、叉子、纸巾', '按人数备注份数'],
         },
       ],
     },
@@ -334,8 +349,8 @@
   const specOpen = ref(false)
   const specItem = ref<LingyunOrderGoods | null>(null)
   const specActions = [
-    { key: '12', text: '12 只 · 1 人份' },
-    { key: '24', text: '24 只 · 2 人份' },
+    { key: '6', text: '6 寸 · 2-4 人' },
+    { key: '8', text: '8 寸 · 4-6 人' },
   ]
 
   function onSpecRequest(payload: LingyunOrderSpecPayload): void {
@@ -390,7 +405,32 @@
       linear-gradient(126deg, #0a84ff 0%, #5e5ce6 58%, #3634a3 100%);
   }
 
+  .order-banner__bg {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .order-banner__shade {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      90deg,
+      rgba(8, 18, 40, 0.62) 0%,
+      rgba(8, 18, 40, 0.2) 62%,
+      rgba(8, 18, 40, 0.04) 100%
+    );
+  }
+
   .order-banner__copy {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
   }

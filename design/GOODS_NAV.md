@@ -99,3 +99,51 @@
 |------|------|
 | `cart` | `{ count, total }` |
 | `checkout` | `{ count, total, minPrice, deliveryFee }` |
+
+---
+
+## 5. Cart 详情（`detail`，强制）
+
+点购物车 / 合计区域时，**整张购物车玻璃卡向上增高**，详情和购物车栏是同一张卡、同一个圆角轮廓，不是独立 Sheet / 弹窗：
+
+| 项 | 规格 |
+|----|------|
+| 结构 | 一张连续玻璃卡：详情在上、购物车栏在下，中间 0.5px 分割线；关闭时就是 62 高的玻璃胶囊，展开后胶囊向上长高 |
+| 尺寸 | 圆角 **31**（始终不变，强调是同一颗胶囊）；`lingyun-glass-surface` + 全端 blur；Light `#fff`@0.72，Dark `#1a1a1a`@0.7 |
+| 详情顶栏 | 高约 48：左上角 36 玻璃圆钮关闭（`closeempty` 20），右侧 `#detail-header` 插槽（标题 / 件数 / 清空） |
+| 详情内容 | `#detail` 插槽，位于顶栏下方，内部 `scroll-view`；默认随内容自动撑开，超过上限后内部滚动 |
+| 高度上限 | 默认 = 视口高 − `detailTopGap`（默认 120）− 底部安全区 − 8 − 购物车栏 62 − 分割线，即详情顶部至少距屏幕顶部 120 |
+| 动效 | 详情区域 `height: 0 → 目标高度`（`0.34s cubic-bezier(0.32, 0.72, 0, 1)`），整卡向上增高；购物车栏始终贴底 |
+| 关闭 | 左上角关闭钮；点卡片外的透明点击层；点购物车 / 合计区域再次切换；购物车归零自动收起；点「去结算」先收起 |
+| 结算钮 | 始终在卡片底部的购物车栏内，展开时不被点击层覆盖，随时可点 |
+| 点击层 | 卡片下方透明全屏层，只负责「点其它区域收起」，不做遮罩变暗；卡片内容与结算钮在它之上 |
+| 端 | 不 teleport：卡片留在页面内，随页面隐藏；H5 / 小程序都用同一套 fixed 定位 |
+
+```vue
+<lingyun-goods-nav variant="cart" detail :cart-count="count" :total="total">
+  <template #detail-header>
+    <view class="cart-head">已选商品 · 共 3 件 <text class="cart-clear">清空</text></view>
+  </template>
+  <template #detail>
+    <view class="cart-detail">…</view>
+  </template>
+</lingyun-goods-nav>
+```
+
+| 属性 | 说明 | 默认 |
+|------|------|------|
+| `detail` | 开启详情能力，点购物车让卡片向上增高 | false |
+| `detailOpen` | 受控展开状态；不传由组件维护 | — |
+| `detailHeight` | 详情区域固定高度 px（含顶栏）；0 按内容自动 | 0 |
+| `detailMaxHeight` | 详情区域最大高度 px；0 按视口自动 | 0 |
+| `detailTopGap` | 自动最大高度时距屏幕顶部保留 px | 120 |
+| `detailVersion` | 详情内容版本；变化时重新测量高度 | '' |
+
+| 方法 | 说明 |
+|------|------|
+| `openDetail({ height?, maxHeight?, topGap? })` | 打开详情，参数按次覆盖 |
+| `closeDetail()` / `toggleDetail()` | 收起 / 切换 |
+| `refreshDetail()` | 重新测量详情高度与最大高度 |
+
+- 详情内容由业务注入（`#detail-header` / `#detail` 插槽），组件只负责卡片轮廓、玻璃、顶栏关闭钮、测高与滚动，不内置商品行样式。
+- `lingyun-order-goods` 使用该能力展示「已选商品」：购物车固定悬浮在商品列表之上，列表和分类栏通高到页面底部，内部留出 `78 + 安全区` 的尾部让位，商品从购物车底部穿过。

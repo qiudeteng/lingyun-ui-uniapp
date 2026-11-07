@@ -36,6 +36,46 @@
 />
 ```
 
+## Cart 详情
+
+开启 `detail` 后，点购物车（或合计区域）会让**整张购物车玻璃卡向上增高**：详情和购物车栏是同一张卡，不是独立弹窗。
+
+```vue
+<lingyun-goods-nav
+  ref="goodsNav"
+  variant="cart"
+  detail
+  :cart-count="cartCount"
+  :total="total"
+  :detail-version="cartVersion"
+  @checkout="onCheckout"
+>
+  <template #detail-header>
+    <view class="cart-head">
+      <text class="cart-head__title">已选商品</text>
+      <text class="cart-head__count">共 {{ cartCount }} 件</text>
+      <text class="cart-head__clear" @click="clearCart">清空</text>
+    </view>
+  </template>
+  <template #detail>
+    <view class="cart-detail">
+      <view v-for="line in lines" :key="line.key" class="cart-detail__line">
+        {{ line.name }} × {{ line.quantity }}
+      </view>
+    </view>
+  </template>
+</lingyun-goods-nav>
+```
+
+- 详情与购物车栏同一张玻璃卡：详情在上、购物车栏在下，中间一条分割线；关闭时是 62 高的胶囊，展开后胶囊向上长高，购物车栏始终贴底。
+- 详情顶栏左上角是 36px 玻璃关闭钮；右侧 `#detail-header` 插槽放标题 / 件数 / 清空。
+- `#detail` 插槽是内容区，默认随内容自动撑开，超过上限后内部滚动。
+- 点击卡片外任何区域（透明点击层）收起；点购物车 / 合计再次切换；购物车归零自动收起；点「去结算」先收起。
+- 购物车栏在卡片底部，展开时不被点击层覆盖，结算钮随时可点。
+- 默认上限 = 视口高 − `detailTopGap`（默认 120）− 底部安全区 − 8 − 购物车栏 62 − 分割线，即详情顶部至少距屏幕顶部 `detailTopGap`。
+- 可用 `detailHeight` 指定详情区域（含顶栏）的固定高度，或 `openDetail({ height, maxHeight, topGap })` 按次覆盖。
+- 内容行数 / 高度变化时传 `detailVersion` 触发重测，或调用 `refreshDetail()`。组件方法：`openDetail(options?)` / `closeDetail()` / `toggleDetail()` / `refreshDetail()`。
+
 ## 属性
 
 | 属性 | 说明 | 默认值 |
@@ -55,6 +95,12 @@
 | `checkout-text` | cart：可结算时的按钮文案 | 去结算 |
 | `price-decimals` | cart：价格小数位；`-1` 去掉多余的 0 | -1 |
 | `accent-color` | cart：购物车圆钮 / 结算钮主色 | 系统蓝 |
+| `detail` | cart：开启购物车详情，点购物车让卡片向上增高 | false |
+| `detail-open` | 受控展开状态（`v-model:detail-open`）；不传由组件内部维护 | — |
+| `detail-height` | 详情区域固定高度 px（含顶栏）；`0` 按内容自动 | 0 |
+| `detail-max-height` | 详情区域最大高度 px；`0` 按视口与 `detail-top-gap` 自动 | 0 |
+| `detail-top-gap` | 自动最大高度时距屏幕顶部保留 px | 120 |
+| `detail-version` | 详情内容版本；变化时重新测量高度 | '' |
 
 ## 事件
 
@@ -64,3 +110,21 @@
 | `button-click` | default：点右侧按钮，`{ index, content }` |
 | `cart` | cart：点购物车圆钮或合计区域，`{ count, total }` |
 | `checkout` | cart：点结算，`{ count, total, minPrice, deliveryFee }` |
+| `update:detail-open` | cart：详情展开 / 收起 |
+| `detail-open` / `detail-close` | cart：详情展开 / 收起完成 |
+
+## 插槽
+
+| 插槽 | 说明 |
+| --- | --- |
+| `detail-header` | cart：详情顶栏右侧内容（关闭钮已在组件左上角），放标题 / 件数 / 清空 |
+| `detail` | cart：购物车详情内容；高度随内容自动撑开，超出上限后内部滚动 |
+
+## 方法
+
+| 方法 | 说明 |
+| --- | --- |
+| `openDetail({ height?, maxHeight?, topGap? })` | 打开详情；参数按次覆盖对应属性 |
+| `closeDetail()` | 收起详情 |
+| `toggleDetail()` | 展开 / 收起 |
+| `refreshDetail()` | 重新测量底栏位置与最大高度（页面布局变化后调用） |

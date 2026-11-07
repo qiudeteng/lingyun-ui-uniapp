@@ -1,3 +1,9 @@
+## 1.0.48（2026-11-07）
+- `lingyun-goods-nav` 的 cart 变体新增购物车详情 `detail`：点购物车 / 合计区域，整张购物车玻璃卡向上增高；详情与购物车栏是同一张卡、同一圆角轮廓，关闭时即 62 高胶囊，不再使用独立弹窗，购物车栏始终贴底。
+- 详情左上角新增 36px 玻璃关闭钮；右侧 `#detail-header` 插槽放标题 / 件数 / 清空，`#detail` 插槽放内容。点卡片外的透明点击层收起，结算钮始终在点击层之上、随时可点；购物车归零自动收起，点「去结算」先收起。
+- 详情高度默认按顶栏 + 内容自动测量，超过 `detailMaxHeight`（默认按视口与 `detailTopGap` 计算）后内部滚动；`detailTopGap` 默认 120，详情顶部至少距屏幕顶部 120。
+- 新增 `detailVersion`：内容行数 / 高度变化时重新测量；新增 `detailOpen` 受控状态、`detailHeight`（含顶栏）、`openDetail({ height, maxHeight, topGap })` / `closeDetail` / `toggleDetail` / `refreshDetail`，以及 `update:detailOpen` / `detail-open` / `detail-close` 事件。
+- 详情卡片使用 `lingyun-glass-surface` + 全端 blur（Light `#fff`@0.72 / Dark `#1a1a1a`@0.7），不再 teleport，随页面一起隐藏；demo 的 Goods Nav 同步改为一体卡并增加指定高度示例。
 ## 1.0.47（2026-11-07）
 - 新增日期显示组件 `lingyun-date-text`：自动显示今天 / 昨天 / 明天，同年 `MM-DD`、跨年 `YYYY-MM-DD`；`precision` 支持到天 / 时 / 分 / 秒，字阶 / 颜色 / 加粗复用 `lingyun-text`，并支持自定义相对文案与 `fallback`。
 - 新增并导出 `formatLingyunDate` / `parseLingyunDate` 日期格式化与解析函数；纯日期按本地零点解析，避免 UTC 跨天。
