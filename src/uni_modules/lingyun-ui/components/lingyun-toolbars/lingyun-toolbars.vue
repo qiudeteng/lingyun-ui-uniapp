@@ -1384,6 +1384,8 @@ $ly-toolbar-gap: 8px;
   }
 
   &--prominent {
+    /* 与右侧按钮组、自定义 trailing 之间保持和组间距一致的间距 */
+    margin-left: var(--ly-toolbar-gap, #{$ly-toolbar-gap});
     background-color: var(--lingyun-link, #{$lingyun-system-blue});
     border: none;
     box-shadow: var(--lingyun-glass-highlight, #{$lingyun-glass-highlight}),
