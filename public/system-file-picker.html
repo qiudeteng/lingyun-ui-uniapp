@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>选择系统文件</title>
+    <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text',
+          'PingFang SC', sans-serif;
+        background: #f2f2f7;
+        color: #000;
+      }
+      .card {
+        width: 100%;
+        max-width: 420px;
+        padding: 28px 24px;
+        border-radius: 26px;
+        background: #fff;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 22px;
+        line-height: 28px;
+      }
+      p {
+        margin: 0 0 20px;
+        font-size: 14px;
+        line-height: 20px;
+        color: rgba(60, 60, 67, 0.6);
+      }
+      .pick {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 52px;
+        overflow: hidden;
+        border-radius: 26px;
+        background: #0088ff;
+        color: #fff;
+        font-size: 17px;
+        font-weight: 600;
+      }
+      .pick input {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+      }
+      .hint {
+        margin-top: 16px;
+        font-size: 13px;
+        line-height: 18px;
+        color: rgba(60, 60, 67, 0.6);
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #000;
+          color: #fff;
+        }
+        .card {
+          background: #1c1c1e;
+        }
+        p,
+        .hint {
+          color: rgba(235, 235, 245, 0.6);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>选择系统文件</h1>
+      <p>这是 H5 页面。点击下面的按钮会打开系统文件选择器。</p>
+      <label class="pick">
+        选择文件
+        <input id="file" type="file" />
+      </label>
+      <div id="hint" class="hint">
+        支持任意文件，单个不超过 2MB。选择后会返回小程序。
+      </div>
+    </div>
+    <script>
+      const input = document.getElementById('file')
+      const hint = document.getElementById('hint')
+
+      input.addEventListener('change', function () {
+        const file = input.files && input.files[0]
+        if (!file) return
+        if (file.size > 2 * 1024 * 1024) {
+          hint.textContent = '文件超过 2MB，请换一个小文件。'
+          input.value = ''
+          return
+        }
+        hint.textContent = '正在返回小程序…'
+        const reader = new FileReader()
+        reader.onload = function () {
+          const payload = {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            dataUrl: reader.result,
+          }
+          if (window.wx && wx.miniProgram) {
+            wx.miniProgram.postMessage({ data: payload })
+            setTimeout(function () {
+              wx.miniProgram.navigateBack({ delta: 1 })
+            }, 120)
+          } else {
+            hint.textContent = '当前不在微信 web-view 中，无法返回小程序。'
+          }
+        }
+        reader.onerror = function () {
+          hint.textContent = '读取文件失败。'
+        }
+        reader.readAsDataURL(file)
+      })
+    </script>
+  </body>
+</html>

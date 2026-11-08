@@ -371,7 +371,20 @@
               </view>
               <text class="lingyun-order-goods-variant__combo-hint">{{ footerHint }}</text>
             </view>
+            <lingyun-stepper
+              v-if="comboQuantity > 0"
+              class="lingyun-order-goods-variant__combo-stepper"
+              :value="comboQuantity"
+              :min="0"
+              :max="lineMax"
+              :step="step"
+              :right-text="quantityUnitText"
+              size="large"
+              show-value
+              @change="onComboQuantityChange"
+            />
             <view
+              v-else
               class="lingyun-order-goods-variant__combo-add"
               :class="{ 'lingyun-order-goods-variant__combo-add--disabled': !canAdd }"
               hover-class="lingyun-order-goods-variant__combo-add--hover"
@@ -447,8 +460,6 @@ export default defineComponent({
     return {
       selectedSpecKey: '',
       selection: {} as Record<string, Record<string, number>>,
-      /** 同一商品再次打开时保留上次选择，方便直接调整已加购的组合 */
-      lastItemKey: '',
     }
   },
   computed: {
@@ -605,34 +616,8 @@ export default defineComponent({
   },
   methods: {
     resetSelection(): void {
-      const currentKey = this.item ? this.item.key : ''
-      if (currentKey && currentKey === this.lastItemKey) {
-        /* 同一商品再次打开：沿用上次选择，清掉已不存在的规格 / 选项 */
-        if (this.specs.length && !this.selectedSpec) {
-          const first = this.specs.find((spec) => !this.isSpecSoldOut(spec)) || this.specs[0]
-          this.selectedSpecKey = first ? first.key : ''
-        }
-        const next: Record<string, Record<string, number>> = {}
-        this.groups.forEach((group) => {
-          const valid = new Set((group.options || []).map((option) => option.key))
-          const current = this.normalizeSelectionValue(this.selection[group.key])
-          let remaining = groupMax(group)
-          const selected: [string, number][] = []
-          Object.entries(current).forEach(([key, quantity]) => {
-            if (!valid.has(key) || quantity <= 0 || remaining <= 0) return
-            const nextQuantity = Math.min(quantity, remaining)
-            selected.push([key, nextQuantity])
-            remaining -= nextQuantity
-          })
-          if (selected.length) {
-            next[group.key] = Object.fromEntries(selected)
-          }
-        })
-        this.selection = this.ensureRequiredDefaults(next)
-        return
-      }
-      this.lastItemKey = currentKey
-      const first = this.specs.find((spec) => !this.isSpecSoldOut(spec)) || this.specs[0]
+      const first =
+        this.specs.find((spec) => !this.isSpecSoldOut(spec)) || this.specs[0]
       this.selectedSpecKey = first ? first.key : ''
       this.selection = this.ensureRequiredDefaults({})
     },
@@ -655,25 +640,6 @@ export default defineComponent({
         if (option) next[group.key] = { [option.key]: 1 }
       })
       return next
-    },
-    /** 兼容旧结构 / HMR 状态：数组按每项 1 处理 */
-    normalizeSelectionValue(
-      value: unknown,
-    ): Record<string, number> {
-      if (Array.isArray(value)) {
-        const result: Record<string, number> = {}
-        value.forEach((key) => {
-          if (key != null) result[String(key)] = 1
-        })
-        return result
-      }
-      if (!value || typeof value !== 'object') return {}
-      const result: Record<string, number> = {}
-      Object.keys(value as Record<string, unknown>).forEach((key) => {
-        const quantity = Math.floor(Number((value as Record<string, unknown>)[key]))
-        if (Number.isFinite(quantity) && quantity > 0) result[key] = quantity
-      })
-      return result
     },
     quantityOf(key: string): number {
       if (!key) return 0
@@ -914,6 +880,14 @@ export default defineComponent({
         return
       }
       const next = Math.min(this.lineMax, this.comboQuantity + this.step)
+      this.emitQuantity(this.comboKey, next, this.selectedSpec, this.selectedAttributes)
+      this.closeSheet()
+    },
+    onComboQuantityChange(value: unknown): void {
+      if (!this.item) return
+      const raw = Math.floor(Number(value))
+      if (!Number.isFinite(raw)) return
+      const next = Math.max(0, Math.min(this.lineMax, raw))
       this.emitQuantity(this.comboKey, next, this.selectedSpec, this.selectedAttributes)
     },
     closeSheet(): void {
@@ -1435,6 +1409,10 @@ export default defineComponent({
   align-items: center;
   justify-content: center;
   background-color: var(--ly-og-accent, #{$lingyun-system-blue});
+}
+
+.lingyun-order-goods-variant__combo-stepper {
+  flex: 0 0 auto;
 }
 
 .lingyun-order-goods-variant__combo-add--disabled {

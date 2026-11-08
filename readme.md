@@ -155,6 +155,13 @@ src/uni_modules/lingyun-ui/
 	:upload-fn="uploadFile"
 />
 
+<lingyun-file-upload
+	v-model="uploadFiles"
+	:max-count="5"
+	accept="pdf,docx,xlsx,zip"
+	:upload-fn="uploadFile"
+/>
+
 <lingyun-list header="Header" header-type="extraProminent" footer="Footer">
   <lingyun-list-item title="Title" note="Subtitle" />
   <lingyun-list-item title="Title" detail="Detail" accessory="disclosure" />
@@ -178,6 +185,13 @@ src/uni_modules/lingyun-ui/
 	:items="[
 		{ key: 'home', text: 'Home', icon: '⌂' },
 		{ key: 'search', role: 'search' }
+	]" />
+<lingyun-tabs
+	v-model="tab"
+	:items="[
+		{ key: 'all', text: 'All' },
+		{ key: 'pending', text: 'Pending', badge: 3 },
+		{ key: 'done', text: 'Done' }
 	]" />
 <lingyun-search-bar v-model="query" placeholder="Search" @confirm="onSearch" />
 <lingyun-segmented-control v-model="current" :items="['Day', 'Week', 'Month', 'Year']" />

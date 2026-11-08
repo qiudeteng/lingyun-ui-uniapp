@@ -50,7 +50,8 @@ async function uploadFile(file: { tempFilePath: string; name: string; size: numb
 | `max-size` | 单张大小上限，单位 MB；`0` 不限制 | `0` |
 | `disabled` | 禁用选图、删除、重试 | `false` |
 | `readonly` | 只读；仍可预览 | `false` |
-| `columns` | 缩略图列数，1–6 | `3` |
+| `columns` | 缩略图列数，1–6；`tileSize=0` 时生效 | `3` |
+| `tile-size` | 缩略图/加号固定边长（px）；`0` 时按 `columns` 自适应 | `96` |
 | `radius` | 缩略图圆角：`none/sm/md/lg/xl/2xl` 或像素 | `md` |
 | `preview` | 点击已上传图片调用 `uni.previewImage` | `true` |
 | `upload-url` | 内置 `uni.uploadFile` 地址 | — |

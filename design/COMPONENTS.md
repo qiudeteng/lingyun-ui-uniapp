@@ -2,7 +2,8 @@
 
 > 对照 Sketch iOS UI Kit + 本仓库已落地组件整理。  
 > 状态标记：`✅ 已完成` · `⬜ 待做` · `⚠️ 已知债` · `➖ 可跳过`  
-> 实现路径：`src/uni_modules/lingyun-ui/components/`；规范见 [`UI_SPEC.md`](./UI_SPEC.md)。
+> 实现路径：`src/uni_modules/lingyun-ui/components/`；规范见 [`UI_SPEC.md`](./UI_SPEC.md)。  
+> 组件优先级与批次计划见 [`ROADMAP.md`](./ROADMAP.md)。
 
 ---
 
@@ -21,6 +22,7 @@
 | ✅ | `lingyun-action-sheet` | 底部操作列表 + Cancel | [`ACTIONSHEETS.md`](./ACTIONSHEETS.md) |
 | ✅ | `lingyun-activity-view` | 分享面板 · 半高 / 全高 | [`ACTIVITY_VIEWS.md`](./ACTIVITY_VIEWS.md) |
 | ✅ | `lingyun-tabbars` | 底部标签栏 | [`TABBARS.md`](./TABBARS.md) |
+| ✅ | `lingyun-tabs` | 顶部可滚动 Tabs · underline / pill / sticky | [`TABS.md`](./TABS.md) |
 | ✅ | `lingyun-search-bar` | 搜索栏 | [`SEARCHBARS.md`](./SEARCHBARS.md) |
 | ✅ | `lingyun-list` / `lingyun-list-item` | 分组列表；附属含 toggle / stepper / slider | [`LISTS.md`](./LISTS.md) |
 | ✅ | `lingyun-table` | 分组表格；固定列、吸顶表头、排序、筛选、分页、多选、分组收起 | [`TABLES.md`](./TABLES.md) |
@@ -44,6 +46,7 @@
 | ✅ | `lingyun-amount-text` | 金额显示 · 万 / 百万 / 千万 / 亿 / 百亿 / 千亿 / 万亿 · 小数位与样式 | [`AMOUNT_TEXT.md`](./AMOUNT_TEXT.md) |
 | ✅ | `lingyun-image` | 图片包装 · 懒加载 / 占位 / 圆角 | [`IMAGES.md`](./IMAGES.md) |
 | ✅ | `lingyun-image-upload` | 图片上传 · 直接上传 / 90° 旋转 / 固定比例或自由裁剪 | [`IMAGE_UPLOADS.md`](./IMAGE_UPLOADS.md) |
+| ✅ | `lingyun-file-upload` | 文件上传 · 列表 / 类型色 / 进度 / 重试 / 预览下载 | [`FILE_UPLOADS.md`](./FILE_UPLOADS.md) |
 | ✅ | `lingyun-avatar` | 头像 | [`AVATARS.md`](./AVATARS.md) |
 | ✅ | `lingyun-page-control` | 轮播指示点 | [`PAGE_CONTROLS.md`](./PAGE_CONTROLS.md) |
 | ✅ | `lingyun-skeleton` | 骨架屏 | [`SKELETONS.md`](./SKELETONS.md) |
@@ -148,6 +151,8 @@
 | 2026-10-09 | 凌云UI 1.0.12：`lingyun-app-page` 可用 `showToolbar` 隐藏头部顶栏 |
 | 2026-10-09 | 凌云UI 1.0.11：分组卡片 `headerLine` 可在标题和内容之间画横线 |
 | 2026-10-09 | 凌云UI 1.0.10：宫格不传圆角时跟图片默认 `2xl`（26px） |
+| 2026-11-08 | 新增 `lingyun-tabs`（顶部可滚动 Tabs · underline / pill / sticky）；专章 `TABS.md` |
+| 2026-11-08 | 新增 `lingyun-file-upload`（列表行 · 类型色 · 进度 · 重试 · 预览下载）；专章 `FILE_UPLOADS.md` |
 | 2026-11-08 | 新增 `lingyun-image-upload`（直接上传 / 编辑后上传 · 90° 旋转 · 固定比例 / 自由裁剪）；专章 `IMAGE_UPLOADS.md` |
 | 2026-10-09 | 凌云UI 1.0.9：分组卡片着色为系统色实底；卡片与图片默认圆角 `2xl`（26px）；宫格图片图标可设 `shape` / `radius` |
 | 2026-10-09 | `lingyun-grid` 1.0.8：`iconSize` 按任意像素控制图标。专章 `GRID.md` |

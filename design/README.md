@@ -13,6 +13,7 @@
 - **按钮专章** → **[`BUTTONS.md`](./BUTTONS.md)**（Sketch iOS 27 UI Kit Buttons）
 - **图标专章** → **[`ICONS.md`](./ICONS.md)**（`lingyun-icon` 字体图标）
 - **Tab Bars 专章** → **[`TABBARS.md`](./TABBARS.md)**（Sketch iOS 27 UI Kit Tab Bars）
+- **Tabs 专章** → **[`TABS.md`](./TABS.md)**（顶部可滚动 Tabs · underline / pill / sticky）
 - **Search Bars 专章** → **[`SEARCHBARS.md`](./SEARCHBARS.md)**（Sketch Search Selected - Placeholder）
 - **Lists 专章** → **[`LISTS.md`](./LISTS.md)**（Sketch Lists · Grouped）
 - **Tables 专章** → **[`TABLES.md`](./TABLES.md)**（分组卡片表格）
@@ -31,6 +32,7 @@
 - **Text 专章** → **[`TEXTS.md`](./TEXTS.md)**（HIG Text Styles · Labels）
 - **Image 专章** → **[`IMAGES.md`](./IMAGES.md)**（懒加载 · 占位 · 圆角 · mode）
 - **Image Upload 专章** → **[`IMAGE_UPLOADS.md`](./IMAGE_UPLOADS.md)**（选图 · 90° 旋转 · 固定比例 / 自由裁剪 · 上传）
+- **File Upload 专章** → **[`FILE_UPLOADS.md`](./FILE_UPLOADS.md)**（文件列表 · 类型色 · 进度 · 预览/下载）
 - **Charts 专章** → **[`CHARTS.md`](./CHARTS.md)**（`lingyun-ui-charts` · System Accents 系列色）
 - **Goods Nav 专章** → **[`GOODS_NAV.md`](./GOODS_NAV.md)**（商品底栏 · 对齐 uni-goods-nav）
 - **Grid 专章** → **[`GRID.md`](./GRID.md)**（宫格 · 对齐 uni-grid）
@@ -79,6 +81,7 @@ design/
 ├── BUTTONS.md          # 苹果官方 Buttons（Sketch）专章
 ├── ICONS.md            # lingyun-icon 图标字体专章
 ├── TABBARS.md          # 苹果官方 Tab Bars（Sketch）专章
+├── TABS.md             # 顶部可滚动 Tabs 专章
 ├── SEARCHBARS.md       # 底部玻璃搜索条（Sketch Search Selected）专章
 ├── LISTS.md            # 分组列表（Sketch Lists · Grouped）专章
 ├── ALERTS.md           # 弹窗（Sketch Alerts/Light）专章
@@ -109,6 +112,7 @@ design/
 ├── TEXTS.md            # 语义文本（HIG Text Styles）专章
 ├── IMAGES.md           # 图片包装（懒加载 / 圆角 / mode）专章
 ├── IMAGE_UPLOADS.md    # 图片上传（选图 / 旋转 / 裁剪 / 上传）专章
+├── FILE_UPLOADS.md     # 文件上传（列表 / 进度 / 预览下载）专章
 ├── CHARTS.md           # 图表（lingyun-ui-charts）专章
 ├── GOODS_NAV.md        # 商品底栏（lingyun-goods-nav）专章
 ├── GRID.md             # 宫格（lingyun-grid）专章

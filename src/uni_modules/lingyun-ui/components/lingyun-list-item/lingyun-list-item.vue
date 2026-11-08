@@ -10,7 +10,7 @@
     <!-- 真机/小程序不用 :last-child::after：用顶部分割线（非首行），对齐 uni-list -->
     <!-- 滑动藏线用 class，勿 v-if 反复挂卸载（iOS 易残留错线） -->
     <view
-      v-if="!isFirstChild"
+      v-if="!isFirstChild && !hideDivider"
       class="lingyun-list-item__divider"
       :class="[dividerLeadingClass, { 'lingyun-list-item__divider--hidden': dividerHiddenBySwipe }]"
     />
@@ -132,6 +132,7 @@ type SwitchChangeEvent = { detail?: { value?: unknown } }
  * @property {String} role = [default|destructive]
  * @property {Boolean} clickable
  * @property {Boolean} disabled
+ * @property {Boolean} hideDivider 隐藏顶部分割线（首行 / 添加行）
  * @property {Boolean} switchChecked
  * @property {Number} stepperValue / stepperMin / stepperMax / stepperStep
  * @property {Number} sliderValue / sliderMin / sliderMax / sliderStep
@@ -161,6 +162,7 @@ export default defineComponent({
     role: { type: String, default: 'default' },
     clickable: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
+    hideDivider: { type: Boolean, default: false },
     switchChecked: { type: Boolean, default: false },
     stepperValue: { type: Number, default: 0 },
     stepperMin: { type: Number, default: 0 },

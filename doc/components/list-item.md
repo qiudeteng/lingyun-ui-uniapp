@@ -22,6 +22,7 @@
 | `accessory` | `disclosure` 箭头、`toggle` 开关、`stepper`、`slider` | — |
 | `clickable` | 整行可点 | — |
 | `disabled` | 禁用 | false |
+| `hideDivider` | 隐藏顶部分割线（首行 / 添加行） | false |
 | `switchChecked` | 开关值，配 `accessory="toggle"` | — |
 | `stepperValue / stepperMin / stepperMax` | 步进器 | — |
 | `sliderValue` | 滑条值，配 `accessory="slider"` | — |

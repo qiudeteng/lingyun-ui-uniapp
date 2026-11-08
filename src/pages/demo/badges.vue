@@ -25,6 +25,16 @@
         </view>
       </lingyun-section>
 
+      <lingyun-section title="Small · 18px">
+        <view class="lingyun-section-row badge-row">
+          <lingyun-badge size="small" text="1" />
+          <lingyun-badge size="small" color="green" text="12" />
+          <lingyun-badge size="small" color="orange" :text="120" :max="99" />
+          <lingyun-badge size="small" color="gray" text="99" />
+          <lingyun-badge size="small" dot />
+        </view>
+      </lingyun-section>
+
       <lingyun-section title="Dot">
         <view class="lingyun-section-row badge-row">
           <lingyun-badge dot />

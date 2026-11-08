@@ -51,6 +51,11 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Tab Bars' }
 	},
 	{
+		path: '/pages/demo/tabs',
+		name: 'pagesDemoTabs',
+		meta: { title: 'Tabs' }
+	},
+	{
 		path: '/pages/demo/search-bar',
 		name: 'pagesDemoSearchBar',
 		meta: { title: 'Search Bar' }
@@ -224,6 +229,21 @@ export const routes: RouteConfig[] = [
 		path: '/pages/demo/image-upload',
 		name: 'pagesDemoImageUpload',
 		meta: { title: 'Image Upload' }
+	},
+	{
+		path: '/pages/demo/file-upload',
+		name: 'pagesDemoFileUpload',
+		meta: { title: 'File Upload' }
+	},
+	{
+		path: '/pages/demo/file-upload-system',
+		name: 'pagesDemoFileUploadSystem',
+		meta: { title: 'System File' }
+	},
+	{
+		path: '/pages/demo/file-picker-webview',
+		name: 'pagesDemoFilePickerWebview',
+		meta: { title: '选择系统文件' }
 	},
 	{
 		path: '/pages/demo/avatars',

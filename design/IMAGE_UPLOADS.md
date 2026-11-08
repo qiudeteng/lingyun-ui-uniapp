@@ -32,9 +32,9 @@
 
 | 项 | 规格 |
 |----|------|
-| 列数 | `columns`，默认 3，范围 1–6 |
+| 列数 | `tileSize > 0` 时固定边长；`tileSize=0` 时按 `columns` 自适应（默认 `tileSize=96`） |
 | 间距 | 8px |
-| 单格 | 1:1（padding-bottom 100%） |
+| 单格 | 固定 `tileSize` 正方形（默认 96px，padding-bottom 100%） |
 | 圆角 | `radius`，默认 `md`（8px） |
 | 删除钮 | 右上角 22px 玻璃圆钮，`close` 图标 12 |
 | 加号块 | 虚线边框 + Fill Quaternary 底；`plusempty` 图标 26；多张时显示 `n/max` |

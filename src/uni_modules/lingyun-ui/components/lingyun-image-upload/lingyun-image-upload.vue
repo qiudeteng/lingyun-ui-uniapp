@@ -133,9 +133,9 @@ import { parseCropAspect } from './crop'
 import {
   isAbortError,
   uploadWithUni,
-  type LingyunImageUploadFn,
-  type LingyunImageUploadTask,
-} from './upload'
+  type LingyunUploadFn,
+  type LingyunUploadTask,
+} from '../../utils/upload'
 
 type UploadStatus = 'queued' | 'uploading' | 'success' | 'error'
 
@@ -218,6 +218,8 @@ export default defineComponent({
     disabled: { type: Boolean, default: false },
     readonly: { type: Boolean, default: false },
     columns: { type: Number, default: 3 },
+    /** 缩略图/加号固定边长（px）；0 时按 columns 自适应 */
+    tileSize: { type: Number, default: 96 },
     radius: { type: [String, Number] as PropType<string | number>, default: 'md' },
     preview: { type: Boolean, default: true },
     uploadUrl: { type: String, default: '' },
@@ -231,7 +233,7 @@ export default defineComponent({
       default: () => ({}),
     },
     uploadFn: {
-      type: Function as unknown as PropType<LingyunImageUploadFn | null>,
+      type: Function as unknown as PropType<LingyunUploadFn | null>,
       default: null,
     },
     parseResponse: {
@@ -258,7 +260,7 @@ export default defineComponent({
   },
   data(): {
     items: UploadItem[]
-    activeTask: LingyunImageUploadTask | null
+    activeTask: LingyunUploadTask | null
     activeItemId: number
     pumping: boolean
     choosing: boolean
@@ -321,6 +323,8 @@ export default defineComponent({
       return !this.disabled && !this.readonly && this.remaining > 0
     },
     cellStyle(): Record<string, string> {
+      const size = Number(this.tileSize) || 0
+      if (size > 0) return { width: `${size}px` }
       const gap = 8
       return {
         width: `calc((100% - ${gap * (this.gridColumns - 1)}px) / ${this.gridColumns})`,
@@ -549,6 +553,7 @@ export default defineComponent({
             header: this.uploadHeader,
             formData: this.uploadFormData,
             parseResponse: this.parseResponse || undefined,
+            missingUrlMessage: '上传响应缺少图片地址',
             onProgress: (progress) => {
               item.progress = Math.max(0, Math.min(100, Math.round(progress)))
             },

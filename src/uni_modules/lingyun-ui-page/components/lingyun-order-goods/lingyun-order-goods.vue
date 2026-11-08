@@ -184,13 +184,13 @@
                 v-if="hasCategoryBadge(category) && categoryQuantity(category) <= 0"
                 class="lingyun-order-goods__rail-badge"
               >
-                <lingyun-badge :text="category.badge" color="orange" />
+                <lingyun-badge :text="category.badge" color="orange" size="small" />
               </view>
               <view
                 v-if="categoryQuantity(category) > 0"
                 class="lingyun-order-goods__rail-cart-badge"
               >
-                <lingyun-badge :text="categoryQuantity(category)" :max="99" />
+                <lingyun-badge :text="categoryQuantity(category)" :max="99" size="small" />
               </view>
             </view>
             <view class="lingyun-order-goods__rail-pad" :style="cartPadStyle" />
@@ -259,7 +259,13 @@
                 <view class="lingyun-order-goods__goods-main">
                   <view class="lingyun-order-goods__name-row">
                     <text class="lingyun-order-goods__name">{{ item.name }}</text>
-                    <text v-if="item.badge" class="lingyun-order-goods__tag">{{ item.badge }}</text>
+                    <lingyun-badge
+                      v-if="item.badge"
+                      class="lingyun-order-goods__tag"
+                      size="small"
+                      color="orange"
+                      :text="item.badge"
+                    />
                   </view>
                   <text v-if="metaText(item)" class="lingyun-order-goods__meta">{{ metaText(item) }}</text>
                   <view
@@ -571,10 +577,13 @@
                 <text class="lingyun-order-goods__goods-detail-name">
                   {{ goodsDetailItem.name }}
                 </text>
-                <text
+                <lingyun-badge
                   v-if="goodsDetailItem.badge"
                   class="lingyun-order-goods__goods-detail-badge"
-                >{{ goodsDetailItem.badge }}</text>
+                  size="small"
+                  color="orange"
+                  :text="goodsDetailItem.badge"
+                />
               </view>
             </view>
           </view>
@@ -2443,14 +2452,7 @@ export default defineComponent({
 .lingyun-order-goods__tag {
   flex-shrink: 0;
   margin-left: 6px;
-  padding: 1px 4px;
-  box-sizing: border-box;
-  border: 0.5px solid var(--lingyun-system-orange, #{$lingyun-system-orange});
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 500;
-  line-height: 14px;
-  color: var(--lingyun-system-orange, #{$lingyun-system-orange});
+  margin-top: 1px;
 }
 
 .lingyun-order-goods__meta {
@@ -3043,14 +3045,6 @@ export default defineComponent({
 
 .lingyun-order-goods__goods-detail-badge {
   flex-shrink: 0;
-  padding: 1px 5px;
-  box-sizing: border-box;
-  border: 0.5px solid var(--lingyun-system-orange, #{$lingyun-system-orange});
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 500;
-  line-height: 14px;
-  color: var(--lingyun-system-orange, #{$lingyun-system-orange});
 }
 
 .lingyun-order-goods__goods-detail-add {

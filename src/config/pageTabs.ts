@@ -77,6 +77,7 @@ const COMPONENT_CHILDREN: LingyunPageTabChild[] = [
     navChild('/pages/demo/responsive', '响应式'),
     navChild('/pages/demo/toolbars', '顶栏'),
     navChild('/pages/demo/tabbars', '底栏'),
+    navChild('/pages/demo/tabs', '顶部 Tabs'),
     navChild('/pages/demo/search-bar', '搜索栏'),
     navChild('/pages/demo/sidebars', '侧栏浮层'),
   ]),
@@ -96,6 +97,8 @@ const COMPONENT_CHILDREN: LingyunPageTabChild[] = [
   group('components-form', '表单', [
     navChild('/pages/demo/text-fields', '输入框'),
     navChild('/pages/demo/image-upload', '图片上传'),
+    navChild('/pages/demo/file-upload', '文件上传'),
+    navChild('/pages/demo/file-upload-system', '系统文件'),
     navChild('/pages/demo/forms', '表单'),
     navChild('/pages/demo/switches', '开关与步进器'),
     navChild('/pages/demo/checks', '复选框与单选'),

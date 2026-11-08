@@ -23,6 +23,7 @@ import { defineComponent, type PropType } from 'vue'
  * @property {String|Number} text 角标文案 / 数字
  * @property {Number} max 数字封顶，超出显示 `{max}+`（默认 99）
  * @property {Boolean} dot 仅显示小圆点（无文案）
+ * @property {String} size = [small|medium] 小号 / 默认
  * @event {Function} click
  */
 export default defineComponent({
@@ -50,6 +51,10 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+    size: {
+      type: String,
+      default: 'medium',
+    },
   },
   computed: {
     resolvedColor() {
@@ -71,6 +76,12 @@ export default defineComponent({
     },
     isDot() {
       return this.dot || this.text === 'dot'
+    },
+    resolvedSize() {
+      return String(this.size || '').toLowerCase() === 'small' ||
+        String(this.size || '').toLowerCase() === 'sm'
+        ? 'small'
+        : 'medium'
     },
     displayText() {
       if (this.isDot) return ''
@@ -104,6 +115,7 @@ export default defineComponent({
     rootClass() {
       return [
         `lingyun-badge--${this.resolvedColor}`,
+        this.resolvedSize === 'small' ? 'lingyun-badge--small' : '',
         this.isDot ? 'lingyun-badge--dot' : '',
         !this.isDot && this.displayText.length <= 1 ? 'lingyun-badge--single' : '',
       ]
@@ -159,6 +171,31 @@ export default defineComponent({
     min-width: 10px;
     height: 10px;
     padding: 0;
+  }
+
+  /* 紧凑档：Tab / 列表等空间受限场景；默认仍为 Sketch 24 */
+  &--small {
+    min-width: 18px;
+    height: 18px;
+    padding: 1px 5px;
+
+    .lingyun-badge__text {
+      font-size: 11px;
+      line-height: 14px;
+    }
+
+    &.lingyun-badge--single {
+      min-width: 18px;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    &.lingyun-badge--dot {
+      width: 8px;
+      min-width: 8px;
+      height: 8px;
+      padding: 0;
+    }
   }
 
   &--red {

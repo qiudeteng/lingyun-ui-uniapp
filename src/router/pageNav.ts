@@ -47,6 +47,8 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
       { title: 'Text', url: '/pages/demo/texts', note: '文本 · 字阶 / 颜色', icon: 'font' },
       { title: 'Image', url: '/pages/demo/images', note: '图片 · 懒加载 / 圆角', icon: 'image' },
       { title: 'Image Upload', url: '/pages/demo/image-upload', note: '图片上传 · 选图 / 旋转裁剪 / 上传', icon: 'images' },
+      { title: 'File Upload', url: '/pages/demo/file-upload', note: '文件上传 · 列表 / 进度 / 预览', icon: 'paperclip' },
+      { title: 'System File', url: '/pages/demo/file-upload-system', note: '系统文件 · web-view + H5', icon: 'folder-add' },
       { title: 'Avatars', url: '/pages/demo/avatars', note: '头像', icon: 'person' },
       { title: 'Page Control', url: '/pages/demo/page-controls', note: '轮播指示点', icon: 'more' },
       // 表单输入
@@ -66,6 +68,7 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
       { title: 'Mobile / PC', url: '/pages/demo/responsive', note: '窄屏与平板、电脑分开展示', icon: 'tune' },
       { title: 'App Page', url: '/pages/demo/app-page', note: '数据驱动页面壳 · Tab / 侧栏自动切换', icon: 'bars' },
       { title: 'Tab Bars', url: '/pages/demo/tabbars', note: '底部标签栏', icon: 'list' },
+      { title: 'Tabs', url: '/pages/demo/tabs', note: '顶部 Tabs · underline / pill / 滚动', icon: 'bars' },
       { title: 'Sidebar', url: '/pages/demo/sidebars', note: '悬浮玻璃侧栏', icon: 'bars' },
       { title: 'Search Bar', url: '/pages/demo/search-bar', note: '搜索栏', icon: 'search' },
       // 列表与内容

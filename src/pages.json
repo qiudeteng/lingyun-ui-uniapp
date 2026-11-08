@@ -64,6 +64,13 @@
 			}
 		},
 		{
+			"path": "pages/demo/tabs",
+			"style": {
+				"navigationBarTitleText": "Tabs",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/search-bar",
 			"style": {
 				"navigationBarTitleText": "Search Bar",
@@ -306,6 +313,27 @@
 			"style": {
 				"navigationBarTitleText": "Image Upload",
 				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/file-upload",
+			"style": {
+				"navigationBarTitleText": "File Upload",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/file-upload-system",
+			"style": {
+				"navigationBarTitleText": "System File",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/file-picker-webview",
+			"style": {
+				"navigationBarTitleText": "选择系统文件",
+				"navigationStyle": "default"
 			}
 		},
 		{

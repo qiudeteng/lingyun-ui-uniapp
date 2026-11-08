@@ -11,6 +11,7 @@
 - [顶栏](./toolbars.md)
 - [主题切换](./theme-action.md)
 - [底栏](./tabbars.md)
+- [顶部 Tabs](./tabs.md)
 - [搜索栏](./search-bar.md)
 - [侧栏浮层](./sidebar.md)
 
@@ -35,6 +36,7 @@
 
 - [输入框](./text-field.md)
 - [图片上传](./image-upload.md)
+- [文件上传](./file-upload.md)
 - [表单](./form.md)
 - [表单分组](./form-group.md)
 - [表单行](./form-item.md)

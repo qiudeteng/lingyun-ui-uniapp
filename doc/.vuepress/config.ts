@@ -123,6 +123,7 @@ const componentSidebar = [
       { text: '顶栏', link: '/components/toolbars.html' },
       { text: '主题切换', link: '/components/theme-action.html' },
       { text: '底栏', link: '/components/tabbars.html' },
+      { text: '顶部 Tabs', link: '/components/tabs.html' },
       { text: '搜索栏', link: '/components/search-bar.html' },
       { text: '侧栏浮层', link: '/components/sidebar.html' },
     ],
@@ -151,6 +152,7 @@ const componentSidebar = [
     children: [
       { text: '输入框', link: '/components/text-field.html' },
       { text: '图片上传', link: '/components/image-upload.html' },
+      { text: '文件上传', link: '/components/file-upload.html' },
       { text: '表单', link: '/components/form.html' },
       { text: '表单分组', link: '/components/form-group.html' },
       { text: '表单行', link: '/components/form-item.html' },
