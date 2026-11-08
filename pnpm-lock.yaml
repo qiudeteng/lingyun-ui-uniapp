@@ -217,6 +217,9 @@ importers:
       '@meng-xi/uni-router':
         specifier: ^2.7.1
         version: 2.7.1(vue@3.5.42(@typescript/typescript6@6.0.2))
+      etiket:
+        specifier: ^1.0.0
+        version: 1.0.0
       pinia:
         specifier: ^2.1.7
         version: 2.3.1(@typescript/typescript6@6.0.2)(vue@3.5.42(@typescript/typescript6@6.0.2))
@@ -3453,6 +3456,11 @@ packages:
   etag@1.8.1:
     resolution: {integrity: sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==}
     engines: {node: '>= 0.6'}
+
+  etiket@1.0.0:
+    resolution: {integrity: sha512-9NCueY7drPvre1RDOdwepO9Vt3fG4iorOkK1qmG6OcpKtkfybyG6cM3o0ZX2b8iAKVmzSCIShQgdNL4w/xDYtg==}
+    engines: {node: '>=24'}
+    hasBin: true
 
   execa@5.1.1:
     resolution: {integrity: sha512-8uSpZZocAZRBAPIEINJj3Lo9HyGitllczc27Eh5YYojjMFMn8yHMDMaUHE2Jqfq05D/wucwI4JGURyXt1vchyg==}
@@ -9613,6 +9621,8 @@ snapshots:
   esutils@2.0.3: {}
 
   etag@1.8.1: {}
+
+  etiket@1.0.0: {}
 
   execa@5.1.1:
     dependencies:

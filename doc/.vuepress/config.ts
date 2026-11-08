@@ -136,6 +136,7 @@ const componentSidebar = [
       { text: '图标', link: '/components/icon.html' },
       { text: '扫码', link: '/components/scan.html' },
       { text: '二维码', link: '/components/qrcode.html' },
+      { text: '条码', link: '/components/barcode.html' },
       { text: '角标', link: '/components/badge.html' },
       { text: '分段控件', link: '/components/segmented-control.html' },
       { text: '标签', link: '/components/tag.html' },

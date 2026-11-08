@@ -42,6 +42,7 @@
 - **Pagination 专章** → **[`PAGINATION.md`](./PAGINATION.md)**（分页 · 页码窗口 / 简单模式）
 - **Scan 专章** → **[`SCAN.md`](./SCAN.md)**（扫码 · 原生 / scanFn）
 - **QR Code 专章** → **[`QRCODE.md`](./QRCODE.md)**（二维码 · 前端生成 / 导出）
+- **Barcode 专章** → **[`BARCODE.md`](./BARCODE.md)**（条码 · Code128 / Code39 / EAN13）
 - **Charts 专章** → **[`CHARTS.md`](./CHARTS.md)**（`lingyun-ui-charts` · System Accents 系列色）
 - **Goods Nav 专章** → **[`GOODS_NAV.md`](./GOODS_NAV.md)**（商品底栏 · 对齐 uni-goods-nav）
 - **Grid 专章** → **[`GRID.md`](./GRID.md)**（宫格 · 对齐 uni-grid）

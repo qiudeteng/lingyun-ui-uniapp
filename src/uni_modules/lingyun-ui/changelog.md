@@ -8,6 +8,7 @@
 - 新增分页 `lingyun-pagination`：页码窗口、总数、省略号跳页、简单模式、小尺寸与单页隐藏。
 - 新增扫码 `lingyun-scan`：小程序 / App 走 `uni.scanCode`，H5 支持 `scanFn` 自定义扫码；默认按钮与自定义插槽、start / success / error / cancel 事件。
 - 新增二维码 `lingyun-qrcode`：依赖 `uqr` 前端生成，Canvas 绘制；支持纠错级别、静区、颜色与 `toTempFilePath()` 导出。
+- 新增一维条码 `lingyun-barcode`：依赖 `etiket` 编码，支持 Code128 / Code39 / EAN13、模块宽度、静区、文字与图片导出。
 ## 1.0.50（2026-11-07）
 - `lingyun-stepper` 新增 `size="large"`：38 高、按钮 46 宽、数值 17 号，适合真机大点击区；默认尺寸保持不变。
 - `lingyun-goods-nav` cart 详情卡片增加 `touchmove.stop`：展开后触摸卡片不会把事件冒泡到后面的页面，内容不足一屏时背景也不会跟着滑动；内部 scroll-view 仍可正常滚动。

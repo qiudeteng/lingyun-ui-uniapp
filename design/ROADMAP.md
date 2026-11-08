@@ -30,7 +30,7 @@
 | **P1 ✅** | `lingyun-rating` | 中高：评价、满意度 | `lingyun-icon` | 低 |
 | **P1 ✅** | `lingyun-scan` | 高：取货码、商品/批次码 | `uni.scanCode`；H5 用 `scanFn` | 低中 |
 | **P1 ✅** | `lingyun-qrcode` | 高：取货码、商品/批次码 | `uqr` 前端生成 + Canvas | 中 |
-| P1 | `lingyun-barcode` | 高：商品/批次码 | 自研或依赖 | 中 |
+| **P1 ✅** | `lingyun-barcode` | 高：商品/批次码 | `etiket` 前端编码 + Canvas | 中 |
 | P2 | `lingyun-tooltip` | 中：轻量说明 | 可扩展 `lingyun-popover` | 低 |
 | P2 | `lingyun-banner` / `notice-bar` | 中：公告、表单提示 | `alert` 视觉，非模态 | 低 |
 | P2 | `lingyun-accordion` | 中：折叠分组 | 扩展 `lingyun-list` / `section` | 低中 |
@@ -63,9 +63,9 @@
 
 ### 批次 4 · P1（码与位置）
 
-`lingyun-scan`（已完成）→ `lingyun-qrcode`（已完成）→ `lingyun-barcode` → `lingyun-location-picker`。
+`lingyun-scan`（已完成）→ `lingyun-qrcode`（已完成）→ `lingyun-barcode`（已完成）→ `lingyun-location-picker`。
 
-> 二维码已采用 `uqr` 前端生成；H5 定位 / 地图 Key 仍需确认。
+> 二维码 / 条码已采用前端编码（`uqr` / `etiket`）；H5 定位 / 地图 Key 仍需确认。
 
 ### 批次 5 · P2（HIG / 表单增强）
 

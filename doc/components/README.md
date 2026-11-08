@@ -22,6 +22,7 @@
 - [图标](./icon.md)
 - [扫码](./scan.md)
 - [二维码](./qrcode.md)
+- [条码](./barcode.md)
 - [角标](./badge.md)
 - [分段控件](./segmented-control.md)
 - [标签](./tag.md)

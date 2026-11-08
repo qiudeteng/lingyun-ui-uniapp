@@ -64,6 +64,7 @@
     "@dcloudio/uni-mp-xhs": "3.0.0-alpha-5030220261016001",
     "@dcloudio/uni-quickapp-webview": "3.0.0-alpha-5030220261016001",
     "@meng-xi/uni-router": "^2.7.1",
+    "etiket": "^1.0.0",
     "pinia": "^2.1.7",
     "pinia-plugin-persistedstate": "^4.1.1",
     "uqr": "^0.1.3",

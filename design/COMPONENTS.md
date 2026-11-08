@@ -56,6 +56,7 @@
 | ✅ | `lingyun-pagination` | 分页 · 页码窗口 / 简单模式 / 小尺寸 | [`PAGINATION.md`](./PAGINATION.md) |
 | ✅ | `lingyun-scan` | 扫码 · 原生 `uni.scanCode` / H5 `scanFn` / 自定义触发 | [`SCAN.md`](./SCAN.md) |
 | ✅ | `lingyun-qrcode` | 二维码 · `uqr` 前端生成 / 颜色 / 纠错 / 图片导出 | [`QRCODE.md`](./QRCODE.md) |
+| ✅ | `lingyun-barcode` | 一维条码 · Code128 / Code39 / EAN13 / 图片导出 | [`BARCODE.md`](./BARCODE.md) |
 | ✅ | `lingyun-avatar` | 头像 | [`AVATARS.md`](./AVATARS.md) |
 | ✅ | `lingyun-page-control` | 轮播指示点 | [`PAGE_CONTROLS.md`](./PAGE_CONTROLS.md) |
 | ✅ | `lingyun-skeleton` | 骨架屏 | [`SKELETONS.md`](./SKELETONS.md) |
@@ -166,6 +167,7 @@
 | 2026-11-08 | 新增 `lingyun-calendar`（单选 / 范围日历）、`lingyun-load-more`（加载更多）与 `lingyun-pagination`（分页）；专章 `CALENDAR.md` / `LOAD_MORE.md` / `PAGINATION.md` |
 | 2026-11-08 | 新增 `lingyun-scan`（原生扫码 / H5 scanFn / 自定义触发）；专章 `SCAN.md` |
 | 2026-11-08 | 新增 `lingyun-qrcode`（`uqr` 前端生成 / 颜色 / 纠错 / 图片导出）；专章 `QRCODE.md` |
+| 2026-11-08 | 新增 `lingyun-barcode`（`etiket` 编码 · Code128 / Code39 / EAN13 / 图片导出）；专章 `BARCODE.md` |
 | 2026-11-08 | 新增 `lingyun-file-upload`（列表行 · 类型色 · 进度 · 重试 · 预览下载）；专章 `FILE_UPLOADS.md` |
 | 2026-11-08 | 新增 `lingyun-image-upload`（直接上传 / 编辑后上传 · 90° 旋转 · 固定比例 / 自由裁剪）；专章 `IMAGE_UPLOADS.md` |
 | 2026-10-09 | 凌云UI 1.0.9：分组卡片着色为系统色实底；卡片与图片默认圆角 `2xl`（26px）；宫格图片图标可设 `shape` / `radius` |

@@ -43,6 +43,7 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
       { title: 'Icons', url: '/pages/demo/icons', note: '图标字体 · lingyun-icon', icon: 'star' },
       { title: 'Scan', url: '/pages/demo/scan', note: '扫码 · 原生 / scanFn / 自定义触发', icon: 'scan' },
       { title: 'QR Code', url: '/pages/demo/qrcode', note: '二维码 · 前端生成 / 导出', icon: 'scan' },
+      { title: 'Barcode', url: '/pages/demo/barcode', note: '条码 · Code128 / Code39 / EAN13', icon: 'bars' },
       { title: 'Badges', url: '/pages/demo/badges', note: '角标', icon: 'notification' },
       { title: 'Segmented Controls', url: '/pages/demo/segmented-controls', note: '分段控件', icon: 'tune' },
       { title: 'Tags & Chips', url: '/pages/demo/tags', note: '标签 · 筛选胶囊', icon: 'flag' },
