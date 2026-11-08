@@ -28,7 +28,9 @@
 | **P1 ✅** | `lingyun-load-more` | 高：长列表加载更多 | `activity-indicator` | 低 |
 | **P1 ✅** | `lingyun-pagination` | 中高：桌面表格/列表分页 | 从 `lingyun-table` 抽出 | 中 |
 | **P1 ✅** | `lingyun-rating` | 中高：评价、满意度 | `lingyun-icon` | 低 |
-| P1 | `lingyun-scan` / `lingyun-qrcode` / `lingyun-barcode` | 高：取货码、商品/批次码 | 扫码走 `uni.scanCode`；二维码需依赖或后端图片 | 中高 |
+| **P1 ✅** | `lingyun-scan` | 高：取货码、商品/批次码 | `uni.scanCode`；H5 用 `scanFn` | 低中 |
+| **P1 ✅** | `lingyun-qrcode` | 高：取货码、商品/批次码 | `uqr` 前端生成 + Canvas | 中 |
+| P1 | `lingyun-barcode` | 高：商品/批次码 | 自研或依赖 | 中 |
 | P2 | `lingyun-tooltip` | 中：轻量说明 | 可扩展 `lingyun-popover` | 低 |
 | P2 | `lingyun-banner` / `notice-bar` | 中：公告、表单提示 | `alert` 视觉，非模态 | 低 |
 | P2 | `lingyun-accordion` | 中：折叠分组 | 扩展 `lingyun-list` / `section` | 低中 |
@@ -61,9 +63,9 @@
 
 ### 批次 4 · P1（码与位置）
 
-`lingyun-scan` → `lingyun-qrcode` / `lingyun-barcode` → `lingyun-location-picker`。
+`lingyun-scan`（已完成）→ `lingyun-qrcode`（已完成）→ `lingyun-barcode` → `lingyun-location-picker`。
 
-> 批次 4 开始前需要确认：二维码生成用前端依赖还是后端图片；H5 定位/地图用哪家 Key。
+> 二维码已采用 `uqr` 前端生成；H5 定位 / 地图 Key 仍需确认。
 
 ### 批次 5 · P2（HIG / 表单增强）
 

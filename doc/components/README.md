@@ -20,6 +20,8 @@
 - [布局](./layout.md)
 - [按钮](./button.md)
 - [图标](./icon.md)
+- [扫码](./scan.md)
+- [二维码](./qrcode.md)
 - [角标](./badge.md)
 - [分段控件](./segmented-control.md)
 - [标签](./tag.md)

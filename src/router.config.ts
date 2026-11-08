@@ -281,6 +281,16 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Pagination' }
 	},
 	{
+		path: '/pages/demo/scan',
+		name: 'pagesDemoScan',
+		meta: { title: 'Scan' }
+	},
+	{
+		path: '/pages/demo/qrcode',
+		name: 'pagesDemoQrcode',
+		meta: { title: 'QR Code' }
+	},
+	{
 		path: '/pages/demo/avatars',
 		name: 'pagesDemoAvatars',
 		meta: { title: 'Avatars' }

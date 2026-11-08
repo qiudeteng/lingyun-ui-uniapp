@@ -386,6 +386,20 @@
 			}
 		},
 		{
+			"path": "pages/demo/scan",
+			"style": {
+				"navigationBarTitleText": "Scan",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/qrcode",
+			"style": {
+				"navigationBarTitleText": "QR Code",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/avatars",
 			"style": {
 				"navigationBarTitleText": "Avatars",

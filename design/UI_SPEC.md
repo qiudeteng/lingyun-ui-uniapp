@@ -365,6 +365,8 @@ Liquid Glass 是 **控件与导航功能层** 的材质，不是整页皮肤。
 - [ ] Calendar 改动已对照 `CALENDAR.md`（42 格、日期单元格复用、范围底纹）
 - [ ] Load More 改动已对照 `LOAD_MORE.md`（48px 行、四种状态、自动触底）
 - [ ] Pagination 改动已对照 `PAGINATION.md`（32px 页码、当前页主色、页码窗口）
+- [ ] Scan 改动已对照 `SCAN.md`（默认按钮 / 自定义插槽、scanFn、错误与取消）
+- [ ] QR Code 改动已对照 `QRCODE.md`（白底黑码、静区、Canvas 导出、不跟随暗黑反色）
 - [ ] Goods Nav 改动已对照 `GOODS_NAV.md`（玻璃图标胶囊 + 系统蓝按钮，非渐变实心条）
 - [ ] Grid 改动已对照 `GRID.md`（分组卡片、方形格、分割线不画成灰表格）
 - [ ] Indexed List 改动已对照 `INDEXED_LIST.md`（分组卡片、字母条、玻璃气泡）

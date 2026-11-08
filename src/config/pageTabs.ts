@@ -85,6 +85,8 @@ const COMPONENT_CHILDREN: LingyunPageTabChild[] = [
     navChild('/pages/demo/layout', '布局'),
     navChild('/pages/demo/buttons', '按钮'),
     navChild('/pages/demo/icons', '图标'),
+    navChild('/pages/demo/scan', '扫码'),
+    navChild('/pages/demo/qrcode', '二维码'),
     navChild('/pages/demo/badges', '角标'),
     navChild('/pages/demo/segmented-controls', '分段控件'),
     navChild('/pages/demo/tags', '标签与胶囊'),

@@ -40,6 +40,8 @@
 - **Calendar 专章** → **[`CALENDAR.md`](./CALENDAR.md)**（独立日历 · 单选 / 范围 / 标记）
 - **Load More 专章** → **[`LOAD_MORE.md`](./LOAD_MORE.md)**（加载更多 · 触底 / 状态）
 - **Pagination 专章** → **[`PAGINATION.md`](./PAGINATION.md)**（分页 · 页码窗口 / 简单模式）
+- **Scan 专章** → **[`SCAN.md`](./SCAN.md)**（扫码 · 原生 / scanFn）
+- **QR Code 专章** → **[`QRCODE.md`](./QRCODE.md)**（二维码 · 前端生成 / 导出）
 - **Charts 专章** → **[`CHARTS.md`](./CHARTS.md)**（`lingyun-ui-charts` · System Accents 系列色）
 - **Goods Nav 专章** → **[`GOODS_NAV.md`](./GOODS_NAV.md)**（商品底栏 · 对齐 uni-goods-nav）
 - **Grid 专章** → **[`GRID.md`](./GRID.md)**（宫格 · 对齐 uni-grid）

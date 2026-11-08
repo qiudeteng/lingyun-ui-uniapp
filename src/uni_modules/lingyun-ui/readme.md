@@ -330,6 +330,10 @@ lingyun-ui/
 
 <lingyun-pagination v-model="page" :total="126" :page-size="10" />
 
+<lingyun-scan @success="onScanSuccess" @error="onScanError" />
+
+<lingyun-qrcode :value="orderUrl" :size="180" @ready="onQrcodeReady" />
+
 <lingyun-list header="Header" header-type="extraProminent" footer="Footer">
   <lingyun-list-item title="Title" note="Subtitle" />
   <lingyun-list-item title="Title" detail="Detail" accessory="disclosure" />
