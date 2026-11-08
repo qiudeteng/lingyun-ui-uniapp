@@ -162,6 +162,38 @@ src/uni_modules/lingyun-ui/
 	:upload-fn="uploadFile"
 />
 
+<lingyun-signature
+	v-model="signature"
+	tip="签收时可让收件人手写确认"
+	@confirm="onSignatureConfirm"
+/>
+
+<lingyun-steps
+	v-model="step"
+	:items="[
+		{ key: 'order', title: '提交订单' },
+		{ key: 'produce', title: '门店制作' },
+		{ key: 'deliver', title: '骑手配送' }
+	]"
+	clickable
+/>
+
+<lingyun-timeline
+	:items="[
+		{ key: 'create', title: '订单已提交', time: '10:24', status: 'success' },
+		{ key: 'make', title: '门店制作中', time: '10:40', status: 'active' },
+		{ key: 'deliver', title: '等待骑手取货', time: '预计 11:10' }
+	]"
+/>
+
+<lingyun-rating v-model="rating" allow-half show-value value-suffix=" / 5" />
+
+<lingyun-calendar v-model="date" show-lunar :marks="calendarMarks" />
+
+<lingyun-load-more :status="loadStatus" auto @load="onLoadMore" />
+
+<lingyun-pagination v-model="page" :total="126" :page-size="10" />
+
 <lingyun-list header="Header" header-type="extraProminent" footer="Footer">
   <lingyun-list-item title="Title" note="Subtitle" />
   <lingyun-list-item title="Title" detail="Detail" accessory="disclosure" />

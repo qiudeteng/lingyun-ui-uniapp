@@ -47,6 +47,13 @@
 | ✅ | `lingyun-image` | 图片包装 · 懒加载 / 占位 / 圆角 | [`IMAGES.md`](./IMAGES.md) |
 | ✅ | `lingyun-image-upload` | 图片上传 · 直接上传 / 90° 旋转 / 固定比例或自由裁剪 | [`IMAGE_UPLOADS.md`](./IMAGE_UPLOADS.md) |
 | ✅ | `lingyun-file-upload` | 文件上传 · 列表 / 类型色 / 进度 / 重试 / 预览下载 | [`FILE_UPLOADS.md`](./FILE_UPLOADS.md) |
+| ✅ | `lingyun-signature` | 手写签名 · 触控 / 鼠标 · 清除 / 重新签名 · PNG 导出 | [`SIGNATURE.md`](./SIGNATURE.md) |
+| ✅ | `lingyun-steps` | 流程步骤条 · 横向 / 纵向 · 完成 / 进行中 / 等待 / 错误 | [`STEPS.md`](./STEPS.md) |
+| ✅ | `lingyun-timeline` | 纵向时间线 · 时间 / 说明 / 状态 / 图标 | [`TIMELINE.md`](./TIMELINE.md) |
+| ✅ | `lingyun-rating` | 评分 · 整星 / 半星 / 可清除 / 只读禁用 | [`RATING.md`](./RATING.md) |
+| ✅ | `lingyun-calendar` | 独立日历 · 单选 / 范围 / 标记 / 禁用日期 | [`CALENDAR.md`](./CALENDAR.md) |
+| ✅ | `lingyun-load-more` | 加载更多 · 更多 / 加载中 / 没有更多 / 失败重试 · 自动触底 | [`LOAD_MORE.md`](./LOAD_MORE.md) |
+| ✅ | `lingyun-pagination` | 分页 · 页码窗口 / 简单模式 / 小尺寸 | [`PAGINATION.md`](./PAGINATION.md) |
 | ✅ | `lingyun-avatar` | 头像 | [`AVATARS.md`](./AVATARS.md) |
 | ✅ | `lingyun-page-control` | 轮播指示点 | [`PAGE_CONTROLS.md`](./PAGE_CONTROLS.md) |
 | ✅ | `lingyun-skeleton` | 骨架屏 | [`SKELETONS.md`](./SKELETONS.md) |
@@ -151,7 +158,10 @@
 | 2026-10-09 | 凌云UI 1.0.12：`lingyun-app-page` 可用 `showToolbar` 隐藏头部顶栏 |
 | 2026-10-09 | 凌云UI 1.0.11：分组卡片 `headerLine` 可在标题和内容之间画横线 |
 | 2026-10-09 | 凌云UI 1.0.10：宫格不传圆角时跟图片默认 `2xl`（26px） |
-| 2026-11-08 | 新增 `lingyun-tabs`（顶部可滚动 Tabs · underline / pill / sticky）；专章 `TABS.md` |
+| 2026-11-08 | 新增 `lingyun-signature`（手写签名 · 触控 / 鼠标 · 清除 / 重新签名 · PNG 导出）；专章 `SIGNATURE.md` |
+| 2026-11-08 | 新增 `lingyun-steps`（流程步骤条 · 横向 / 纵向 · 四种状态）；专章 `STEPS.md` |
+| 2026-11-08 | 新增 `lingyun-timeline`（纵向时间线 · 轨迹 / 日志）与 `lingyun-rating`（整星 / 半星评分）；专章 `TIMELINE.md` / `RATING.md` |
+| 2026-11-08 | 新增 `lingyun-calendar`（单选 / 范围日历）、`lingyun-load-more`（加载更多）与 `lingyun-pagination`（分页）；专章 `CALENDAR.md` / `LOAD_MORE.md` / `PAGINATION.md` |
 | 2026-11-08 | 新增 `lingyun-file-upload`（列表行 · 类型色 · 进度 · 重试 · 预览下载）；专章 `FILE_UPLOADS.md` |
 | 2026-11-08 | 新增 `lingyun-image-upload`（直接上传 / 编辑后上传 · 90° 旋转 · 固定比例 / 自由裁剪）；专章 `IMAGE_UPLOADS.md` |
 | 2026-10-09 | 凌云UI 1.0.9：分组卡片着色为系统色实底；卡片与图片默认圆角 `2xl`（26px）；宫格图片图标可设 `shape` / `radius` |

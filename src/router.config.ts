@@ -246,6 +246,41 @@ export const routes: RouteConfig[] = [
 		meta: { title: '选择系统文件' }
 	},
 	{
+		path: '/pages/demo/signature',
+		name: 'pagesDemoSignature',
+		meta: { title: 'Signature' }
+	},
+	{
+		path: '/pages/demo/steps',
+		name: 'pagesDemoSteps',
+		meta: { title: 'Steps' }
+	},
+	{
+		path: '/pages/demo/timeline',
+		name: 'pagesDemoTimeline',
+		meta: { title: 'Timeline' }
+	},
+	{
+		path: '/pages/demo/rating',
+		name: 'pagesDemoRating',
+		meta: { title: 'Rating' }
+	},
+	{
+		path: '/pages/demo/calendar',
+		name: 'pagesDemoCalendar',
+		meta: { title: 'Calendar' }
+	},
+	{
+		path: '/pages/demo/load-more',
+		name: 'pagesDemoLoadMore',
+		meta: { title: 'Load More' }
+	},
+	{
+		path: '/pages/demo/pagination',
+		name: 'pagesDemoPagination',
+		meta: { title: 'Pagination' }
+	},
+	{
 		path: '/pages/demo/avatars',
 		name: 'pagesDemoAvatars',
 		meta: { title: 'Avatars' }

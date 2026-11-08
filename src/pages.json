@@ -337,6 +337,55 @@
 			}
 		},
 		{
+			"path": "pages/demo/signature",
+			"style": {
+				"navigationBarTitleText": "Signature",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/steps",
+			"style": {
+				"navigationBarTitleText": "Steps",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/timeline",
+			"style": {
+				"navigationBarTitleText": "Timeline",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/rating",
+			"style": {
+				"navigationBarTitleText": "Rating",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/calendar",
+			"style": {
+				"navigationBarTitleText": "Calendar",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/load-more",
+			"style": {
+				"navigationBarTitleText": "Load More",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/pagination",
+			"style": {
+				"navigationBarTitleText": "Pagination",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/avatars",
 			"style": {
 				"navigationBarTitleText": "Avatars",

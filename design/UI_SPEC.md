@@ -358,6 +358,13 @@ Liquid Glass 是 **控件与导航功能层** 的材质，不是整页皮肤。
 - [ ] Charts 改动已对照 `CHARTS.md`（数据形状、系列色、canvas 高度；浮层打开时 canvas 不挡 Sheet/Picker）
 - [ ] Image Upload 改动已对照 `IMAGE_UPLOADS.md`（缩略图内容层、全屏裁剪、顶栏/底栏玻璃、44px 圆钮）
 - [ ] File Upload 改动已对照 `FILE_UPLOADS.md`（内容列表、类型色块、进度与操作区）
+- [ ] Signature 改动已对照 `SIGNATURE.md`（内容层白纸画布、44px 操作区、PNG 导出）
+- [ ] Steps 改动已对照 `STEPS.md`（28px 圆点、2px 连接线、四种状态、等宽横向）
+- [ ] Timeline 改动已对照 `TIMELINE.md`（左轨 24px、12px 圆点、状态与图标）
+- [ ] Rating 改动已对照 `RATING.md`（24px 星星、半星裁剪、左右半区热区）
+- [ ] Calendar 改动已对照 `CALENDAR.md`（42 格、日期单元格复用、范围底纹）
+- [ ] Load More 改动已对照 `LOAD_MORE.md`（48px 行、四种状态、自动触底）
+- [ ] Pagination 改动已对照 `PAGINATION.md`（32px 页码、当前页主色、页码窗口）
 - [ ] Goods Nav 改动已对照 `GOODS_NAV.md`（玻璃图标胶囊 + 系统蓝按钮，非渐变实心条）
 - [ ] Grid 改动已对照 `GRID.md`（分组卡片、方形格、分割线不画成灰表格）
 - [ ] Indexed List 改动已对照 `INDEXED_LIST.md`（分组卡片、字母条、玻璃气泡）

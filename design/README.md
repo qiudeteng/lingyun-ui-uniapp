@@ -33,6 +33,13 @@
 - **Image 专章** → **[`IMAGES.md`](./IMAGES.md)**（懒加载 · 占位 · 圆角 · mode）
 - **Image Upload 专章** → **[`IMAGE_UPLOADS.md`](./IMAGE_UPLOADS.md)**（选图 · 90° 旋转 · 固定比例 / 自由裁剪 · 上传）
 - **File Upload 专章** → **[`FILE_UPLOADS.md`](./FILE_UPLOADS.md)**（文件列表 · 类型色 · 进度 · 预览/下载）
+- **Signature 专章** → **[`SIGNATURE.md`](./SIGNATURE.md)**（手写签名 · 触控 / 鼠标 · PNG 导出）
+- **Steps 专章** → **[`STEPS.md`](./STEPS.md)**（步骤条 · 横向 / 纵向 · 状态）
+- **Timeline 专章** → **[`TIMELINE.md`](./TIMELINE.md)**（时间线 · 轨迹 / 日志 · 状态）
+- **Rating 专章** → **[`RATING.md`](./RATING.md)**（评分 · 整星 / 半星 / 可清除）
+- **Calendar 专章** → **[`CALENDAR.md`](./CALENDAR.md)**（独立日历 · 单选 / 范围 / 标记）
+- **Load More 专章** → **[`LOAD_MORE.md`](./LOAD_MORE.md)**（加载更多 · 触底 / 状态）
+- **Pagination 专章** → **[`PAGINATION.md`](./PAGINATION.md)**（分页 · 页码窗口 / 简单模式）
 - **Charts 专章** → **[`CHARTS.md`](./CHARTS.md)**（`lingyun-ui-charts` · System Accents 系列色）
 - **Goods Nav 专章** → **[`GOODS_NAV.md`](./GOODS_NAV.md)**（商品底栏 · 对齐 uni-goods-nav）
 - **Grid 专章** → **[`GRID.md`](./GRID.md)**（宫格 · 对齐 uni-grid）

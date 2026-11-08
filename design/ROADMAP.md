@@ -20,14 +20,14 @@
 | 优先级 | 组件 | 业务价值 | 复用 / 依赖 | 工作量 |
 |---|---|---|---|---|
 | **P0 ✅** | `lingyun-tabs`（顶部可滚动 Tabs） | 极高：页面内多视图切换 | `scroll-view` + 现有图标/主题 | 中 |
-| P1 | `lingyun-signature` | 高：送货签收、门店确认 | Canvas（参考图片上传导出） | 中 |
-| P1 | `lingyun-calendar` | 高：配送日期、促销、生产排期 | 复用 `picker-cal-day` / `PICKERS` | 中高 |
-| P1 | `lingyun-steps` | 高：下单/生产/配送/审批流程 | `list` / `section` / `icon` | 低 |
-| P1 | `lingyun-timeline` | 高：订单轨迹、操作日志 | `list` / `section` / `icon` | 低 |
+| **P1 ✅** | `lingyun-signature` | 高：送货签收、门店确认 | Canvas（参考图片上传导出） | 中 |
+| **P1 ✅** | `lingyun-calendar` | 高：配送日期、促销、生产排期 | 复用 `picker-cal-day` / `PICKERS` | 中高 |
+| **P1 ✅** | `lingyun-steps` | 高：下单/生产/配送/审批流程 | `list` / `section` / `icon` | 低 |
+| **P1 ✅** | `lingyun-timeline` | 高：订单轨迹、操作日志 | `list` / `section` / `icon` | 低 |
 | P1 | `lingyun-location-picker` | 高：门店、收货地址 | `uni.chooseLocation`；H5 需地图 Key | 中 |
-| P1 | `lingyun-load-more` | 高：长列表加载更多 | `activity-indicator` | 低 |
-| P1 | `lingyun-pagination` | 中高：桌面表格/列表分页 | 从 `lingyun-table` 抽出 | 中 |
-| P1 | `lingyun-rating` | 中高：评价、满意度 | `lingyun-icon` | 低 |
+| **P1 ✅** | `lingyun-load-more` | 高：长列表加载更多 | `activity-indicator` | 低 |
+| **P1 ✅** | `lingyun-pagination` | 中高：桌面表格/列表分页 | 从 `lingyun-table` 抽出 | 中 |
+| **P1 ✅** | `lingyun-rating` | 中高：评价、满意度 | `lingyun-icon` | 低 |
 | P1 | `lingyun-scan` / `lingyun-qrcode` / `lingyun-barcode` | 高：取货码、商品/批次码 | 扫码走 `uni.scanCode`；二维码需依赖或后端图片 | 中高 |
 | P2 | `lingyun-tooltip` | 中：轻量说明 | 可扩展 `lingyun-popover` | 低 |
 | P2 | `lingyun-banner` / `notice-bar` | 中：公告、表单提示 | `alert` 视觉，非模态 | 低 |
@@ -53,11 +53,11 @@
 
 ### 批次 2 · P1（流程与确认）
 
-`lingyun-signature` → `lingyun-steps` → `lingyun-timeline` → `lingyun-rating`。
+`lingyun-signature`（已完成）→ `lingyun-steps`（已完成）→ `lingyun-timeline`（已完成）→ `lingyun-rating`（已完成）。
 
 ### 批次 3 · P1（时间与长列表）
 
-`lingyun-calendar` → `lingyun-load-more` → `lingyun-pagination`。
+`lingyun-calendar`（已完成）→ `lingyun-load-more`（已完成）→ `lingyun-pagination`（已完成）。
 
 ### 批次 4 · P1（码与位置）
 

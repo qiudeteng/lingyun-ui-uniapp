@@ -1,3 +1,11 @@
+## 未发布
+- 新增手写签名 `lingyun-signature`：触控 / 鼠标绘制、清除 / 重新签名、PNG 导出；支持 `v-model`、只读 / 禁用、透明底、自定义笔色 / 粗细 / 画布高度。
+- 新增流程步骤条 `lingyun-steps`：横向 / 纵向、完成 / 进行中 / 等待 / 错误、可点击切换、`next` / `prev` 方法与状态覆盖。
+- 新增纵向时间线 `lingyun-timeline`：时间 / 标题 / 说明 / 状态 / 图标、可点击、空态与插槽。
+- 新增评分 `lingyun-rating`：整星 / 半星、只读 / 禁用、可清除、显示分值、自定义尺寸与颜色。
+- 新增独立日历 `lingyun-calendar`：单选 / 范围、月份切换、今天、农历、标记与禁用日期；复用 `lingyun-picker-cal-day`。
+- 新增加载更多 `lingyun-load-more`：更多 / 加载中 / 没有更多 / 失败重试、自动触底与 `trigger()`。
+- 新增分页 `lingyun-pagination`：页码窗口、总数、省略号跳页、简单模式、小尺寸与单页隐藏。
 ## 1.0.50（2026-11-07）
 - `lingyun-stepper` 新增 `size="large"`：38 高、按钮 46 宽、数值 17 号，适合真机大点击区；默认尺寸保持不变。
 - `lingyun-goods-nav` cart 详情卡片增加 `touchmove.stop`：展开后触摸卡片不会把事件冒泡到后面的页面，内容不足一屏时背景也不会跟着滑动；内部 scroll-view 仍可正常滚动。
