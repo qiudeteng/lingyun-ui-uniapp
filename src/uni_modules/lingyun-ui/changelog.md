@@ -10,6 +10,7 @@
 - 新增二维码 `lingyun-qrcode`：依赖 `uqr` 前端生成，Canvas 绘制；支持纠错级别、静区、颜色与 `toTempFilePath()` 导出。
 - 新增一维条码 `lingyun-barcode`：依赖 `etiket` 编码，支持 Code128 / Code39 / EAN13、模块宽度、静区、文字与图片导出。
 - `lingyun-rating` 支持移动端在星星行左右滑动调整（半星 / 整星步进），H5 同步支持鼠标拖动；只读 / 禁用不拦截页面滚动。
+- 新增位置选择 `lingyun-location-picker`：小程序 / App 走 `uni.chooseLocation`，H5 使用腾讯地图 Key（`VITE_TENCENT_MAP_KEY`，不入库）；小程序已补 `requiredPrivateInfos`。
 ## 1.0.50（2026-11-07）
 - `lingyun-stepper` 新增 `size="large"`：38 高、按钮 46 宽、数值 17 号，适合真机大点击区；默认尺寸保持不变。
 - `lingyun-goods-nav` cart 详情卡片增加 `touchmove.stop`：展开后触摸卡片不会把事件冒泡到后面的页面，内容不足一屏时背景也不会跟着滑动；内部 scroll-view 仍可正常滚动。

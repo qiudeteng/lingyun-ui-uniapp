@@ -45,7 +45,8 @@
             "scope.userLocation" : {
                 "desc" : "用于定位门店，辅助完成订货地址填写"
             }
-        }
+        },
+        "requiredPrivateInfos" : [ "chooseLocation" ]
     },
     "mp-alipay" : {
         "usingComponents" : true

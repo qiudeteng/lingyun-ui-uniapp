@@ -113,6 +113,7 @@ const COMPONENT_CHILDREN: LingyunPageTabChild[] = [
     navChild('/pages/demo/date-switcher', '日期切换器'),
     navChild('/pages/demo/date-text', '日期显示'),
     navChild('/pages/demo/calendar', '日历'),
+    navChild('/pages/demo/location-picker', '位置选择'),
   ]),
   group('components-content', '列表与内容', [
     navChild('/pages/demo/lists', '列表'),

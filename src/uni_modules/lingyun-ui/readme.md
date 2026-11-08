@@ -336,6 +336,8 @@ lingyun-ui/
 
 <lingyun-barcode value="LY-0001" format="CODE128" :module-width="2" @ready="onBarcodeReady" />
 
+<lingyun-location-picker v-model="location" @change="onLocationChange" />
+
 <lingyun-list header="Header" header-type="extraProminent" footer="Footer">
   <lingyun-list-item title="Title" note="Subtitle" />
   <lingyun-list-item title="Title" detail="Detail" accessory="disclosure" />

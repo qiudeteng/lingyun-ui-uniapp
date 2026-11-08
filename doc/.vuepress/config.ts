@@ -144,6 +144,7 @@ const componentSidebar = [
       { text: '文本', link: '/components/text.html' },
       { text: '日期显示', link: '/components/date-text.html' },
       { text: '日历', link: '/components/calendar.html' },
+      { text: '位置选择', link: '/components/location-picker.html' },
       { text: '金额显示', link: '/components/amount-text.html' },
       { text: '图片', link: '/components/image.html' },
       { text: '图片轮播', link: '/components/swiper.html' },

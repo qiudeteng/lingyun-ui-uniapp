@@ -296,6 +296,11 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Barcode' }
 	},
 	{
+		path: '/pages/demo/location-picker',
+		name: 'pagesDemoLocationPicker',
+		meta: { title: 'Location Picker' }
+	},
+	{
 		path: '/pages/demo/avatars',
 		name: 'pagesDemoAvatars',
 		meta: { title: 'Avatars' }

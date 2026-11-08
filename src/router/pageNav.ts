@@ -67,6 +67,7 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
       { title: 'Date Switcher', url: '/pages/demo/date-switcher', note: '底部日期切换条 · 天 / 周 / 月 / 年 / 日期段', icon: 'calendar' },
       { title: 'Date Text', url: '/pages/demo/date-text', note: '日期显示 · 今天 / 昨天 / 明天 · 精度', icon: 'calendar' },
       { title: 'Calendar', url: '/pages/demo/calendar', note: '日历 · 单选 / 范围 / 标记', icon: 'calendar' },
+      { title: 'Location Picker', url: '/pages/demo/location-picker', note: '位置选择 · 门店 / 收货地址', icon: 'location' },
       { title: 'Amount Text', url: '/pages/demo/amount-text', note: '金额显示 · 万 / 亿 / 万亿 · 小数位', icon: 'wallet' },
       // 导航与栏
       { title: 'Toolbars', url: '/pages/demo/toolbars', note: '顶栏 · 滚动玻璃', icon: 'bars' },

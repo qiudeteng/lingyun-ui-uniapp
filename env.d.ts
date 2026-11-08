@@ -13,6 +13,7 @@ interface ImportMetaEnv {
   readonly VITE_APPID?: string
   readonly VITE_SECRET_KEY?: string
   readonly VITE_BASE_URL?: string
+  readonly VITE_TENCENT_MAP_KEY?: string
 }
 
 interface ImportMeta {

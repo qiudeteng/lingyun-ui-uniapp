@@ -407,6 +407,13 @@
 			}
 		},
 		{
+			"path": "pages/demo/location-picker",
+			"style": {
+				"navigationBarTitleText": "Location Picker",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/avatars",
 			"style": {
 				"navigationBarTitleText": "Avatars",

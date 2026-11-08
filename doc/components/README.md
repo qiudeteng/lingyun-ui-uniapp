@@ -30,6 +30,7 @@
 - [文本](./text.md)
 - [日期显示](./date-text.md)
 - [日历](./calendar.md)
+- [位置选择](./location-picker.md)
 - [金额显示](./amount-text.md)
 - [图片](./image.md)
 - [图片轮播](./swiper.md)

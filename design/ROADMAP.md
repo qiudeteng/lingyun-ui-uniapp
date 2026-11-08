@@ -24,7 +24,7 @@
 | **P1 ✅** | `lingyun-calendar` | 高：配送日期、促销、生产排期 | 复用 `picker-cal-day` / `PICKERS` | 中高 |
 | **P1 ✅** | `lingyun-steps` | 高：下单/生产/配送/审批流程 | `list` / `section` / `icon` | 低 |
 | **P1 ✅** | `lingyun-timeline` | 高：订单轨迹、操作日志 | `list` / `section` / `icon` | 低 |
-| P1 | `lingyun-location-picker` | 高：门店、收货地址 | `uni.chooseLocation`；H5 需地图 Key | 中 |
+| **P1 ✅** | `lingyun-location-picker` | 高：门店、收货地址 | `uni.chooseLocation`；H5 腾讯地图 Key | 中 |
 | **P1 ✅** | `lingyun-load-more` | 高：长列表加载更多 | `activity-indicator` | 低 |
 | **P1 ✅** | `lingyun-pagination` | 中高：桌面表格/列表分页 | 从 `lingyun-table` 抽出 | 中 |
 | **P1 ✅** | `lingyun-rating` | 中高：评价、满意度 | `lingyun-icon` | 低 |
@@ -63,9 +63,9 @@
 
 ### 批次 4 · P1（码与位置）
 
-`lingyun-scan`（已完成）→ `lingyun-qrcode`（已完成）→ `lingyun-barcode`（已完成）→ `lingyun-location-picker`。
+`lingyun-scan`（已完成）→ `lingyun-qrcode`（已完成）→ `lingyun-barcode`（已完成）→ `lingyun-location-picker`（已完成）。
 
-> 二维码 / 条码已采用前端编码（`uqr` / `etiket`）；H5 定位 / 地图 Key 仍需确认。
+> 二维码 / 条码已采用前端编码（`uqr` / `etiket`）；定位已接腾讯 Key（H5 用 `VITE_TENCENT_MAP_KEY`，不入库）。
 
 ### 批次 5 · P2（HIG / 表单增强）
 
