@@ -6,7 +6,7 @@
     :style="rootStyle"
   >
     <view class="lingyun-image-upload-editor__panel">
-      <view class="lingyun-image-upload-editor__topbar">
+      <view class="lingyun-image-upload-editor__topbar" :style="topbarStyle">
         <view
           class="lingyun-image-upload-editor__text-button"
           role="button"
@@ -17,13 +17,13 @@
         <text class="lingyun-image-upload-editor__title">
           编辑图片 {{ index + 1 }}/{{ total }}
         </text>
-        <view
-          class="lingyun-image-upload-editor__text-button lingyun-image-upload-editor__text-button--primary"
-          role="button"
+        <lingyun-button
+          class="lingyun-image-upload-editor__done"
+          variant="borderedProminent"
+          size="small"
+          text="完成"
           @click="confirm"
-        >
-          完成
-        </view>
+        />
       </view>
 
       <view
@@ -60,36 +60,39 @@
               :class="`lingyun-image-upload-editor__handle--${handle}`"
               @touchstart.stop.prevent="startCropGesture(handle, $event)"
             >
-              <view class="lingyun-image-upload-editor__handle-dot" />
+              <view class="lingyun-image-upload-editor__handle-bar lingyun-image-upload-editor__handle-bar--h" />
+              <view class="lingyun-image-upload-editor__handle-bar lingyun-image-upload-editor__handle-bar--v" />
             </view>
           </template>
         </view>
       </view>
 
-      <view class="lingyun-image-upload-editor__bottombar">
-        <view
-          class="lingyun-image-upload-editor__round-button"
-          role="button"
-          aria-label="向左旋转"
-          @click="rotate(-90)"
-        >
-          <lingyun-icon type="undo" :size="22" color="white" />
-        </view>
-        <view
-          class="lingyun-image-upload-editor__round-button"
-          role="button"
-          aria-label="重置"
-          @click="reset"
-        >
-          <lingyun-icon type="refresh" :size="22" color="white" />
-        </view>
-        <view
-          class="lingyun-image-upload-editor__round-button"
-          role="button"
-          aria-label="向右旋转"
-          @click="rotate(90)"
-        >
-          <lingyun-icon type="redo" :size="22" color="white" />
+      <view class="lingyun-image-upload-editor__bottombar" :style="bottombarStyle">
+        <view class="lingyun-image-upload-editor__bottom-capsule">
+          <view
+            class="lingyun-image-upload-editor__round-button"
+            role="button"
+            aria-label="向左旋转"
+            @click="rotate(-90)"
+          >
+            <lingyun-icon type="undo" :size="22" color="white" />
+          </view>
+          <view
+            class="lingyun-image-upload-editor__round-button"
+            role="button"
+            aria-label="重置"
+            @click="reset"
+          >
+            <lingyun-icon type="refresh" :size="22" color="white" />
+          </view>
+          <view
+            class="lingyun-image-upload-editor__round-button"
+            role="button"
+            aria-label="向右旋转"
+            @click="rotate(90)"
+          >
+            <lingyun-icon type="redo" :size="22" color="white" />
+          </view>
         </view>
       </view>
     </view>
@@ -218,6 +221,8 @@ export default defineComponent({
     canvasId: string
     closeTimer: ReturnType<typeof setTimeout> | null
     measureTimer: ReturnType<typeof setTimeout> | null
+    topInset: number
+    bottomInset: number
     scrollLocked: boolean
     appScrollLocked: boolean
     prevBodyOverflow: string
@@ -240,6 +245,8 @@ export default defineComponent({
       canvasId: `lingyun-image-upload-canvas-${(canvasSequence += 1)}`,
       closeTimer: null,
       measureTimer: null,
+      topInset: 8,
+      bottomInset: 0,
       scrollLocked: false,
       appScrollLocked: false,
       prevBodyOverflow: '',
@@ -284,6 +291,12 @@ export default defineComponent({
     rootStyle(): Record<string, string> {
       return { zIndex: String(Number(this.zIndex) || 1200) }
     },
+    topbarStyle(): Record<string, string> {
+      return { paddingTop: `${this.topInset}px` }
+    },
+    bottombarStyle(): Record<string, string> {
+      return { paddingBottom: `${10 + this.bottomInset}px` }
+    },
     imageStyle(): Record<string, string> {
       const width = Math.max(1, this.imageWidth * this.scale)
       const height = Math.max(1, this.imageHeight * this.scale)
@@ -303,6 +316,9 @@ export default defineComponent({
         height: `${this.crop.height}px`,
       }
     },
+  },
+  created() {
+    this.measureStage()
   },
   mounted() {
     this.lockPageScroll()
@@ -335,7 +351,8 @@ export default defineComponent({
       })
     },
     measureStage() {
-      // 编辑器全屏且顶/底栏高度固定，直接用窗口信息算舞台，避免 root-portal 下 selector 差异。
+      // 编辑器全屏且顶/底栏高度固定，直接用窗口信息算舞台；
+      // 微信端顶栏内容从胶囊下方开始，避免「完成」被胶囊/状态栏挡住。
       const info = (
         typeof uni.getWindowInfo === 'function'
           ? uni.getWindowInfo()
@@ -343,6 +360,7 @@ export default defineComponent({
       ) as {
         windowWidth?: number
         windowHeight?: number
+        statusBarHeight?: number
         safeAreaInsets?: { top?: number; bottom?: number }
       }
       let width = Number(info.windowWidth) || 0
@@ -353,10 +371,28 @@ export default defineComponent({
         height = height || window.innerHeight
       }
       // #endif
-      const safeTop = Number(info.safeAreaInsets?.top) || 0
+      const safeTop =
+        Number(info.safeAreaInsets?.top) || Number(info.statusBarHeight) || 0
       const safeBottom = Number(info.safeAreaInsets?.bottom) || 0
-      const topbarHeight = 60 + safeTop
-      const bottombarHeight = 64 + safeBottom
+      let topInset = safeTop + 8
+      // #ifdef MP-WEIXIN
+      try {
+        const menu = (
+          uni as typeof uni & {
+            getMenuButtonBoundingClientRect?: () => { bottom?: number }
+          }
+        ).getMenuButtonBoundingClientRect?.()
+        if (menu && Number(menu.bottom) > 0) {
+          topInset = Math.max(topInset, Number(menu.bottom) + 8)
+        }
+      } catch {
+        /* 取不到胶囊时退回状态栏 */
+      }
+      // #endif
+      this.topInset = topInset
+      this.bottomInset = safeBottom
+      const topbarHeight = topInset + 44 + 8
+      const bottombarHeight = 10 + 64 + 10 + safeBottom
       this.stageLeft = 0
       this.stageTop = topbarHeight
       this.stage = {
@@ -651,24 +687,45 @@ export default defineComponent({
 .lingyun-image-upload-editor__bottombar {
   display: flex;
   align-items: center;
-  background-color: rgba(28, 28, 30, 0.82);
+}
+
+.lingyun-image-upload-editor__topbar {
+  justify-content: space-between;
+  padding: 0 16px 8px;
+  background-color: $lingyun-glass-overlay-bg-dark;
+  box-shadow:
+    $lingyun-glass-highlight-dark,
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.14);
   /* #ifdef H5 || APP-PLUS */
   backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
   -webkit-backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
   /* #endif */
 }
 
-.lingyun-image-upload-editor__topbar {
-  justify-content: space-between;
-  padding: calc(8px + env(safe-area-inset-top)) 16px 8px;
-  box-shadow: inset 0 -0.5px 0 rgba(255, 255, 255, 0.16);
-}
-
 .lingyun-image-upload-editor__bottombar {
   justify-content: center;
+  padding: 10px 16px;
+  background-color: transparent;
+}
+
+.lingyun-image-upload-editor__bottom-capsule {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 28px;
-  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
-  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.16);
+  width: 100%;
+  height: 64px;
+  box-sizing: border-box;
+  border: $lingyun-glass-hairline-dark;
+  border-radius: 26px;
+  background-color: $lingyun-glass-overlay-bg-dark;
+  box-shadow:
+    $lingyun-glass-highlight-dark,
+    $lingyun-glass-shadow-dark;
+  /* #ifdef H5 || APP-PLUS */
+  backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
+  -webkit-backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
+  /* #endif */
 }
 
 .lingyun-image-upload-editor__text-button {
@@ -678,12 +735,11 @@ export default defineComponent({
   min-width: 52px;
   height: 44px;
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.lingyun-image-upload-editor__text-button--primary {
-  color: #0a84ff;
-  font-weight: 600;
+.lingyun-image-upload-editor__done {
+  flex-shrink: 0;
 }
 
 .lingyun-image-upload-editor__title {
@@ -699,8 +755,15 @@ export default defineComponent({
   width: 44px;
   height: 44px;
   border-radius: 9999px;
-  background-color: rgba(255, 255, 255, 0.12);
-  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.2);
+  background-color: $lingyun-glass-control-bg-dark;
+  box-shadow:
+    $lingyun-glass-control-lens-dark,
+    0 0 0 0.5px $lingyun-glass-control-ring-dark,
+    $lingyun-glass-control-shadow-dark;
+  /* #ifdef H5 || APP-PLUS */
+  backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-control-blur);
+  -webkit-backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-control-blur);
+  /* #endif */
 }
 
 .lingyun-image-upload-editor__stage {
@@ -798,12 +861,45 @@ export default defineComponent({
   bottom: -16px;
 }
 
-.lingyun-image-upload-editor__handle-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 9999px;
+.lingyun-image-upload-editor__handle-bar {
+  position: absolute;
   background-color: #ffffff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  border-radius: 1px;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.35);
+}
+
+.lingyun-image-upload-editor__handle-bar--h {
+  width: 18px;
+  height: 2px;
+}
+
+.lingyun-image-upload-editor__handle-bar--v {
+  width: 2px;
+  height: 18px;
+}
+
+.lingyun-image-upload-editor__handle--nw .lingyun-image-upload-editor__handle-bar--h,
+.lingyun-image-upload-editor__handle--nw .lingyun-image-upload-editor__handle-bar--v {
+  left: 16px;
+  top: 16px;
+}
+
+.lingyun-image-upload-editor__handle--ne .lingyun-image-upload-editor__handle-bar--h,
+.lingyun-image-upload-editor__handle--ne .lingyun-image-upload-editor__handle-bar--v {
+  right: 16px;
+  top: 16px;
+}
+
+.lingyun-image-upload-editor__handle--se .lingyun-image-upload-editor__handle-bar--h,
+.lingyun-image-upload-editor__handle--se .lingyun-image-upload-editor__handle-bar--v {
+  right: 16px;
+  bottom: 16px;
+}
+
+.lingyun-image-upload-editor__handle--sw .lingyun-image-upload-editor__handle-bar--h,
+.lingyun-image-upload-editor__handle--sw .lingyun-image-upload-editor__handle-bar--v {
+  left: 16px;
+  bottom: 16px;
 }
 
 .lingyun-image-upload-editor__loading {
