@@ -338,6 +338,14 @@ lingyun-ui/
 
 <lingyun-location-picker v-model="location" @change="onLocationChange" />
 
+<lingyun-tooltip text="轻量说明">
+  <lingyun-button variant="glass" size="small" text="说明" />
+</lingyun-tooltip>
+
+<lingyun-notice-bar type="info" text="今日 18:00 前下单，可安排当日配送。" closable />
+
+<lingyun-accordion v-model="openKey" :items="accordionItems" />
+
 <lingyun-list header="Header" header-type="extraProminent" footer="Footer">
   <lingyun-list-item title="Title" note="Subtitle" />
   <lingyun-list-item title="Title" detail="Detail" accessory="disclosure" />

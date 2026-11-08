@@ -183,6 +183,7 @@ const componentSidebar = [
       { text: '列表', link: '/components/list.html' },
       { text: '列表行', link: '/components/list-item.html' },
       { text: '分组卡片', link: '/components/section.html' },
+      { text: '折叠分组', link: '/components/accordion.html' },
       { text: '步骤条', link: '/components/steps.html' },
       { text: '时间线', link: '/components/timeline.html' },
       { text: '加载更多', link: '/components/load-more.html' },
@@ -203,6 +204,7 @@ const componentSidebar = [
       { text: '加载转圈', link: '/components/activity-indicator.html' },
       { text: '进度', link: '/components/progress.html' },
       { text: '轻提示', link: '/components/toast.html' },
+      { text: '通知条', link: '/components/notice-bar.html' },
       { text: '加载遮罩', link: '/components/hud.html' },
       { text: '反馈宿主', link: '/components/feedback-host.html' },
     ],
@@ -211,6 +213,7 @@ const componentSidebar = [
     text: '浮层',
     children: [
       { text: '弹窗', link: '/components/alert.html' },
+      { text: '轻提示气泡', link: '/components/tooltip.html' },
       { text: '底部面板', link: '/components/sheets.html' },
       { text: '操作列表', link: '/components/action-sheet.html' },
       { text: '分享面板', link: '/components/activity-view.html' },

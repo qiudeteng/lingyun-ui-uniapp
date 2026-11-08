@@ -301,6 +301,21 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Location Picker' }
 	},
 	{
+		path: '/pages/demo/tooltip',
+		name: 'pagesDemoTooltip',
+		meta: { title: 'Tooltip' }
+	},
+	{
+		path: '/pages/demo/notice-bar',
+		name: 'pagesDemoNoticeBar',
+		meta: { title: 'Notice Bar' }
+	},
+	{
+		path: '/pages/demo/accordion',
+		name: 'pagesDemoAccordion',
+		meta: { title: 'Accordion' }
+	},
+	{
 		path: '/pages/demo/avatars',
 		name: 'pagesDemoAvatars',
 		meta: { title: 'Avatars' }

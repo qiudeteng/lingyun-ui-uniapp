@@ -58,6 +58,9 @@
 | ✅ | `lingyun-qrcode` | 二维码 · `uqr` 前端生成 / 颜色 / 纠错 / 图片导出 | [`QRCODE.md`](./QRCODE.md) |
 | ✅ | `lingyun-barcode` | 一维条码 · Code128 / Code39 / EAN13 / 图片导出 | [`BARCODE.md`](./BARCODE.md) |
 | ✅ | `lingyun-location-picker` | 位置选择 · 原生 chooseLocation / H5 腾讯地图 Key | [`LOCATION_PICKER.md`](./LOCATION_PICKER.md) |
+| ✅ | `lingyun-tooltip` | 轻量说明 · hover / 点击 / 长按 | [`TOOLTIPS.md`](./TOOLTIPS.md) |
+| ✅ | `lingyun-notice-bar` | 非模态通知条 · 信息 / 成功 / 警告 / 错误 | [`NOTICE_BARS.md`](./NOTICE_BARS.md) |
+| ✅ | `lingyun-accordion` | 折叠分组 · 单开 / 多开 / 自定义内容 | [`ACCORDION.md`](./ACCORDION.md) |
 | ✅ | `lingyun-avatar` | 头像 | [`AVATARS.md`](./AVATARS.md) |
 | ✅ | `lingyun-page-control` | 轮播指示点 | [`PAGE_CONTROLS.md`](./PAGE_CONTROLS.md) |
 | ✅ | `lingyun-skeleton` | 骨架屏 | [`SKELETONS.md`](./SKELETONS.md) |
@@ -108,9 +111,12 @@
 
 | 状态 | 组件 | 说明 |
 |------|------|------|
-| ⬜ | `lingyun-rating` | 评分 |
-| ⬜ | `lingyun-gauge` | 仪表盘类（内容层控件；图表仪表盘走 `lingyun-ui-charts` type=`gauge`） |
+| ⬜ | `lingyun-banner` | 页面顶部营销横幅 |
+| ⬜ | `lingyun-combobox` | 可搜索选择 |
+| ⬜ | `lingyun-token-field` | 多选标签输入 |
+| ⬜ | `lingyun-color-well` | 颜色配置 |
 | ⬜ | `lingyun-keyboard-toolbar` | 输入附属栏 |
+| ⬜ | `lingyun-gauge` | 仪表盘类（内容层控件；图表仪表盘走 `lingyun-ui-charts` type=`gauge`） |
 | ➖ | Widgets / Notifications | 偏系统壳，小程序优先级低 |
 
 ---
@@ -170,6 +176,7 @@
 | 2026-11-08 | 新增 `lingyun-qrcode`（`uqr` 前端生成 / 颜色 / 纠错 / 图片导出）；专章 `QRCODE.md` |
 | 2026-11-08 | 新增 `lingyun-barcode`（`etiket` 编码 · Code128 / Code39 / EAN13 / 图片导出）；专章 `BARCODE.md` |
 | 2026-11-08 | 新增 `lingyun-location-picker`（原生 chooseLocation / H5 腾讯地图 Key）；专章 `LOCATION_PICKER.md` |
+| 2026-11-08 | 新增 `lingyun-tooltip`、`lingyun-notice-bar`、`lingyun-accordion`；专章 `TOOLTIPS.md` / `NOTICE_BARS.md` / `ACCORDION.md` |
 | 2026-11-08 | 新增 `lingyun-file-upload`（列表行 · 类型色 · 进度 · 重试 · 预览下载）；专章 `FILE_UPLOADS.md` |
 | 2026-11-08 | 新增 `lingyun-image-upload`（直接上传 / 编辑后上传 · 90° 旋转 · 固定比例 / 自由裁剪）；专章 `IMAGE_UPLOADS.md` |
 | 2026-10-09 | 凌云UI 1.0.9：分组卡片着色为系统色实底；卡片与图片默认圆角 `2xl`（26px）；宫格图片图标可设 `shape` / `radius` |

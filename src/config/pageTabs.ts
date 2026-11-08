@@ -118,6 +118,7 @@ const COMPONENT_CHILDREN: LingyunPageTabChild[] = [
   group('components-content', '列表与内容', [
     navChild('/pages/demo/lists', '列表'),
     navChild('/pages/demo/sections', '分组卡片'),
+    navChild('/pages/demo/accordion', '折叠分组'),
     navChild('/pages/demo/steps', '步骤条'),
     navChild('/pages/demo/timeline', '时间线'),
     navChild('/pages/demo/load-more', '加载更多'),
@@ -134,6 +135,7 @@ const COMPONENT_CHILDREN: LingyunPageTabChild[] = [
     navChild('/pages/demo/activity-indicator', '加载转圈'),
     navChild('/pages/demo/progress', '进度'),
     navChild('/pages/demo/toasts', '轻提示'),
+    navChild('/pages/demo/notice-bar', '通知条'),
   ]),
   group('components-overlay', '浮层', [
     navChild('/pages/demo/alerts', '弹窗'),
@@ -141,6 +143,7 @@ const COMPONENT_CHILDREN: LingyunPageTabChild[] = [
     navChild('/pages/demo/action-sheets', '操作列表'),
     navChild('/pages/demo/activity-views', '分享面板'),
     navChild('/pages/demo/popovers', '气泡'),
+    navChild('/pages/demo/tooltip', '轻提示气泡'),
     navChild('/pages/demo/menus', '菜单'),
     navChild('/pages/demo/filter-menu', '筛选菜单'),
     navChild('/pages/demo/toolbar-search', '顶部搜索'),

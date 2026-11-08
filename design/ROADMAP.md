@@ -31,9 +31,10 @@
 | **P1 ✅** | `lingyun-scan` | 高：取货码、商品/批次码 | `uni.scanCode`；H5 用 `scanFn` | 低中 |
 | **P1 ✅** | `lingyun-qrcode` | 高：取货码、商品/批次码 | `uqr` 前端生成 + Canvas | 中 |
 | **P1 ✅** | `lingyun-barcode` | 高：商品/批次码 | `etiket` 前端编码 + Canvas | 中 |
-| P2 | `lingyun-tooltip` | 中：轻量说明 | 可扩展 `lingyun-popover` | 低 |
-| P2 | `lingyun-banner` / `notice-bar` | 中：公告、表单提示 | `alert` 视觉，非模态 | 低 |
-| P2 | `lingyun-accordion` | 中：折叠分组 | 扩展 `lingyun-list` / `section` | 低中 |
+| **P2 ✅** | `lingyun-tooltip` | 中：轻量说明 | `lingyun-popover` | 低 |
+| **P2 ✅** | `lingyun-notice-bar` | 中：公告、表单提示 | `alert` 视觉，非模态 | 低 |
+| P2 | `lingyun-banner` | 中：页面顶部营销横幅 | 图片 / 文案 / 操作区 | 低 |
+| **P2 ✅** | `lingyun-accordion` | 中：折叠分组 | `list` / `section` | 低中 |
 | P2 | `lingyun-combobox` | 中：可搜索选择 | `text-field` + `data-picker` | 中 |
 | P2 | `lingyun-token-field` | 中：多选标签输入 | `chip` + `text-field` | 中 |
 | P2 | `lingyun-color-well` | 中低：颜色配置 | 纯 UI + Canvas/色板 | 中 |
@@ -69,7 +70,7 @@
 
 ### 批次 5 · P2（HIG / 表单增强）
 
-`lingyun-tooltip` → `lingyun-banner` → `lingyun-accordion` → `lingyun-combobox` → `lingyun-token-field` → `lingyun-color-well` → `lingyun-keyboard-toolbar` → `lingyun-gauge`。
+`lingyun-tooltip`（已完成）→ `lingyun-notice-bar`（已完成）→ `lingyun-banner` → `lingyun-accordion`（已完成）→ `lingyun-combobox` → `lingyun-token-field` → `lingyun-color-well` → `lingyun-keyboard-toolbar` → `lingyun-gauge`。
 
 ### 批次 6 · P3（数据密集）
 

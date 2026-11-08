@@ -65,6 +65,7 @@
 - [列表](./list.md)
 - [列表行](./list-item.md)
 - [分组卡片](./section.md)
+- [折叠分组](./accordion.md)
 - [步骤条](./steps.md)
 - [时间线](./timeline.md)
 - [加载更多](./load-more.md)
@@ -83,12 +84,14 @@
 - [加载转圈](./activity-indicator.md)
 - [进度](./progress.md)
 - [轻提示](./toast.md)
+- [通知条](./notice-bar.md)
 - [加载遮罩](./hud.md)
 - [反馈宿主](./feedback-host.md)
 
 ## 浮层
 
 - [弹窗](./alert.md)
+- [轻提示气泡](./tooltip.md)
 - [底部面板](./sheets.md)
 - [操作列表](./action-sheet.md)
 - [分享面板](./activity-view.md)

@@ -414,6 +414,27 @@
 			}
 		},
 		{
+			"path": "pages/demo/tooltip",
+			"style": {
+				"navigationBarTitleText": "Tooltip",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/notice-bar",
+			"style": {
+				"navigationBarTitleText": "Notice Bar",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/accordion",
+			"style": {
+				"navigationBarTitleText": "Accordion",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/avatars",
 			"style": {
 				"navigationBarTitleText": "Avatars",
