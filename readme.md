@@ -210,6 +210,19 @@ src/uni_modules/lingyun-ui/
 
 <lingyun-accordion v-model="openKey" :items="accordionItems" />
 
+<lingyun-banner
+  image="https://images.unsplash.com/..."
+  title="秋日限定"
+  description="门店现做，数量有限"
+  action-text="去看看"
+  overlay="bottom"
+  closable
+/>
+
+<lingyun-combobox v-model="store" label="配送门店" :items="stores" clearable />
+
+<lingyun-token-field v-model="tags" label="商品标签" :suggestions="tagSuggestions" :max="5" show-count />
+
 <lingyun-list header="Header" header-type="extraProminent" footer="Footer">
   <lingyun-list-item title="Title" note="Subtitle" />
   <lingyun-list-item title="Title" detail="Detail" accessory="disclosure" />

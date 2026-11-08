@@ -47,6 +47,9 @@
 - **Tooltip 专章** → **[`TOOLTIPS.md`](./TOOLTIPS.md)**（轻量说明 · hover / 点击 / 长按）
 - **Notice Bar 专章** → **[`NOTICE_BARS.md`](./NOTICE_BARS.md)**（通知条 · 信息 / 成功 / 警告 / 错误）
 - **Accordion 专章** → **[`ACCORDION.md`](./ACCORDION.md)**（折叠分组 · 单开 / 多开）
+- **Banner 专章** → **[`BANNERS.md`](./BANNERS.md)**（营销横幅 · 图片 / 卡片）
+- **Combobox 专章** → **[`COMBOBOX.md`](./COMBOBOX.md)**（可搜索选择 · 搜索列表）
+- **Token Field 专章** → **[`TOKEN_FIELDS.md`](./TOKEN_FIELDS.md)**（标签输入 · 建议 / 上限）
 - **Charts 专章** → **[`CHARTS.md`](./CHARTS.md)**（`lingyun-ui-charts` · System Accents 系列色）
 - **Goods Nav 专章** → **[`GOODS_NAV.md`](./GOODS_NAV.md)**（商品底栏 · 对齐 uni-goods-nav）
 - **Grid 专章** → **[`GRID.md`](./GRID.md)**（宫格 · 对齐 uni-grid）

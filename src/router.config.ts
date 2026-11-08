@@ -316,6 +316,21 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Accordion' }
 	},
 	{
+		path: '/pages/demo/banner',
+		name: 'pagesDemoBanner',
+		meta: { title: 'Banner' }
+	},
+	{
+		path: '/pages/demo/combobox',
+		name: 'pagesDemoCombobox',
+		meta: { title: 'Combobox' }
+	},
+	{
+		path: '/pages/demo/token-field',
+		name: 'pagesDemoTokenField',
+		meta: { title: 'Token Field' }
+	},
+	{
 		path: '/pages/demo/avatars',
 		name: 'pagesDemoAvatars',
 		meta: { title: 'Avatars' }

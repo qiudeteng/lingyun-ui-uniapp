@@ -33,10 +33,10 @@
 | **P1 ✅** | `lingyun-barcode` | 高：商品/批次码 | `etiket` 前端编码 + Canvas | 中 |
 | **P2 ✅** | `lingyun-tooltip` | 中：轻量说明 | `lingyun-popover` | 低 |
 | **P2 ✅** | `lingyun-notice-bar` | 中：公告、表单提示 | `alert` 视觉，非模态 | 低 |
-| P2 | `lingyun-banner` | 中：页面顶部营销横幅 | 图片 / 文案 / 操作区 | 低 |
+| **P2 ✅** | `lingyun-banner` | 中：页面顶部营销横幅 | 图片 / 文案 / 操作区 | 低 |
 | **P2 ✅** | `lingyun-accordion` | 中：折叠分组 | `list` / `section` | 低中 |
-| P2 | `lingyun-combobox` | 中：可搜索选择 | `text-field` + `data-picker` | 中 |
-| P2 | `lingyun-token-field` | 中：多选标签输入 | `chip` + `text-field` | 中 |
+| **P2 ✅** | `lingyun-combobox` | 中：可搜索选择 | `text-field` + `data-picker` | 中 |
+| **P2 ✅** | `lingyun-token-field` | 中：多选标签输入 | `chip` + `text-field` | 中 |
 | P2 | `lingyun-color-well` | 中低：颜色配置 | 纯 UI + Canvas/色板 | 中 |
 | P2 | `lingyun-keyboard-toolbar` | 中：输入附属栏 | 键盘高度 / `toolbars` | 中 |
 | P2 | `lingyun-gauge` | 低中：内容层仪表盘 | Canvas（图表 gauge 已有） | 低中 |
@@ -70,7 +70,7 @@
 
 ### 批次 5 · P2（HIG / 表单增强）
 
-`lingyun-tooltip`（已完成）→ `lingyun-notice-bar`（已完成）→ `lingyun-banner` → `lingyun-accordion`（已完成）→ `lingyun-combobox` → `lingyun-token-field` → `lingyun-color-well` → `lingyun-keyboard-toolbar` → `lingyun-gauge`。
+`lingyun-tooltip`（已完成）→ `lingyun-notice-bar`（已完成）→ `lingyun-banner`（已完成）→ `lingyun-accordion`（已完成）→ `lingyun-combobox`（已完成）→ `lingyun-token-field`（已完成）→ `lingyun-color-well` → `lingyun-keyboard-toolbar` → `lingyun-gauge`。
 
 ### 批次 6 · P3（数据密集）
 

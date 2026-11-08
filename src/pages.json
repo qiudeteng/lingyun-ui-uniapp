@@ -435,6 +435,27 @@
 			}
 		},
 		{
+			"path": "pages/demo/banner",
+			"style": {
+				"navigationBarTitleText": "Banner",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/combobox",
+			"style": {
+				"navigationBarTitleText": "Combobox",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/token-field",
+			"style": {
+				"navigationBarTitleText": "Token Field",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/avatars",
 			"style": {
 				"navigationBarTitleText": "Avatars",

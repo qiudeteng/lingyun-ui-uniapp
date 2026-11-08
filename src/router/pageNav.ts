@@ -68,6 +68,8 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
       { title: 'Date Text', url: '/pages/demo/date-text', note: '日期显示 · 今天 / 昨天 / 明天 · 精度', icon: 'calendar' },
       { title: 'Calendar', url: '/pages/demo/calendar', note: '日历 · 单选 / 范围 / 标记', icon: 'calendar' },
       { title: 'Location Picker', url: '/pages/demo/location-picker', note: '位置选择 · 门店 / 收货地址', icon: 'location' },
+      { title: 'Combobox', url: '/pages/demo/combobox', note: '可搜索选择 · 搜索列表', icon: 'search' },
+      { title: 'Token Field', url: '/pages/demo/token-field', note: '多选标签输入 · 建议 / 上限', icon: 'flag' },
       { title: 'Amount Text', url: '/pages/demo/amount-text', note: '金额显示 · 万 / 亿 / 万亿 · 小数位', icon: 'wallet' },
       // 导航与栏
       { title: 'Toolbars', url: '/pages/demo/toolbars', note: '顶栏 · 滚动玻璃', icon: 'bars' },
@@ -86,6 +88,7 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
       { title: 'Indexed List', url: '/pages/demo/indexed-list', note: '索引列表 · 字母跳转', icon: 'list' },
       { title: 'Sections', url: '/pages/demo/sections', note: '分组卡片 · Glass / Plain / 布局', icon: 'list' },
       { title: 'Accordion', url: '/pages/demo/accordion', note: '折叠分组 · 单开 / 多开', icon: 'list' },
+      { title: 'Banner', url: '/pages/demo/banner', note: '营销横幅 · 图片 / 卡片', icon: 'image' },
       { title: 'Steps', url: '/pages/demo/steps', note: '步骤条 · 横向 / 纵向 / 状态', icon: 'bars' },
       { title: 'Timeline', url: '/pages/demo/timeline', note: '时间线 · 轨迹 / 日志 / 状态', icon: 'list' },
       { title: 'Load More', url: '/pages/demo/load-more', note: '加载更多 · 触底 / 状态', icon: 'bottom' },

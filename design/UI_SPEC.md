@@ -372,6 +372,9 @@ Liquid Glass 是 **控件与导航功能层** 的材质，不是整页皮肤。
 - [ ] Tooltip 改动已对照 `TOOLTIPS.md`（Popover 玻璃、无遮罩、触发方式）
 - [ ] Notice Bar 改动已对照 `NOTICE_BARS.md`（40px 行、语义软色、操作 / 关闭）
 - [ ] Accordion 改动已对照 `ACCORDION.md`（分组卡片、52px 头部、内缩分割线）
+- [ ] Banner 改动已对照 `BANNERS.md`（图片 / 卡片、遮罩、操作与关闭）
+- [ ] Combobox 改动已对照 `COMBOBOX.md`（字段触发、搜索列表、透明遮罩）
+- [ ] Token Field 改动已对照 `TOKEN_FIELDS.md`（48px 输入容器、token 胶囊、建议列表）
 - [ ] Goods Nav 改动已对照 `GOODS_NAV.md`（玻璃图标胶囊 + 系统蓝按钮，非渐变实心条）
 - [ ] Grid 改动已对照 `GRID.md`（分组卡片、方形格、分割线不画成灰表格）
 - [ ] Indexed List 改动已对照 `INDEXED_LIST.md`（分组卡片、字母条、玻璃气泡）
