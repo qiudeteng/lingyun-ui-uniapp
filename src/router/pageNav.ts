@@ -46,6 +46,7 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
       { title: 'Tags & Chips', url: '/pages/demo/tags', note: '标签 · 筛选胶囊', icon: 'flag' },
       { title: 'Text', url: '/pages/demo/texts', note: '文本 · 字阶 / 颜色', icon: 'font' },
       { title: 'Image', url: '/pages/demo/images', note: '图片 · 懒加载 / 圆角', icon: 'image' },
+      { title: 'Image Upload', url: '/pages/demo/image-upload', note: '图片上传 · 选图 / 旋转裁剪 / 上传', icon: 'images' },
       { title: 'Avatars', url: '/pages/demo/avatars', note: '头像', icon: 'person' },
       { title: 'Page Control', url: '/pages/demo/page-controls', note: '轮播指示点', icon: 'more' },
       // 表单输入

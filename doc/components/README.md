@@ -34,6 +34,7 @@
 ## 表单
 
 - [输入框](./text-field.md)
+- [图片上传](./image-upload.md)
 - [表单](./form.md)
 - [表单分组](./form-group.md)
 - [表单行](./form-item.md)

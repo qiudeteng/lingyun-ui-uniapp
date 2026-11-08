@@ -43,6 +43,7 @@
 | ✅ | `lingyun-date-text` | 日期显示 · 今天 / 昨天 / 明天 · MM-DD / YYYY-MM-DD · 精度与样式 | [`DATE_TEXT.md`](./DATE_TEXT.md) |
 | ✅ | `lingyun-amount-text` | 金额显示 · 万 / 百万 / 千万 / 亿 / 百亿 / 千亿 / 万亿 · 小数位与样式 | [`AMOUNT_TEXT.md`](./AMOUNT_TEXT.md) |
 | ✅ | `lingyun-image` | 图片包装 · 懒加载 / 占位 / 圆角 | [`IMAGES.md`](./IMAGES.md) |
+| ✅ | `lingyun-image-upload` | 图片上传 · 直接上传 / 90° 旋转 / 固定比例或自由裁剪 | [`IMAGE_UPLOADS.md`](./IMAGE_UPLOADS.md) |
 | ✅ | `lingyun-avatar` | 头像 | [`AVATARS.md`](./AVATARS.md) |
 | ✅ | `lingyun-page-control` | 轮播指示点 | [`PAGE_CONTROLS.md`](./PAGE_CONTROLS.md) |
 | ✅ | `lingyun-skeleton` | 骨架屏 | [`SKELETONS.md`](./SKELETONS.md) |
@@ -147,6 +148,7 @@
 | 2026-10-09 | 凌云UI 1.0.12：`lingyun-app-page` 可用 `showToolbar` 隐藏头部顶栏 |
 | 2026-10-09 | 凌云UI 1.0.11：分组卡片 `headerLine` 可在标题和内容之间画横线 |
 | 2026-10-09 | 凌云UI 1.0.10：宫格不传圆角时跟图片默认 `2xl`（26px） |
+| 2026-11-08 | 新增 `lingyun-image-upload`（直接上传 / 编辑后上传 · 90° 旋转 · 固定比例 / 自由裁剪）；专章 `IMAGE_UPLOADS.md` |
 | 2026-10-09 | 凌云UI 1.0.9：分组卡片着色为系统色实底；卡片与图片默认圆角 `2xl`（26px）；宫格图片图标可设 `shape` / `radius` |
 | 2026-10-09 | `lingyun-grid` 1.0.8：`iconSize` 按任意像素控制图标。专章 `GRID.md` |
 | 2026-10-09 | `lingyun-grid` 1.0.7：微信空 `items` 仍走插槽；去掉宿主并用 flex-basis 分列宽。专章 `GRID.md` |

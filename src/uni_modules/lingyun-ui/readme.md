@@ -283,6 +283,14 @@ lingyun-ui/
 <lingyun-text-field v-model="name" label="Name" placeholder="Placeholder" clearable />
 <lingyun-text-field v-model="pwd" label="Password" secure />
 
+<lingyun-image-upload
+  v-model="uploadUrls"
+  mode="edit"
+  :max-count="3"
+  :crop-aspect="1"
+  :upload-fn="uploadFile"
+/>
+
 <lingyun-list header="Header" header-type="extraProminent" footer="Footer">
   <lingyun-list-item title="Title" note="Subtitle" />
   <lingyun-list-item title="Title" detail="Detail" accessory="disclosure" />

@@ -30,6 +30,7 @@
 - **Text Fields 专章** → **[`TEXTFIELDS.md`](./TEXTFIELDS.md)**（Sketch Text Field Light/Dark）
 - **Text 专章** → **[`TEXTS.md`](./TEXTS.md)**（HIG Text Styles · Labels）
 - **Image 专章** → **[`IMAGES.md`](./IMAGES.md)**（懒加载 · 占位 · 圆角 · mode）
+- **Image Upload 专章** → **[`IMAGE_UPLOADS.md`](./IMAGE_UPLOADS.md)**（选图 · 90° 旋转 · 固定比例 / 自由裁剪 · 上传）
 - **Charts 专章** → **[`CHARTS.md`](./CHARTS.md)**（`lingyun-ui-charts` · System Accents 系列色）
 - **Goods Nav 专章** → **[`GOODS_NAV.md`](./GOODS_NAV.md)**（商品底栏 · 对齐 uni-goods-nav）
 - **Grid 专章** → **[`GRID.md`](./GRID.md)**（宫格 · 对齐 uni-grid）
@@ -107,6 +108,7 @@ design/
 ├── TEXTFIELDS.md       # 输入框（Sketch Text Fields）专章
 ├── TEXTS.md            # 语义文本（HIG Text Styles）专章
 ├── IMAGES.md           # 图片包装（懒加载 / 圆角 / mode）专章
+├── IMAGE_UPLOADS.md    # 图片上传（选图 / 旋转 / 裁剪 / 上传）专章
 ├── CHARTS.md           # 图表（lingyun-ui-charts）专章
 ├── GOODS_NAV.md        # 商品底栏（lingyun-goods-nav）专章
 ├── GRID.md             # 宫格（lingyun-grid）专章

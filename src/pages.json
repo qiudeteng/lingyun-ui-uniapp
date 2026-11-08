@@ -302,6 +302,13 @@
 			}
 		},
 		{
+			"path": "pages/demo/image-upload",
+			"style": {
+				"navigationBarTitleText": "Image Upload",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/avatars",
 			"style": {
 				"navigationBarTitleText": "Avatars",

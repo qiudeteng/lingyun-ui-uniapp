@@ -95,6 +95,7 @@ const COMPONENT_CHILDREN: LingyunPageTabChild[] = [
   ]),
   group('components-form', '表单', [
     navChild('/pages/demo/text-fields', '输入框'),
+    navChild('/pages/demo/image-upload', '图片上传'),
     navChild('/pages/demo/forms', '表单'),
     navChild('/pages/demo/switches', '开关与步进器'),
     navChild('/pages/demo/checks', '复选框与单选'),

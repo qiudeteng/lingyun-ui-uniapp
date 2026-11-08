@@ -150,6 +150,7 @@ const componentSidebar = [
     text: '表单',
     children: [
       { text: '输入框', link: '/components/text-field.html' },
+      { text: '图片上传', link: '/components/image-upload.html' },
       { text: '表单', link: '/components/form.html' },
       { text: '表单分组', link: '/components/form-group.html' },
       { text: '表单行', link: '/components/form-item.html' },

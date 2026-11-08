@@ -43,7 +43,7 @@
     "docs:dev": "vuepress dev design --host 0.0.0.0 --port 5174",
     "docs:build": "vuepress build design",
     "docs:clean": "vuepress dev design --clean-cache --host 0.0.0.0 --port 5174",
-    "manual:dev": "vuepress dev doc --host 0.0.0.0 --port 5175",
+    "manual:dev": "vuepress dev doc --host 0.0.0.0 --port 5176",
     "manual:build": "vuepress build doc"
   },
   "dependencies": {
