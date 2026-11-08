@@ -4,11 +4,11 @@
       <view class="hero">
         <lingyun-text type="title2" block emphasized>Rating</lingyun-text>
         <lingyun-text type="subtitle" block>
-          评分 · 整星 / 半星 · 只读 / 禁用 / 可清除
+          评分 · 整星 / 半星 · 左右滑动调整
         </lingyun-text>
       </view>
 
-      <lingyun-section title="基础评分" hint="v-model · showValue">
+      <lingyun-section title="基础评分" hint="v-model · 左右滑动 / 点击">
         <lingyun-rating
           v-model="score"
           show-value
@@ -28,7 +28,7 @@
         </view>
       </lingyun-section>
 
-      <lingyun-section title="半星评分" hint="allowHalf · 3.5 星">
+      <lingyun-section title="半星评分" hint="allowHalf · 左右滑动 / 点击">
         <lingyun-rating
           v-model="halfScore"
           allow-half
@@ -117,7 +117,7 @@ function onChange(payload: LingyunRatingChangePayload) {
 }
 
 .hero {
-  padding: 8px 4px 15px;
+  padding: 24px 20px 8px;
 }
 
 .result {

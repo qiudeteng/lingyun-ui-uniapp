@@ -8,7 +8,11 @@
     role="radiogroup"
     :aria-label="label"
   >
-    <view class="lingyun-rating__stars" :style="starsStyle">
+    <view
+      :id="starsId"
+      class="lingyun-rating__stars"
+      :style="starsStyle"
+    >
       <view
         v-for="star in starList"
         :key="star"
@@ -56,6 +60,16 @@
           />
         </view>
       </view>
+
+      <view
+        v-if="interactive"
+        class="lingyun-rating__drag-layer"
+        aria-hidden="true"
+        @touchstart.stop.prevent="onTouchStart"
+        @touchmove.stop.prevent="onTouchMove"
+        @touchend="onTouchEnd"
+        @touchcancel="onTouchEnd"
+      />
     </view>
 
     <text v-if="showValue" class="lingyun-rating__value">
@@ -65,9 +79,27 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, markRaw } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
 import type { LingyunRatingChangePayload } from './types'
+
+interface TouchLike {
+  clientX?: number
+  clientY?: number
+  pageX?: number
+  pageY?: number
+}
+
+let ratingSequence = 0
+
+function touchesOf(event: TouchEvent): TouchLike[] {
+  const list = event.touches as unknown as ArrayLike<TouchLike> | undefined
+  return list ? Array.from(list) : []
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value))
+}
 
 /**
  * lingyun-rating
@@ -92,7 +124,52 @@ export default defineComponent({
     activeColor: { type: String, default: 'orange' },
     inactiveColor: { type: String, default: 'gray3' },
   },
+  data(): {
+    uid: number
+    dragging: boolean
+    dragMoved: boolean
+    dragStartX: number
+    dragStartY: number
+    dragStartValue: number
+    dragValue: number | null
+    lastDragX: number
+    starsLeft: number
+    starsWidth: number
+    suppressClick: boolean
+    suppressTimer: ReturnType<typeof setTimeout> | null
+    lastTouchAt: number
+    h5Stars: HTMLElement | null
+    h5MouseDown: ((event: MouseEvent) => void) | null
+    h5MouseMove: ((event: MouseEvent) => void) | null
+    h5MouseUp: (() => void) | null
+  } {
+    return {
+      uid: (ratingSequence += 1),
+      dragging: false,
+      dragMoved: false,
+      dragStartX: 0,
+      dragStartY: 0,
+      dragStartValue: 0,
+      dragValue: null,
+      lastDragX: 0,
+      starsLeft: 0,
+      starsWidth: 0,
+      suppressClick: false,
+      suppressTimer: null,
+      lastTouchAt: 0,
+      h5Stars: null,
+      h5MouseDown: null,
+      h5MouseMove: null,
+      h5MouseUp: null,
+    }
+  },
   computed: {
+    starsId(): string {
+      return `lingyun-rating-stars-${this.uid}`
+    },
+    interactive(): boolean {
+      return !this.readonly && !this.disabled
+    },
     rootClass(): string {
       let themeClass = 'theme-light'
       try {
@@ -129,13 +206,23 @@ export default defineComponent({
       return { gap: `${Math.max(0, Number(this.gap) || 0)}px` }
     },
   },
+  mounted() {
+    this.$nextTick(() => this.bindH5Mouse())
+  },
+  beforeUnmount() {
+    this.unbindH5Mouse()
+    if (this.suppressTimer) {
+      clearTimeout(this.suppressTimer)
+      this.suppressTimer = null
+    }
+  },
   methods: {
     fillPercent(star: number): number {
       const filled = this.current - (star - 1)
       return Math.min(100, Math.max(0, filled * 100))
     },
     onRate(star: number, offset: number): void {
-      if (this.readonly || this.disabled) return
+      if (this.readonly || this.disabled || this.suppressClick) return
       const next = Math.min(
         this.resolvedMax,
         Math.max(0, star - 1 + offset),
@@ -159,6 +246,167 @@ export default defineComponent({
       if (this.readonly || this.disabled) return
       this.emitValue(0)
     },
+    measureStars(callback?: () => void): void {
+      // #ifdef H5
+      if (typeof document !== 'undefined') {
+        const el = document.getElementById(this.starsId)
+        if (el) {
+          const rect = el.getBoundingClientRect()
+          this.starsLeft = rect.left
+          this.starsWidth = rect.width
+          if (callback) callback()
+          return
+        }
+      }
+      // #endif
+
+      uni
+        .createSelectorQuery()
+        .in(this)
+        .select(`#${this.starsId}`)
+        .boundingClientRect()
+        .exec((res) => {
+          const rect =
+            res && (res[0] as { left?: number; width?: number } | null)
+          if (!rect || !rect.width) return
+          this.starsLeft = Number(rect.left || 0)
+          this.starsWidth = Number(rect.width)
+          if (callback) callback()
+        })
+    },
+    startDrag(clientX: number, clientY: number): void {
+      if (!this.interactive) return
+      this.dragging = true
+      this.dragMoved = false
+      this.dragStartX = clientX
+      this.dragStartY = clientY
+      this.dragStartValue = this.current
+      this.lastDragX = clientX
+      this.dragValue = null
+      this.measureStars(() => {
+        if (this.dragging) this.applyDrag(this.lastDragX)
+      })
+    },
+    moveDrag(clientX: number, clientY: number): void {
+      if (!this.dragging) return
+      this.lastDragX = clientX
+      if (
+        Math.abs(clientX - this.dragStartX) > 6 ||
+        Math.abs(clientY - this.dragStartY) > 6
+      ) {
+        this.dragMoved = true
+      }
+      if (this.starsWidth > 0) this.applyDrag(clientX)
+    },
+    endDrag(): void {
+      if (!this.dragging) return
+      const wasMoved = this.dragMoved
+      const tapValue = this.dragValue
+      this.dragging = false
+      this.dragValue = null
+      if (
+        !wasMoved &&
+        this.clearable &&
+        tapValue != null &&
+        tapValue === this.dragStartValue
+      ) {
+        this.emitValue(0)
+      }
+      if (wasMoved) {
+        this.suppressClick = true
+        if (this.suppressTimer) clearTimeout(this.suppressTimer)
+        this.suppressTimer = setTimeout(() => {
+          this.suppressClick = false
+          this.suppressTimer = null
+        }, 80)
+      }
+    },
+    applyDrag(clientX: number): void {
+      if (!this.starsWidth || this.starsWidth <= 0) return
+      const ratio = clamp(
+        (clientX - this.starsLeft) / this.starsWidth,
+        0,
+        1,
+      )
+      const scaled = ratio * this.resolvedMax
+      let index = Math.floor(scaled)
+      if (index >= this.resolvedMax) index = this.resolvedMax - 1
+      const within = scaled - index
+      const next = this.allowHalf
+        ? index + (within < 0.5 ? 0.5 : 1)
+        : index + 1
+      if (next === this.dragValue) return
+      this.dragValue = next
+      this.emitValue(next)
+    },
+    onTouchStart(event: TouchEvent): void {
+      if (!this.interactive) return
+      const touch = touchesOf(event)[0]
+      if (!touch) return
+      this.lastTouchAt = Date.now()
+      this.startDrag(
+        Number(touch.clientX ?? touch.pageX ?? 0),
+        Number(touch.clientY ?? touch.pageY ?? 0),
+      )
+    },
+    onTouchMove(event: TouchEvent): void {
+      const touch = touchesOf(event)[0]
+      if (!touch) return
+      this.moveDrag(
+        Number(touch.clientX ?? touch.pageX ?? 0),
+        Number(touch.clientY ?? touch.pageY ?? 0),
+      )
+    },
+    onTouchEnd(): void {
+      this.endDrag()
+    },
+    bindH5Mouse(): void {
+      // #ifdef H5
+      if (typeof document === 'undefined') return
+      const el = document.getElementById(this.starsId)
+      if (!el) return
+      this.h5Stars = markRaw(el)
+      this.h5MouseDown = (event: MouseEvent) => {
+        if (
+          event.button !== 0 ||
+          Date.now() - this.lastTouchAt < 500 ||
+          !this.interactive
+        ) {
+          return
+        }
+        event.preventDefault()
+        this.startDrag(event.clientX, event.clientY)
+      }
+      this.h5MouseMove = (event: MouseEvent) => {
+        if (!this.dragging) return
+        event.preventDefault()
+        this.moveDrag(event.clientX, event.clientY)
+      }
+      this.h5MouseUp = () => {
+        if (this.dragging) this.endDrag()
+      }
+      this.h5Stars.addEventListener('mousedown', this.h5MouseDown)
+      window.addEventListener('mousemove', this.h5MouseMove)
+      window.addEventListener('mouseup', this.h5MouseUp)
+      // #endif
+    },
+    unbindH5Mouse(): void {
+      // #ifdef H5
+      if (this.h5Stars && this.h5MouseDown) {
+        this.h5Stars.removeEventListener('mousedown', this.h5MouseDown)
+      }
+      if (this.h5MouseMove) {
+        window.removeEventListener('mousemove', this.h5MouseMove)
+      }
+      if (this.h5MouseUp) {
+        window.removeEventListener('mouseup', this.h5MouseUp)
+      }
+      this.h5Stars = null
+      this.h5MouseDown = null
+      this.h5MouseMove = null
+      this.h5MouseUp = null
+      // #endif
+    },
   },
 })
 </script>
@@ -174,9 +422,23 @@ export default defineComponent({
 }
 
 .lingyun-rating__stars {
+  position: relative;
   display: inline-flex;
   flex-direction: row;
   align-items: center;
+}
+
+.lingyun-rating__drag-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .lingyun-rating__star {

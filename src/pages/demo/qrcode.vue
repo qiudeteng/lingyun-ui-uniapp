@@ -147,7 +147,7 @@ async function exportQr() {
 }
 
 .hero {
-  padding: 8px 4px 15px;
+  padding: 24px 20px 8px;
 }
 
 .qr-row {
