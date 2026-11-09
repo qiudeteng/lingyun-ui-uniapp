@@ -4,7 +4,7 @@
       <view class="hero">
         <lingyun-text type="title2" block emphasized>Markdown</lingyun-text>
         <lingyun-text type="subtitle" block>
-          Markdown 预览 · 原生节点渲染 · 链接 / 图片事件
+          Markdown 预览 · 语法高亮 · 原生节点渲染 · 链接 / 图片事件
         </lingyun-text>
       </view>
 
@@ -29,6 +29,12 @@
             text="代码与表格"
             @click="useSample('rich')"
           />
+          <lingyun-button
+            size="small"
+            variant="borderless"
+            text="PHP / Rust / Swift"
+            @click="useSample('multi')"
+          />
         </view>
       </lingyun-section>
 
@@ -44,7 +50,7 @@
 
       <lingyun-section title="说明" is-last>
         <lingyun-text type="footnote" color="secondary" block>
-          不执行原始 HTML；链接与图片通过事件交给页面处理；代码块和表格可横向滚动；尺寸全部为 px，微信小程序可编译。
+          不执行原始 HTML；链接与图片通过事件交给页面处理；代码块支持常用语言语法高亮，代码块与宽表格可横向滚动；尺寸全部为 px，微信小程序可编译。
         </lingyun-text>
       </lingyun-section>
     </view>
@@ -97,10 +103,50 @@ const richSample = [
   '结尾段落，支持长文本自动换行。',
 ].join('\n')
 
+const multiLangSample = [
+  '## PHP',
+  '',
+  '```php',
+  '<?php',
+  "$items = ['cake' => 168];",
+  'foreach ($items as $name => $price) {',
+  '    echo "{$name}: {$price}\\n";',
+  '}',
+  '```',
+  '',
+  '## Rust',
+  '',
+  '```rust',
+  '#[derive(Debug)]',
+  'struct Order {',
+  '    id: u32,',
+  '    total: f64,',
+  '}',
+  '',
+  'fn main() {',
+  '    let order = Order { id: 1, total: 168.0 };',
+  '    println!("{:?}", order);',
+  '}',
+  '```',
+  '',
+  '## Swift',
+  '',
+  '```swift',
+  'struct Order: Codable {',
+  '    let id: Int',
+  '    let total: Double',
+  '}',
+  '',
+  'let order = Order(id: 1, total: 168)',
+  'print(order)',
+  '```',
+].join('\n')
+
 const source = ref(basicSample)
 
-function useSample(key: 'basic' | 'rich') {
-  source.value = key === 'basic' ? basicSample : richSample
+function useSample(key: 'basic' | 'rich' | 'multi') {
+  source.value =
+    key === 'basic' ? basicSample : key === 'rich' ? richSample : multiLangSample
 }
 
 function onLink(payload: { href: string }) {
@@ -131,6 +177,7 @@ function onImage(payload: { src: string }) {
 .samples {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding-top: 8px;

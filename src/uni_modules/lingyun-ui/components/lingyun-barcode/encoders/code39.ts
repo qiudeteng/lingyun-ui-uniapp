@@ -656,7 +656,7 @@ function calculateCheckDigit(indices) {
 }
 
 export function encodeCode39(text, options) {
-	const includeCheckDigit = options?.checkDigit ?? false;
+	const includeCheckDigit = !!(options && options.checkDigit);
 	if (text.length === 0) {
 		throw new InvalidInputError("Code 39 input must not be empty");
 	}

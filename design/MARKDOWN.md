@@ -82,7 +82,9 @@
 
 - 代码块：`fill-secondary` 背景、圆角 10px；有语言时顶部 6×12 的小标签（11/16、500、次级色），下方 0.5px 分割线。
 - 代码正文：13/20 等宽，`padding: 12px 14px`，`white-space: pre`；每行一个 `text`，空行保留高度。
-- 超长行横向滚动（`scroll-view scroll-x`），不换行；❌ 不做语法高亮（v1）。
+- 内置轻量语法高亮，不依赖第三方库：支持 `ts` / `js` / `tsx` / `jsx` / `json` / `html` / `xml` / `vue` / `css` / `scss` / `less` / `bash` / `sh` / `sql` / `php` / `rust` / `swift`；未知语言退回单色。
+- token 颜色：keyword 紫、string 绿、number 橙、function 蓝、tag 粉、attr 靛、property 青、variable 棕、boolean 紫、comment / operator / punctuation 次级色；均可用 `--ly-md-code-*` CSS 变量覆盖。
+- 超长行横向滚动（`scroll-view scroll-x`），不换行。
 - 行内代码：`fill-secondary` 底、4px 圆角、左右 5px 内距；允许随正文换行。
 
 ## 8. 表格
@@ -119,6 +121,7 @@
 - [ ] `pnpm type-check` 通过
 - [ ] `pnpm build:mp-weixin` 通过，产物无递归组件、无 `rpx`
 - [ ] H5 浅色 / 暗黑预览：标题、列表（嵌套 / 任务）、引用、代码横向滚动、表格横向滚动、图片点击
+- [ ] 代码块常用语言 token 着色正常，未知语言回退单色，`highlight=false` 关闭高亮
 - [ ] 链接点击抛 `link-click`，图片点击抛 `image-click`
 - [ ] 空内容显示 `emptyText` 或 `#empty` 插槽
 - [ ] 文档 / demo / COMPONENTS / ROADMAP 同步

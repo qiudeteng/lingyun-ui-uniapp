@@ -11,7 +11,7 @@
         class="md-break"
         :user-select="selectable"
         :selectable="selectable"
-      >{{ span.text }}</text>
+      >{{ displayText(span.text) }}</text>
       <text
         v-else-if="span.href"
         class="md-link"
@@ -19,14 +19,14 @@
         :user-select="selectable"
         :selectable="selectable"
         @click.stop="onLink(span)"
-      >{{ span.text }}</text>
+      >{{ displayText(span.text) }}</text>
       <text
         v-else
         class="md-text"
         :class="spanClass(span)"
         :user-select="selectable"
         :selectable="selectable"
-      >{{ span.text }}</text>
+      >{{ displayText(span.text) }}</text>
     </template>
   </text>
 </template>
@@ -79,6 +79,19 @@ export default defineComponent({
     },
   },
   methods: {
+    /**
+     * uni-app H5 的 text 会把 `\n`（反斜杠 + n）当换行转义，
+     * 这里在 H5 下把反斜杠加倍，显示时还原为源码里的单个反斜杠。
+     * 小程序 text 不做该转义，保持原样。
+     */
+    displayText(value: string): string {
+      // #ifdef H5
+      return value.replace(/\\/g, '\\\\')
+      // #endif
+      // #ifndef H5
+      return value
+      // #endif
+    },
     spanClass(span: LingyunMarkdownSpan): Record<string, boolean> {
       return {
         'md-bold': !!span.bold,

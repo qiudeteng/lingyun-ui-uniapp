@@ -43,7 +43,7 @@
 | ✅ | `lingyun-slider` | 独立滑条 | [`SLIDERS.md`](./SLIDERS.md) |
 | ✅ | `lingyun-tag` / `lingyun-chip` | 标签 · 筛选胶囊 | [`TAGS.md`](./TAGS.md) |
 | ✅ | `lingyun-text` | 语义文本 · 字阶 / 颜色 | [`TEXTS.md`](./TEXTS.md) |
-| ✅ | `lingyun-markdown` | Markdown 预览 · 标题 / 列表 / 代码 / 表格 / 图片 | [`MARKDOWN.md`](./MARKDOWN.md) |
+| ✅ | `lingyun-markdown` | Markdown 预览 · 标题 / 列表 / 代码语法高亮 / 表格 / 图片 | [`MARKDOWN.md`](./MARKDOWN.md) |
 | ✅ | `lingyun-date-text` | 日期显示 · 今天 / 昨天 / 明天 · MM-DD / YYYY-MM-DD · 精度与样式 | [`DATE_TEXT.md`](./DATE_TEXT.md) |
 | ✅ | `lingyun-amount-text` | 金额显示 · 万 / 百万 / 千万 / 亿 / 百亿 / 千亿 / 万亿 · 小数位与样式 | [`AMOUNT_TEXT.md`](./AMOUNT_TEXT.md) |
 | ✅ | `lingyun-image` | 图片包装 · 懒加载 / 占位 / 圆角 | [`IMAGES.md`](./IMAGES.md) |
@@ -178,6 +178,7 @@
 | 2026-11-08 | 新增 `lingyun-timeline`（纵向时间线 · 轨迹 / 日志）与 `lingyun-rating`（整星 / 半星评分）；专章 `TIMELINE.md` / `RATING.md` |
 | 2026-11-08 | 新增 `lingyun-calendar`（单选 / 范围日历）、`lingyun-load-more`（加载更多）与 `lingyun-pagination`（分页）；专章 `CALENDAR.md` / `LOAD_MORE.md` / `PAGINATION.md` |
 | 2026-11-08 | 新增 `lingyun-scan`（原生扫码 / H5 scanFn / 自定义触发）；专章 `SCAN.md` |
+| 2026-11-09 | `lingyun-markdown` 代码块新增内置语法高亮（ts / js / json / html / vue / css / bash / sql / php / rust / swift） |
 | 2026-11-09 | 二维码 / 条码编码器移植进组件（QR / Code128 / Code39 / EAN13），移除 `uqr` / `etiket` npm 依赖 |
 | 2026-11-08 | 新增 `lingyun-qrcode`（`uqr` 前端生成 / 颜色 / 纠错 / 图片导出）；专章 `QRCODE.md` |
 | 2026-11-08 | 新增 `lingyun-barcode`（`etiket` 编码 · Code128 / Code39 / EAN13 / 图片导出）；专章 `BARCODE.md` |

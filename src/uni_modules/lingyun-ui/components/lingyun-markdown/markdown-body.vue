@@ -67,13 +67,26 @@
           <scroll-view scroll-x class="md-code__scroll">
             <view class="md-code__body">
               <text
-                v-for="(line, lineIndex) in codeLines(row.block.text)"
+                v-for="(line, lineIndex) in codeTokenLines(row.block)"
                 :key="lineIndex"
                 class="md-code__line"
                 space="nbsp"
                 :user-select="selectable"
                 :selectable="selectable"
-              >{{ line.length ? line : ' ' }}</text>
+              >
+                <template v-if="line.length">
+                  <text
+                    v-for="(token, tokenIndex) in line"
+                    :key="tokenIndex"
+                    class="md-code__token"
+                    :class="`md-code__token--${token.type}`"
+                    space="nbsp"
+                    :user-select="selectable"
+                    :selectable="selectable"
+                  >{{ displayText(token.text) }}</text>
+                </template>
+                <text v-else space="nbsp"> </text>
+              </text>
             </view>
           </scroll-view>
         </view>
@@ -138,6 +151,8 @@ import { defineComponent, inject, type PropType } from 'vue'
 import MarkdownSpans from './markdown-spans.vue'
 import { LINGYUN_MARKDOWN_CONTEXT } from './context'
 import type { LingyunMarkdownContext } from './context'
+import { highlightCode } from './highlight'
+import type { LingyunMarkdownCodeLine } from './highlight'
 import type {
   LingyunMarkdownImageSegment,
   LingyunMarkdownLeafBlock,
@@ -158,6 +173,7 @@ export default defineComponent({
       default: () => [],
     },
     selectable: { type: Boolean, default: false },
+    highlight: { type: Boolean, default: true },
   },
   setup() {
     const markdownContext = inject<LingyunMarkdownContext | null>(
@@ -167,10 +183,21 @@ export default defineComponent({
     return { markdownContext }
   },
   methods: {
-    codeLines(text: string): string[] {
-      const lines = (text || '').replace(/\r\n?/g, '\n').split('\n')
-      if (lines.length > 1 && lines[lines.length - 1] === '') lines.pop()
-      return lines
+    /**
+     * uni-app H5 的 text 会把 `\n`（反斜杠 + n）当换行转义，
+     * 代码块需要按源码显示反斜杠；H5 下加倍，小程序保持原样。
+     */
+    displayText(value: string): string {
+      // #ifdef H5
+      return value.replace(/\\/g, '\\\\')
+      // #endif
+      // #ifndef H5
+      return value
+      // #endif
+    },
+    codeTokenLines(block: LingyunMarkdownLeafBlock): LingyunMarkdownCodeLine[] {
+      if (block.type !== 'code') return []
+      return highlightCode(block.text, block.lang, this.highlight)
     },
     tableColumns(block: LingyunMarkdownLeafBlock): number {
       if (block.type !== 'table') return 0
@@ -301,6 +328,67 @@ export default defineComponent({
   line-height: 20px;
   white-space: pre;
   color: var(--lingyun-label, #1c1c1e);
+}
+
+.md-code__token {
+  display: inline;
+  white-space: pre;
+}
+
+.md-code__token--plain {
+  color: var(--lingyun-label, #1c1c1e);
+}
+
+.md-code__token--keyword {
+  color: var(--ly-md-code-keyword, var(--lingyun-system-purple, #af52de));
+}
+
+.md-code__token--string {
+  color: var(--ly-md-code-string, var(--lingyun-system-green, #34c759));
+}
+
+.md-code__token--number {
+  color: var(--ly-md-code-number, var(--lingyun-system-orange, #ff9500));
+}
+
+.md-code__token--comment {
+  color: var(--ly-md-code-comment, var(--lingyun-label-secondary, rgba(60, 60, 67, 0.6)));
+}
+
+.md-code__token--function {
+  color: var(--ly-md-code-function, var(--lingyun-system-blue, #0088ff));
+}
+
+.md-code__token--tag {
+  color: var(--ly-md-code-tag, var(--lingyun-system-pink, #ff2d55));
+}
+
+.md-code__token--attr {
+  color: var(--ly-md-code-attr, var(--lingyun-system-indigo, #5856d6));
+}
+
+.md-code__token--property {
+  color: var(--ly-md-code-property, var(--lingyun-system-teal, #30b0c7));
+}
+
+.md-code__token--operator {
+  color: var(--ly-md-code-operator, var(--lingyun-label-secondary, rgba(60, 60, 67, 0.6)));
+}
+
+.md-code__token--punctuation {
+  color: var(--ly-md-code-punctuation, var(--lingyun-label-secondary, rgba(60, 60, 67, 0.6)));
+}
+
+.md-code__token--boolean {
+  color: var(--ly-md-code-boolean, var(--lingyun-system-purple, #af52de));
+}
+
+.md-code__token--variable {
+  color: var(--ly-md-code-variable, var(--lingyun-system-brown, #a2845e));
+}
+
+.md-code__token--meta {
+  color: var(--ly-md-code-meta, var(--lingyun-system-pink, #ff2d55));
 }
 
 .md-table-scroll {

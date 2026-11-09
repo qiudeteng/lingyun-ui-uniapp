@@ -629,9 +629,10 @@ function encode(data, options) {
     data: qr.modules,
     types: qr.types
   }, border);
-  if (options?.invert)
+  if (options && options.invert)
     result.data = result.data.map((row) => row.map((mod) => !mod));
-  options?.onEncoded?.(result);
+  if (options && typeof options.onEncoded === "function")
+    options.onEncoded(result);
   return result;
 }
 function addBorder(input, border = 1) {

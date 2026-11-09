@@ -442,13 +442,14 @@ lingyun-ui/
 | `fontSize` / `lineHeight` | 正文字号 / 行高，px | 15 / 24 |
 | `breaks` | 单个换行是否当 `<br>` | false |
 | `selectable` | 是否允许长按选择文本 | false |
+| `highlight` | 代码块是否启用内置语法高亮 | true |
 
 | 事件 | 说明 |
 |------|------|
 | `link-click` | 点击链接，`{ href, title, text }` |
 | `image-click` | 点击图片，`{ src, alt, title, href }` |
 
-支持标题、段落、粗体 / 斜体 / 删除线、行内代码、围栏代码块（语言标签）、链接、图片、有序 / 无序列表（嵌套、任务列表）、引用、表格（对齐）和分割线。原始 HTML 不执行（`<br>` 转成换行）；不做语法高亮。链接 / 图片不自动跳转，由页面决定。详见 [`doc/components/markdown.md`](../../../doc/components/markdown.md) 与 [`design/MARKDOWN.md`](../../../design/MARKDOWN.md)。
+支持标题、段落、粗体 / 斜体 / 删除线、行内代码、围栏代码块（语言标签 + 内置语法高亮）、链接、图片、有序 / 无序列表（嵌套、任务列表）、引用、表格（对齐）和分割线。代码高亮支持 ts / js / json / html / vue / css / bash / sql / php / rust / swift 等常用语言，未知语言保持单色；原始 HTML 不执行（`<br>` 转成换行）。链接 / 图片不自动跳转，由页面决定。详见 [`doc/components/markdown.md`](../../../doc/components/markdown.md) 与 [`design/MARKDOWN.md`](../../../design/MARKDOWN.md)。
 
 ## 规范
 
