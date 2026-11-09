@@ -1,4 +1,7 @@
-## 未发布
+## 1.0.51（2026-11-09）
+- 新增图片上传 `lingyun-image-upload`：缩略图网格与上传队列，支持直接上传 / 编辑后上传、90° 旋转、固定比例 / 自由裁剪、上传进度与失败重试；裁剪与导出逻辑拆在 `crop.ts` / `export-image.ts`。
+- 新增文件上传 `lingyun-file-upload`：文件列表、类型色、上传进度、重试、删除与预览 / 下载；H5 通过 `public/system-file-picker.html` 调起系统文件选择。
+- 新增顶部 Tabs `lingyun-tabs`：可滚动、underline / pill 两种形态、滑动指示器、自动滚入与吸顶；支持 `badge`、`disabled` 与自定义内容。
 - 新增手写签名 `lingyun-signature`：触控 / 鼠标绘制、清除 / 重新签名、PNG 导出；支持 `v-model`、只读 / 禁用、透明底、自定义笔色 / 粗细 / 画布高度。
 - 新增流程步骤条 `lingyun-steps`：横向 / 纵向、完成 / 进行中 / 等待 / 错误、可点击切换、`next` / `prev` 方法与状态覆盖。
 - 新增纵向时间线 `lingyun-timeline`：时间 / 标题 / 说明 / 状态 / 图标、可点击、空态与插槽。
@@ -14,6 +17,8 @@
 - 新增位置选择 `lingyun-location-picker`：小程序 / App 走 `uni.chooseLocation`，H5 使用腾讯地图 Key（`VITE_TENCENT_MAP_KEY`，不入库）；小程序已补 `requiredPrivateInfos`。
 - 新增 `lingyun-tooltip`（复用 Popover）、`lingyun-notice-bar`（四种状态 / 操作 / 关闭）与 `lingyun-accordion`（单开 / 多开 / 自定义内容）。
 - 新增 `lingyun-banner`（图片 / 卡片横幅）、`lingyun-combobox`（可搜索选择）与 `lingyun-token-field`（多选标签输入）。
+- `lingyun-badge` 新增 `size="small"` 紧凑档（18px 高、11px 字号），用于 Tab / 列表等空间受限场景。
+- `lingyun-list-item` 新增 `hideDivider`，首行 / 添加行可隐藏顶部分割线。
 ## 1.0.50（2026-11-07）
 - `lingyun-stepper` 新增 `size="large"`：38 高、按钮 46 宽、数值 17 号，适合真机大点击区；默认尺寸保持不变。
 - `lingyun-goods-nav` cart 详情卡片增加 `touchmove.stop`：展开后触摸卡片不会把事件冒泡到后面的页面，内容不足一屏时背景也不会跟着滑动；内部 scroll-view 仍可正常滚动。
