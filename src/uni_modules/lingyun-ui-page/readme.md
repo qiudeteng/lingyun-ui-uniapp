@@ -141,3 +141,103 @@ const goods = {
 | `toolbar-menu` | 工具栏按钮点击后弹出的菜单内容，作用域 `{ button, index, groupIndex, buttonIndex, close }`；需要配合 `toolbarButtons` + `toolbarMenuEnabled` |
 
 大数据量：默认 auto，商品 ≤100 全部加载、100～500 分段加载、>500 按分类加载；可用 `renderMode` 强制。按分类模式只渲染当前分类、关闭滚动联动，商品图带 `lazy-load`。数据结构与完整说明见手册 `/page/order-goods`，演示页 `pages/demo/order-goods`（Banner 右上角可切换全部 / 分段 / 按分类）。
+
+## 订货单列表
+
+状态 Tabs + 订货单卡片。业务状态固定为全部 / 待审核 / 进行中 / 已完成 / 已取消；状态 Tabs 通过 `lingyun-app-page` 的 `segments` + `segmentControl="tabs"` 渲染在工具栏内（Tabs 行 44 贴底、页面额外 8 间距、背景透明）；卡片只显示订货单号与业务状态，商品横向展示前几张缩略图，底栏显示时间、包裹数与操作。数据驱动，不请求接口；筛选、点订货单、操作和加载更多都通过事件交给路由页。多批配送订货单显示「分 N 个包裹」，点卡片进主订货单详情。
+
+```vue
+<lingyun-purchase-order-list
+  v-model:filter="filter"
+  :orders="orders"
+  :loading="loading"
+  :has-more="hasMore"
+  :loading-more="loadingMore"
+  @back="goBack"
+  @purchase-order-click="openOrder"
+  @action="onAction"
+  @load-more="loadMore"
+/>
+```
+
+| 属性 | 说明 | 默认 |
+|------|------|------|
+| `orders` | 订货单数组；与订货单详情共用数据结构，`subOrders` 只用于显示包裹数 | `[]` |
+| `filter` / `filters` | 当前筛选 key，支持 `v-model:filter` / 自定义 `[{ key, text }]`；空则用全部 / 待审核 / 进行中 / 已完成 / 已取消 | all / `[]` |
+| `loading` / `loadingText` | 首次加载 / 文案 | false / 加载中… |
+| `loadingMore` / `loadingMoreText` | 加载更多 / 文案 | false / 加载中… |
+| `hasMore` | 是否还有下一页；滚动到底部且为真时抛 `load-more` | false |
+| `emptyText` / `noMoreText` | 空态 / 没有更多文案 | 暂无订货单 / 没有更多订货单 |
+| `maxThumbnails` | 卡片横向最多显示的商品图数量，多出的显示 `+N` | 3 |
+| `autoBack` | 返回钮默认返回上一页；false 时只抛 `back` | true |
+| `scrollUnderToolbar` | 列表从顶栏下方穿过，顶部 Tabs 浮在列表上方，滚动时顶栏渐显液态玻璃 | true |
+| `title` / `showToolbar` / `showBack` / `showNav` / `autoTopInset` / `showThemeSwitch` | 透传 `lingyun-app-page` | 订货单列表 / true / true / true / true / auto |
+| `currency` / `priceDecimals` | 货币符号 / 价格小数位；`-1` 去掉多余 0 | ¥ / 2 |
+
+| 事件 | 说明 |
+|------|------|
+| `purchase-order-click` | 点订货单卡片 `{ order, index }`；由页面打开订货单详情 |
+| `action` | 点卡片操作 `{ key, action, order }`；不自动支付 / 跳转 |
+| `filter-change` / `update:filter` | 切换筛选 `{ key, filter }` / 配合 `v-model:filter` |
+| `load-more` | 滚动到底部且 `hasMore` 时抛出 |
+| `back` | 点返回；`autoBack=true` 时默认返回上一页 |
+
+- 组件按业务状态本地筛选：待审核对应 `status: 'pendingReview'`；进行中聚合 `pendingPayment` / `pendingShipment` / `shipped` / `refund`；已完成 / 已取消一一对应。可用 `order.listStatus` 覆盖归类，用 `listStatusText` / `listStatusColor` 覆盖卡片右侧状态。
+- 不传 `order.actions` 时按详情细状态使用默认操作；卡片内操作按钮已阻止冒泡，不会触发 `purchase-order-click`。
+
+## 订货单详情
+
+状态头 + 配送 / 自提 + 商品清单 + 金额明细 + 物流信息 + 订货单信息 + 悬浮玻璃操作栏。数据驱动，不请求接口；操作、商品、子订货单和复制都通过事件交给路由页。
+
+```vue
+<lingyun-purchase-order-detail
+  :order="order"
+  :toolbar-buttons="[{ key: 'more', icon: 'more', label: '更多' }]"
+  toolbar-menu-enabled
+  @back="goBack"
+  @action="onAction"
+  @item-click="onItem"
+  @sub-purchase-order-click="onSubOrder"
+  @copy="onCopy"
+/>
+```
+
+| 属性 | 说明 | 默认 |
+|------|------|------|
+| `order` | 订货单数据 `{ number, status, items, amounts, receiver / pickup, timeline, actions, subOrders, … }`；`null` 显示空态 | null |
+| `loading` / `loadingText` | 加载态 / 文案 | false / 加载中… |
+| `emptyText` | 空态文案 | 订货单不存在 |
+| `title` / `showToolbar` / `showBack` / `showNav` / `autoTopInset` / `showThemeSwitch` | 透传 `lingyun-app-page` | 订货单详情 / true / true / true / true / auto |
+| `toolbarButtons` / `toolbarMenuEnabled` | 顶部工具栏自定义按钮组 / 点击弹出 `#toolbar-menu` | [] / false |
+| `currency` / `priceDecimals` | 货币符号 / 价格小数位；`-1` 去掉多余 0 | ¥ / 2 |
+| `maxThumbnails` | 子订货单行横向最多显示的商品图数量，多出的显示 `+N` | 3 |
+| `paymentTimeoutMinutes` | 待付款倒计时分钟数，从 `order.createdAt` 起算 | 15 |
+| `autoBack` | 返回钮默认返回上一页；false 时只抛 `back` | true |
+| `scrollUnderToolbar` | 内层滚动内容从顶栏下方穿过，滚动时顶栏渐显液态玻璃 | true |
+
+| 事件 | 说明 |
+|------|------|
+| `action` | 点底部操作 `{ key, action, order }`；不自动支付 / 跳转 |
+| `item-click` | 点商品行 `{ item, index, order }` |
+| `sub-purchase-order-click` | 点子订货单行 `{ order, subOrder }`；业务跳子订货单详情 |
+| `copy` | 复制订货单号尝试完成 `{ text }` |
+| `payment-timeout` | 待付款倒计时到 0 `{ order }`；业务应把订货单更新为已取消 |
+| `back` | 点返回；`autoBack=true` 时默认返回上一页 |
+
+- 状态：`pendingReview` / `pendingPayment` / `pendingShipment` / `shipped` / `completed` / `cancelled` / `refund`；不传 `order.actions` 时按状态使用默认操作，`actions: []` 隐藏操作栏。
+- 金额：`goodsTotal` / `deliveryFee` / `discount` / `coupon` / `payable` / `paid`；`paid` 有值显示实付款，只有待付款显示需付款；待审核默认已支付，不出现需付款。
+- 待审核 / 待付款不显示预计送达时间；付款、审核通过后才显示。
+- 物流信息：显示承运服务商 `carrier`（京东快递 / 顺丰 / 自营物流等）与第三方快递单号 `trackingNumber`（可复制，自营物流可不传）；时间线只放物流节点（已出库 / 配送中 / 已签收），不放支付 / 下单 / 审核等订货单操作日志；仅在审核通过后显示，待审核 / 待付款不渲染。
+- 商品清单：商品数 > 1 时默认折叠为横向缩略图（最多 `maxThumbnails` 张，多出 `+N`）+「查看详情」；展开为完整商品列表并显示「收起详情」；只有 1 个商品时直接显示完整列表，不显示切换按钮。切换订货单自动回到折叠态。
+- 待付款从 `order.createdAt` 起算默认 15 分钟倒计时（`paymentTimeoutMinutes`），状态头显示「支付剩余 mm:ss」；到 0 抛 `payment-timeout`，业务把订货单更新为已取消，不展示超时页面。
+- 底部操作栏按悬浮玻璃胶囊实现（左右 12、底部 8 + 安全区、高 62、圆角 31、`lingyun-glass-control`）：左侧显示需付款 / 实付款金额，右侧操作按钮。待发货 / 待收货 / 退款中不显示底部操作栏；待付款保留「取消订货单 / 去支付」，待审核为取消订货单，已完成 / 已取消保留「再来一单」；内层滚动会上报 `lingyun-app-page`，顶栏滚动后渐显 Liquid Glass。
+- 多批配送：`order.subOrders` 有值时，隐藏顶部状态卡与父订货单预计送达时间，以子订货单状态为准；配送 / 自提卡片为静态信息，无箭头、不可点击。主订货单页只显示「子订货单与物流 · N 批」紧凑列表——子订货单号、状态、发货仓库，仓库行右侧显示预计日期（待发货「预计 MM-DD 发货」/ 待收货「预计 MM-DD 送达」，只显示日期）、商品横向缩略图（最多 `maxThumbnails` 张，多出 `+N`）与金额、最后一条物流日志的说明和时间（时间用 `lingyun-date-text`，保留 MM-DD HH:mm，不显示日志标题），以及「查看子订货单详情」；不展开子订货单商品列表与完整时间线，点行抛 `sub-purchase-order-click`。子订货单详情不展示预计送达时间。状态色区分：待发货靛蓝、待收货蓝、已完成绿、已取消灰、退款中红等。
+- 子订货单详情：复用同一组件，用 `buildLingyunPurchaseOrderSubDetail(order, subOrder)` 把主订货单 + 子订货单拍平成单订货单数据（子订货单商品 / 金额 / 物流 / 操作优先，缺省回退主订货单），并自动补充所属订货单、发货仓库、仓库地址 / 电话等信息行。
+
+```ts
+import { buildLingyunPurchaseOrderSubDetail } from '@/uni_modules/lingyun-ui-page/components/lingyun-purchase-order-detail/subPurchaseOrder'
+
+order.value = buildLingyunPurchaseOrderSubDetail(parent, subOrder)
+```
+
+- 数据结构和完整说明见手册 `/page/purchase-order-list`、`/page/purchase-order-detail`；演示页 `pages/demo/purchase-order-list` → `pages/demo/purchase-order-detail` → 子订货单详情。

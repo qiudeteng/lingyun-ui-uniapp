@@ -204,7 +204,9 @@
           :show-scrollbar="false"
           :scroll-into-view="listIntoId"
           :lower-threshold="80"
+          :upper-threshold="2"
           @scroll="onListScroll"
+          @scrolltoupper="onListScrollUpper"
           @scrolltolower="onListScrollToLower"
         >
           <view class="lingyun-order-goods__list-inner">
@@ -678,6 +680,7 @@
 
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue'
+import { useLingyunAppPageScroll } from '../../../lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 import { useLingyunTheme } from '../../../lingyun-ui/utils/theme'
 import LingyunOrderGoodsVariantSheet from './lingyun-order-goods-variant-sheet.vue'
 import { attributesOf, findSpec, finiteStock, parseLineKey } from './cartKey'
@@ -794,6 +797,10 @@ export default defineComponent({
     'search',
     'back',
   ],
+  setup() {
+    const reportScroll = useLingyunAppPageScroll()
+    return { reportScroll }
+  },
   props: {
     store: {
       type: Object as PropType<LingyunOrderStore>,
@@ -1888,13 +1895,23 @@ export default defineComponent({
         }
       })
     },
+    reportPageScroll(top: number): void {
+      const report = (this as unknown as {
+        reportScroll?: (scrollTop: number) => void
+      }).reportScroll
+      if (typeof report === 'function') report(top)
+    },
     onListScroll(event: ScrollEvent): void {
-      if (this.searchActive || this.categoryMode) return
       const top = Number(event && event.detail && event.detail.scrollTop)
       if (!Number.isFinite(top) || top < 0) return
+      this.reportPageScroll(top)
+      if (this.searchActive || this.categoryMode) return
       this.listScrollTop = top
       if (!this.offsetsReady || Date.now() < this.spyLockedUntil) return
       this.syncActiveFromScroll(top)
+    },
+    onListScrollUpper(): void {
+      this.reportPageScroll(0)
     },
     onListScrollToLower(): void {
       if (this.searchActive || this.categoryMode || !this.windowedMode) return

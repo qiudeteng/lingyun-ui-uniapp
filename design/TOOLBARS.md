@@ -207,13 +207,15 @@ HIG 规则：相关工具项应成组，不要手动加固定间距；每个非�
 - 关闭搜索时清空关键词并同步 `v-model:search-value`；`search-cancel` 仍携带关闭前的值，方便页面记录或清理结果
 - 搜索模式不渲染标题层，大标题样式也一起隐藏
 
-### 顶栏下方分段控制（segments）
+### 顶栏下方数据驱动控件（segments / tabs）
 
-- `segments` 数据配置一组 `{ key, text?, icon?, disabled? }`，在 toolbar **下方**渲染默认大小（Large）分段控制
-- 行高 **56**（Large 48 + 下边距 8）；`segments` 为空不渲染、不占高度
-- 内边距与 toolbar 一致（iPhone 16 / iPad 20），右侧同样避开微信胶囊
-- `segmentValue` 受控；切换发 `update:segmentValue`，同时发 `segment-click` 和 `segment-change`，参数 `{ value, item }`
-- 搜索模式只替换 toolbar 主行，分段行保留
+- 只有一份数据 `segments`：`{ key, text?, icon?, badge?, disabled? }[]`，在 toolbar **下方**渲染一种控件；`segments` 为空不渲染、不占高度。
+- `segmentControl` 选择控件类型：
+  - `segmented`（默认）：默认大小（Large 48）分段控制，行高 **56**（48 + 下边距 8）。
+  - `tabs`：`lingyun-tabs` 顶部 Tabs（underline 44），Tabs 行高 **44** 且贴底；页面顶部额外留 **8** 间距（toolbar 栈按 **52** 计算）。行背景透明，跟随 toolbar 的液态玻璃，不再铺一层实底。
+- 两种控件共用 `segmentValue` 与事件：切换发 `update:segmentValue`，同时发 `segment-click` / `segment-change`，参数 `{ value, item }`。
+- 内边距与 toolbar 一致（iPhone 16 / iPad 20），右侧避开微信胶囊；搜索模式只替换 toolbar 主行，控件行保留。
+- **不要同时配置两种控件**：只通过 `segmentControl` 切换类型，不要再单独新增一份 tabs 数据。
 
 
 ---
@@ -235,5 +237,5 @@ HIG 规则：相关工具项应成组，不要手动加固定间距；每个非�
 - [ ] 微信 PC（windows / mac）：栏身高度与同宽度 H5 一致，不按胶囊抬高
 - [ ] `searchable` 时搜索钮是独立 44px 胶囊；进入搜索后左侧内容与数据按钮组全部隐藏，搜索框 + 取消钮正常，微信胶囊不被遮挡
 - [ ] 搜索展开只有输入框从右往左滑入、关闭反向；搜索/取消按钮位置固定不变
-- [ ] `segments` 在 toolbar 下方渲染 56 高分段行（Large 48），选中态正确；为空不占高度，页面顶部留白同步
-- [ ] `segment-click` / `segment-change` 都带 `{ value, item }`；`searching` 与 `v-model:searching` 双向一致
+- [ ] `segments` 在 toolbar 下方渲染 56 高分段行；`segmentControl="tabs"` 时 Tabs 行 44 贴底、页面额外 8 间距（栈 52）；为空不占高度，页面顶部留白同步
+- [ ] 同一份 `segments` 只渲染一种控件；`segment-click` / `segment-change` 都带 `{ value, item }`；`searching` 与 `v-model:searching` 双向一致

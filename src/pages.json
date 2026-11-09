@@ -568,6 +568,20 @@
 			}
 		},
 		{
+			"path": "pages/demo/purchase-order-detail",
+			"style": {
+				"navigationBarTitleText": "订货单详情",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/purchase-order-list",
+			"style": {
+				"navigationBarTitleText": "订货单列表",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/grid",
 			"style": {
 				"navigationBarTitleText": "Grid",

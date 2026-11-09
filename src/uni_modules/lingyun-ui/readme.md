@@ -223,6 +223,16 @@ lingyun-ui/
 />
 
 <lingyun-toolbars title="Title" @back="onBack" />
+<lingyun-toolbars
+  title="Title"
+  :segments="[
+    { key: 'all', text: '全部' },
+    { key: 'active', text: '进行中' },
+    { key: 'done', text: '已完成' },
+  ]"
+  segment-control="tabs"
+  segment-value="all"
+/>
 <lingyun-toolbars placement="sheet" title="Title" @close="onClose" />
 <lingyun-toolbars title-style="large" title="Title" />
 
