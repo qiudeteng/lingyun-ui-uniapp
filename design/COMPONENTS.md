@@ -25,6 +25,7 @@
 | ✅ | `lingyun-tabs` | 顶部可滚动 Tabs · underline / pill / sticky | [`TABS.md`](./TABS.md) |
 | ✅ | `lingyun-search-bar` | 搜索栏 | [`SEARCHBARS.md`](./SEARCHBARS.md) |
 | ✅ | `lingyun-list` / `lingyun-list-item` | 分组列表；附属含 toggle / stepper / slider | [`LISTS.md`](./LISTS.md) |
+| ✅ | `lingyun-group-header` | 分组标题 · Nested / Prominent / Extra Prominent | [`LISTS.md`](./LISTS.md) |
 | ✅ | `lingyun-table` | 分组表格；固定列、吸顶表头、排序、筛选、分页、多选、分组收起 | [`TABLES.md`](./TABLES.md) |
 | ✅ | `lingyun-swipe-action` / `lingyun-swipe-action-item` | 列表左右滑菜单 | [`SWIPE_ACTIONS.md`](./SWIPE_ACTIONS.md) |
 | ✅ | `lingyun-swiper` | 图片轮播（滑动 / 自动轮播 / 指示器） | [`SWIPER.md`](./SWIPER.md) |
@@ -42,6 +43,7 @@
 | ✅ | `lingyun-slider` | 独立滑条 | [`SLIDERS.md`](./SLIDERS.md) |
 | ✅ | `lingyun-tag` / `lingyun-chip` | 标签 · 筛选胶囊 | [`TAGS.md`](./TAGS.md) |
 | ✅ | `lingyun-text` | 语义文本 · 字阶 / 颜色 | [`TEXTS.md`](./TEXTS.md) |
+| ✅ | `lingyun-markdown` | Markdown 预览 · 标题 / 列表 / 代码 / 表格 / 图片 | [`MARKDOWN.md`](./MARKDOWN.md) |
 | ✅ | `lingyun-date-text` | 日期显示 · 今天 / 昨天 / 明天 · MM-DD / YYYY-MM-DD · 精度与样式 | [`DATE_TEXT.md`](./DATE_TEXT.md) |
 | ✅ | `lingyun-amount-text` | 金额显示 · 万 / 百万 / 千万 / 亿 / 百亿 / 千亿 / 万亿 · 小数位与样式 | [`AMOUNT_TEXT.md`](./AMOUNT_TEXT.md) |
 | ✅ | `lingyun-image` | 图片包装 · 懒加载 / 占位 / 圆角 | [`IMAGES.md`](./IMAGES.md) |
@@ -55,7 +57,7 @@
 | ✅ | `lingyun-load-more` | 加载更多 · 更多 / 加载中 / 没有更多 / 失败重试 · 自动触底 | [`LOAD_MORE.md`](./LOAD_MORE.md) |
 | ✅ | `lingyun-pagination` | 分页 · 页码窗口 / 简单模式 / 小尺寸 | [`PAGINATION.md`](./PAGINATION.md) |
 | ✅ | `lingyun-scan` | 扫码 · 原生 `uni.scanCode` / H5 `scanFn` / 自定义触发 | [`SCAN.md`](./SCAN.md) |
-| ✅ | `lingyun-qrcode` | 二维码 · `uqr` 前端生成 / 颜色 / 纠错 / 图片导出 | [`QRCODE.md`](./QRCODE.md) |
+| ✅ | `lingyun-qrcode` | 二维码 · 内置 QR 编码器 / 颜色 / 纠错 / 图片导出 | [`QRCODE.md`](./QRCODE.md) |
 | ✅ | `lingyun-barcode` | 一维条码 · Code128 / Code39 / EAN13 / 图片导出 | [`BARCODE.md`](./BARCODE.md) |
 | ✅ | `lingyun-location-picker` | 位置选择 · 原生 chooseLocation / H5 腾讯地图 Key | [`LOCATION_PICKER.md`](./LOCATION_PICKER.md) |
 | ✅ | `lingyun-tooltip` | 轻量说明 · hover / 点击 / 长按 | [`TOOLTIPS.md`](./TOOLTIPS.md) |
@@ -176,6 +178,7 @@
 | 2026-11-08 | 新增 `lingyun-timeline`（纵向时间线 · 轨迹 / 日志）与 `lingyun-rating`（整星 / 半星评分）；专章 `TIMELINE.md` / `RATING.md` |
 | 2026-11-08 | 新增 `lingyun-calendar`（单选 / 范围日历）、`lingyun-load-more`（加载更多）与 `lingyun-pagination`（分页）；专章 `CALENDAR.md` / `LOAD_MORE.md` / `PAGINATION.md` |
 | 2026-11-08 | 新增 `lingyun-scan`（原生扫码 / H5 scanFn / 自定义触发）；专章 `SCAN.md` |
+| 2026-11-09 | 二维码 / 条码编码器移植进组件（QR / Code128 / Code39 / EAN13），移除 `uqr` / `etiket` npm 依赖 |
 | 2026-11-08 | 新增 `lingyun-qrcode`（`uqr` 前端生成 / 颜色 / 纠错 / 图片导出）；专章 `QRCODE.md` |
 | 2026-11-08 | 新增 `lingyun-barcode`（`etiket` 编码 · Code128 / Code39 / EAN13 / 图片导出）；专章 `BARCODE.md` |
 | 2026-11-08 | 新增 `lingyun-location-picker`（原生 chooseLocation / H5 腾讯地图 Key）；专章 `LOCATION_PICKER.md` |

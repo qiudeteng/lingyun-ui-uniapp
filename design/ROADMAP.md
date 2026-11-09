@@ -13,7 +13,7 @@
 1. **官方 P2 待做**：评分、内容层仪表盘、键盘工具栏。
 2. **HIG 边缘控件**：顶部可滚动 Tabs、日历、Combobox、Token Field、Color Well、Tooltip、Banner、Accordion、分页、加载更多、Steps、Timeline。
 3. **业务工作流**：签名、二维码/条码、门店/地址选择、流程步骤、订单轨迹、通知中心。
-4. **数据密集/桌面**：Tree / TreeSelect、Transfer、富文本/Markdown。
+4. **数据密集/桌面**：Tree / TreeSelect、Transfer、富文本（Markdown 已完成）。
 
 ## 2. 优先级总览
 
@@ -29,8 +29,8 @@
 | **P1 ✅** | `lingyun-pagination` | 中高：桌面表格/列表分页 | 从 `lingyun-table` 抽出 | 中 |
 | **P1 ✅** | `lingyun-rating` | 中高：评价、满意度 | `lingyun-icon` | 低 |
 | **P1 ✅** | `lingyun-scan` | 高：取货码、商品/批次码 | `uni.scanCode`；H5 用 `scanFn` | 低中 |
-| **P1 ✅** | `lingyun-qrcode` | 高：取货码、商品/批次码 | `uqr` 前端生成 + Canvas | 中 |
-| **P1 ✅** | `lingyun-barcode` | 高：商品/批次码 | `etiket` 前端编码 + Canvas | 中 |
+| **P1 ✅** | `lingyun-qrcode` | 高：取货码、商品/批次码 | 内置 QR 编码器 + Canvas | 中 |
+| **P1 ✅** | `lingyun-barcode` | 高：商品/批次码 | 内置 Code128 / Code39 / EAN13 编码器 + Canvas | 中 |
 | **P2 ✅** | `lingyun-tooltip` | 中：轻量说明 | `lingyun-popover` | 低 |
 | **P2 ✅** | `lingyun-notice-bar` | 中：公告、表单提示 | `alert` 视觉，非模态 | 低 |
 | **P2 ✅** | `lingyun-banner` | 中：页面顶部营销横幅 | 图片 / 文案 / 操作区 | 低 |
@@ -42,7 +42,8 @@
 | P2 | `lingyun-gauge` | 低中：内容层仪表盘 | Canvas（图表 gauge 已有） | 低中 |
 | P3 | `lingyun-tree` / `tree-select` | 中：组织/门店/分类层级 | `checkbox` / `list` | 高 |
 | P3 | `lingyun-transfer` | 中：角色/权限/门店分配 | `checkbox` / `list` | 中高 |
-| P3 | Rich Text / Markdown | 中：公告、协议、知识库 | `rich-text`；Markdown 需依赖 | 中 |
+| P3 ✅ | `lingyun-markdown`（Markdown 预览） | 中：公告、协议、知识库 | 自研解析 + 原生节点；列表 / 引用拍平，不递归组件 | 中 |
+| P3 | Rich Text（富文本） | 中：公告、协议、知识库 | `rich-text` 标签能力有限 | 中 |
 | P3 | 通知中心 / 消息中心 | 中：订单状态、审批提醒 | 组合页面，不是单一控件 | 中 |
 | P4 | 表单校验增强 | 高：schema / 异步 / 错误汇总 | `form` 基础 | 中 |
 | P4 | 无障碍 / i18n | 持续 | 组件 + 文档 | 持续 |
@@ -66,7 +67,7 @@
 
 `lingyun-scan`（已完成）→ `lingyun-qrcode`（已完成）→ `lingyun-barcode`（已完成）→ `lingyun-location-picker`（已完成）。
 
-> 二维码 / 条码已采用前端编码（`uqr` / `etiket`）；定位已接腾讯 Key（H5 用 `VITE_TENCENT_MAP_KEY`，不入库）。
+> 二维码 / 条码已采用组件内前端编码（内置 QR / Code128 / Code39 / EAN13 编码器，无第三方 npm 依赖）；定位已接腾讯 Key（H5 用 `VITE_TENCENT_MAP_KEY`，不入库）。
 
 ### 批次 5 · P2（HIG / 表单增强）
 
@@ -74,7 +75,7 @@
 
 ### 批次 6 · P3（数据密集）
 
-`lingyun-tree` / `tree-select` → `lingyun-transfer` → Rich Text / Markdown → 通知中心。
+`lingyun-tree` / `tree-select` → `lingyun-transfer` → Rich Text → 通知中心。
 
 ### 持续 · P4（质量）
 
@@ -151,7 +152,7 @@ methods:
 
 - **二维码生成**：前端 QR 依赖（需征询）还是后端返回图片。扫码本身走 `uni.scanCode`，不需要依赖。
 - **H5 位置/地图**：需要地图服务 Key 与 SDK 选型；微信端可直接 `uni.chooseLocation`。
-- **富文本/Markdown**：Markdown 解析需要第三方依赖；`rich-text` 可直接用，但标签能力有限。
+- **富文本/Markdown**：Markdown 已采用自研解析器并拍平成原生节点，不执行原始 HTML、不引入第三方依赖；Rich Text 仍评估 `rich-text` 标签能力。
 - **键盘工具栏**：键盘高度、输入法差异需要真机验证。
 - **表单校验**：是否引入 schema 校验库需要单独决策。
 

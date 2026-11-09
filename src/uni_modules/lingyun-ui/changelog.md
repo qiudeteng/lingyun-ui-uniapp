@@ -1,4 +1,11 @@
-## 1.0.51 (2026-11-09)
+## 1.0.52（2026-11-09）
+- 新增分组标题 `lingyun-group-header`：统一 Nested / Prominent / Extra Prominent 三种高度、字阶、次级色与右侧操作；`lingyun-list` 的 `header` / `headerType` / `headerAction` / `#header` / `#header-action` 用法保持不变，内部统一由该组件渲染。
+- 新增 Markdown 预览 `lingyun-markdown`：组件内自研解析器，支持标题、段落、粗体 / 斜体 / 删除线、行内代码、链接、图片、有序 / 无序列表（嵌套、任务列表）、引用、表格、代码块与分割线；解析结果渲染成原生节点，不使用 `v-html` / `rich-text`。
+- 列表 / 引用在解析阶段拍平成带缩进的行，微信小程序不需要递归组件 `usingComponents`；代码块与宽表格横向滚动，代码块不做语法高亮。
+- 链接 / 图片通过 `link-click` / `image-click` 交给页面；只放行 http(s) / mailto / tel / 相对路径与 data:image，原始 HTML 不执行。
+- Markdown 解析器内置在组件内，不引入任何第三方 npm 扩展；同步 Markdown 设计规范、组件文档与 demo。
+- 二维码 / 条码编码器移植到组件内（QR / Code128 / Code39 / EAN13），移除根 `uqr` / `etiket` 依赖；宿主无需额外安装，MIT 许可见 `THIRD_PARTY_NOTICES.md`。
+## 1.0.51（2026-11-09）
 - 新增图片上传 `lingyun-image-upload`：缩略图网格与上传队列，支持直接上传 / 编辑后上传、90° 旋转、固定比例 / 自由裁剪、上传进度与失败重试；裁剪与导出逻辑拆在 `crop.ts` / `export-image.ts`。
 - 新增文件上传 `lingyun-file-upload`：文件列表、类型色、上传进度、重试、删除与预览 / 下载；H5 通过 `public/system-file-picker.html` 调起系统文件选择。
 - 新增顶部 Tabs `lingyun-tabs`：可滚动、underline / pill 两种形态、滑动指示器、自动滚入与吸顶；支持 `badge`、`disabled` 与自定义内容。

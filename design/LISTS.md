@@ -100,6 +100,27 @@
 
 插槽：`header` / `header-action` / `footer`（list）；`icon` / `extra`（item）。
 
+### 3.1 独立分组标题 `lingyun-group-header`
+
+`lingyun-list` 的 header 统一由 `lingyun-group-header` 渲染；需要单独放在卡片上方时直接使用：
+
+```vue
+<lingyun-group-header title="组件" />
+<lingyun-group-header title="Header" type="extraProminent" action="Action" @action="onAction" />
+```
+
+| Prop | 说明 | 默认 |
+|------|------|------|
+| `title` | 分组标题 | `''` |
+| `type` | `nested` / `prominent` / `extraProminent` | `nested` |
+| `action` | 右侧操作文案；空则不显示 | `''` |
+| `inset` | 左右 16px 内距；放进已有 16px 容器时设 `false` | true |
+
+- 高度：Nested **42** / Prominent **45** / Extra Prominent **48**；左右 padding 16、上下 10。
+- 字阶：Nested 13/20 600 次级色；Prominent 17/24 600；Extra Prominent 20/26 600。
+- 右侧操作 17/22、系统主色，与标题一行，`gap: 8px`。
+- 插槽：`title`（或默认）/ `action`；事件 `action`。
+
 ---
 
 ## 4. 注意事项（踩坑复盘）

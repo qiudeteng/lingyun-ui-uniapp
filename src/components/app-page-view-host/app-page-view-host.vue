@@ -6,6 +6,7 @@
   <segmented-controls-page v-else-if="currentPath === 'pages/demo/segmented-controls'" />
   <tags-page v-else-if="currentPath === 'pages/demo/tags'" />
   <texts-page v-else-if="currentPath === 'pages/demo/texts'" />
+  <markdown-page v-else-if="currentPath === 'pages/demo/markdown'" />
   <images-page v-else-if="currentPath === 'pages/demo/images'" />
   <avatars-page v-else-if="currentPath === 'pages/demo/avatars'" />
   <page-controls-page v-else-if="currentPath === 'pages/demo/page-controls'" />
@@ -83,6 +84,7 @@ import BadgesPage from '@/pages/demo/badges.vue'
 import SegmentedControlsPage from '@/pages/demo/segmented-controls.vue'
 import TagsPage from '@/pages/demo/tags.vue'
 import TextsPage from '@/pages/demo/texts.vue'
+import MarkdownPage from '@/pages/demo/markdown.vue'
 import ImagesPage from '@/pages/demo/images.vue'
 import AvatarsPage from '@/pages/demo/avatars.vue'
 import PageControlsPage from '@/pages/demo/page-controls.vue'

@@ -48,6 +48,7 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
       { title: 'Segmented Controls', url: '/pages/demo/segmented-controls', note: '分段控件', icon: 'tune' },
       { title: 'Tags & Chips', url: '/pages/demo/tags', note: '标签 · 筛选胶囊', icon: 'flag' },
       { title: 'Text', url: '/pages/demo/texts', note: '文本 · 字阶 / 颜色', icon: 'font' },
+      { title: 'Markdown', url: '/pages/demo/markdown', note: 'Markdown 预览 · 标题 / 列表 / 代码 / 表格', icon: 'font' },
       { title: 'Image', url: '/pages/demo/images', note: '图片 · 懒加载 / 圆角', icon: 'image' },
       { title: 'Image Upload', url: '/pages/demo/image-upload', note: '图片上传 · 选图 / 旋转裁剪 / 上传', icon: 'images' },
       { title: 'File Upload', url: '/pages/demo/file-upload', note: '文件上传 · 列表 / 进度 / 预览', icon: 'paperclip' },
