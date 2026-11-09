@@ -15,6 +15,7 @@
             value="LY-0001"
             format="CODE128"
             :module-width="2"
+            fluid
             @ready="onReady"
             @error="onError"
           />
@@ -31,6 +32,7 @@
             format="EAN13"
             :module-width="2"
             :height="90"
+            fluid
             @ready="onReady"
             @error="onError"
           />
@@ -50,6 +52,7 @@
             :code39-check-digit="true"
             foreground-color="#0a3d62"
             background-color="#f7fbff"
+            fluid
             @ready="onReady"
             @error="onError"
           />

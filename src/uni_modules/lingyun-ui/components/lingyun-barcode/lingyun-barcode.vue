@@ -1,7 +1,8 @@
 <template>
   <view
+    :id="rootId"
     class="lingyun-barcode"
-    :class="rootClass"
+    :class="[rootClass, { 'lingyun-barcode--fluid': fluid }]"
     role="img"
     :aria-label="value ? `条码：${value}` : emptyText"
   >
@@ -83,6 +84,8 @@ export default defineComponent({
       default: 'CODE128',
     },
     moduleWidth: { type: Number, default: 2 },
+    /** 按父级容器宽度自适应；宽屏下条码不再固定窄宽 */
+    fluid: { type: Boolean, default: false },
     height: { type: Number, default: 80 },
     quietZone: { type: Number, default: 10 },
     showValue: { type: Boolean, default: true },
@@ -104,8 +107,10 @@ export default defineComponent({
     bars: number[]
     encodedText: string
     renderWidth: number
+    totalModules: number
     errorMessage: string
     renderToken: number
+    h5Resize: (() => void) | null
   } {
     return {
       uid: (barcodeSequence += 1),
@@ -113,8 +118,10 @@ export default defineComponent({
       bars: [],
       encodedText: '',
       renderWidth: 200,
+      totalModules: 0,
       errorMessage: '',
       renderToken: 0,
+      h5Resize: null,
     }
   },
   computed: {
@@ -129,6 +136,9 @@ export default defineComponent({
     },
     canvasId(): string {
       return `lingyun-barcode-canvas-${this.uid}`
+    },
+    rootId(): string {
+      return `lingyun-barcode-${this.uid}`
     },
     resolvedFormat(): LingyunBarcodeFormat {
       return FORMATS.includes(this.format) ? this.format : 'CODE128'
@@ -191,6 +201,9 @@ export default defineComponent({
     moduleWidth() {
       this.scheduleDraw()
     },
+    fluid() {
+      this.scheduleDraw()
+    },
     height() {
       this.scheduleDraw()
     },
@@ -220,9 +233,13 @@ export default defineComponent({
     },
   },
   mounted() {
-    this.$nextTick(() => this.setupCanvas())
+    this.$nextTick(() => {
+      this.setupCanvas()
+      this.bindH5Resize()
+    })
   },
   beforeUnmount() {
+    this.unbindH5Resize()
     this.context = null
   },
   methods: {
@@ -235,6 +252,73 @@ export default defineComponent({
     },
     scheduleDraw(): void {
       this.$nextTick(() => this.draw())
+    },
+    bindH5Resize(): void {
+      // #ifdef H5
+      if (typeof window === 'undefined') return
+      this.h5Resize = () => {
+        if (this.fluid) this.scheduleDraw()
+      }
+      window.addEventListener('resize', this.h5Resize)
+      // #endif
+    },
+    unbindH5Resize(): void {
+      // #ifdef H5
+      if (this.h5Resize) {
+        window.removeEventListener('resize', this.h5Resize)
+        this.h5Resize = null
+      }
+      // #endif
+    },
+    measureContainer(callback: (width: number) => void): void {
+      // #ifdef H5
+      if (typeof document !== 'undefined') {
+        const el = document.getElementById(this.rootId)
+        if (el) {
+          callback(el.getBoundingClientRect().width)
+          return
+        }
+      }
+      // #endif
+
+      uni
+        .createSelectorQuery()
+        .in(this)
+        .select(`#${this.rootId}`)
+        .boundingClientRect()
+        .exec((res) => {
+          const rect =
+            res && (res[0] as { width?: number } | null)
+          callback(Number(rect && rect.width ? rect.width : 0))
+        })
+    },
+    commitWidth(modules: number, token: number): void {
+      const apply = (containerWidth: number) => {
+        if (token !== this.renderToken) return
+        const width =
+          this.fluid && containerWidth > 16
+            ? Math.max(120, Math.round(containerWidth - 16))
+            : Math.max(120, Math.round(modules * this.resolvedModuleWidth))
+        this.renderWidth = width
+        this.$nextTick(() => {
+          if (token !== this.renderToken) return
+          // 宽度变化后重建上下文，让旧版 canvas 按新尺寸初始化
+          this.recreateContext()
+          setTimeout(() => {
+            if (token === this.renderToken) this.paint()
+          }, 20)
+        })
+      }
+      if (this.fluid) this.measureContainer(apply)
+      else apply(0)
+    },
+    recreateContext(): void {
+      try {
+        const context = uni.createCanvasContext(this.canvasId, this)
+        this.context = markRaw(context as unknown as BarcodeContext)
+      } catch {
+        /* 保留旧上下文 */
+      }
     },
     encode(value: string): EncodedBarcode {
       if (this.resolvedFormat === 'EAN13') {
@@ -263,6 +347,7 @@ export default defineComponent({
         this.bars = []
         this.encodedText = ''
         this.renderWidth = 200
+        this.totalModules = 0
         this.renderToken += 1
         this.clearCanvas()
         return
@@ -275,6 +360,7 @@ export default defineComponent({
         this.bars = []
         this.encodedText = ''
         this.renderWidth = 200
+        this.totalModules = 0
         this.errorMessage = this.errorText
         this.renderToken += 1
         this.clearCanvas()
@@ -299,15 +385,10 @@ export default defineComponent({
 
       this.bars = encoded.bars
       this.encodedText = encoded.text
-      this.renderWidth = Math.max(
-        120,
-        Math.round(modules * this.resolvedModuleWidth),
-      )
+      this.totalModules = modules
       this.renderToken += 1
       const token = this.renderToken
-      this.$nextTick(() => {
-        if (token === this.renderToken) this.paint()
-      })
+      this.commitWidth(modules, token)
     },
     paint(): void {
       const context = this.context
@@ -315,7 +396,10 @@ export default defineComponent({
       const width = this.renderWidth
       const height = this.resolvedHeight
       const barHeight = this.barHeight
-      const moduleWidth = this.resolvedModuleWidth
+      const moduleWidth =
+        this.totalModules > 0
+          ? width / this.totalModules
+          : this.resolvedModuleWidth
       context.clearRect(0, 0, width, height)
       context.setFillStyle(this.backgroundColor || '#ffffff')
       context.fillRect(0, 0, width, height)
@@ -424,6 +508,16 @@ export default defineComponent({
   display: inline-flex;
   vertical-align: top;
   max-width: 100%;
+}
+
+.lingyun-barcode--fluid {
+  display: block;
+  width: 100%;
+}
+
+.lingyun-barcode--fluid .lingyun-barcode__frame {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .lingyun-barcode__frame {

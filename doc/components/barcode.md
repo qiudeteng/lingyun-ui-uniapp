@@ -57,6 +57,7 @@ async function exportBarcode() {
 | `value` | 条码内容 | `''` |
 | `format` | `CODE128` / `CODE39` / `EAN13` | `CODE128` |
 | `moduleWidth` | 窄条宽度 px，1–6 | 2 |
+| `fluid` | 按父容器宽度自适应，宽屏下铺满 | false |
 | `height` | 总高度 px，48–200 | 80 |
 | `quietZone` | 左右静区模块数，0–20 | 10 |
 | `showValue` | 条码下方显示文字 | true |
@@ -87,6 +88,7 @@ async function exportBarcode() {
 
 - 依赖 `etiket` 的纯编码器，只在本地生成，不请求网络。
 - 宽度由静区 + 条空模块总数 × `moduleWidth` 决定；内容较长时降低 `moduleWidth` 或缩短内容。
+- `fluid` 时按父容器宽度铺满（扣除外框 16px 内边距），H5 窗口变化会重绘；默认保持按模块宽度的固定尺寸。
 - EAN13 输入 12 位自动计算校验位，展示使用 13 位。
 - 条码始终白底深色（或高对比自定义色），不跟随暗黑反色。
 - 不内置 logo、保存相册；导出后由业务上传或保存。

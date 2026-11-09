@@ -9,6 +9,7 @@
 - 新增扫码 `lingyun-scan`：小程序 / App 走 `uni.scanCode`，H5 支持 `scanFn` 自定义扫码；默认按钮与自定义插槽、start / success / error / cancel 事件。
 - 新增二维码 `lingyun-qrcode`：依赖 `uqr` 前端生成，Canvas 绘制；支持纠错级别、静区、颜色与 `toTempFilePath()` 导出。
 - 新增一维条码 `lingyun-barcode`：依赖 `etiket` 编码，支持 Code128 / Code39 / EAN13、模块宽度、静区、文字与图片导出。
+- `lingyun-barcode` 新增 `fluid`：按父容器宽度自适应，修复 H5 宽屏下条码比背景色块窄的问题。
 - `lingyun-rating` 支持移动端在星星行左右滑动调整（半星 / 整星步进），H5 同步支持鼠标拖动；只读 / 禁用不拦截页面滚动。
 - 新增位置选择 `lingyun-location-picker`：小程序 / App 走 `uni.chooseLocation`，H5 使用腾讯地图 Key（`VITE_TENCENT_MAP_KEY`，不入库）；小程序已补 `requiredPrivateInfos`。
 - 新增 `lingyun-tooltip`（复用 Popover）、`lingyun-notice-bar`（四种状态 / 操作 / 关闭）与 `lingyun-accordion`（单开 / 多开 / 自定义内容）。
