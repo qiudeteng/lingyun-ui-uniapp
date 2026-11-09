@@ -1,4 +1,4 @@
-## 未发布
+## 1.0.52（2026-11-09）
 - 新增分组标题 `lingyun-group-header`：统一 Nested / Prominent / Extra Prominent 三种高度、字阶、次级色与右侧操作；`lingyun-list` 的 `header` / `headerType` / `headerAction` / `#header` / `#header-action` 用法保持不变，内部统一由该组件渲染。
 - 新增 Markdown 预览 `lingyun-markdown`：组件内自研解析器，支持标题、段落、粗体 / 斜体 / 删除线、行内代码、链接、图片、有序 / 无序列表（嵌套、任务列表）、引用、表格、代码块与分割线；解析结果渲染成原生节点，不使用 `v-html` / `rich-text`。
 - 列表 / 引用在解析阶段拍平成带缩进的行，微信小程序不需要递归组件 `usingComponents`；代码块与宽表格横向滚动，代码块不做语法高亮。
