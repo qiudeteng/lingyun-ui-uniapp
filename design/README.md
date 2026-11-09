@@ -30,7 +30,7 @@
 - **P1：Checks / Slider / Tags / Avatars / Page Control / Skeleton / Refresh / Popovers / Menus** → [`CHECKS.md`](./CHECKS.md) · [`SLIDERS.md`](./SLIDERS.md) · [`TAGS.md`](./TAGS.md) · [`AVATARS.md`](./AVATARS.md) · [`PAGE_CONTROLS.md`](./PAGE_CONTROLS.md) · [`SKELETONS.md`](./SKELETONS.md) · [`REFRESH.md`](./REFRESH.md) · [`POPOVERS.md`](./POPOVERS.md) · [`MENUS.md`](./MENUS.md)
 - **Text Fields 专章** → **[`TEXTFIELDS.md`](./TEXTFIELDS.md)**（Sketch Text Field Light/Dark）
 - **Text 专章** → **[`TEXTS.md`](./TEXTS.md)**（HIG Text Styles · Labels）
-- **Markdown 专章** → **[`MARKDOWN.md`](./MARKDOWN.md)**（预览 · 标题 / 列表 / 代码 / 表格 · 自研解析）
+- **Markdown 专章** → **[`MARKDOWN.md`](./MARKDOWN.md)**（预览 · 标题 / 列表 / 代码语法高亮 / 表格 · 自研解析）
 - **Image 专章** → **[`IMAGES.md`](./IMAGES.md)**（懒加载 · 占位 · 圆角 · mode）
 - **Image Upload 专章** → **[`IMAGE_UPLOADS.md`](./IMAGE_UPLOADS.md)**（选图 · 90° 旋转 · 固定比例 / 自由裁剪 · 上传）
 - **File Upload 专章** → **[`FILE_UPLOADS.md`](./FILE_UPLOADS.md)**（文件列表 · 类型色 · 进度 · 预览/下载）
@@ -128,7 +128,7 @@ design/
 ├── MENUS.md
 ├── TEXTFIELDS.md       # 输入框（Sketch Text Fields）专章
 ├── TEXTS.md            # 语义文本（HIG Text Styles）专章
-├── MARKDOWN.md         # Markdown 预览（标题 / 列表 / 代码 / 表格）专章
+├── MARKDOWN.md         # Markdown 预览（标题 / 列表 / 代码语法高亮 / 表格）专章
 ├── IMAGES.md           # 图片包装（懒加载 / 圆角 / mode）专章
 ├── IMAGE_UPLOADS.md    # 图片上传（选图 / 旋转 / 裁剪 / 上传）专章
 ├── FILE_UPLOADS.md     # 文件上传（列表 / 进度 / 预览下载）专章

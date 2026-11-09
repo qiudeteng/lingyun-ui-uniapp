@@ -880,7 +880,7 @@ const FNC4_A = 101;
 const FNC4_B = 100;
 
 export function encodeCode128(text, options) {
-	const charset = options?.charset ?? "auto";
+	const charset = options && options.charset != null ? options.charset : "auto";
 	let codes;
 	switch (charset) {
 		case "auto":

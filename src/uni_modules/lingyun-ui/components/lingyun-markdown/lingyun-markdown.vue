@@ -1,7 +1,11 @@
 <template>
   <view class="lingyun-markdown" :style="rootStyle">
     <template v-if="rows.length">
-      <markdown-body :rows="rows" :selectable="selectable" />
+      <markdown-body
+        :rows="rows"
+        :selectable="selectable"
+        :highlight="highlight"
+      />
     </template>
     <slot v-else name="empty">
       <text class="lingyun-markdown__empty">{{ emptyText }}</text>
@@ -50,6 +54,8 @@ export default defineComponent({
     breaks: { type: Boolean, default: false },
     /** 是否允许长按选择文本 */
     selectable: { type: Boolean, default: false },
+    /** 代码块是否启用内置语法高亮 */
+    highlight: { type: Boolean, default: true },
   },
   provide() {
     const context: LingyunMarkdownContext = {

@@ -38,6 +38,7 @@ function onImage(payload: { src: string; alt: string; href?: string }) {
 | `lineHeight` | 正文行高，px | 24 |
 | `breaks` | 单个换行是否当 `<br>`；默认按 Markdown 规则折叠为空格 | false |
 | `selectable` | 是否允许长按选择文本 | false |
+| `highlight` | 代码块是否启用内置语法高亮 | true |
 
 ## 事件
 
@@ -65,7 +66,7 @@ function onImage(payload: { src: string; alt: string; href?: string }) {
 | `-` / `1.` | 无序 / 有序列表，支持嵌套 |
 | `- [x]` / `- [ ]` | 任务列表 |
 | `>` | 引用 |
-| 围栏代码块 / 缩进代码 | 代码块，显示语言标签，横向滚动 |
+| 围栏代码块 / 缩进代码 | 代码块，显示语言标签与内置语法高亮，横向滚动 |
 | 表格 | 支持列对齐，≥3 列可横向滚动 |
 | `---` | 分割线 |
 
@@ -73,7 +74,9 @@ function onImage(payload: { src: string; alt: string; href?: string }) {
 
 - 原始 HTML 不执行：`<br>` 转为换行，其它 HTML 标签忽略；不使用 `v-html` / `rich-text`。
 - 链接只放行 `http(s)` / `mailto` / `tel` / 相对路径；图片只放行 `http(s)` / 相对路径 / `data:image/`，其它协议会降级为普通文字。
-- 代码块不做语法高亮；超长行和宽表格横向滚动。
+- 代码块内置轻量语法高亮，支持 `ts` / `js` / `tsx` / `jsx` / `json` / `html` / `xml` / `vue` / `css` / `scss` / `less` / `bash` / `sh` / `sql` / `php` / `rust` / `swift`；未知语言保持单色。设置 `:highlight="false"` 可关闭。
+- token 颜色按主题自动切换，可用 CSS 变量覆盖：`--ly-md-code-keyword`、`--ly-md-code-string`、`--ly-md-code-number`、`--ly-md-code-comment`、`--ly-md-code-function`、`--ly-md-code-tag`、`--ly-md-code-attr`、`--ly-md-code-property`、`--ly-md-code-operator`、`--ly-md-code-punctuation`、`--ly-md-code-boolean`、`--ly-md-code-variable`、`--ly-md-code-meta`。
+- 超长行和宽表格横向滚动。
 - 段落中的图片按块级渲染，前后文字会另起行；把图片单独放一行是常见用法。
 - 嵌套引用当前只显示一层左侧竖线（v1 限制）。
 - 组件只做预览，不提供编辑器；编辑请用输入框 + 本组件实时预览。
