@@ -34,7 +34,7 @@
 
 <script lang="ts">
 import { defineComponent, markRaw, type PropType } from 'vue'
-import { encode } from 'uqr'
+import { encode } from './qrcode'
 import { useLingyunTheme } from '../../utils/theme'
 import type {
   LingyunQrcodeEcc,
@@ -49,13 +49,20 @@ interface QrContext {
   draw: (reserve?: boolean) => void
 }
 
+/** 内置 QR 编码器输出；编码器代码在 ./qrcode.ts。 */
+interface QrMatrix {
+  data: boolean[][]
+  size: number
+  version: number
+}
+
 const ECC_VALUES: LingyunQrcodeEcc[] = ['L', 'M', 'Q', 'H']
 
 let qrcodeSequence = 0
 
 /**
  * lingyun-qrcode
- * @description 二维码：uqr 生成矩阵 + Canvas 绘制，支持颜色 / 纠错级别 / 边框与图片导出
+ * @description 二维码：内置 QR 编码器生成矩阵 + Canvas 绘制，支持颜色 / 纠错级别 / 边框与图片导出
  * @see design/QRCODE.md
  */
 export default defineComponent({
@@ -180,12 +187,12 @@ export default defineComponent({
         return
       }
 
-      let qr: ReturnType<typeof encode>
+      let qr: QrMatrix
       try {
         qr = encode(value, {
           ecc: this.resolvedEcc,
           border: this.resolvedBorder,
-        })
+        }) as QrMatrix
       } catch (error) {
         this.matrixSize = 0
         this.matrixVersion = 0

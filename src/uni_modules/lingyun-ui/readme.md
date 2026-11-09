@@ -149,6 +149,7 @@ configureLingyunLayout({
 6. **尺寸一律 `px`**（Sketch **1pt = 1px**）。❌ 禁止 `rpx`。
 7. **必须兼容微信小程序（`mp-weixin`）**：样式须通过 WXSS 编译（禁止通用选择器 `*` 等）；不得只在 H5 验证。见仓库 `.cursor/rules/mp-weixin-compat.mdc` 与 `AGENTS.md`。
 8. 每个组件交付前对照 `design/UI_SPEC.md` §8 自检清单（含 §6.2）。
+9. **不引入第三方 npm 扩展**：组件运行时只依赖 Vue / uni-app / Pinia 等宿主框架；QR / 条码 / Markdown 等能力已移植到组件内。新增移植的 MIT 代码需在 `THIRD_PARTY_NOTICES.md` 登记来源与许可。
 
 ## 目录
 
@@ -359,6 +360,9 @@ lingyun-ui/
 
 <lingyun-token-field v-model="tags" label="商品标签" :suggestions="tagSuggestions" :max="5" show-count />
 
+<lingyun-group-header title="组件" />
+<lingyun-group-header title="Header" type="extraProminent" action="Action" @action="onAction" />
+
 <lingyun-list header="Header" header-type="extraProminent" footer="Footer">
   <lingyun-list-item title="Title" note="Subtitle" />
   <lingyun-list-item title="Title" detail="Detail" accessory="disclosure" />
@@ -417,6 +421,35 @@ lingyun-ui/
 </lingyun-section>
 ```
 
+## Markdown
+
+`lingyun-markdown` 组件内自带 Markdown 解析器，把源文本解析成原生节点，不使用 `v-html` / `rich-text`，也不依赖任何第三方 npm 扩展；列表 / 引用在解析阶段拍平成缩进行，微信小程序不依赖递归组件。
+
+```vue
+<lingyun-markdown
+  :content="article"
+  :font-size="15"
+  :line-height="24"
+  @link-click="onLink"
+  @image-click="onImage"
+/>
+```
+
+| 属性 | 说明 | 默认 |
+|------|------|------|
+| `content` | Markdown 源文本 | '' |
+| `emptyText` | 空内容文案 | 暂无内容 |
+| `fontSize` / `lineHeight` | 正文字号 / 行高，px | 15 / 24 |
+| `breaks` | 单个换行是否当 `<br>` | false |
+| `selectable` | 是否允许长按选择文本 | false |
+
+| 事件 | 说明 |
+|------|------|
+| `link-click` | 点击链接，`{ href, title, text }` |
+| `image-click` | 点击图片，`{ src, alt, title, href }` |
+
+支持标题、段落、粗体 / 斜体 / 删除线、行内代码、围栏代码块（语言标签）、链接、图片、有序 / 无序列表（嵌套、任务列表）、引用、表格（对齐）和分割线。原始 HTML 不执行（`<br>` 转成换行）；不做语法高亮。链接 / 图片不自动跳转，由页面决定。详见 [`doc/components/markdown.md`](../../../doc/components/markdown.md) 与 [`design/MARKDOWN.md`](../../../design/MARKDOWN.md)。
+
 ## 规范
 
 按钮：[`design/BUTTONS.md`](../../../design/BUTTONS.md) · [Sketch Buttons](https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02/symbols?g=Buttons)
@@ -434,6 +467,8 @@ Toolbars：[`design/TOOLBARS.md`](../../../design/TOOLBARS.md) · [Sketch Toolba
 Sheets：[`design/SHEETS.md`](../../../design/SHEETS.md) · [Sketch Sheets/Light/iPhone](https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02/symbols?g=Sheets%252FLight%252FiPhone) · [Sheets/Dark/iPhone](https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02/symbols?g=Sheets%252FDark%252FiPhone)
 
 Text Fields：[`design/TEXTFIELDS.md`](../../../design/TEXTFIELDS.md) · [Sketch Text Field Light](https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02/f/39D95D27-DDDF-4750-8ECE-18FF32FEC086#Inspect) · [Text Field Dark](https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02/f/CEBB1E12-74F7-4BF8-949D-3696FCFF4351#Inspect)
+
+Markdown：[`design/MARKDOWN.md`](../../../design/MARKDOWN.md)
 
 Alerts：[`design/ALERTS.md`](../../../design/ALERTS.md) · [Sketch Alerts/Light](https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02/symbols?g=Alerts%252FLight) · [Alerts/Dark](https://www.sketch.com/s/04c24d8b-38fb-4afb-8836-36617e022f02/symbols?g=Alerts%252FDark)
 

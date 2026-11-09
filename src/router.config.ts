@@ -221,6 +221,11 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Text' }
 	},
 	{
+		path: '/pages/demo/markdown',
+		name: 'pagesDemoMarkdown',
+		meta: { title: 'Markdown' }
+	},
+	{
 		path: '/pages/demo/images',
 		name: 'pagesDemoImages',
 		meta: { title: 'Image' }

@@ -302,6 +302,13 @@
 			}
 		},
 		{
+			"path": "pages/demo/markdown",
+			"style": {
+				"navigationBarTitleText": "Markdown",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/images",
 			"style": {
 				"navigationBarTitleText": "Image",

@@ -5,7 +5,7 @@
 
 ## 1. 依赖与结构
 
-- 运行时依赖：`etiket` 的纯编码器（Code128 / Code39 / EAN13），返回条宽数组；无 DOM / Node API。
+- 运行时依赖：无第三方 npm 包。Code128 / Code39 / EAN13 编码器已移植到组件内（`components/lingyun-barcode/encoders/`），返回条宽数组；无 DOM / Node API。
 - 结构：白色圆角外框（8px 内边距）+ Canvas（条空 + 可选文字）+ 空态 / 错误占位。
 - 条码属于**内容层**，不使用 Liquid Glass；外框标准白底 + 0.5px 描边。
 - 不内置 logo / 保存相册；导出交给业务。

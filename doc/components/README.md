@@ -28,6 +28,7 @@
 - [标签](./tag.md)
 - [筛选胶囊](./chip.md)
 - [文本](./text.md)
+- [Markdown](./markdown.md)
 - [日期显示](./date-text.md)
 - [日历](./calendar.md)
 - [位置选择](./location-picker.md)
@@ -66,6 +67,7 @@
 
 - [列表](./list.md)
 - [列表行](./list-item.md)
+- [分组标题](./group-header.md)
 - [分组卡片](./section.md)
 - [折叠分组](./accordion.md)
 - [横幅](./banner.md)

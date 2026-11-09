@@ -142,6 +142,7 @@ const componentSidebar = [
       { text: '标签', link: '/components/tag.html' },
       { text: '筛选胶囊', link: '/components/chip.html' },
       { text: '文本', link: '/components/text.html' },
+      { text: 'Markdown', link: '/components/markdown.html' },
       { text: '日期显示', link: '/components/date-text.html' },
       { text: '日历', link: '/components/calendar.html' },
       { text: '位置选择', link: '/components/location-picker.html' },
@@ -184,6 +185,7 @@ const componentSidebar = [
     children: [
       { text: '列表', link: '/components/list.html' },
       { text: '列表行', link: '/components/list-item.html' },
+      { text: '分组标题', link: '/components/group-header.html' },
       { text: '分组卡片', link: '/components/section.html' },
       { text: '折叠分组', link: '/components/accordion.html' },
       { text: '横幅', link: '/components/banner.html' },

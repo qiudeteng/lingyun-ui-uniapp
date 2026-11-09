@@ -1,11 +1,11 @@
 # QR Code 规范（强制 · lingyun-qrcode）
 
-> 前端二维码：`uqr` 生成矩阵，Canvas 绘制；支持颜色、纠错级别、边框与图片导出。
+> 前端二维码：组件内置 QR 编码器生成矩阵，Canvas 绘制；支持颜色、纠错级别、边框与图片导出。
 > 用于取货码、活动核销、商品 / 批次码。
 
 ## 1. 依赖与结构
 
-- 运行时依赖：`uqr`（纯 JS，无 DOM / Node API）；只在本地生成矩阵，不请求网络。
+- 运行时依赖：无第三方 npm 包。QR 编码器已移植到组件内（`components/lingyun-qrcode/qrcode.ts`，纯 JS，无 DOM / Node API）；只在本地生成矩阵，不请求网络。
 - 结构：白色圆角外框（8px 内边距）+ Canvas 二维码 + 空态 / 错误占位。
 - 二维码属于**内容层**，不使用 Liquid Glass；外框用标准白底 + 0.5px 描边。
 - 不内置 logo、不内置保存到相册；图片导出由 `toTempFilePath()` 交给业务。

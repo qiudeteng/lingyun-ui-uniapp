@@ -1,22 +1,19 @@
 <template>
   <view class="lingyun-list" :class="[rootClass, inSectionClass]">
-    <view v-if="showHeader" class="lingyun-list__header" :class="headerClass">
-      <slot name="header">
-        <text v-if="header" class="lingyun-list__header-title">{{ header }}</text>
-      </slot>
-      <view
-        v-if="showHeaderAction"
-        class="lingyun-list__action"
-        hover-class="lingyun-list__action--hover"
-        :hover-start-time="20"
-        :hover-stay-time="70"
-        @click="onAction"
-      >
-        <slot name="header-action">
-          <text class="lingyun-list__action-text">{{ headerAction }}</text>
-        </slot>
-      </view>
-    </view>
+    <lingyun-group-header
+      v-if="showHeader"
+      :title="header"
+      :type="resolvedHeaderType"
+      :action="headerAction"
+      @action="onAction"
+    >
+      <template v-if="$slots.header" #title>
+        <slot name="header" />
+      </template>
+      <template v-if="$slots['header-action']" #action>
+        <slot name="header-action" />
+      </template>
+    </lingyun-group-header>
 
     <view class="lingyun-list__card">
       <slot />
@@ -117,9 +114,6 @@ export default defineComponent({
     showHeader(): boolean {
       return !!(this.header || this.$slots.header)
     },
-    showHeaderAction(): boolean {
-      return !!(this.headerAction || this.$slots['header-action'])
-    },
     showFooter(): boolean {
       return !!(this.footer || this.$slots.footer)
     },
@@ -139,9 +133,6 @@ export default defineComponent({
       ]
         .filter(Boolean)
         .join(' ')
-    },
-    headerClass(): string {
-      return `lingyun-list__header--${this.resolvedHeaderType}`
     },
     inSectionClass(): string {
       return [this.inSection ? 'lingyun-list--in-section' : '', this.sectionPaintsCard ? 'lingyun-list--flat-card' : '']
@@ -186,72 +177,6 @@ $ly-list-gap: 8px;
     border-radius: 0;
   }
 
-  &__header {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    box-sizing: border-box;
-    padding: 10px 16px;
-  }
-
-  &__header--extra-prominent {
-    height: 48px;
-  }
-
-  &__header--prominent {
-    height: 45px;
-  }
-
-  &__header--nested {
-    height: 42px;
-  }
-
-  &__header-title {
-    flex: 1;
-    min-width: 0;
-    color: var(--lingyun-label, #{$lingyun-label});
-  }
-
-  &__header--extra-prominent &__header-title {
-    font-size: 20px;
-    font-weight: 600;
-    line-height: 26px;
-    letter-spacing: -0.45px;
-  }
-
-  &__header--prominent &__header-title {
-    font-size: 17px;
-    font-weight: 600;
-    line-height: 24px;
-    letter-spacing: -0.43px;
-  }
-
-  &__header--nested &__header-title {
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 20px;
-    letter-spacing: -0.08px;
-    color: var(--lingyun-label-secondary, #{$lingyun-label-secondary});
-  }
-
-  &__action {
-    flex-shrink: 0;
-    padding: 2px 0;
-  }
-
-  &__action-text {
-    font-size: 17px;
-    font-weight: 400;
-    line-height: 22px;
-    color: var(--lingyun-primary, #{$lingyun-primary});
-  }
-
-  &__action--hover {
-    opacity: 0.55;
-  }
-
   &__card {
     overflow: hidden;
     background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
@@ -274,12 +199,6 @@ $ly-list-gap: 8px;
 
   & + .lingyun-list {
     margin-top: $ly-list-gap;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lingyun-list__action {
-    transition: none;
   }
 }
 </style>

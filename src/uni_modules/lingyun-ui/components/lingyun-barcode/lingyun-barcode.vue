@@ -35,11 +35,9 @@
 
 <script lang="ts">
 import { defineComponent, markRaw, type PropType } from 'vue'
-import {
-  encodeCode128,
-  encodeCode39,
-  encodeEAN13,
-} from 'etiket/barcode'
+import { encodeCode128 } from './encoders/code128'
+import { encodeCode39 } from './encoders/code39'
+import { encodeEAN13 } from './encoders/ean'
 import { useLingyunTheme } from '../../utils/theme'
 import type {
   LingyunBarcodeCharset,
