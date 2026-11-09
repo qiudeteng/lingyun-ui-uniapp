@@ -229,9 +229,19 @@
     <view
       v-if="segments && segments.length"
       class="lingyun-toolbars__segments"
+      :class="{ 'lingyun-toolbars__segments--tabs': segmentControl === 'tabs' }"
       :style="segmentsStyle"
     >
+      <lingyun-tabs
+        v-if="segmentControl === 'tabs'"
+        class="lingyun-toolbars__tabs"
+        :items="segmentTabItems"
+        :model-value="String(segmentValue ?? '')"
+        @update:model-value="onSegmentUpdate"
+        @change="onTabsChange"
+      />
       <lingyun-segmented-control
+        v-else
         class="lingyun-toolbars__segment-control"
         :items="segments"
         :model-value="segmentValue"
@@ -348,14 +358,25 @@ export default defineComponent({
     searching: { type: Boolean, default: false },
     searchValue: { type: String, default: '' },
     searchPlaceholder: { type: String, default: '搜索' },
-    /** 顶栏下方分段控制；数据为空时不占高度 */
+    /** 顶栏下方数据驱动控件；数据为空时不占高度 */
     segments: {
       type: Array as PropType<
-        Array<{ key: string; text?: string; icon?: string; disabled?: boolean }>
+        Array<{
+          key: string
+          text?: string
+          icon?: string
+          badge?: string | number
+          disabled?: boolean
+        }>
       >,
       default: () => [],
     },
     segmentValue: { type: [String, Number] as PropType<string | number>, default: '' },
+    /** 同一份 segments 数据渲染成哪种控件：分段控件 / 顶部 Tabs */
+    segmentControl: {
+      type: String as PropType<'segmented' | 'tabs'>,
+      default: 'segmented',
+    },
     /** auto：Mac 宽屏显示交通灯。停靠左侧导航时由 app-page 关掉。 */
     showWindowControls: {
       default: 'auto',
@@ -598,13 +619,24 @@ export default defineComponent({
       }
     },
     segmentsStyle() {
-      /* 胶囊在状态栏行；分段行在下方，不需要为胶囊让出右侧安全区，铺满整行 */
+      /* 胶囊在状态栏行；分段 / Tabs 行在下方，不需要为胶囊让出右侧安全区，铺满整行 */
       const extra = this.safeArea ? Math.max(0, this.rightInsetPx - this.padXPx) : 0
       if (!extra) return {}
       return {
         width: `calc(100% + ${extra}px)`,
         marginRight: `-${extra}px`,
       }
+    },
+    segmentTabItems() {
+      return (this.segments || [])
+        .map((item, index) => ({
+          key: String(item.key ?? index),
+          text: String(item.text ?? item.key ?? ''),
+          icon: item.icon,
+          badge: item.badge,
+          disabled: item.disabled === true,
+        }))
+        .filter((item) => !!item.text)
     },
     searchLayerStyle() {
       /* 只覆盖搜索按钮左侧区域；搜索/关闭按钮位置固定，不参与动画 */
@@ -824,6 +856,16 @@ export default defineComponent({
     },
     onSegmentChange(item: { key?: string | number } | null) {
       const value = item && item.key != null ? item.key : this.segmentValue
+      this.$emit('segment-click', { value, item })
+      this.$emit('segment-change', { value, item })
+    },
+    onTabsChange(payload: {
+      key?: string | number
+      item?: Record<string, unknown> | null
+    }) {
+      const value =
+        payload && payload.key != null ? payload.key : this.segmentValue
+      const item = (payload && payload.item) || null
       this.$emit('segment-click', { value, item })
       this.$emit('segment-change', { value, item })
     },
@@ -1298,6 +1340,19 @@ $ly-toolbar-gap: 8px;
   padding-bottom: 8px;
   display: flex;
   flex-direction: row;
+}
+
+/* 同一份 segments 数据用顶部 Tabs 渲染：44 高、贴底；页面额外间距由 app-page 的顶部栈承接 */
+.lingyun-toolbars__segments--tabs {
+  height: 44px;
+  padding-bottom: 0;
+  background-color: transparent;
+}
+
+.lingyun-toolbars__tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
 }
 
 /* 小程序自定义组件宿主默认按内容收缩，显式拉满整行 */

@@ -97,6 +97,7 @@ tabsRef.value?.refresh()
 
 ## 说明
 
+- 通过 `lingyun-app-page` / `lingyun-toolbars` 的 `segments` + `segment-control="tabs"` 可把同一份数据渲染成工具栏下方的顶部 Tabs，事件与分段控件一致（`segmentValue` / `segment-click` / `segment-change`）。
 - 激活 Tab 会居中滚入可视区，左右两侧保留可见 Tab；首尾项受内容边界限制。`scrollable=false` 时不滚动。
 - `sticky` 依赖 CSS `position: sticky`；**长内容必须放在默认插槽内**，否则包含块过短，无法持续吸顶。
 - 页面有固定顶栏时传 `sticky-top`（如 `60`）；在 `lingyun-app-page` 内未传时会尝试使用其顶部 inset。

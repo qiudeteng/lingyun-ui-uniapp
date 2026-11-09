@@ -73,6 +73,8 @@ const pageSidebar = [
       { text: '页面扩展', link: '/page/' },
       { text: '登录', link: '/page/login.html' },
       { text: '点单加购', link: '/page/order-goods.html' },
+      { text: '订货单列表', link: '/page/purchase-order-list.html' },
+      { text: '订货单详情', link: '/page/purchase-order-detail.html' },
     ],
   },
 ]

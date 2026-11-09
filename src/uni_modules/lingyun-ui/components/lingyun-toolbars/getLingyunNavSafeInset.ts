@@ -52,6 +52,9 @@ export const LINGYUN_TOOLBAR_2LINE_LARGE_EXTRA_PX = 71
 /** 顶栏下方分段控制行高度：Large 48 + 下边距 8 */
 export const LINGYUN_TOOLBAR_SEGMENT_ROW_PX = 56
 
+/** 顶栏下方顶部 Tabs 占用：44 高 + 页面内容额外间距 8 */
+export const LINGYUN_TOOLBAR_TABS_ROW_PX = 52
+
 /**
  * 从状态栏挪到内容行下边距的 px（仅有真实状态栏时生效）。
  * 总高度不变：status 少 5，bar 下边距多 5（8→13）。

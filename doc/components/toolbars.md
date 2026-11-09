@@ -30,8 +30,9 @@
 | `searching` | 搜索模式；输入框替换左侧内容，原搜索按钮变取消 | false |
 | `searchValue` | 搜索关键词 | '' |
 | `searchPlaceholder` | 搜索占位文案 | 搜索 |
-| `segments` | 顶栏下方分段控制数据 `{ key, text?, icon?, disabled? }[]`；为空不占高度 | [] |
-| `segmentValue` | 当前分段 key | '' |
+| `segments` | 顶栏下方数据驱动控件数据 `{ key, text?, icon?, badge?, disabled? }[]`；为空不占高度 | [] |
+| `segmentValue` | 当前控件 key | '' |
+| `segmentControl` | `segmented` / `tabs`；同一份 `segments` 数据渲染成分段控件或顶部 Tabs | segmented |
 | `fixed` | 固定在视口顶部。页面壳里会设为 true | false |
 | `safeArea` | 加上状态栏高度 | true |
 | `glassProgress` | 0 到 1，玻璃从透明到铺满 | 0 |
@@ -55,6 +56,6 @@
 
 `trailingButtons` 支持一维 / 二维数组：一维是一组，二维按子数组拆成多个玻璃胶囊。单个按钮是 44×44 圆钮，多个是 36×36 + gap 18 的胶囊组。点击后发 `trailing-action`，`anchor` 是**按钮组**的视口矩形（整组会隐藏，菜单按组右上角对齐），可直接作为 `lingyun-menu` 的 `anchor` 打开自定义浮层；如果设置 `trailing-menu-enabled` 并传入 `#trailing-menu="{ button, index, groupIndex, buttonIndex, close }"` 插槽，也会自动在按钮组下方弹出自定义菜单内容。主题钮菜单同样按第一组右上角定位。
 
-`segments` 会在 toolbar 下方渲染默认大小（Large，48 高）分段控制，行高 56；`segmentValue` 受控，切换发 `update:segmentValue`、`segment-click`、`segment-change`。搜索模式只让左侧输入框从右往左滑入，搜索/取消按钮位置固定不变，关闭时输入框反向滑出。
+`segments` 会在 toolbar 下方渲染数据驱动控件：默认 `segmentControl="segmented"` 是 48 高 Large 分段控制、行高 56；`segmentControl="tabs"` 用 `lingyun-tabs` 渲染顶部 Tabs，Tabs 行 44 贴底，页面顶部额外留 8 间距（toolbar 栈 52）。两者共用同一份数据和事件，`segmentValue` 受控，切换发 `update:segmentValue`、`segment-click`、`segment-change`。搜索模式只让左侧输入框从右往左滑入，搜索/取消按钮位置固定不变，关闭时输入框反向滑出。
 
 返回、关闭、分享都用 `lingyun-icon`。圆钮保持 **44**。返回是 `left`、字号 **28**；关闭是 `closeempty`、分享是 `upload`，字号都是 **26**。

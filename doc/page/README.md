@@ -12,6 +12,8 @@
 | --- | --- | --- |
 | [登录](./login.md) | `lingyun-login` | 账号密码登录；协议用 Sheet 展示；可选次按钮 |
 | [订单商品加购](./order-goods.md) | `lingyun-order-goods` | 店铺头 + 左右分类商品联动 + 购物车结算；数据驱动，抛结算 / 规格事件 |
+| [订货单列表](./purchase-order-list.md) | `lingyun-purchase-order-list` | 顶部 Tabs 状态筛选 + 订货单卡片 + 横向商品缩略图 + 金额 / 操作；多批配送显示包裹数 |
+| [订货单详情](./purchase-order-detail.md) | `lingyun-purchase-order-detail` | 状态头 + 配送 / 自提 + 商品 + 金额 + 物流 + 订货单信息；支持子订货单 |
 
 ## 约定
 

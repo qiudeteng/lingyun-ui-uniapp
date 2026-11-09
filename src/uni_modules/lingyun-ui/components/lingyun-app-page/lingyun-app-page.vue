@@ -76,6 +76,7 @@
       :search-placeholder="searchPlaceholder"
       :segments="segments"
       :segment-value="segmentValue"
+      :segment-control="segmentControl"
       :fixed="true"
       :safe-area="safeArea"
       :glass-progress="glassProgress"
@@ -299,6 +300,7 @@ import {
   LINGYUN_TOOLBAR_BAR_DESIGN_PX,
   LINGYUN_TOOLBAR_LARGE_EXTRA_PX,
   LINGYUN_TOOLBAR_SEGMENT_ROW_PX,
+  LINGYUN_TOOLBAR_TABS_ROW_PX,
   readLingyunResizeWidth,
   readLingyunWindowWidth,
 } from '../lingyun-toolbars/getLingyunNavSafeInset'
@@ -472,14 +474,25 @@ export default defineComponent({
     searching: { type: Boolean, default: false },
     searchValue: { type: String, default: '' },
     searchPlaceholder: { type: String, default: '搜索' },
-    /** 顶栏下方分段控制；数据为空时不占高度 */
+    /** 顶栏下方数据驱动控件；数据为空时不占高度 */
     segments: {
       type: Array as PropType<
-        Array<{ key: string; text?: string; icon?: string; disabled?: boolean }>
+        Array<{
+          key: string
+          text?: string
+          icon?: string
+          badge?: string | number
+          disabled?: boolean
+        }>
       >,
       default: () => [],
     },
     segmentValue: { type: [String, Number] as PropType<string | number>, default: '' },
+    /** 同一份 segments 数据渲染成哪种控件：分段控件 / 顶部 Tabs */
+    segmentControl: {
+      type: String as PropType<'segmented' | 'tabs'>,
+      default: 'segmented',
+    },
     glassDistance: { type: Number, default: 56 },
   },
   data() {
@@ -648,6 +661,9 @@ export default defineComponent({
         this.syncTopInset()
       },
     },
+    segmentControl() {
+      this.syncTopInset()
+    },
     searchActive() {
       this.syncTopInset()
     },
@@ -734,7 +750,10 @@ export default defineComponent({
       }
       if (this.placement === 'sheet' || this.showGrabberEffective) h += 16
       if (this.segments && this.segments.length && !this.isDuoTopBottom && !this.isDuoSplit) {
-        h += LINGYUN_TOOLBAR_SEGMENT_ROW_PX
+        h +=
+          this.segmentControl === 'tabs'
+            ? LINGYUN_TOOLBAR_TABS_ROW_PX
+            : LINGYUN_TOOLBAR_SEGMENT_ROW_PX
       }
       return h
     },

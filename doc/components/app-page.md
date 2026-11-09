@@ -67,8 +67,9 @@
 | `searching` | 搜索模式；支持 `v-model:searching` | false |
 | `searchValue` | 搜索关键词；支持 `v-model:search-value` | '' |
 | `searchPlaceholder` | 搜索占位文案 | 搜索 |
-| `segments` | 顶栏下方分段控制数据 `{ key, text?, icon?, disabled? }[]`；为空不占高度 | [] |
-| `segmentValue` | 当前分段 key；支持 `v-model:segment-value` | '' |
+| `segments` | 顶栏下方数据驱动控件数据 `{ key, text?, icon?, badge?, disabled? }[]`；为空不占高度 | [] |
+| `segmentValue` | 当前控件 key；支持 `v-model:segment-value` | '' |
+| `segmentControl` | `segmented` / `tabs`；同一份 `segments` 渲染成分段控件或顶部 Tabs | segmented |
 
 ### 顶部搜索
 
@@ -91,23 +92,28 @@
 
 按钮和输入框的实际渲染在 `lingyun-toolbars` 内，`app-page` 只负责透传属性 / 事件，并提供 `openSearch()` / `closeSearch()` 方法；搜索模式打开时右侧搜索按钮变为取消按钮。关闭搜索（点取消、调 `closeSearch()` 或外部把 `searching` 置为 false）会清空关键词并同步 `v-model:search-value`，`search-cancel` 仍会带上关闭前的关键词。
 
-### 顶栏分段
+### 顶栏数据驱动控件（分段 / Tabs）
 
 ```vue
 <lingyun-app-page
-  title="订单"
+  title="订货单"
   :segments="[
     { key: 'all', text: '全部' },
     { key: 'active', text: '进行中' },
     { key: 'done', text: '已完成' },
   ]"
+  segment-control="tabs"
   v-model:segment-value="segment"
   @segment-click="onSegmentClick"
   @segment-change="onSegmentChange"
 />
 ```
 
-分段行显示在 toolbar 下方，高度 **56**（Large 48 + 下边距 8），页面顶部留白会自动增加；`segments` 为空时不渲染也不占高度。
+控件行显示在 toolbar 下方，两者共用同一份 `segments` 数据和事件：
+
+- `segmentControl="segmented"`（默认）：分段控制，行高 **56**（Large 48 + 下边距 8）。
+- `segmentControl="tabs"`：`lingyun-tabs` 顶部 Tabs，Tabs 行 44 贴底，页面顶部额外留 8 间距（toolbar 栈 52），背景透明，跟随 toolbar 玻璃。
+- 只渲染其中一种控件；`segments` 为空时不渲染也不占高度，页面顶部留白会自动增加对应行高。
 | `glassDistance` | 滚动多少 px 后顶栏玻璃铺满 | 56 |
 
 ## 一级导航（数据驱动）

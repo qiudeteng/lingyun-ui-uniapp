@@ -1,6 +1,6 @@
 # 凌云UI
 
-凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.53**，变更见 [`changelog.md`](./changelog.md)。
+凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.54**，变更见 [`changelog.md`](./changelog.md)。
 
 📖 [使用手册](https://lingyun.xinyicanyin.com/)（组件用法、属性、示例；右侧手机框实时预览）
 
@@ -223,6 +223,16 @@ lingyun-ui/
 />
 
 <lingyun-toolbars title="Title" @back="onBack" />
+<lingyun-toolbars
+  title="Title"
+  :segments="[
+    { key: 'all', text: '全部' },
+    { key: 'active', text: '进行中' },
+    { key: 'done', text: '已完成' },
+  ]"
+  segment-control="tabs"
+  segment-value="all"
+/>
 <lingyun-toolbars placement="sheet" title="Title" @close="onClose" />
 <lingyun-toolbars title-style="large" title="Title" />
 

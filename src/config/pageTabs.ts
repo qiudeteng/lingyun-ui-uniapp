@@ -178,6 +178,20 @@ const PAGE_CHILDREN: LingyunPageTabChild[] = [
       '标准页 · 左右分类 / 购物车',
     ),
     pageChild(
+      'page-purchase-order-list',
+      '订货单列表',
+      'list',
+      '/pages/demo/purchase-order-list',
+      '标准页 · 状态筛选 / 多批配送',
+    ),
+    pageChild(
+      'page-purchase-order-detail',
+      '订货单详情',
+      'list',
+      '/pages/demo/purchase-order-detail',
+      '标准页 · 子订货单 / 物流 / 金额',
+    ),
+    pageChild(
       'page-records',
       '记录列表',
       'list',

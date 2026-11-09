@@ -31,6 +31,8 @@ export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
     items: [
       { title: '接入', url: '/pages/guide/start', note: '安装 · 页面壳 · 宽屏与 Tab', icon: 'info' },
       { title: '点单加购', url: '/pages/demo/order-goods', note: '标准页 · 分类联动 / 购物车', icon: 'cart' },
+      { title: '订货单列表', url: '/pages/demo/purchase-order-list', note: '标准页 · 状态筛选 / 多批配送', icon: 'list' },
+      { title: '订货单详情', url: '/pages/demo/purchase-order-detail', note: '标准页 · 状态 / 商品 / 金额 / 物流', icon: 'list' },
       { title: '记录列表', url: '/pages/demo/records', note: '列表 · 筛选 · 搜索 · 时间选择', icon: 'list' },
       { title: '工作台', url: '/pages/demo/workbench', note: '二级 / 三级菜单工作台', icon: 'bars' },
     ],
