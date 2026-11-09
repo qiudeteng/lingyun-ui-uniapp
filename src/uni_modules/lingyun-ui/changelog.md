@@ -1,4 +1,4 @@
-## 未发布
+## 1.0.53（2026-11-09）
 - 修复二维码 / 条码在部分小程序运行环境不显示：内置编码器移除 `??` 空值合并语法，兼容较低版本 JS 引擎；重新构建 `dist/dev` 与 `dist/build`。
 - `lingyun-markdown` 代码块新增内置语法高亮：支持 ts / js / tsx / jsx / json / html / xml / vue / css / scss / less / bash / sh / sql / php / rust / swift；新增 `highlight` 属性（默认 true），token 颜色走 `--ly-md-code-*` CSS 变量，未知语言保持单色，不引入第三方依赖。
 ## 1.0.52（2026-11-09）
