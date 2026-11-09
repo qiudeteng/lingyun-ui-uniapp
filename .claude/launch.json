@@ -1,0 +1,35 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "lingyun-h5",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "dev"
+      ],
+      "port": 5175
+    },
+    {
+      "name": "lingyun-h5-alt",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "dev",
+        "--port",
+        "5180"
+      ],
+      "port": 5180
+    },
+    {
+      "name": "figma-embed",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5188",
+        "--directory",
+        ".tmp-figma"
+      ],
+      "port": 5188
+    }
+  ]
+}

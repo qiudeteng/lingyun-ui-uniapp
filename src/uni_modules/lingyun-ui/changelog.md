@@ -1,4 +1,4 @@
-## 1.0.51（2026-11-09）
+## 1.0.51 (2026-11-09)
 - 新增图片上传 `lingyun-image-upload`：缩略图网格与上传队列，支持直接上传 / 编辑后上传、90° 旋转、固定比例 / 自由裁剪、上传进度与失败重试；裁剪与导出逻辑拆在 `crop.ts` / `export-image.ts`。
 - 新增文件上传 `lingyun-file-upload`：文件列表、类型色、上传进度、重试、删除与预览 / 下载；H5 通过 `public/system-file-picker.html` 调起系统文件选择。
 - 新增顶部 Tabs `lingyun-tabs`：可滚动、underline / pill 两种形态、滑动指示器、自动滚入与吸顶；支持 `badge`、`disabled` 与自定义内容。
