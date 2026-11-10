@@ -775,11 +775,7 @@
     box-sizing: border-box;
     min-height: 100%;
     padding: 12px 0 150px;
-    background:
-      radial-gradient(120% 80% at 10% 0%, rgba(37, 99, 235, 0.18), transparent 55%),
-      radial-gradient(100% 70% at 90% 15%, rgba(16, 185, 129, 0.14), transparent 50%),
-      radial-gradient(90% 60% at 50% 100%, rgba(245, 158, 11, 0.12), transparent 45%),
-      var(--lingyun-bg-grouped-primary, #f2f2f7);
+    background: var(--lingyun-bg-grouped-primary, #f2f2f7);
   }
 
   .page--searching {

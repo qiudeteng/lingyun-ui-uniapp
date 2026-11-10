@@ -656,9 +656,7 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background:
-      radial-gradient(120% 120% at 85% 10%, rgba(255, 255, 255, 0.22), transparent 55%),
-      linear-gradient(126deg, #0a84ff 0%, #5e5ce6 58%, #3634a3 100%);
+    background: var(--lingyun-bg-grouped-primary, #f2f2f7);
   }
 
   .order-banner__bg {

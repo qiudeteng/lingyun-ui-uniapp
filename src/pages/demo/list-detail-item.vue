@@ -1,5 +1,5 @@
 <template>
-  <lingyun-app-page title="工单详情">
+  <lingyun-app-page title="工单详情" :show-back="true">
     <view class="page">
       <ticket-detail v-if="ticket" :ticket="ticket" />
       <view v-else class="empty">

@@ -14,6 +14,8 @@ export const pageHostState = reactive({
   path: '',
   /** 实际承载右侧视图的页面。 */
   host: '',
+  /** 承载页隐藏自己的 toolbar（分栏内容自带 toolbar 时由目标页设置）。 */
+  hideToolbar: false,
 })
 
 function currentRoute(): string {
@@ -41,6 +43,8 @@ export function setLingyunPageHost(url: string, highlight?: string): void {
   const path = normalizeLingyunPagePath(full)
   pageHostState.path = normalizeLingyunPagePath(highlight || path)
   pageHostState.host = getLingyunPageView(path)?.host || ''
+  /* 新目标页挂载后会按需重新设置 */
+  pageHostState.hideToolbar = false
   if (path === 'pages/404/404') {
     pageHostState.url = full
     return
@@ -52,6 +56,7 @@ export function clearLingyunPageHost(): void {
   pageHostState.url = ''
   pageHostState.path = ''
   pageHostState.host = ''
+  pageHostState.hideToolbar = false
 }
 
 /**

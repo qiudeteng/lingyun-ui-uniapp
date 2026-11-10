@@ -1,7 +1,18 @@
 ## 未发布
+- Demo 全站页面背景改为 iOS 标准纯色：移除全局彩色径向渐变与各页 `.page` 渐变，统一 `--lingyun-bg-grouped-primary`（浅 `#f2f2f7` / 暗黑 `#000`）；纯列表页仍用 Primary Background。
 - `lingyun-list` 新增 `plain`：Apple Plain 全宽平铺列表，去掉分组卡片的底色、圆角与左右 inset，行直接铺在页面背景上；顶部搜索 / 筛选 + 底部日期切换条的「纯列表」demo 见 `/pages/demo/plain-list`。
 - 新增「列表 + 详情」demo：宽屏隐藏页面壳 toolbar，左右各一个独立 `lingyun-toolbars`（左「工单 / N 条结果」+ 搜索按钮 + `segments` 状态分段，右「工单详情 / 当前单号」）；左栏为 375px 独立页面（纯列表，38 条样本，底部日期条浮动在列表上方），左右 toolbar 均浮动、列表与详情从下方穿过并驱动玻璃，窄屏点行进独立详情页 `/pages/demo/list-detail-item`；两栏各自滚动，详情复用 `ticket-detail` 面板。
+- 「列表 + 详情」demo 适配 iPad：分栏门槛改为 900（竖屏 768 走单栏、横屏 1024 起分栏）；页面自带 toolbar 并让宿主页隐藏自己的 toolbar，宽屏按 `statusBarHeight` 补顶部安全区、窄屏 `safe-area` 处理状态栏与胶囊；列表返回按左侧导航是否停靠判断（iPad 竖屏从左侧 Tab 进入，不显示返回），详情页强制显示返回。
+- 「列表 + 详情」demo 宽屏选中行背景改为右侧内容区底色（grouped primary），不再是偏深的 `fill.secondary`；两栏之间的 0.5px 缝隙改为透出页面底色——白色列表旁自然成线，选中行与详情列同一底色、贴边无缝，不再出现选中块与右侧边线颜色不一致。
 - `lingyun-toolbars`：`title2LineLeft` 在没有返回 / 关闭 / 交通灯 / `leading` 时不再预留 44pt 前导位，标题直接贴内容边缘；分栏 pane 内单独放 toolbar 时左侧不再留空。
+- 宿主目录页（index / demo）内容根类由通用 `.page` 改为 `.directory`，避免小程序宽屏托管时 40px 底部 padding 串到被托管页面；去掉冗余的 `min-height` / `background`。列表与详情页同时保留 `.page` padding 重置作为兜底。
+- 「列表 + 详情」固定高度页面重置宿主目录页 `.page` 的 40px 底部 padding，列表 / 详情铺满到窗口底部，不再露出页面壳灰底；日期切换器的底部安全区保留。
+- 微信 PC 客户端安全区按 Web 处理：胶囊在窗口标题栏、不在页面内，`getLingyunNavLayout` 的 `rightInset` 归零；新增 `isLingyunWeixinPc()` 导出。检测改看 `platform` 的 `windows` / `mac`（真机客户端 `deviceType` 仍报 phone），`lingyun.device` 同步纠正为 `pc`。列表详情 PC 端 toolbar 顶部与 H5 一致；日期条保留自身底部安全区（PC 无系统 env，只剩 12 设计留白）。
+- 小程序宽屏宿主不再托管「点单加购」（固定高度 + 内层滚动页），点击时按整页打开，分类点击定位 / 滚动联动恢复正常。
+- 小程序宽屏宿主补齐所有导航页面的静态分支（顶部 Tabs、二维码 / 条码、文件上传、日历、筛选菜单、工具栏系列等），宽屏点击不再回落到 404。
+- `lingyun-toolbars` 新增 `avoidCapsule`：分栏 pane 内的 toolbar 可以只保留状态栏占位、不避让右侧微信胶囊；「列表 + 详情」左栏宽屏设为 `false`，搜索按钮回到 pane 右侧，窄屏与右侧详情保持默认避让。
+- `lingyun-page-nav` / `lingyun-app-page`：停靠导航的所有右边缘（220 目录列、84 窄栏、窄栏与菜单列之间、菜单列右侧）统一使用右侧内容区底色（`--lingyun-bg-grouped-primary`），不再画深色分割线，也不根据右侧有没有菜单列改变颜色——视觉上没有边线，由白色列自身与 grouped 底色的色差形成边界。小程序 `lingyun-app-page__nav-line` 同步改为内容区底色。列表详情页的内容列表右侧分割线同样用列表底色，详情列不在时不露线。
+- `lingyun-app-page`：小程序左侧导航的状态栏留白补上导航底色 / 窄栏 tint 和右侧边缘线，顶部不再露出页面渐变。
 - `lingyun-date-switcher`：修正 `limit` 边界下上一段 / 下一段的判断——从 10 月可以切回包含今天的 11 月（周 / 月 / 年 / 日期段同理），不再因为整段结束时间越界而卡在上一段。
 ## 1.0.55（2026-11-10）
 - `lingyun-combobox` 打开后自动聚焦搜索框；小程序键盘抬起时 Popover 按键盘高度重排并缩短列表，避免下拉被遮挡；`lingyun-popover` 新增 `bottomInset`。

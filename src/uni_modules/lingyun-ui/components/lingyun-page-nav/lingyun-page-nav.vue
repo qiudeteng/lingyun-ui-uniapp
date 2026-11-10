@@ -1111,7 +1111,8 @@ export default defineComponent({
   box-sizing: border-box;
   overflow: hidden;
   background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
-  border-right: 1px solid var(--lingyun-separator, #{$lingyun-separator});
+  /* 右侧与内容区底色一致：视觉上不留边线，白色内容列出现时由白色形成边界 */
+  border-right: 1px solid var(--lingyun-bg-grouped-primary, #{$lingyun-bg-grouped-primary});
 }
 
 /* 二级菜单遮罩：从导航右边缘开始，不挡左侧 Tab；层级在顶栏之上、菜单面板之下 */
@@ -1460,8 +1461,8 @@ export default defineComponent({
   position: relative;
   /* 与内容卡片同色，顶栏玻璃压在卡片上时两边亮度一致 */
   background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
-  /* 与顶栏玻璃直接相接，不要侧边线，否则顶部连接处出现一道竖线 */
-  border-right: 0;
+  /* 右边线取内容区底色：白色窄栏与 grouped 内容之间的色差本身就是边界，不再画可见线 */
+  border-right: 1px solid var(--lingyun-bg-grouped-primary, #{$lingyun-bg-grouped-primary});
 }
 
 .lingyun-page-nav--rail .lingyun-page-nav__rail-panel {
@@ -1594,12 +1595,15 @@ export default defineComponent({
 /* PC 三栏：84 窄栏 + 220 内联二级 / 三级菜单列 */
 .lingyun-page-nav--inline {
   flex-direction: row;
-  border-right: 1px solid var(--lingyun-separator, #{$lingyun-separator});
+  /* 菜单列右边线与内容区底色完全一致：没有白色新列时看不出线，白色内容列自己形成边界 */
+  border-right: 1px solid var(--lingyun-bg-grouped-primary, #{$lingyun-bg-grouped-primary});
 }
 
 .lingyun-page-nav--inline .lingyun-page-nav__rail-col {
   flex: 0 0 84px;
   width: 84px;
+  /* 与右侧列底色一致：不随菜单列有无改变颜色，白色列之间的 1px 缝隙由底色本身呈现 */
+  border-right: 1px solid var(--lingyun-bg-grouped-primary, #{$lingyun-bg-grouped-primary});
 }
 
 .lingyun-page-nav--inline .lingyun-page-nav__rail-panel {
@@ -1614,7 +1618,8 @@ export default defineComponent({
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  border-left: 1px solid var(--lingyun-separator, #{$lingyun-separator});
+  /* 左边线由窄栏的右边线提供，避免三栏时双线 */
+  border-left: 0;
   background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
 }
 

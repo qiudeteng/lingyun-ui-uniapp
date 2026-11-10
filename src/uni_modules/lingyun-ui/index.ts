@@ -35,6 +35,7 @@ export {
   LINGYUN_TABBAR_PAD_BOTTOM_PX,
   LINGYUN_TABBAR_PAD_TOP_PX,
 } from './components/lingyun-tabbars/tabbarMetrics'
+export { isLingyunWeixinPc } from './components/lingyun-toolbars/getLingyunNavSafeInset'
 export type {
   LingyunDateSwitcherChange,
   LingyunDateSwitcherLimit,

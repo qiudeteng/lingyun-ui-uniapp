@@ -389,6 +389,14 @@ export default defineComponent({
       type: Boolean,
       default: true,
     },
+    /**
+     * 右侧微信胶囊避让。默认 true；
+     * 分栏里不是整宽的 pane toolbar 设为 false，只保留状态栏占位。
+     */
+    avoidCapsule: {
+      type: Boolean,
+      default: true,
+    },
     glassProgress: {
       type: Number,
       default: 0,
@@ -473,6 +481,9 @@ export default defineComponent({
       },
     },
     safeArea() {
+      this.syncNavLayout()
+    },
+    avoidCapsule() {
       this.syncNavLayout()
     },
     showWindowControls() {
@@ -654,11 +665,11 @@ export default defineComponent({
       const actionWidth = this.searchable
         ? 44 + this.gapPx + this.rightActionGapPx
         : 0
+      /* 和右侧 44 高按钮组同一条内容带：顶到 bar 的 padding-top，窄屏 / 宽屏都能对齐 */
       return {
         left: '0px',
         right: `${actionWidth}px`,
         top: `${this.padTopPx}px`,
-        bottom: `${this.padBottomPx + this.barBottomExtraPx}px`,
       }
     },
     /** 内容区最小高度（不含状态栏） */
@@ -775,7 +786,7 @@ export default defineComponent({
       this.statusBarPx = status
       this.barHeightPx = bar
       this.barBottomExtraPx = bottomExtra
-      this.rightInsetPx = this.safeArea ? layout.rightInset : 0
+      this.rightInsetPx = this.safeArea && this.avoidCapsule ? layout.rightInset : 0
       this.$nextTick(() => this.measureThemeMenuAnchor())
     },
     /** 主题钮菜单和按钮组一起隐藏，按第一组右上角定位 */

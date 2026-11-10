@@ -5,25 +5,18 @@
     title="列表与详情"
     :show-tabbar="false"
     :body-scroll="false"
-    :show-toolbar="showPageToolbar"
-    searchable
-    search-placeholder="搜索工单 / 客户"
-    :segments="statusOptions"
-    :segment-value="statusFilter"
-    segment-control="segmented"
-    v-model:searching="searching"
-    v-model:search-value="keyword"
-    @segment-change="onStatusSegmentChange"
+    :show-toolbar="false"
   >
     <view class="page" :class="{ 'page--wide': wide }">
       <!-- 左栏 = 独立页面：自己的 toolbar（工单 + 条数 + 搜索按钮） -->
       <view class="list-pane">
-        <!-- 宽屏：toolbar + 状态分段都属于 toolbar，列表从下方穿过，滚动时整条起玻璃 -->
-        <view v-if="wide" class="pane-header">
+        <!-- toolbar（标题 / 搜索 / 状态分段）浮动在列表上方，列表从下方穿过 -->
+        <view class="pane-header">
           <lingyun-toolbars
+            :class="{ 'pane-toolbar--pc': weixinPc }"
             :fixed="false"
-            :safe-area="false"
-            :show-back="false"
+            :avoid-capsule="!wide"
+            :show-back="!navDocked && !hosted"
             :show-trailing="false"
             :show-window-controls="false"
             :show-theme-switch="false"
@@ -40,6 +33,7 @@
             v-model:search-value="keyword"
             @search-cancel="onSearchCancel"
             @segment-change="onStatusSegmentChange"
+            @back="onPageBack"
           />
         </view>
 
@@ -52,7 +46,6 @@
         >
           <view id="list-scroll-top" class="list-top-anchor" />
           <view
-            v-if="wide"
             class="list-top-spacer"
             :style="{ height: `${headerHeight}px` }"
           />
@@ -114,8 +107,8 @@
         <view class="detail-pane">
           <view class="detail-header">
             <lingyun-toolbars
+              :class="{ 'pane-toolbar--pc': weixinPc }"
               :fixed="false"
-              :safe-area="false"
               :show-back="false"
               :show-trailing="false"
               :show-window-controls="false"
@@ -160,6 +153,7 @@
     watch,
   } from 'vue'
   import {
+    isLingyunWeixinPc,
     isLingyunWideScreen,
     type LingyunDateSwitcherChange,
     type LingyunDateSwitcherMode,
@@ -183,8 +177,27 @@
 
   const reportScroll = useLingyunAppPageScroll()
 
-  /** 宽屏门槛 690：达到后左列表 + 右详情；窄屏详情走独立页面 */
-  const wide = computed(() => isLingyunWideScreen())
+  /** 左右分栏门槛 900：iPad 竖屏 768 / 手机走单栏，详情开独立页；横屏 1024 起分栏 */
+  const SPLIT_MIN_WIDTH = 900
+
+  function readWindowWidth(): number {
+    try {
+      const info =
+        typeof uni.getWindowInfo === 'function'
+          ? uni.getWindowInfo()
+          : uni.getSystemInfoSync()
+      return Number(info.windowWidth) || 0
+    } catch {
+      return 0
+    }
+  }
+
+  const windowWidth = ref(readWindowWidth())
+  const wide = computed(() => windowWidth.value >= SPLIT_MIN_WIDTH)
+  /** 左侧导航是否停靠：导航停靠时不显示页面返回（iPad 竖屏 / 横屏） */
+  const navDocked = computed(() => isLingyunWideScreen())
+  /** 微信 PC 端没有系统状态栏 / 胶囊 / 底部安全区，按 Web 处理 */
+  const weixinPc = isLingyunWeixinPc()
 
   function currentPageRoute(): string {
     try {
@@ -202,7 +215,14 @@
       pageHostState.path === 'pages/demo/list-detail' &&
       currentPageRoute() !== 'pages/demo/list-detail',
   )
-  const showPageToolbar = computed(() => !wide.value || hosted.value)
+  /* 本页自己出 toolbar：宿主页（小程序宽屏 / 目录）隐藏自己的 toolbar */
+  watch(
+    hosted,
+    (value) => {
+      pageHostState.hideToolbar = value
+    },
+    { immediate: true },
+  )
 
   /* ---------- 左栏浮动头部：量高度给列表做顶部占位，滚动时行从 toolbar 下穿过 ---------- */
 
@@ -211,11 +231,6 @@
   const detailHeaderHeight = ref(0)
 
   function measurePaneHeader(): void {
-    if (!wide.value) {
-      headerHeight.value = 0
-      detailHeaderHeight.value = 0
-      return
-    }
     const proxy = instance?.proxy
     if (!proxy) return
     const query = uni.createSelectorQuery().in(proxy)
@@ -235,10 +250,6 @@
   }
 
   function scheduleMeasure(): void {
-    if (!wide.value) {
-      headerHeight.value = 0
-      return
-    }
     nextTick(() => {
       measurePaneHeader()
     })
@@ -247,21 +258,30 @@
   watch(wide, scheduleMeasure)
 
   let resizeMeasureTimer: ReturnType<typeof setTimeout> | null = null
-  let windowResizeHandler: (() => void) | null = null
+
+  function handleWindowResize(res: {
+    size?: { windowWidth?: number }
+    windowWidth?: number
+  }): void {
+    const width =
+      Number(res?.size?.windowWidth) || Number(res?.windowWidth) || readWindowWidth()
+    if (width > 0) windowWidth.value = width
+    scheduleMeasure()
+  }
 
   onMounted(() => {
     scheduleMeasure()
     /* toolbar 自身的布局同步晚一拍，再量一次兜底 */
     resizeMeasureTimer = setTimeout(scheduleMeasure, 120)
-    windowResizeHandler = () => scheduleMeasure()
-    uni.onWindowResize?.(windowResizeHandler)
+    uni.onWindowResize?.(handleWindowResize)
   })
 
   onBeforeUnmount(() => {
     if (resizeMeasureTimer) clearTimeout(resizeMeasureTimer)
     if (listAnchorTimer) clearTimeout(listAnchorTimer)
     if (detailAnchorTimer) clearTimeout(detailAnchorTimer)
-    if (windowResizeHandler) uni.offWindowResize?.(windowResizeHandler)
+    uni.offWindowResize?.(handleWindowResize)
+    pageHostState.hideToolbar = false
   })
 
   /* ---------- 左栏：搜索 / 状态 / 时间 ---------- */
@@ -414,6 +434,16 @@
     uni.navigateTo({ url: `/pages/demo/list-detail-item?id=${encodeURIComponent(ticket.id)}` })
   }
 
+  /** 窄屏、非宿主时显示返回：回到目录 */
+  function onPageBack(): void {
+    const pages = getCurrentPages()
+    if (pages.length > 1) {
+      uni.navigateBack()
+      return
+    }
+    uni.reLaunch({ url: '/pages/index/index' })
+  }
+
   function onListScroll(event: PaneScrollEvent): void {
     const top = Number(event?.detail?.scrollTop) || 0
     reportScroll(top)
@@ -438,6 +468,29 @@
     box-sizing: border-box;
     height: 100vh;
     min-height: 0;
+    padding: 0;
+  }
+
+  /*
+   * 宿主目录页（index / demo）的 .page 带 40px 底部 padding，
+   * 固定 100vh + border-box 时会把内容顶起 40；这里压掉。
+   */
+  .list-detail-page .page {
+    padding: 0;
+    min-height: 0;
+  }
+
+  /* #ifdef H5 */
+  /* 网页没有系统状态栏：留白放进 toolbar 内部（chrome 盖住），避免上方透底 */
+  .pane-header .lingyun-toolbars,
+  .detail-header .lingyun-toolbars {
+    padding-top: 12px;
+  }
+  /* #endif */
+
+  /* 微信 PC 端按 Web：toolbar 顶部同样补 12 */
+  .pane-toolbar--pc {
+    padding-top: 12px;
   }
 
   /* 左栏本身是一个独立页面：toolbar + 控件 + 纯列表 + 底部时间条 */
@@ -543,8 +596,8 @@
     flex: 0 0 1px;
     width: 1px;
     height: 100%;
-    background: var(--lingyun-separator-opaque, #c6c6c8);
-    /* 和列表分割线一致：1px 画布缩成 0.5px 视觉宽度，高分屏不显粗 */
+    /* 透明：缝隙透出页面 grouped 底色——白色列表旁自然成线，选中行同为 grouped 底色时无缝 */
+    background: transparent;
     transform: scaleX(0.5);
     transform-origin: center;
   }
@@ -557,9 +610,9 @@
     height: 0;
   }
 
-  /* 选中行：背景放在页面自己的 view 上，H5 / 小程序都能命中 */
+  /* 选中行：与右侧内容区同一底色，选中行贴右边缘时和详情列无缝衔接 */
   .ticket-row--active {
-    background: var(--lingyun-fill-secondary, rgba(120, 120, 128, 0.16));
+    background: var(--lingyun-bg-grouped-primary, #f2f2f7);
   }
 
   .ticket-status {

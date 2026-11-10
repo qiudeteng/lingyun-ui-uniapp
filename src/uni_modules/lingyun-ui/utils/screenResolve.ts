@@ -110,22 +110,21 @@ export function resolveDevice(
   os: LingyunOs,
 ): LingyunDevice {
   const type = deviceType.toLowerCase()
-  if (type === 'phone' || type === 'pad' || type === 'pc') return type
-  const id = `${brand} ${model}`.trim().toLowerCase()
   const plat = platform.toLowerCase()
-  if (/ipad|tablet/.test(id)) return 'pad'
-  if (plat === 'devtools') return 'phone'
-  if (
+  const desktopPlat =
     plat === 'windows' ||
     plat === 'mac' ||
     plat === 'macos' ||
     plat === 'linux' ||
-    plat === 'ohos_pc' ||
-    os === 'windows' ||
-    os === 'mac'
-  ) {
-    return 'pc'
-  }
+    plat === 'ohos_pc'
+  /* iPad / 平板优先；微信 PC 客户端仍会报 deviceType=phone，桌面平台按 pc 纠正 */
+  if (type === 'pad') return 'pad'
+  const id = `${brand} ${model}`.trim().toLowerCase()
+  if (/ipad|tablet/.test(id)) return 'pad'
+  if (desktopPlat) return 'pc'
+  if (type === 'phone' || type === 'pc') return type
+  if (plat === 'devtools') return 'phone'
+  if (os === 'windows' || os === 'mac') return 'pc'
   if (id || plat || os) return 'phone'
   return ''
 }

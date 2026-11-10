@@ -2,11 +2,12 @@
   <lingyun-app-page
     :title="pageTitle"
     :show-back="false"
+    :show-toolbar="!pageHostState.hideToolbar"
     :body-scroll="hostedView?.bodyScroll ?? true"
     :page-scroll="hostedView?.pageScroll ?? true"
   >
     <app-page-view-host v-if="pageHostState.path" />
-    <view v-if="showHome" class="page">
+    <view v-if="showHome" class="directory">
       <lingyun-section
         v-for="(section, index) in homeGroups"
         :key="section.key"
@@ -90,10 +91,12 @@
 <style lang="scss">
   @import '@/uni_modules/lingyun-ui/styles/variables.scss';
 
-  .page {
-    padding: 0 0 40px;
+  /*
+   * 目录页自己的滚动内容。勿用通用 .page：宽屏宿主里会命中被托管的页面；
+   * 背景交给 lingyun-app-page，页面滚动首子已有 min-height: 100vh。
+   */
+  .directory {
     box-sizing: border-box;
-    min-height: 100%;
-    background: var(--lingyun-bg-grouped-primary, #f2f2f7);
+    padding: 0 0 40px;
   }
 </style>
