@@ -31,6 +31,7 @@
 | `variant` | `''` | `menu`：Sketch Menus 面板（圆角 32、内边距 10），给 `lingyun-menu` 用 |
 | `anchor` | `null` | 视口坐标矩形 `{ left, top, width, height }`。传了就指向它，不测 `trigger` 插槽；触发点不在本组件里时用（如表格表头的筛选图标） |
 | `estimateHeight` | `0` | 面板预估高度（px），用来判断下方放不下时翻到上方。0 用默认值 |
+| `bottomInset` | `0` | 视口底部安全内缩（px），如小程序键盘高度；定位按扣减后的可用高度计算并会自动重排 |
 
 事件：`update:show` / `update:modelValue`（开关）、`close`（关闭时）
 

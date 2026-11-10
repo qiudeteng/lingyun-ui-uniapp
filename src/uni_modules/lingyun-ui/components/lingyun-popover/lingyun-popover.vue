@@ -163,6 +163,8 @@ export default defineComponent({
     anchor: { type: Object as PropType<AnchorBox | null>, default: null },
     /** 面板预估高度，用于判断下方放不下时翻到上方。0 用默认值 */
     estimateHeight: { type: Number, default: 0 },
+    /** 视口底部安全内缩（px），例如小程序键盘高度；定位时按扣减后的可用高度计算 */
+    bottomInset: { type: Number, default: 0 },
     /** 关闭时不播放退场动画，用于菜单之间直接切换，避免两个面板重叠 */
     instantClose: { type: Boolean, default: false },
   },
@@ -313,6 +315,9 @@ export default defineComponent({
         else this.closeAnim()
       },
     },
+    bottomInset() {
+      this.$nextTick(() => this.refreshLayout())
+    },
   },
   beforeUnmount() {
     this.clearTimers()
@@ -356,6 +361,23 @@ export default defineComponent({
         })
       })
       // #endif
+    },
+    /** 视口底边变化（如小程序键盘抬起）后重新量面板并贴锚点 */
+    refreshLayout() {
+      if (!this.mounted || this.phase === 'leave' || this.phase === 'measure') return
+      const seq = this.openSeq
+      this.queryAnchor().then((rect) => {
+        if (seq !== this.openSeq || !this.visible) return
+        this.queryPanelHeight().then((h) => {
+          if (seq !== this.openSeq || !this.visible) return
+          if (h > 0) this.panelH = h
+          const height =
+            h > 0
+              ? h
+              : this.panelH || (this.estimateHeight > 0 ? this.estimateHeight : EST_PANEL_H)
+          this.applyAnchor(rect, height, this.readViewport())
+        })
+      })
     },
     clearTimers() {
       if (this.leaveTimer) {
@@ -494,7 +516,8 @@ export default defineComponent({
     },
     applyAnchor(trigger: AnchorBox | null, panelH: number, viewport: Viewport) {
       const vw = viewport.width
-      const vh = viewport.height
+      const inset = Math.max(0, Number(this.bottomInset) || 0)
+      const vh = Math.max(0, viewport.height - inset)
       const height = panelH > 0 ? panelH : EST_PANEL_H
       const along = this.showArrow ? ARROW_H + TIP_GAP : GAP
 

@@ -8,6 +8,7 @@
     :mask-transparent="true"
     :mask-closable="true"
     :z-index="zIndex"
+    :bottom-inset="keyboardHeight"
     trigger-block
   >
     <template #trigger>
@@ -63,12 +64,14 @@
         <input
           class="lingyun-combobox__input"
           :value="query"
-          :focus="visible"
+          :focus="searchFocus"
           :placeholder="searchPlaceholder"
           placeholder-class="lingyun-combobox__placeholder"
           confirm-type="search"
+          :adjust-position="false"
           @input="onSearchInput"
           @confirm="onSearchConfirm"
+          @keyboardheightchange="onKeyboardHeightChange"
         />
         <view
           v-if="query"
@@ -171,10 +174,16 @@ export default defineComponent({
   data(): {
     visible: boolean
     query: string
+    keyboardHeight: number
+    searchFocus: boolean
+    focusTimer: ReturnType<typeof setTimeout> | null
   } {
     return {
       visible: false,
       query: '',
+      keyboardHeight: 0,
+      searchFocus: false,
+      focusTimer: null,
     }
   },
   computed: {
@@ -216,26 +225,52 @@ export default defineComponent({
     },
     listHeight(): number {
       const max = Math.max(80, Number(this.maxHeight) || 240)
+      /* 键盘抬起时缩短列表，配合 Popover bottomInset 保证不被键盘覆盖 */
+      const effectiveMax =
+        this.keyboardHeight > 0 ? Math.min(max, 160) : max
       const rowHeight = 56
       const height = this.filteredItems.length
         ? this.filteredItems.length * rowHeight + 8
         : 64
-      return Math.min(max, height)
+      return Math.min(effectiveMax, height)
     },
   },
   watch: {
     visible(value: boolean) {
       if (value) {
         this.query = ''
+        this.searchFocus = false
         this.$emit('open')
+        if (this.focusTimer) clearTimeout(this.focusTimer)
+        let delay = 80
+        // #ifdef MP-WEIXIN
+        /* Popover 在 root-portal 内挂载，稍等展开后再聚焦才能拉起键盘 */
+        delay = 260
+        // #endif
+        this.focusTimer = setTimeout(() => {
+          this.focusTimer = null
+          if (this.visible) this.searchFocus = true
+        }, delay)
         return
       }
+      if (this.focusTimer) {
+        clearTimeout(this.focusTimer)
+        this.focusTimer = null
+      }
+      this.searchFocus = false
       this.query = ''
+      this.keyboardHeight = 0
       this.$emit('close')
     },
     disabled(value: boolean) {
       if (value) this.visible = false
     },
+  },
+  beforeUnmount() {
+    if (this.focusTimer) {
+      clearTimeout(this.focusTimer)
+      this.focusTimer = null
+    }
   },
   methods: {
     isSame(a: unknown, b: unknown): boolean {
@@ -284,6 +319,11 @@ export default defineComponent({
     },
     onSearchConfirm(): void {
       if (this.filteredItems.length) this.select(this.filteredItems[0])
+    },
+    onKeyboardHeightChange(event: { detail?: { height?: number } }): void {
+      const height = Number(event?.detail?.height)
+      this.keyboardHeight =
+        Number.isFinite(height) && height > 0 ? Math.round(height) : 0
     },
     clearQuery(): void {
       this.query = ''

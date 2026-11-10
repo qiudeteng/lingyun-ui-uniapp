@@ -64,6 +64,7 @@ const store = ref<string | number | null>('jiuxianqiao')
 ## 说明
 
 - 点击字段打开，透明遮罩点击关闭。
+- 打开后自动聚焦搜索框；小程序键盘抬起时列表缩短并重新定位，避免被键盘遮挡。
 - 搜索按 label / description 过滤；回车选择第一条可选项。
 - 禁用项不可选；`readonly` 不打开。
 - 下拉复用 Popover 玻璃，不另造浮层。

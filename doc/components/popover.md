@@ -45,6 +45,7 @@
 | `variant` | `menu`：菜单面板（圆角 32、内边距 10），给 `lingyun-menu` 用 | — |
 | `anchor` | 视口坐标矩形 `{ left, top, width, height }`。传了就指向它，不再量 `trigger` 插槽 | null |
 | `estimateHeight` | 面板预估高度（px），只用来判断要不要翻到上方。0 用默认值 | 0 |
+| `bottomInset` | 视口底部安全内缩（px），例如小程序键盘高度；会按扣减后的可用高度重新定位 | 0 |
 
 ## 插槽
 
