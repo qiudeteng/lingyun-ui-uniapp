@@ -123,9 +123,7 @@
   .page {
     min-height: 100%;
     padding-bottom: 24px;
-    background:
-      radial-gradient(120% 80% at 10% 0%, rgba(0, 136, 255, 0.16), transparent 55%),
-      var(--lingyun-bg-grouped-primary, #f2f2f7);
+    background: var(--lingyun-bg-grouped-primary, #f2f2f7);
   }
 
   .hero {

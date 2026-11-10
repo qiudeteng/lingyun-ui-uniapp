@@ -52,6 +52,11 @@
 - **Title**：居中；SF Pro **Semibold 600** / **17** / LH **22** / Labels · Liquid Glass **1 Primary**（`#1a1a1a`）
 - **Trailing**：Trailing Button（常见 **44 × 44** Bordered Prominent / System Blue）
 
+**Title 2 Line Left**
+
+- 标题左对齐；有返回 / 关闭 / 交通灯 / `leading` 插槽时从 44 钮位后开始
+- 没有上述前导内容时不再预留 44 钮位，标题直接从栏身内容边缘开始（分栏 pane 内单独放 toolbar 时使用）
+
 **Sheet / Title**
 
 - **Grabber** → **Leading Button**（关闭：`lingyun-icon` `closeempty` **26**）→ **Title** → **Trailing Button**
@@ -89,7 +94,7 @@
 
 标题仍是 Semibold **17 / 22**，色为 Labels · Liquid Glass **1 Primary** `#1a1a1a`，相对栏身几何中心，不跟按钮组走。状态栏高度继续用 `getWindowInfo().statusBarHeight`（iPad 示例为 32，不写死）。窄屏「状态栏挪 5px 到下边距」在宽屏关闭。
 
-微信 **PC 客户端**（`platform` 为 `windows` / `mac`）没有手机状态栏，胶囊的 `top` 会把栏身撑高。这一端状态栏按 **0**，栏身不跟胶囊抬高，与同宽度的 H5 一致（宽屏 **54**，窄屏 **60**）。右侧仍按胶囊留 `rightInset`。
+微信 **PC 客户端**按 **Web** 处理：胶囊在窗口标题栏里、不在页面内，状态栏按 **0**、`rightInset` 按 **0**、底部安全区也不需要；栏身与同宽度的 H5 一致（宽屏 **54**，窄屏 **60**）。检测只看 `platform` 为 `windows` / `mac`（真机客户端的 `deviceType` 仍会报 `phone`；开发者工具平台是 `devtools`，不会命中），可用 `isLingyunWeixinPc()` 判断。
 
 拉宽 / 收窄窗口时顶栏与 `lingyun-app-page` 占位一起重算。
 
@@ -155,6 +160,7 @@ HIG 规则：相关工具项应成组，不要手动加固定间距；每个非�
 | `showThemeSwitch` | boolean / `'auto'` | `'auto'` | 页面级主题钮开关；`false` 只隐藏当前 toolbar，不改进程全局状态 |
 | `fixed` | boolean | `false` | 顶部 fixed |
 | `safeArea` | boolean | `true` | 预留状态栏（JS `statusBarHeight`，对齐 uni-status-bar；微信内容行对齐胶囊） |
+| `avoidCapsule` | boolean | `true` | 右侧微信胶囊避让；分栏 pane 内不是整宽 toolbar 时设 `false`，只保留状态栏占位 |
 
 | 事件 | 说明 |
 |------|------|

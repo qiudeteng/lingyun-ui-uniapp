@@ -122,6 +122,7 @@
       <view
         class="lingyun-order-goods__body"
         :class="{ 'lingyun-order-goods__body--search': searchActive }"
+        :style="wideBodyStyle"
       >
         <scroll-view
           v-if="!searchActive"
@@ -239,12 +240,13 @@
               <text class="lingyun-order-goods__section-title">
                 {{ category.title || category.text }}
               </text>
-              <view
-                v-for="item in category.goods"
-                :key="item.key"
-                class="lingyun-order-goods__goods"
-                @click="onGoodsClick(item, category)"
-              >
+              <view class="lingyun-order-goods__section-goods">
+                <view
+                  v-for="item in category.goods"
+                  :key="item.key"
+                  class="lingyun-order-goods__goods"
+                  @click="onGoodsClick(item, category)"
+                >
                 <view class="lingyun-order-goods__media">
                   <image
                     v-if="item.image"
@@ -365,6 +367,7 @@
                     </view>
                   </view>
                 </view>
+              </view>
               </view>
             </view>
 
@@ -907,6 +910,9 @@ export default defineComponent({
       /** 视口宽度；商品详情宽屏左右布局与移动端头图模式切换 */
       windowWidth: 375,
       _onWindowResize: null as (() => void) | null,
+      /** 宽屏卡片布局下商品列表的列数（按列表实际宽度测量，1–4） */
+      listColumns: 1,
+      _columnsTimer: null as ReturnType<typeof setTimeout> | null,
       /** 商品详情 Sheet */
       goodsDetailOpen: false,
       goodsDetailItem: null as LingyunOrderGoods | null,
@@ -929,8 +935,14 @@ export default defineComponent({
   },
   computed: {
     rootClass(): Record<string, boolean> {
+      const multi = this.wideLayout && this.listColumns > 1
       return {
         'lingyun-order-goods--no-banner': this.bannerHeight <= 0,
+        'lingyun-order-goods--wide': this.wideLayout,
+        'lingyun-order-goods--multi': multi,
+        'lingyun-order-goods--cols-2': multi && this.listColumns === 2,
+        'lingyun-order-goods--cols-3': multi && this.listColumns === 3,
+        'lingyun-order-goods--cols-4': multi && this.listColumns >= 4,
       }
     },
     rootStyle(): Record<string, string> {
@@ -1096,7 +1108,18 @@ export default defineComponent({
     },
     cartPadStyle(): Record<string, string> {
       return {
-        height: `${this.cartClearance}px`,
+        height: `${this.wideLayout ? 12 : this.cartClearance}px`,
+      }
+    },
+    /** 宽屏卡片底部停在悬浮购物车上方，不再被购物车盖住圆角 */
+    wideBodyStyle(): Record<string, string> {
+      if (!this.wideLayout) return {}
+      /*
+       * cartClearance(78) = 8 底部 + 62 栏高 + 8 内容缓冲；
+       * 购物车玻璃描边约 2，卡片与购物车之间再留与页面上方一致的 12，故 +6。
+       */
+      return {
+        paddingBottom: `${this.cartClearance + 6}px`,
       }
     },
     /** 商品详情 Sheet 在 body 端会脱离页面变量作用域，用行内变量带上主色 */
@@ -1110,6 +1133,10 @@ export default defineComponent({
       return this.windowWidth > 0 && this.windowWidth < 690
     },
     goodsDetailWide(): boolean {
+      return this.windowWidth >= 690
+    },
+    /** 宽屏：左右两栏各自成为悬浮卡片，商品列表按实际宽度分多列 */
+    wideLayout(): boolean {
       return this.windowWidth >= 690
     },
     /** 详情图集：优先 images，没有时回退到单张 image */
@@ -1159,6 +1186,13 @@ export default defineComponent({
     },
   },
   watch: {
+    windowWidth() {
+      this.scheduleListColumns()
+    },
+    searchActive() {
+      /* 搜索态隐藏分类栏，列表宽度变化，重新分列 */
+      this.$nextTick(() => this.scheduleListColumns())
+    },
     categories: {
       immediate: true,
       deep: true,
@@ -1219,6 +1253,7 @@ export default defineComponent({
     this.syncSafeBottom()
     this.bindCartResize()
     this.scheduleMeasure()
+    this.scheduleListColumns()
     this.syncRailIndicator(false)
     setTimeout(() => this.syncRailIndicator(false), 160)
     this._spyTimers = [120, 420].map((delay) =>
@@ -1228,10 +1263,12 @@ export default defineComponent({
   beforeUnmount() {
     clearTimeout(this._pulseTimer ?? undefined)
     clearTimeout(this._measureTimer ?? undefined)
+    clearTimeout(this._columnsTimer ?? undefined)
     this._spyTimers.forEach((timer) => clearTimeout(timer))
     this.unbindCartResize()
     this._pulseTimer = null
     this._measureTimer = null
+    this._columnsTimer = null
     this._spyTimers = []
   },
   methods: {
@@ -1253,7 +1290,10 @@ export default defineComponent({
     },
     bindCartResize(): void {
       if (this._onWindowResize) return
-      const handler = () => this.syncSafeBottom()
+      const handler = () => {
+        this.syncSafeBottom()
+        this.scheduleListColumns()
+      }
       this._onWindowResize = handler
       try {
         if (typeof uni.onWindowResize === 'function') uni.onWindowResize(handler)
@@ -1952,6 +1992,45 @@ export default defineComponent({
         this.$emit('category-change', payload)
       }
     },
+    scheduleListColumns(): void {
+      clearTimeout(this._columnsTimer ?? undefined)
+      this._columnsTimer = setTimeout(() => {
+        this._columnsTimer = null
+        this.syncListColumns()
+      }, 120)
+    },
+    /** 按商品列表实际宽度决定列数：每列至少约 300px，最多 4 列 */
+    syncListColumns(): void {
+      if (!this.wideLayout) {
+        this.listColumns = 1
+        return
+      }
+      this.$nextTick(() => {
+        try {
+          const query = uni.createSelectorQuery().in(this)
+          query.select('.lingyun-order-goods__list').boundingClientRect()
+          query.exec((result) => {
+            const rect = result && result[0]
+            const width = Number(rect && rect.width)
+            if (!Number.isFinite(width) || width <= 0) return
+            const gap = 10
+            const minColumn = 300
+            /* 列表内边距左右各 12，列间距按 margin 计算 */
+            const inner = Math.max(0, width - 24)
+            let columns = Math.floor((inner + gap) / (minColumn + gap))
+            columns = Math.max(1, Math.min(4, columns))
+            if (columns === this.listColumns) return
+            this.listColumns = columns
+            /* 列数变化会大幅改变分组高度，重新测滚动联动位置 */
+            this.offsetsReady = false
+            this.scheduleMeasure()
+            setTimeout(() => this.measureSections(), 80)
+          })
+        } catch {
+          /* 初始未布局时测不到，等 resize / 搜索切换再测 */
+        }
+      })
+    },
     scheduleMeasure(): void {
       if (this.categoryMode) return
       clearTimeout(this._measureTimer ?? undefined)
@@ -2386,6 +2465,85 @@ export default defineComponent({
 .lingyun-order-goods__list-inner {
   padding: 0 12px;
   box-sizing: border-box;
+}
+
+/* ---------- 宽屏：左右两栏悬浮卡片 + 商品多列 ---------- */
+
+.lingyun-order-goods--wide .lingyun-order-goods__body {
+  margin-top: 12px;
+  padding: 0 12px 12px;
+  box-sizing: border-box;
+}
+
+.lingyun-order-goods--wide .lingyun-order-goods__body--search {
+  margin-top: 0;
+  padding-top: 12px;
+}
+
+/* 左侧分类栏：独立悬浮卡片，和店铺卡片同圆角 / 投影 */
+.lingyun-order-goods--wide .lingyun-order-goods__rail {
+  margin-right: 10px;
+  border-radius: 18px;
+  background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
+
+/* 卡片内选中背景左右内缩，四角圆角 */
+.lingyun-order-goods--wide .lingyun-order-goods__rail-indicator {
+  left: 4px;
+  right: 4px;
+  border-radius: 12px;
+}
+
+/* 卡片内数量角标向内收，避免被卡片圆角和右边缘裁切 */
+.lingyun-order-goods--wide .lingyun-order-goods__rail-cart-badge {
+  right: 6px;
+}
+
+.lingyun-order-goods--wide .lingyun-order-goods__rail-item {
+  border-radius: 12px;
+}
+
+/* 右侧商品列表：独立悬浮卡片 */
+.lingyun-order-goods--wide .lingyun-order-goods__list {
+  border-radius: 18px;
+  background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
+
+/* 多列：分组内自动换行，每件商品是一块独立小卡片 */
+.lingyun-order-goods--multi .lingyun-order-goods__section-goods {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin: 0 -5px;
+}
+
+.lingyun-order-goods--multi .lingyun-order-goods__goods {
+  margin: 0 5px 10px;
+  padding: 12px;
+  box-sizing: border-box;
+  border-bottom: 0;
+  border-radius: 14px;
+  background-color: var(--lingyun-bg-grouped-primary, #{$lingyun-bg-grouped-primary});
+}
+
+.theme-dark .lingyun-order-goods--multi .lingyun-order-goods__goods {
+  background-color: var(--lingyun-bg-tertiary, #{$lingyun-bg-tertiary});
+}
+
+.lingyun-order-goods--cols-2 .lingyun-order-goods__goods {
+  width: calc(50% - 10px);
+}
+
+.lingyun-order-goods--cols-3 .lingyun-order-goods__goods {
+  width: calc(33.3333% - 10px);
+}
+
+.lingyun-order-goods--cols-4 .lingyun-order-goods__goods {
+  width: calc(25% - 10px);
 }
 
 .lingyun-order-goods__section {

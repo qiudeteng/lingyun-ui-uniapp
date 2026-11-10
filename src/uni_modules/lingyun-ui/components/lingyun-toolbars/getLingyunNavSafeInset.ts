@@ -123,17 +123,16 @@ export function readLingyunResizeWidth(res?: unknown): number {
 }
 
 /**
- * 微信 PC 客户端（Windows / Mac）。没有手机状态栏，胶囊矩形的 top 会把栏身撑得比设计高。
- * 这一端栏高与 H5 一致，不跟胶囊走。
+ * 微信 PC 客户端（Windows / Mac）。没有手机状态栏，胶囊在窗口标题栏里、不在页面内，
+ * 这一端按 Web 处理：栏高与 H5 一致，不做胶囊右侧避让，也不留底部安全区。
+ * 真机 PC 客户端的 deviceType 仍会报 phone，不能按设备类型排除；开发者工具的平台是
+ * `devtools`，不会命中 windows / mac。
  */
-function isWeixinPc(): boolean {
+export function isLingyunWeixinPc(): boolean {
   // #ifdef MP-WEIXIN
   try {
     const sys =
       typeof uni.getDeviceInfo === 'function' ? uni.getDeviceInfo() : uni.getSystemInfoSync()
-    const deviceType = String((sys as { deviceType?: string }).deviceType || '').toLowerCase()
-    /* 开发者工具在 Windows 上模拟手机/平板时 platform 仍是 windows，不能当 PC；按设备类型排除 */
-    if (deviceType === 'phone' || deviceType === 'pad') return false
     const platform = String((sys as { platform?: string }).platform || '').toLowerCase()
     return platform === 'windows' || platform === 'mac' || platform === 'macos'
   } catch {
@@ -196,7 +195,7 @@ export function getLingyunNavLayout(
       : win.windowWidth
   const regular = windowWidth >= LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH
   const design = regular ? LINGYUN_TOOLBAR_BAR_REGULAR_PX : designBarHeight
-  const weixinPc = isWeixinPc()
+  const weixinPc = isLingyunWeixinPc()
   let statusBarHeight = weixinPc ? 0 : win.statusBarHeight
   let barHeight = design
   let rightInset = 0
@@ -213,7 +212,8 @@ export function getLingyunNavLayout(
           fromCapsule = true
         }
         if (menu.left > 0 && windowWidth > 0) {
-          rightInset = Math.max(0, windowWidth - menu.left)
+          /* PC 端的胶囊在窗口标题栏里，不在页面内，按 Web 不避让 */
+          rightInset = weixinPc ? 0 : Math.max(0, windowWidth - menu.left)
         }
       }
     }

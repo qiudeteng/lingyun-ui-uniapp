@@ -409,12 +409,14 @@ export default defineComponent({
     canPrev(): boolean {
       const next = this.prevPeriod
       const min = this.minDate
-      return !min || compareDate(next.start, min) >= 0
+      /* 上一段只要和限制区间有交集就允许：从 12 月回包含今天的 11 月不能被挡住 */
+      return !min || compareDate(next.end, min) >= 0
     },
     canNext(): boolean {
       const next = this.nextPeriod
       const max = this.maxDate
-      return !max || compareDate(next.end, max) <= 0
+      /* 下一段只要起点不越过上限就允许：从 10 月回包含今天的 11 月不能被挡住 */
+      return !max || compareDate(next.start, max) <= 0
     },
     pickerMode(): string {
       if (this.modeKey === 'week') return 'week'

@@ -1,6 +1,6 @@
 # 凌云UI
 
-凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.55**，变更见 [`changelog.md`](./changelog.md)。
+凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.56**，变更见 [`changelog.md`](./changelog.md)。
 
 📖 [使用手册](https://lingyun.xinyicanyin.com/)（组件用法、属性、示例；右侧手机框实时预览）
 
@@ -377,6 +377,11 @@ lingyun-ui/
   <lingyun-list-item title="Title" note="Subtitle" />
   <lingyun-list-item title="Title" detail="Detail" accessory="disclosure" />
   <lingyun-list-item title="Title" accessory="toggle" v-model:switch-checked="on" />
+</lingyun-list>
+
+<!-- 全宽平铺（HIG Plain）：整页列表不要分组卡片 -->
+<lingyun-list plain>
+  <lingyun-list-item title="Title" note="Subtitle" />
 </lingyun-list>
 
 <lingyun-swipe-action>

@@ -146,11 +146,7 @@
     box-sizing: border-box;
     padding-bottom: 40px;
     min-height: 100%;
-    background:
-      radial-gradient(120% 80% at 10% 0%, rgba(37, 99, 235, 0.22), transparent 55%),
-      radial-gradient(100% 70% at 90% 20%, rgba(16, 185, 129, 0.16), transparent 50%),
-      radial-gradient(90% 60% at 50% 100%, rgba(245, 158, 11, 0.14), transparent 45%),
-      var(--lingyun-bg-grouped-primary, #f2f2f7);
+    background: var(--lingyun-bg-grouped-primary, #f2f2f7);
   }
 
   .hero {

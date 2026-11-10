@@ -22,6 +22,7 @@
           <slot name="nav-subtitle" />
         </template>
       </lingyun-page-nav>
+      <view class="lingyun-app-page__nav-line" />
     </view>
     <!-- #endif -->
 
@@ -1726,6 +1727,28 @@ export default defineComponent({
   box-sizing: border-box;
   /* 窄栏/完整目录都从状态栏下方开始，安全区加在整列外部 */
   padding-top: var(--lingyun-page-nav-safe-top, 0px);
+  /* 安全区留白也铺导航底色，避免顶部露出页面渐变 */
+  background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
+}
+
+/* 窄栏顶部与栏身同款 tint；右侧分割线延伸到状态栏区域，与栏身的右边线接上 */
+.lingyun-app-page--nav-rail .lingyun-app-page__nav {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.42));
+}
+
+.lingyun-app-page--nav-rail.theme-dark .lingyun-app-page__nav {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.14));
+}
+
+.lingyun-app-page__nav-line {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  /* 与内容区底色一致：视觉上不留边线，内容/菜单列的白色自己形成边界 */
+  background: var(--lingyun-bg-grouped-primary, #{$lingyun-bg-grouped-primary});
+  pointer-events: none;
 }
 
 /*

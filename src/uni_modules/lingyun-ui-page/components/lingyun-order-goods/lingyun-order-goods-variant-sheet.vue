@@ -7,7 +7,11 @@
   >
     <view v-if="item" class="lingyun-order-goods-variant" :style="accentStyle">
       <!-- 只有规格：列出全部规格，各自加减 -->
-      <view v-if="mode === 'specs'" class="lingyun-order-goods-variant__spec-list">
+      <view
+        v-if="mode === 'specs'"
+        class="lingyun-order-goods-variant__spec-list"
+        :class="{ 'lingyun-order-goods-variant__spec-list--multi': specColumns > 1 }"
+      >
         <view
           v-for="(spec, index) in specs"
           :key="spec.key"
@@ -77,7 +81,11 @@
             <text class="lingyun-order-goods-variant__section-title">规格</text>
             <text class="lingyun-order-goods-variant__section-hint">单选</text>
           </view>
-          <view v-if="specsHaveImages" class="lingyun-order-goods-variant__option-grid">
+          <view
+            v-if="specsHaveImages"
+            class="lingyun-order-goods-variant__option-grid"
+            :class="gridColsClass"
+          >
             <view
               v-for="spec in specs"
               :key="spec.key"
@@ -164,6 +172,7 @@
           <view
             v-if="groupHasImages(group)"
             class="lingyun-order-goods-variant__option-grid"
+            :class="gridColsClass"
           >
             <view
               v-for="option in group.options"
@@ -460,6 +469,9 @@ export default defineComponent({
     return {
       selectedSpecKey: '',
       selection: {} as Record<string, Record<string, number>>,
+      /** 视口宽度：宽屏 / 超宽屏的 Sheet 宽度与图片网格列数都按它计算 */
+      windowWidth: 375,
+      _onWindowResize: null as (() => void) | null,
     }
   },
   computed: {
@@ -588,6 +600,37 @@ export default defineComponent({
       if (spec) return this.specPrice(spec)
       return Number(this.item?.price) || 0
     },
+    /**
+     * 有图选项的列数：Sheet 沿用 lingyun-sheets 默认宽度（宽屏面板上限 936），
+     * 按面板可用宽度自动分列——每列至少约 170px，窄屏固定 3 列，最后一行左对齐。
+     */
+    gridColumns(): number {
+      if (this.windowWidth < 690) return 3
+      /* lingyun-sheets 宽屏面板宽度 = min(936, 视口 - 64)；内容区左右内边距 16×2 */
+      const panel = Math.min(936, Math.max(320, this.windowWidth - 64))
+      const grid = Math.max(0, panel - 32)
+      const gap = 8
+      const minCard = 170
+      return Math.max(3, Math.min(8, Math.floor((grid + gap) / (minCard + gap))))
+    },
+    gridColsClass(): string {
+      return this.gridColumns > 3
+        ? `lingyun-order-goods-variant__option-grid--cols-${this.gridColumns}`
+        : ''
+    },
+    /**
+     * 纯规格列表的列数：宽屏面板足够宽时一行两个（每个至少约 420px），
+     * 否则一行一个，最后一行左对齐。
+     */
+    specColumns(): number {
+      if (this.windowWidth < 690) return 1
+      /* lingyun-sheets 宽屏面板宽度 = min(936, 视口 - 64)；内容区左右内边距 16×2 */
+      const panel = Math.min(936, Math.max(320, this.windowWidth - 64))
+      const grid = Math.max(0, panel - 32)
+      const gap = 12
+      const minRow = 420
+      return Math.max(1, Math.min(2, Math.floor((grid + gap) / (minRow + gap))))
+    },
     canAdd(): boolean {
       return this.canSubmit && this.comboQuantity < this.lineMax
     },
@@ -614,7 +657,38 @@ export default defineComponent({
       },
     },
   },
+  mounted() {
+    this.syncWindowWidth()
+    const handler = () => this.syncWindowWidth()
+    this._onWindowResize = handler
+    try {
+      if (typeof uni.onWindowResize === 'function') uni.onWindowResize(handler)
+    } catch {
+      /* 端不支持 */
+    }
+  },
+  beforeUnmount() {
+    const handler = this._onWindowResize
+    try {
+      if (handler && typeof uni.offWindowResize === 'function') {
+        uni.offWindowResize(handler)
+      }
+    } catch {
+      /* 端不支持 */
+    }
+    this._onWindowResize = null
+  },
   methods: {
+    syncWindowWidth(): void {
+      try {
+        const info =
+          typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
+        const width = Number(info && info.windowWidth)
+        if (Number.isFinite(width) && width > 0) this.windowWidth = width
+      } catch {
+        /* 端不支持 */
+      }
+    },
     resetSelection(): void {
       const first =
         this.specs.find((spec) => !this.isSpecSoldOut(spec)) || this.specs[0]
@@ -901,7 +975,8 @@ export default defineComponent({
 @import '../../../lingyun-ui/styles/variables.scss';
 
 .lingyun-order-goods-variant {
-  max-width: 720px;
+  /* 宽度跟随 Sheet 面板：宽屏 / 超宽屏面板变宽，图片网格列数同步增加 */
+  max-width: 100%;
   margin: 0 auto;
   padding-top: 4px;
   box-sizing: border-box;
@@ -948,6 +1023,25 @@ export default defineComponent({
 
 .lingyun-order-goods-variant__spec-row--last {
   border-bottom: 0;
+}
+
+/* 纯规格列表：宽屏一行两个、左对齐；面板不够宽时自动回到一行一个 */
+.lingyun-order-goods-variant__spec-list--multi {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin: 0 -6px;
+}
+
+/* 一行两个时改为卡片：去掉行分割线，每行各自圆角底色，不存在首行有线、末行没线的问题 */
+.lingyun-order-goods-variant__spec-list--multi .lingyun-order-goods-variant__spec-row {
+  width: calc(50% - 12px);
+  margin: 0 6px 12px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border-bottom: 0;
+  border-radius: 12px;
+  background-color: var(--lingyun-fill-tertiary, #{$lingyun-fill-tertiary});
 }
 
 .lingyun-order-goods-variant__spec-main {
@@ -1068,7 +1162,7 @@ export default defineComponent({
   gap: 8px;
 }
 
-/* 有图的规格 / 属性：小号 4:3 图片卡片，一行 5 个，超出换行 */
+/* 有图的规格 / 属性：4:3 图片卡片；窄屏一行 3 个，宽屏按容器宽度增加列数 */
 .lingyun-order-goods-variant__option-grid {
   display: flex;
   flex-direction: row;
@@ -1084,6 +1178,32 @@ export default defineComponent({
   background-color: var(--lingyun-fill-tertiary, #{$lingyun-fill-tertiary});
   border: 1.5px solid transparent;
   transition: border-color 0.16s ease;
+}
+
+/* 宽屏自动列数（列间距 8）：卡片更小、一行更多，最后一行左对齐 */
+.lingyun-order-goods-variant__option-grid--cols-4
+  .lingyun-order-goods-variant__option-card {
+  width: calc((100% - 24px) / 4);
+}
+
+.lingyun-order-goods-variant__option-grid--cols-5
+  .lingyun-order-goods-variant__option-card {
+  width: calc((100% - 32px) / 5);
+}
+
+.lingyun-order-goods-variant__option-grid--cols-6
+  .lingyun-order-goods-variant__option-card {
+  width: calc((100% - 40px) / 6);
+}
+
+.lingyun-order-goods-variant__option-grid--cols-7
+  .lingyun-order-goods-variant__option-card {
+  width: calc((100% - 48px) / 7);
+}
+
+.lingyun-order-goods-variant__option-grid--cols-8
+  .lingyun-order-goods-variant__option-card {
+  width: calc((100% - 56px) / 8);
 }
 
 .lingyun-order-goods-variant__option-card--hover {

@@ -143,6 +143,23 @@
           ],
           attributeGroups: [
             {
+              key: 'flavor',
+              title: '口味',
+              required: true,
+              max: 1,
+              options: [
+                { key: 'vanilla', text: '香草', image: cakeImage('photo-1558636508-e0db3814bd1d', 160, 160) },
+                { key: 'chocolate', text: '巧克力', image: cakeImage('photo-1563729784474-d77dbb933a9e', 160, 160) },
+                { key: 'strawberry', text: '草莓', image: cakeImage('photo-1565958011703-44f9829ba187', 160, 160) },
+                { key: 'mango', text: '芒果', image: cakeImage('photo-1464349095431-e9a21285b5f3', 160, 160) },
+                { key: 'matcha', text: '抹茶', image: cakeImage('photo-1571115177098-24ec42ed204d', 160, 160) },
+                { key: 'blueberry', text: '蓝莓', image: cakeImage('photo-1535141192574-5d4897c12636', 160, 160) },
+                { key: 'tiramisu', text: '提拉米苏', image: cakeImage('photo-1499636136210-6f4ee915583e', 160, 160) },
+                { key: 'coffee', text: '咖啡', image: cakeImage('photo-1544145945-f90425340c7e', 160, 160) },
+                { key: 'rum', text: '朗姆葡萄', image: cakeImage('photo-1488477181946-6428a0291777', 160, 160) },
+              ],
+            },
+            {
               key: 'top-flavor',
               title: '上层口味',
               required: true,
@@ -656,9 +673,7 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background:
-      radial-gradient(120% 120% at 85% 10%, rgba(255, 255, 255, 0.22), transparent 55%),
-      linear-gradient(126deg, #0a84ff 0%, #5e5ce6 58%, #3634a3 100%);
+    background: var(--lingyun-bg-grouped-primary, #f2f2f7);
   }
 
   .order-banner__bg {

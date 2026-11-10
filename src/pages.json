@@ -547,6 +547,27 @@
 			}
 		},
 		{
+			"path": "pages/demo/plain-list",
+			"style": {
+				"navigationBarTitleText": "纯列表",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/list-detail",
+			"style": {
+				"navigationBarTitleText": "列表与详情",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/list-detail-item",
+			"style": {
+				"navigationBarTitleText": "工单详情",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/sidebars",
 			"style": {
 				"navigationBarTitleText": "Sidebar",

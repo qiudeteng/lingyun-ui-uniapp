@@ -1,13 +1,14 @@
 <template>
   <lingyun-app-page
     :title="hostedView?.title || '凌云UI'"
+    :show-toolbar="!pageHostState.hideToolbar"
     :body-scroll="hostedView?.bodyScroll ?? true"
     :page-scroll="hostedView?.pageScroll ?? true"
   >
     <!-- #ifdef MP-WEIXIN -->
     <app-page-view-host v-if="pageHostState.path" />
     <!-- #endif -->
-    <view v-if="showDirectory" class="page">
+    <view v-if="showDirectory" class="directory">
       <view class="hero">
         <text class="hero__title">欢迎来到 凌云UI</text>
         <text class="hero__desc">一套对齐 Apple Liquid Glass 的 uni-app 多端组件库</text>
@@ -84,15 +85,13 @@
 <style lang="scss">
   @import '@/uni_modules/lingyun-ui/styles/variables.scss';
 
-  .page {
-    padding: 0 0 40px;
+  /*
+   * 目录页自己的滚动内容。勿用通用 .page：宽屏宿主里会命中被托管的页面；
+   * 背景交给 lingyun-app-page，页面滚动首子已有 min-height: 100vh。
+   */
+  .directory {
     box-sizing: border-box;
-    min-height: 100%;
-    background:
-      radial-gradient(120% 80% at 10% 0%, rgba(37, 99, 235, 0.22), transparent 55%),
-      radial-gradient(100% 70% at 90% 20%, rgba(16, 185, 129, 0.16), transparent 50%),
-      radial-gradient(90% 60% at 50% 100%, rgba(245, 158, 11, 0.14), transparent 45%),
-      var(--lingyun-bg-grouped-primary, #f2f2f7);
+    padding: 0 0 40px;
   }
 
   .hero {

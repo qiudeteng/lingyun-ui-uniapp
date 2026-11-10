@@ -15,6 +15,8 @@
 | [订货单列表](./purchase-order-list.md) | `lingyun-purchase-order-list` | 顶部 Tabs 状态筛选 + 订货单卡片 + 横向商品缩略图 + 金额 / 操作；多批配送显示包裹数 |
 | [订货单详情](./purchase-order-detail.md) | `lingyun-purchase-order-detail` | 状态头 + 配送 / 自提 + 商品 + 金额 + 物流 + 订货单信息；支持子订货单 |
 | [记录列表 Demo](./records.md) | `pages/demo/records` | 列表 + 筛选菜单 + 搜索 + 日期切换联动示例（非标准页组件） |
+| [纯列表 Demo](./plain-list.md) | `pages/demo/plain-list` | 全宽平铺列表 + 顶部搜索 / 筛选 + 底部日期切换示例（非标准页组件） |
+| [列表与详情 Demo](./list-detail.md) | `pages/demo/list-detail` | 宽屏左列表（375px）右详情、窄屏独立详情页示例（非标准页组件） |
 
 ## 约定
 

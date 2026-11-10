@@ -73,9 +73,13 @@ registerLingyunPageViews(
     section.items
       .filter(
         (item) =>
-          !['/pages/login/login', '/pages/404/404', '/pages/demo/workbench'].includes(
-            item.url,
-          ),
+          ![
+            '/pages/login/login',
+            '/pages/404/404',
+            '/pages/demo/workbench',
+            /* 点单加购是固定高度 + 内层滚动页，宿主嵌入会拿不到确定高度，保持整页打开 */
+            '/pages/demo/order-goods',
+          ].includes(item.url),
       )
       .map((item) => ({
         path: item.url,

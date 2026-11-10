@@ -35,6 +35,7 @@
 | `segmentControl` | `segmented` / `tabs`；同一份 `segments` 数据渲染成分段控件或顶部 Tabs | segmented |
 | `fixed` | 固定在视口顶部。页面壳里会设为 true | false |
 | `safeArea` | 加上状态栏高度 | true |
+| `avoidCapsule` | 右侧微信胶囊避让；分栏 pane 里不是整宽 toolbar 时设为 false，只保留状态栏 | true |
 | `glassProgress` | 0 到 1，玻璃从透明到铺满 | 0 |
 ## 事件
 

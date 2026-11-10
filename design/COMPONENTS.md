@@ -24,7 +24,7 @@
 | ✅ | `lingyun-tabbars` | 底部标签栏 | [`TABBARS.md`](./TABBARS.md) |
 | ✅ | `lingyun-tabs` | 顶部可滚动 Tabs · underline / pill / sticky | [`TABS.md`](./TABS.md) |
 | ✅ | `lingyun-search-bar` | 搜索栏 | [`SEARCHBARS.md`](./SEARCHBARS.md) |
-| ✅ | `lingyun-list` / `lingyun-list-item` | 分组列表；附属含 toggle / stepper / slider | [`LISTS.md`](./LISTS.md) |
+| ✅ | `lingyun-list` / `lingyun-list-item` | 分组列表 / 全宽平铺（`plain`）；附属含 toggle / stepper / slider | [`LISTS.md`](./LISTS.md) |
 | ✅ | `lingyun-group-header` | 分组标题 · Nested / Prominent / Extra Prominent | [`LISTS.md`](./LISTS.md) |
 | ✅ | `lingyun-table` | 分组表格；固定列、吸顶表头、排序、筛选、分页、多选、分组收起 | [`TABLES.md`](./TABLES.md) |
 | ✅ | `lingyun-table-filter` / `lingyun-table-filter-form` | 内部组件：表格列的排序 / 筛选面板与表单，由 `lingyun-table` 打开，不单独对外 | [`TABLES.md`](./TABLES.md) |

@@ -49,9 +49,10 @@
   <menus-page v-else-if="currentPath === 'pages/demo/menus'" />
   <fab-page v-else-if="currentPath === 'pages/demo/fab'" />
   <goods-nav-page v-else-if="currentPath === 'pages/demo/goods-nav'" />
-  <order-goods-page v-else-if="currentPath === 'pages/demo/order-goods'" />
   <purchase-order-list-page v-else-if="currentPath === 'pages/demo/purchase-order-list'" />
   <purchase-order-detail-page v-else-if="currentPath === 'pages/demo/purchase-order-detail'" />
+  <plain-list-page v-else-if="currentPath === 'pages/demo/plain-list'" />
+  <list-detail-page v-else-if="currentPath === 'pages/demo/list-detail'" />
   <charts-column-page v-else-if="currentPath === 'pages/demo/charts/column'" />
   <charts-stack-page v-else-if="currentPath === 'pages/demo/charts/stack'" />
   <charts-bar-page v-else-if="currentPath === 'pages/demo/charts/bar'" />
@@ -74,6 +75,33 @@
   <charts-map-page v-else-if="currentPath === 'pages/demo/charts/map'" />
   <charts-tline-page v-else-if="currentPath === 'pages/demo/charts/tline'" />
   <charts-tarea-page v-else-if="currentPath === 'pages/demo/charts/tarea'" />
+  <records-page v-else-if="currentPath === 'pages/demo/records'" />
+  <scan-page v-else-if="currentPath === 'pages/demo/scan'" />
+  <qrcode-page v-else-if="currentPath === 'pages/demo/qrcode'" />
+  <barcode-page v-else-if="currentPath === 'pages/demo/barcode'" />
+  <image-upload-page v-else-if="currentPath === 'pages/demo/image-upload'" />
+  <file-upload-page v-else-if="currentPath === 'pages/demo/file-upload'" />
+  <file-upload-system-page v-else-if="currentPath === 'pages/demo/file-upload-system'" />
+  <signature-page v-else-if="currentPath === 'pages/demo/signature'" />
+  <rating-page v-else-if="currentPath === 'pages/demo/rating'" />
+  <date-switcher-page v-else-if="currentPath === 'pages/demo/date-switcher'" />
+  <calendar-page v-else-if="currentPath === 'pages/demo/calendar'" />
+  <location-picker-page v-else-if="currentPath === 'pages/demo/location-picker'" />
+  <combobox-page v-else-if="currentPath === 'pages/demo/combobox'" />
+  <token-field-page v-else-if="currentPath === 'pages/demo/token-field'" />
+  <tabs-page v-else-if="currentPath === 'pages/demo/tabs'" />
+  <accordion-page v-else-if="currentPath === 'pages/demo/accordion'" />
+  <banner-page v-else-if="currentPath === 'pages/demo/banner'" />
+  <steps-page v-else-if="currentPath === 'pages/demo/steps'" />
+  <timeline-page v-else-if="currentPath === 'pages/demo/timeline'" />
+  <load-more-page v-else-if="currentPath === 'pages/demo/load-more'" />
+  <pagination-page v-else-if="currentPath === 'pages/demo/pagination'" />
+  <notice-bar-page v-else-if="currentPath === 'pages/demo/notice-bar'" />
+  <tooltip-page v-else-if="currentPath === 'pages/demo/tooltip'" />
+  <filter-menu-page v-else-if="currentPath === 'pages/demo/filter-menu'" />
+  <toolbar-search-page v-else-if="currentPath === 'pages/demo/toolbar-search'" />
+  <toolbar-segments-page v-else-if="currentPath === 'pages/demo/toolbar-segments'" />
+  <toolbar-comprehensive-page v-else-if="currentPath === 'pages/demo/toolbar-comprehensive'" />
   <app-page-view-outlet v-else-if="currentPath" :path="currentPath" />
   <slot v-else />
 </template>
@@ -130,9 +158,37 @@ import PopoversPage from '@/pages/demo/popovers.vue'
 import MenusPage from '@/pages/demo/menus.vue'
 import FabPage from '@/pages/demo/fab.vue'
 import GoodsNavPage from '@/pages/demo/goods-nav.vue'
-import OrderGoodsPage from '@/pages/demo/order-goods.vue'
 import PurchaseOrderListPage from '@/pages/demo/purchase-order-list.vue'
 import PurchaseOrderDetailPage from '@/pages/demo/purchase-order-detail.vue'
+import PlainListPage from '@/pages/demo/plain-list.vue'
+import ListDetailPage from '@/pages/demo/list-detail.vue'
+import RecordsPage from '@/pages/demo/records.vue'
+import ScanPage from '@/pages/demo/scan.vue'
+import QrcodePage from '@/pages/demo/qrcode.vue'
+import BarcodePage from '@/pages/demo/barcode.vue'
+import ImageUploadPage from '@/pages/demo/image-upload.vue'
+import FileUploadPage from '@/pages/demo/file-upload.vue'
+import FileUploadSystemPage from '@/pages/demo/file-upload-system.vue'
+import SignaturePage from '@/pages/demo/signature.vue'
+import RatingPage from '@/pages/demo/rating.vue'
+import DateSwitcherPage from '@/pages/demo/date-switcher.vue'
+import CalendarPage from '@/pages/demo/calendar.vue'
+import LocationPickerPage from '@/pages/demo/location-picker.vue'
+import ComboboxPage from '@/pages/demo/combobox.vue'
+import TokenFieldPage from '@/pages/demo/token-field.vue'
+import TabsPage from '@/pages/demo/tabs.vue'
+import AccordionPage from '@/pages/demo/accordion.vue'
+import BannerPage from '@/pages/demo/banner.vue'
+import StepsPage from '@/pages/demo/steps.vue'
+import TimelinePage from '@/pages/demo/timeline.vue'
+import LoadMorePage from '@/pages/demo/load-more.vue'
+import PaginationPage from '@/pages/demo/pagination.vue'
+import NoticeBarPage from '@/pages/demo/notice-bar.vue'
+import TooltipPage from '@/pages/demo/tooltip.vue'
+import FilterMenuPage from '@/pages/demo/filter-menu.vue'
+import ToolbarSearchPage from '@/pages/demo/toolbar-search.vue'
+import ToolbarSegmentsPage from '@/pages/demo/toolbar-segments.vue'
+import ToolbarComprehensivePage from '@/pages/demo/toolbar-comprehensive.vue'
 import ChartsColumnPage from '@/pages/demo/charts/column.vue'
 import ChartsStackPage from '@/pages/demo/charts/stack.vue'
 import ChartsBarPage from '@/pages/demo/charts/bar.vue'

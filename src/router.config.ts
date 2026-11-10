@@ -396,6 +396,21 @@ export const routes: RouteConfig[] = [
 		meta: { title: '记录列表' }
 	},
 	{
+		path: '/pages/demo/plain-list',
+		name: 'pagesDemoPlainList',
+		meta: { title: '纯列表' }
+	},
+	{
+		path: '/pages/demo/list-detail',
+		name: 'pagesDemoListDetail',
+		meta: { title: '列表与详情' }
+	},
+	{
+		path: '/pages/demo/list-detail-item',
+		name: 'pagesDemoListDetailItem',
+		meta: { title: '工单详情' }
+	},
+	{
 		path: '/pages/demo/sidebars',
 		name: 'pagesDemoSidebars',
 		meta: { title: 'Sidebar' }
