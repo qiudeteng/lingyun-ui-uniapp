@@ -52,6 +52,8 @@
   <order-goods-page v-else-if="currentPath === 'pages/demo/order-goods'" />
   <purchase-order-list-page v-else-if="currentPath === 'pages/demo/purchase-order-list'" />
   <purchase-order-detail-page v-else-if="currentPath === 'pages/demo/purchase-order-detail'" />
+  <plain-list-page v-else-if="currentPath === 'pages/demo/plain-list'" />
+  <list-detail-page v-else-if="currentPath === 'pages/demo/list-detail'" />
   <charts-column-page v-else-if="currentPath === 'pages/demo/charts/column'" />
   <charts-stack-page v-else-if="currentPath === 'pages/demo/charts/stack'" />
   <charts-bar-page v-else-if="currentPath === 'pages/demo/charts/bar'" />
@@ -133,6 +135,8 @@ import GoodsNavPage from '@/pages/demo/goods-nav.vue'
 import OrderGoodsPage from '@/pages/demo/order-goods.vue'
 import PurchaseOrderListPage from '@/pages/demo/purchase-order-list.vue'
 import PurchaseOrderDetailPage from '@/pages/demo/purchase-order-detail.vue'
+import PlainListPage from '@/pages/demo/plain-list.vue'
+import ListDetailPage from '@/pages/demo/list-detail.vue'
 import ChartsColumnPage from '@/pages/demo/charts/column.vue'
 import ChartsStackPage from '@/pages/demo/charts/stack.vue'
 import ChartsBarPage from '@/pages/demo/charts/bar.vue'

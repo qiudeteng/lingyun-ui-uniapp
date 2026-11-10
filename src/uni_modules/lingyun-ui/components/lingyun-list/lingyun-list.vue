@@ -42,6 +42,7 @@ import { defineComponent } from 'vue'
  * @property {String} headerAction 标题行右侧操作
  * @property {String} footer 分组页脚
  * @property {Boolean} inset 左右 16pt inset（默认 true）
+ * @property {Boolean} plain 全宽平铺：去掉分组卡片底色与圆角，行直接铺在页面背景上
  * @event {Function} action 点击 headerAction
  */
 type SectionHost = {
@@ -89,6 +90,11 @@ export default defineComponent({
       type: Boolean,
       default: true,
     },
+    /** Apple Plain 列表：全宽平铺，不要分组卡片（无底色 / 无圆角 / 无页边 inset） */
+    plain: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -129,6 +135,7 @@ export default defineComponent({
     rootClass(): string {
       return [
         this.inset ? 'lingyun-list--inset' : '',
+        this.plain ? 'lingyun-list--plain' : '',
         this.showHeader ? `lingyun-list--header-${this.resolvedHeaderType}` : '',
       ]
         .filter(Boolean)
@@ -170,6 +177,19 @@ $ly-list-gap: 8px;
   &--in-section#{&}--inset {
     padding-left: 0;
     padding-right: 0;
+  }
+
+  /* Plain：全宽平铺，行直接铺在页面背景上，不要卡片材质 */
+  &--plain,
+  &--plain#{&}--inset,
+  &--plain#{&}--in-section {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  &--plain &__card {
+    background-color: transparent;
+    border-radius: 0;
   }
 
   &--flat-card &__card {

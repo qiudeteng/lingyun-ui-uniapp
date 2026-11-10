@@ -379,6 +379,11 @@ lingyun-ui/
   <lingyun-list-item title="Title" accessory="toggle" v-model:switch-checked="on" />
 </lingyun-list>
 
+<!-- 全宽平铺（HIG Plain）：整页列表不要分组卡片 -->
+<lingyun-list plain>
+  <lingyun-list-item title="Title" note="Subtitle" />
+</lingyun-list>
+
 <lingyun-swipe-action>
   <lingyun-swipe-action-item
     :right-options="[

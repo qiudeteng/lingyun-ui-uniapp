@@ -1,3 +1,8 @@
+## 未发布
+- `lingyun-list` 新增 `plain`：Apple Plain 全宽平铺列表，去掉分组卡片的底色、圆角与左右 inset，行直接铺在页面背景上；顶部搜索 / 筛选 + 底部日期切换条的「纯列表」demo 见 `/pages/demo/plain-list`。
+- 新增「列表 + 详情」demo：宽屏隐藏页面壳 toolbar，左右各一个独立 `lingyun-toolbars`（左「工单 / N 条结果」+ 搜索按钮 + `segments` 状态分段，右「工单详情 / 当前单号」）；左栏为 375px 独立页面（纯列表，38 条样本，底部日期条浮动在列表上方），左右 toolbar 均浮动、列表与详情从下方穿过并驱动玻璃，窄屏点行进独立详情页 `/pages/demo/list-detail-item`；两栏各自滚动，详情复用 `ticket-detail` 面板。
+- `lingyun-toolbars`：`title2LineLeft` 在没有返回 / 关闭 / 交通灯 / `leading` 时不再预留 44pt 前导位，标题直接贴内容边缘；分栏 pane 内单独放 toolbar 时左侧不再留空。
+- `lingyun-date-switcher`：修正 `limit` 边界下上一段 / 下一段的判断——从 10 月可以切回包含今天的 11 月（周 / 月 / 年 / 日期段同理），不再因为整段结束时间越界而卡在上一段。
 ## 1.0.55（2026-11-10）
 - `lingyun-combobox` 打开后自动聚焦搜索框；小程序键盘抬起时 Popover 按键盘高度重排并缩短列表，避免下拉被遮挡；`lingyun-popover` 新增 `bottomInset`。
 - Demo 导航统一为 `src/config/pageTabs.ts` 的 `DEMO_PAGE_TABS` 单数据源，首页 / 底部 Tab / 工作台 / 宽屏侧栏共用；新增 Swiper 演示，补充记录列表与响应式文档，工作台二级/三级菜单改用 `lingyun-group-header` 分组。

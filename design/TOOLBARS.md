@@ -52,6 +52,11 @@
 - **Title**：居中；SF Pro **Semibold 600** / **17** / LH **22** / Labels · Liquid Glass **1 Primary**（`#1a1a1a`）
 - **Trailing**：Trailing Button（常见 **44 × 44** Bordered Prominent / System Blue）
 
+**Title 2 Line Left**
+
+- 标题左对齐；有返回 / 关闭 / 交通灯 / `leading` 插槽时从 44 钮位后开始
+- 没有上述前导内容时不再预留 44 钮位，标题直接从栏身内容边缘开始（分栏 pane 内单独放 toolbar 时使用）
+
 **Sheet / Title**
 
 - **Grabber** → **Leading Button**（关闭：`lingyun-icon` `closeempty` **26**）→ **Title** → **Trailing Button**

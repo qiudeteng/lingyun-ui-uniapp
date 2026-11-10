@@ -70,6 +70,22 @@
 - **Swipe Actions**：独立组件 `lingyun-swipe-action`（见 [`SWIPE_ACTIONS.md`](./SWIPE_ACTIONS.md)），与 list-item **组合**，不内建进本组件。
 - 首版不做：Index Bar、编辑 Grabber。
 
+### 2.1 Plain（全宽平铺）
+
+对齐 HIG 的 **Plain** 列表形态，用于「整页就是一张列表」的页面（订单流水、消息、搜索结果等）：
+
+```vue
+<lingyun-list plain>
+  <lingyun-list-item title="张伟 · 鲜花礼盒" note="11-10 14:30 · 微信支付" />
+</lingyun-list>
+```
+
+- `plain` 强制全宽：忽略 `inset`，没有左右 16pt 页边。
+- 不画分组卡片：卡片底色透明、圆角 **0**，行直接铺在页面背景上；页面自己用 Primary Background（浅 `#ffffff` / 深 `#000`），**不要**再用 Grouped Primary。
+- 行内距仍是左右 **16**，hairline 顶线从 `16` 起；行高、字阶、按下反馈与 Grouped 完全一致。
+- 不加分组标题 / 摘要卡 / 胶囊等修饰；需要分组标题时才配 `header`，且标题行不带卡片。
+- `plain` 与 `header` / `footer` 可同时使用，但不建议在平铺列表外再套 `lingyun-section`。
+
 ---
 
 ## 3. API
@@ -91,6 +107,7 @@
 |------|------|------|
 | `lingyun-list` | `header` / `headerType` / `headerAction` / `footer` | 分组标题、类型、右侧操作、页脚 |
 | | `inset` | 默认 `true`，左右 16pt |
+| | `plain` | 全宽平铺（HIG Plain）：无卡片底色 / 圆角，强制忽略 `inset` |
 | `lingyun-list-item` | `title` / `detail` / `note` | 主文 Title / 右侧 Detail / 下方 **Subtitle**（`note` 即 Sketch Subtitle，也可用 `subtitle`） |
 | | `thumb` / `thumbSize` | 左侧图；默认 `auto`（有 Subtitle → **42×42**，否则 **30×30**）；可强制 `base` / `lg` |
 | | `accessory` | `none` \| `disclosure` \| `popup` \| `stepper` \| `toggle` \| `slider` |
@@ -165,4 +182,5 @@
 - [ ] Title + Subtitle（`note`）对齐 Lists/Light/Rows/Large：15/18、Secondary Label、与 Title gap **2**（稿面 0）、行高 68pt
 - [ ] Leading Image：默认随 Subtitle 自动（有 → 42 / 无 → 30）；`thumbSize` 可强制；分割线 inset 随之偏移
 - [ ] 同组未混用 30 与 42；disclosure 为 CSS chevron
+- [ ] Plain 列表用于整页列表场景：`plain` 全宽、无卡片底色 / 圆角，页面底色为 Primary
 - [ ] 对照 Sketch Lists 与 HIG

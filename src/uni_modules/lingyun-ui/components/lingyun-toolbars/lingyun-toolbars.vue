@@ -579,8 +579,19 @@ export default defineComponent({
         '--ly-toolbar-pad-bottom': `${padBottom}px`,
       }
     },
+    /** 左侧是否有返回 / 关闭 / 交通灯 / 自定义 leading，决定标题要不要让出 44 钮位 */
+    hasLeadingContent(): boolean {
+      return !!(
+        this.showBackEffective ||
+        this.showCloseEffective ||
+        this.windowControls ||
+        this.$slots.leading
+      )
+    },
     /** 标题层左右让出较宽的一侧，文字仍按栏身几何中心排 */
     titleInsetPx() {
+      /* 左对齐两行标题且没有前导内容时，标题直接贴内容边缘，不再预留 44 钮位 */
+      if (this.isTitleLeft && !this.hasLeadingContent) return 0
       const action = 44
       let leading = action
       if (this.windowControls) leading += LINGYUN_TOOLBAR_WINDOW_CONTROLS_W_PX + this.gapPx
