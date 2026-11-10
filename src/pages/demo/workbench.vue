@@ -8,19 +8,28 @@
         </view>
 
         <view v-if="groups.length" class="workbench-groups">
-          <lingyun-section
+          <view
             v-for="(group, index) in groups"
             :key="group.key"
-            :title="group.title"
-            :is-last="index === groups.length - 1"
+            class="workbench-group"
           >
-            <lingyun-grid
-              background="transparent"
-              :column="4"
-              :items="gridItems(group.items)"
-              @change="onGridChange(group, $event)"
+            <lingyun-group-header
+              v-if="group.title"
+              :title="group.title"
+              type="nested"
             />
-          </lingyun-section>
+            <lingyun-section
+              :is-last="index === groups.length - 1"
+              :margin="group.title ? '0 12px 0' : undefined"
+            >
+              <lingyun-grid
+                background="transparent"
+                :column="4"
+                :items="gridItems(group.items)"
+                @change="onGridChange(group, $event)"
+              />
+            </lingyun-section>
+          </view>
         </view>
 
         <lingyun-empty
@@ -46,6 +55,7 @@
     syncLingyunWorkspaceUrl,
     useLingyunWorkspaceTabKey,
   } from '@/uni_modules/lingyun-ui/utils/pageConfig'
+  import { getLingyunDemoTabGroups, type LingyunDemoNavGroup } from '@/config/pageTabs'
   import { normalizeLingyunPagePath } from '@/uni_modules/lingyun-ui/utils/pageNavAdapter'
   import type { LingyunPageTabChild } from '@/uni_modules/lingyun-ui/utils/pageLayout'
   import { resolveLingyunPageUrl } from '@/router/pageNav'
@@ -59,43 +69,13 @@
     })
   })
 
-  type WorkbenchGroup = {
-    key: string
-    /** 空标题 = 没有分组标题的卡片 */
-    title: string
-    items: LingyunPageTabChild[]
-  }
-
   const tab = computed(() => findLingyunPageTab(tabKey.value))
   const tabText = computed(() => tab.value?.text || '工作台')
-  const children = computed<LingyunPageTabChild[]>(() => tab.value?.children || [])
 
-  /*
-   * 二级菜单有 children 时作为分组卡片标题，三级菜单作为卡片里的按钮；
-   * 只有二级菜单（没有三级）时合成一张没有标题的卡片。
-   */
-  const groups = computed<WorkbenchGroup[]>(() => {
-    const list = children.value
-    if (!list.length) return []
-    const grouped: WorkbenchGroup[] = []
-    const loose: LingyunPageTabChild[] = []
-    list.forEach((entry) => {
-      const nested = (entry.children || []).filter((item) => !!item.url)
-      if (nested.length) {
-        grouped.push({ key: entry.key, title: entry.text, items: nested })
-        return
-      }
-      if (entry.url) loose.push(entry)
-    })
-    if (loose.length) {
-      grouped.push({
-        key: `${tab.value?.key || 'tab'}__loose`,
-        title: '',
-        items: loose,
-      })
-    }
-    return grouped
-  })
+  /** 与首页共用同一份 Tab 分组数据 */
+  const groups = computed<LingyunDemoNavGroup[]>(() =>
+    tab.value ? getLingyunDemoTabGroups(tab.value) : [],
+  )
 
   function gridItems(items: LingyunPageTabChild[]) {
     return items.map((child) => ({
@@ -154,7 +134,7 @@
   })
 
   function onGridChange(
-    group: WorkbenchGroup,
+    group: LingyunDemoNavGroup,
     event: { detail?: { index?: number } },
   ): void {
     const index = Number(event?.detail?.index)

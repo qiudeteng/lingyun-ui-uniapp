@@ -18,21 +18,23 @@
         <text class="theme-hint">当前：{{ resolvedLabel }}</text>
       </view>
 
-      <lingyun-list
-        v-for="section in sections"
-        :key="section.title"
-        :header="section.title"
-        header-type="nested"
+      <lingyun-section
+        v-for="(section, index) in sections"
+        :key="section.key"
+        :title="section.title"
+        :is-last="index === sections.length - 1"
       >
-        <lingyun-list-item
-          v-for="item in section.items"
-          :key="item.url"
-          :title="item.title"
-          :note="item.note"
-          accessory="disclosure"
-          @click="go(item.url)"
-        />
-      </lingyun-list>
+        <lingyun-list>
+          <lingyun-list-item
+            v-for="item in section.items"
+            :key="item.url"
+            :title="item.text || ''"
+            :note="item.note || ''"
+            accessory="disclosure"
+            @click="go(item.url || '')"
+          />
+        </lingyun-list>
+      </lingyun-section>
     </view>
   </lingyun-app-page>
 </template>
@@ -41,12 +43,13 @@
   import { computed } from 'vue'
   import { useThemeStore } from '@/stores/theme'
   import type { ThemePreference } from '@/utils/theme'
-  import { LINGYUN_PAGE_NAV, resolveLingyunPageUrl } from '@/router/pageNav'
+  import { getLingyunDemoHomeGroups } from '@/config/pageTabs'
+  import { resolveLingyunPageUrl } from '@/router/pageNav'
   import { openLingyunHostedPage, pageHostState } from '@/router/pageHost'
   import { getLingyunPageView } from '@/router/pageViews'
 
   const themeStore = useThemeStore()
-  const sections = LINGYUN_PAGE_NAV
+  const sections = getLingyunDemoHomeGroups()
   const hostedView = computed(() => getLingyunPageView(pageHostState.path))
   const showDirectory = computed(() => !pageHostState.path)
 

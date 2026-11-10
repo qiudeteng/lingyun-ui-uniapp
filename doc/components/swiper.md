@@ -2,6 +2,9 @@
 
 图片轮播。基于内置 `swiper`，支持左右滑动、自动轮播、循环、懒加载；默认 4:3，圆点默认关闭，业务可用缩略图作为指示器。
 
+- 演示：`/pages/demo/swiper`
+- 设计说明：`design/pages/demo/swiper.md`
+
 > 与 `lingyun-swipe-action` 区别：`lingyun-swipe-action` 是列表行左右滑出操作菜单，不是图片轮播。
 
 ## 示例

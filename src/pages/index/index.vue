@@ -7,29 +7,23 @@
   >
     <app-page-view-host v-if="pageHostState.path" />
     <view v-if="showHome" class="page">
-      <lingyun-list header="开发" header-type="nested">
-        <lingyun-list-item
-          title="组件 Demo"
-          note="凌云UI 控件演示"
-          accessory="disclosure"
-          @click="go('/pages/demo/demo')"
-        />
-      </lingyun-list>
-      <lingyun-list
-        v-for="section in sections"
-        :key="section.title"
-        :header="section.title"
-        header-type="nested"
+      <lingyun-section
+        v-for="(section, index) in homeGroups"
+        :key="section.key"
+        :title="section.title"
+        :is-last="index === homeGroups.length - 1"
       >
-        <lingyun-list-item
-          v-for="item in section.items"
-          :key="item.url"
-          :title="item.title"
-          :note="item.note"
-          accessory="disclosure"
-          @click="go(item.url)"
-        />
-      </lingyun-list>
+        <lingyun-list>
+          <lingyun-list-item
+            v-for="item in section.items"
+            :key="item.url"
+            :title="item.text || ''"
+            :note="item.note || ''"
+            accessory="disclosure"
+            @click="go(item.url || '')"
+          />
+        </lingyun-list>
+      </lingyun-section>
     </view>
   </lingyun-app-page>
 </template>
@@ -37,7 +31,8 @@
 <script setup lang="ts">
   import { computed } from 'vue'
   import { onLoad } from '@dcloudio/uni-app'
-  import { getLingyunPageNavSections, resolveLingyunPageUrl } from '@/router/pageNav'
+  import { getLingyunDemoHomeGroups } from '@/config/pageTabs'
+  import { resolveLingyunPageUrl } from '@/router/pageNav'
   import {
     clearLingyunPageHost,
     openLingyunHostedPage,
@@ -53,7 +48,8 @@
     useLingyunWorkspaceTabKey,
   } from '@/uni_modules/lingyun-ui/utils/pageConfig'
 
-  const sections = computed(() => getLingyunPageNavSections())
+  /** 首页与 Tab / 工作台共用同一份 DEMO_PAGE_TABS；这里按 Tab 分组拍平展示 */
+  const homeGroups = computed(() => getLingyunDemoHomeGroups())
   const hostedView = computed(() => getLingyunPageView(pageHostState.path))
   const showHome = computed(() => !pageHostState.path)
   const workspaceKey = useLingyunWorkspaceTabKey()

@@ -27,8 +27,9 @@
 | ✅ | `lingyun-list` / `lingyun-list-item` | 分组列表；附属含 toggle / stepper / slider | [`LISTS.md`](./LISTS.md) |
 | ✅ | `lingyun-group-header` | 分组标题 · Nested / Prominent / Extra Prominent | [`LISTS.md`](./LISTS.md) |
 | ✅ | `lingyun-table` | 分组表格；固定列、吸顶表头、排序、筛选、分页、多选、分组收起 | [`TABLES.md`](./TABLES.md) |
+| ✅ | `lingyun-table-filter` / `lingyun-table-filter-form` | 内部组件：表格列的排序 / 筛选面板与表单，由 `lingyun-table` 打开，不单独对外 | [`TABLES.md`](./TABLES.md) |
 | ✅ | `lingyun-swipe-action` / `lingyun-swipe-action-item` | 列表左右滑菜单 | [`SWIPE_ACTIONS.md`](./SWIPE_ACTIONS.md) |
-| ✅ | `lingyun-swiper` | 图片轮播（滑动 / 自动轮播 / 指示器） | [`SWIPER.md`](./SWIPER.md) |
+| ✅ | `lingyun-swiper` | 图片轮播（滑动 / 自动轮播 / 指示器） | [`SWIPER.md`](./SWIPER.md) · demo [`swiper`](../src/pages/demo/swiper.vue) |
 | ✅ | `lingyun-alert` | 弹窗 | [`ALERTS.md`](./ALERTS.md) |
 | ✅ | `lingyun-activity-indicator` | 转圈加载 | [`ACTIVITY_INDICATORS.md`](./ACTIVITY_INDICATORS.md) |
 | ✅ | `lingyun-toast` / `lingyun-hud` | 轻提示 · 加载遮罩 | [`TOASTS.md`](./TOASTS.md) |
@@ -68,6 +69,7 @@
 | ✅ | `lingyun-token-field` | 多选标签输入 · 建议 / 去重 / 上限 | [`TOKEN_FIELDS.md`](./TOKEN_FIELDS.md) |
 | ✅ | `lingyun-avatar` | 头像 | [`AVATARS.md`](./AVATARS.md) |
 | ✅ | `lingyun-page-control` | 轮播指示点 | [`PAGE_CONTROLS.md`](./PAGE_CONTROLS.md) |
+| ✅ | `lingyun-page-miss` | 内部组件：缺失页 / 404 占位，由宿主页使用 | — |
 | ✅ | `lingyun-skeleton` | 骨架屏 | [`SKELETONS.md`](./SKELETONS.md) |
 | ✅ | `lingyun-refresh` | 下拉刷新（scroll-view refresher） | [`REFRESH.md`](./REFRESH.md) |
 | ✅ | `lingyun-popover` | 锚定浮层 | [`POPOVERS.md`](./POPOVERS.md) |
@@ -78,10 +80,10 @@
 | ✅ | `lingyun-grid` / `lingyun-grid-item` | 宫格（对齐 uni-grid） | [`GRID.md`](./GRID.md) |
 | ✅ | `lingyun-indexed-list` | 索引列表（对齐 uni-indexed-list） | [`INDEXED_LIST.md`](./INDEXED_LIST.md) |
 | ✅ | `lingyun-app-page` | 页面壳（顶栏 + 滚动 + 主题 class；宽屏左侧导航，顶部可带头像 / 名称 / 副标题）。iPad/PC + 全局 tabs 使用 84 通高窄栏；PC（≥1200）再增加 220 内联二级/三级菜单列（合计 304），平板保持 84 + 点击浮层；全局 tabs 支持 `children` 与图片图标 `iconSrc` / `activeIconSrc`；窄屏/Duo 走工作台；Duo 内屏竖屏使用 Duo Toolbar + Duo Tab | [`TOOLBARS.md`](./TOOLBARS.md) · [`SIDEBARS.md`](./SIDEBARS.md) §4 · [`TABBARS.md`](./TABBARS.md) §3.1 |
-| ✅ | `lingyun-duo-toolbar` | iPhone Duo 内屏竖屏顶部工具栏（84 高，Leading 48 / 标题 17-22 左对齐 / 164×48 工具组 / 右侧状态预留 134） | [`TOOLBARS.md`](./TOOLBARS.md) · [`SIDEBARS.md`](./SIDEBARS.md) |
+| ✅ | `lingyun-duo-toolbar` | 内部组件：iPhone Duo 内屏竖屏顶部工具栏（84 高，Leading 48 / 标题 17-22 左对齐 / 164×48 工具组 / 右侧状态预留 134），由 `lingyun-app-page` 使用 | [`TOOLBARS.md`](./TOOLBARS.md) · [`SIDEBARS.md`](./SIDEBARS.md) |
 | ✅ | `lingyun-theme-action` | 内置浅色 / 暗黑 / 自动切换钮；进入工具栏右侧按钮组或 Duo 工具组 | [`TOOLBARS.md`](./TOOLBARS.md) |
-| ✅ | `lingyun-duo-rail` | iPhone Duo 右侧全高栏（84 宽，工具组 / 仅图标 Tab / 搜索 / 外屏横屏溢出） | [`SIDEBARS.md`](./SIDEBARS.md) |
-| ✅ | `lingyun-split-view` | iPhone Duo 内屏横屏 Split View（左主栏 456 / 折痕带 40 / 右详情 371） | [`SIDEBARS.md`](./SIDEBARS.md) |
+| ✅ | `lingyun-duo-rail` | 内部组件：iPhone Duo 右侧全高栏（84 宽，工具组 / 仅图标 Tab / 搜索 / 外屏横屏溢出），由 `lingyun-app-page` 使用 | [`SIDEBARS.md`](./SIDEBARS.md) |
+| ✅ | `lingyun-split-view` | 内部组件：iPhone Duo 内屏横屏 Split View（左主栏 456 / 折痕带 40 / 右详情 371），由 `lingyun-app-page` 使用 | [`SIDEBARS.md`](./SIDEBARS.md) |
 | ✅ | `lingyun-mobile` / `lingyun-pc` | 窄屏与平板、电脑分开展示。宽度小于 690 / 达到 690 | demo [`responsive`](../src/pages/demo/responsive.vue) |
 | ✅ | `lingyun-row` / `lingyun-col` | 24 分栏。间隔、偏移、对齐、五档响应式 | demo [`layout`](../src/pages/demo/layout.vue) |
 | ✅ | `lingyun-section` | Demo / 区块布局容器 | demo [`sections`](../src/pages/demo/sections.vue) |

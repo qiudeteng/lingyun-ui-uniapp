@@ -316,6 +316,13 @@
 			}
 		},
 		{
+			"path": "pages/demo/swiper",
+			"style": {
+				"navigationBarTitleText": "Swiper",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/image-upload",
 			"style": {
 				"navigationBarTitleText": "Image Upload",

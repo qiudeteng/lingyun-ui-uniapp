@@ -75,6 +75,7 @@ const pageSidebar = [
       { text: '点单加购', link: '/page/order-goods.html' },
       { text: '订货单列表', link: '/page/purchase-order-list.html' },
       { text: '订货单详情', link: '/page/purchase-order-detail.html' },
+      { text: '记录列表 Demo', link: '/page/records.html' },
     ],
   },
 ]

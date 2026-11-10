@@ -1,5 +1,6 @@
-## 未发布
+## 1.0.55（2026-11-10）
 - `lingyun-combobox` 打开后自动聚焦搜索框；小程序键盘抬起时 Popover 按键盘高度重排并缩短列表，避免下拉被遮挡；`lingyun-popover` 新增 `bottomInset`。
+- Demo 导航统一为 `src/config/pageTabs.ts` 的 `DEMO_PAGE_TABS` 单数据源，首页 / 底部 Tab / 工作台 / 宽屏侧栏共用；新增 Swiper 演示，补充记录列表与响应式文档，工作台二级/三级菜单改用 `lingyun-group-header` 分组。
 ## 1.0.54 (2026-11-09)
 - `lingyun-toolbars` / `lingyun-app-page` 的 `segments` 新增 `segmentControl`：同一份数据可渲染成分段控件（默认，行高 56）或顶部 Tabs（Tabs 行 44 贴底、页面额外 8 间距、透明背景）；事件与 `segmentValue` 保持一致。
 ## 1.0.53（2026-11-09）

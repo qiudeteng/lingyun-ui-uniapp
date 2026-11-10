@@ -14,6 +14,7 @@
 | [订单商品加购](./order-goods.md) | `lingyun-order-goods` | 店铺头 + 左右分类商品联动 + 购物车结算；数据驱动，抛结算 / 规格事件 |
 | [订货单列表](./purchase-order-list.md) | `lingyun-purchase-order-list` | 顶部 Tabs 状态筛选 + 订货单卡片 + 横向商品缩略图 + 金额 / 操作；多批配送显示包裹数 |
 | [订货单详情](./purchase-order-detail.md) | `lingyun-purchase-order-detail` | 状态头 + 配送 / 自提 + 商品 + 金额 + 物流 + 订货单信息；支持子订货单 |
+| [记录列表 Demo](./records.md) | `pages/demo/records` | 列表 + 筛选菜单 + 搜索 + 日期切换联动示例（非标准页组件） |
 
 ## 约定
 

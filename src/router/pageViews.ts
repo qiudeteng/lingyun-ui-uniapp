@@ -70,22 +70,29 @@ export function useLingyunPageViewVersion() {
 
 registerLingyunPageViews(
   LINGYUN_PAGE_NAV.flatMap((section) =>
-    section.items.map((item) => ({
-      path: item.url,
-      title: item.title,
-      host: DEMO_HOST,
-      bodyScroll: ![
-        '/pages/demo/search-bar',
-        '/pages/demo/refresh',
-        '/pages/demo/indexed-list',
-        '/pages/demo/order-goods',
-      ].includes(item.url),
-      pageScroll: ![
-        '/pages/demo/swipe-actions',
-        '/pages/demo/indexed-list',
-        '/pages/demo/order-goods',
-      ].includes(item.url),
-    })),
+    section.items
+      .filter(
+        (item) =>
+          !['/pages/login/login', '/pages/404/404', '/pages/demo/workbench'].includes(
+            item.url,
+          ),
+      )
+      .map((item) => ({
+        path: item.url,
+        title: item.title,
+        host: DEMO_HOST,
+        bodyScroll: ![
+          '/pages/demo/search-bar',
+          '/pages/demo/refresh',
+          '/pages/demo/indexed-list',
+          '/pages/demo/order-goods',
+        ].includes(item.url),
+        pageScroll: ![
+          '/pages/demo/swipe-actions',
+          '/pages/demo/indexed-list',
+          '/pages/demo/order-goods',
+        ].includes(item.url),
+      })),
   ),
 )
 

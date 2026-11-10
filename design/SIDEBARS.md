@@ -94,7 +94,7 @@ const sections = [
 
 ## 4. 持久左侧导航（lingyun-page-nav）
 
-窗口 **≥ 690** 时停靠在页面左侧，完整宽 **220**，分组实底；配置全局 tabs 后收窄为 **84** 通高窄栏（实底 + 顶栏同款 tint，见下）。折叠屏内屏（如 OPPO Find **692**、常见 **717×781**）因此是左导航、右内容。H5 上这一列挂在 `body`，只创建一次，不随页面 `redirectTo` 销毁，所以换页不闪、滚动停在原地。微信小程序没有页面外的常驻节点，同一列嵌在 `lingyun-app-page` 里，滚动位置记在内存里，新页面挂上时再写回去。点选 `redirectTo`（无转场）换页，当前路由高亮。点到未注册页面会打开 404，高亮仍停在点中的那一项。目录与首页列表共用 `src/router/pageNav.ts`。页面可传 `:show-nav="false"` 关闭这一列。
+窗口 **≥ 690** 时停靠在页面左侧，完整宽 **220**，分组实底；配置全局 tabs 后收窄为 **84** 通高窄栏（实底 + 顶栏同款 tint，见下）。折叠屏内屏（如 OPPO Find **692**、常见 **717×781**）因此是左导航、右内容。H5 上这一列挂在 `body`，只创建一次，不随页面 `redirectTo` 销毁，所以换页不闪、滚动停在原地。微信小程序没有页面外的常驻节点，同一列嵌在 `lingyun-app-page` 里，滚动位置记在内存里，新页面挂上时再写回去。点选 `redirectTo`（无转场）换页，当前路由高亮。点到未注册页面会打开 404，高亮仍停在点中的那一项。侧栏目录由 `src/config/pageTabs.ts` 的 `DEMO_PAGE_TABS` 派生；首页与 Tab 直接读同一份数据。页面可传 `:show-nav="false"` 关闭这一列。
 
 ### 窄栏（iPad/PC + 全局 tabs）
 
@@ -150,7 +150,7 @@ const sections = [
 | `lingyun-app-page` 插槽 `nav-avatar` / `nav-name` / `nav-subtitle` | 当前页顶部。可只传其中一部分。H5 送进 `body` 上的侧栏；微信嵌在当前页。离开该页后恢复 |
 | `setLingyunPageNavProfile({ avatar, name, subtitle })` | 全局默认头像、名称、副标题。插槽盖过对应的一项 |
 | `useUserStore().selectStore(id)` | 切换当前门店。`storeId`、`storeInfo`、`storeName` 同步更新 |
-| `setLingyunPageNavSections` | 全局菜单。H5 侧栏与首页目录都读这份 |
+| `setLingyunPageNavSections` | 运行时覆盖宽屏侧栏目录；首页 / Tab 仍读 `DEMO_PAGE_TABS` |
 | `setLingyunPageConfig({ tabs })` | 全局一级导航。窄屏同一份数据渲染底部 Tab，宽屏渲染这一列；优先级高于 `setLingyunPageNavSections`。支持 `badge` 与 `match`，使用时隐藏内置「首页」行 |
 | `:nav-sections` | 只覆盖当前页的微信内嵌列 |
 
