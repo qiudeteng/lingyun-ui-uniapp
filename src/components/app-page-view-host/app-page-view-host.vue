@@ -8,6 +8,7 @@
   <texts-page v-else-if="currentPath === 'pages/demo/texts'" />
   <markdown-page v-else-if="currentPath === 'pages/demo/markdown'" />
   <images-page v-else-if="currentPath === 'pages/demo/images'" />
+  <swiper-page v-else-if="currentPath === 'pages/demo/swiper'" />
   <avatars-page v-else-if="currentPath === 'pages/demo/avatars'" />
   <page-controls-page v-else-if="currentPath === 'pages/demo/page-controls'" />
   <forms-page v-else-if="currentPath === 'pages/demo/forms'" />
@@ -88,6 +89,7 @@ import TagsPage from '@/pages/demo/tags.vue'
 import TextsPage from '@/pages/demo/texts.vue'
 import MarkdownPage from '@/pages/demo/markdown.vue'
 import ImagesPage from '@/pages/demo/images.vue'
+import SwiperPage from '@/pages/demo/swiper.vue'
 import AvatarsPage from '@/pages/demo/avatars.vue'
 import PageControlsPage from '@/pages/demo/page-controls.vue'
 import FormsPage from '@/pages/demo/forms.vue'

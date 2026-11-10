@@ -23,7 +23,7 @@ setLingyunPageNavProfile({
 })
 ```
 
-H5 侧栏只挂一次，页面上的 `sections` 到不了它。全局菜单用 `setLingyunPageNavSections`，首页列表读的是同一份。组件演示列表是 `/pages/demo/demo`，不读这份运行时菜单。
+H5 侧栏只挂一次，页面上的 `sections` 到不了它。全局菜单用 `setLingyunPageNavSections`。首页与底部 Tab / 工作台统一读取 `src/config/pageTabs.ts` 的 `DEMO_PAGE_TABS`；宽屏侧栏的默认目录由同一份 Tab 数据派生，运行时 `setLingyunPageNavSections` 只覆盖侧栏，不影响首页 / Tab。
 
 数据源优先级：组件 `sections` > 全局 `setLingyunPageConfig({ tabs })` > `setLingyunPageNavSections`。使用全局 tabs 时不显示内置「首页」行；`badge` 渲染角标，`match` 让详情页继续高亮所属项。tabs 与子项都支持图片图标 `iconSrc` / `activeIconSrc`（选中态用 `activeIconSrc`，未传回退 `iconSrc`），优先于 `icon` 字形。宽屏常驻导航仍是分组实底，不是浮动玻璃侧栏。
 

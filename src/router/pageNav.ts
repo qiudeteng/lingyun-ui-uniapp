@@ -1,7 +1,8 @@
 import { reactive, ref } from 'vue'
 import { routes } from '@/router.config'
+import { DEMO_PAGE_TABS, getLingyunDemoTabGroups } from '@/config/pageTabs'
 
-/** 宽屏页面壳左侧导航。与首页目录共用，避免两处标题漂移。 */
+/** 宽屏页面壳左侧导航。条目从 pageTabs 的 Tab 数据派生，避免与首页 / Tab 分组漂移。 */
 
 export const LINGYUN_PAGE_NAV_WIDTH = 220
 
@@ -25,129 +26,24 @@ export interface LingyunPageNavSection {
   items: LingyunPageNavItem[]
 }
 
+function tabNavItems(tabKey: string): LingyunPageNavItem[] {
+  const tab = DEMO_PAGE_TABS.find((item) => item.key === tabKey)
+  if (!tab) return []
+  return getLingyunDemoTabGroups(tab)
+    .flatMap((group) => group.items)
+    .map((child) => ({
+      title: child.text || child.url || '',
+      url: child.url || '',
+      note: child.note || '',
+      icon: child.icon || 'circle',
+    }))
+    .filter((item) => !!item.url)
+}
+
 export const LINGYUN_PAGE_NAV: LingyunPageNavSection[] = [
-  {
-    title: '页面',
-    items: [
-      { title: '接入', url: '/pages/guide/start', note: '安装 · 页面壳 · 宽屏与 Tab', icon: 'info' },
-      { title: '点单加购', url: '/pages/demo/order-goods', note: '标准页 · 分类联动 / 购物车', icon: 'cart' },
-      { title: '订货单列表', url: '/pages/demo/purchase-order-list', note: '标准页 · 状态筛选 / 多批配送', icon: 'list' },
-      { title: '订货单详情', url: '/pages/demo/purchase-order-detail', note: '标准页 · 状态 / 商品 / 金额 / 物流', icon: 'list' },
-      { title: '记录列表', url: '/pages/demo/records', note: '列表 · 筛选 · 搜索 · 时间选择', icon: 'list' },
-      { title: '工作台', url: '/pages/demo/workbench', note: '二级 / 三级菜单工作台', icon: 'bars' },
-    ],
-  },
-  {
-    title: '组件',
-    items: [
-      // 基础控件
-      { title: 'Buttons', url: '/pages/demo/buttons', note: '按钮 · Glass / Prominent', icon: 'circle' },
-      { title: 'Icons', url: '/pages/demo/icons', note: '图标字体 · lingyun-icon', icon: 'star' },
-      { title: 'Scan', url: '/pages/demo/scan', note: '扫码 · 原生 / scanFn / 自定义触发', icon: 'scan' },
-      { title: 'QR Code', url: '/pages/demo/qrcode', note: '二维码 · 前端生成 / 导出', icon: 'scan' },
-      { title: 'Barcode', url: '/pages/demo/barcode', note: '条码 · Code128 / Code39 / EAN13', icon: 'bars' },
-      { title: 'Badges', url: '/pages/demo/badges', note: '角标', icon: 'notification' },
-      { title: 'Segmented Controls', url: '/pages/demo/segmented-controls', note: '分段控件', icon: 'tune' },
-      { title: 'Tags & Chips', url: '/pages/demo/tags', note: '标签 · 筛选胶囊', icon: 'flag' },
-      { title: 'Text', url: '/pages/demo/texts', note: '文本 · 字阶 / 颜色', icon: 'font' },
-      { title: 'Markdown', url: '/pages/demo/markdown', note: 'Markdown 预览 · 标题 / 列表 / 代码 / 表格', icon: 'font' },
-      { title: 'Image', url: '/pages/demo/images', note: '图片 · 懒加载 / 圆角', icon: 'image' },
-      { title: 'Image Upload', url: '/pages/demo/image-upload', note: '图片上传 · 选图 / 旋转裁剪 / 上传', icon: 'images' },
-      { title: 'File Upload', url: '/pages/demo/file-upload', note: '文件上传 · 列表 / 进度 / 预览', icon: 'paperclip' },
-      { title: 'System File', url: '/pages/demo/file-upload-system', note: '系统文件 · web-view + H5', icon: 'folder-add' },
-      { title: 'Signature', url: '/pages/demo/signature', note: '手写签名 · 触控 / 鼠标 / 导出 PNG', icon: 'compose' },
-      { title: 'Avatars', url: '/pages/demo/avatars', note: '头像', icon: 'person' },
-      { title: 'Page Control', url: '/pages/demo/page-controls', note: '轮播指示点', icon: 'more' },
-      // 表单输入
-      { title: 'Forms', url: '/pages/demo/forms', note: '表单容器 · Grouped 行布局', icon: 'list' },
-      { title: 'Text Fields', url: '/pages/demo/text-fields', note: '输入框 · Label / Secure / Multiline', icon: 'compose' },
-      { title: 'Switch & Stepper', url: '/pages/demo/switches', note: '开关与步进器', icon: 'settings' },
-      { title: 'Checkbox & Radio', url: '/pages/demo/checks', note: '多选 / 单选 · data 驱动', icon: 'circle' },
-      { title: 'Slider', url: '/pages/demo/sliders', note: '滑条', icon: 'tune' },
-      { title: 'Rating', url: '/pages/demo/rating', note: '评分 · 整星 / 半星 / 可清除', icon: 'star' },
-      { title: 'Pickers', url: '/pages/demo/pickers', note: '选择器 · 级联 data-picker', icon: 'bars' },
-      { title: 'Date & Time', url: '/pages/demo/date-time-pickers', note: '日期 / 时间 / 日期时间 · 起止 · 表单', icon: 'calendar' },
-      { title: 'Date Switcher', url: '/pages/demo/date-switcher', note: '底部日期切换条 · 天 / 周 / 月 / 年 / 日期段', icon: 'calendar' },
-      { title: 'Date Text', url: '/pages/demo/date-text', note: '日期显示 · 今天 / 昨天 / 明天 · 精度', icon: 'calendar' },
-      { title: 'Calendar', url: '/pages/demo/calendar', note: '日历 · 单选 / 范围 / 标记', icon: 'calendar' },
-      { title: 'Location Picker', url: '/pages/demo/location-picker', note: '位置选择 · 门店 / 收货地址', icon: 'location' },
-      { title: 'Combobox', url: '/pages/demo/combobox', note: '可搜索选择 · 搜索列表', icon: 'search' },
-      { title: 'Token Field', url: '/pages/demo/token-field', note: '多选标签输入 · 建议 / 上限', icon: 'flag' },
-      { title: 'Amount Text', url: '/pages/demo/amount-text', note: '金额显示 · 万 / 亿 / 万亿 · 小数位', icon: 'wallet' },
-      // 导航与栏
-      { title: 'Toolbars', url: '/pages/demo/toolbars', note: '顶栏 · 滚动玻璃', icon: 'bars' },
-      { title: 'Screen', url: '/pages/demo/screen', note: '窗口档 · 系统 · 折叠 · 硬件', icon: 'tune' },
-      { title: 'Mobile / PC', url: '/pages/demo/responsive', note: '窄屏与平板、电脑分开展示', icon: 'tune' },
-      { title: 'App Page', url: '/pages/demo/app-page', note: '数据驱动页面壳 · Tab / 侧栏自动切换', icon: 'bars' },
-      { title: 'Tab Bars', url: '/pages/demo/tabbars', note: '底部标签栏', icon: 'list' },
-      { title: 'Tabs', url: '/pages/demo/tabs', note: '顶部 Tabs · underline / pill / 滚动', icon: 'bars' },
-      { title: 'Sidebar', url: '/pages/demo/sidebars', note: '悬浮玻璃侧栏', icon: 'bars' },
-      { title: 'Search Bar', url: '/pages/demo/search-bar', note: '搜索栏', icon: 'search' },
-      // 列表与内容
-      { title: 'Lists', url: '/pages/demo/lists', note: '分组列表', icon: 'list' },
-      { title: 'Tables', url: '/pages/demo/tables', note: '分组表格 · 固定列 · 分页', icon: 'list' },
-      { title: 'Grid', url: '/pages/demo/grid', note: '宫格 · 快捷入口', icon: 'bars' },
-      { title: 'Layout', url: '/pages/demo/layout', note: '24 分栏 · 间隔 · 偏移', icon: 'bars' },
-      { title: 'Indexed List', url: '/pages/demo/indexed-list', note: '索引列表 · 字母跳转', icon: 'list' },
-      { title: 'Sections', url: '/pages/demo/sections', note: '分组卡片 · Glass / Plain / 布局', icon: 'list' },
-      { title: 'Accordion', url: '/pages/demo/accordion', note: '折叠分组 · 单开 / 多开', icon: 'list' },
-      { title: 'Banner', url: '/pages/demo/banner', note: '营销横幅 · 图片 / 卡片', icon: 'image' },
-      { title: 'Steps', url: '/pages/demo/steps', note: '步骤条 · 横向 / 纵向 / 状态', icon: 'bars' },
-      { title: 'Timeline', url: '/pages/demo/timeline', note: '时间线 · 轨迹 / 日志 / 状态', icon: 'list' },
-      { title: 'Load More', url: '/pages/demo/load-more', note: '加载更多 · 触底 / 状态', icon: 'bottom' },
-      { title: 'Pagination', url: '/pages/demo/pagination', note: '分页 · 页码窗口 / 简单模式', icon: 'more' },
-      { title: 'Swipe Actions', url: '/pages/demo/swipe-actions', note: '列表左右滑菜单', icon: 'right' },
-      { title: 'Empty', url: '/pages/demo/empty', note: '空态', icon: 'info' },
-      { title: 'Skeleton', url: '/pages/demo/skeletons', note: '骨架屏', icon: 'more' },
-      { title: 'Refresh', url: '/pages/demo/refresh', note: '下拉刷新', icon: 'refresh' },
-      // 反馈与进度
-      { title: 'Activity Indicator', url: '/pages/demo/activity-indicator', note: '转圈加载', icon: 'loop' },
-      { title: 'Progress', url: '/pages/demo/progress', note: '线性 / 环形进度', icon: 'download' },
-      { title: 'Toast & HUD', url: '/pages/demo/toasts', note: '轻提示 · 加载遮罩', icon: 'chat' },
-      { title: 'Notice Bar', url: '/pages/demo/notice-bar', note: '通知条 · 信息 / 成功 / 警告 / 错误', icon: 'info' },
-      // 浮层与菜单
-      { title: 'Alerts', url: '/pages/demo/alerts', note: '居中弹窗', icon: 'info' },
-      { title: 'Sheets', url: '/pages/demo/sheets', note: '底部 Sheet · medium / large', icon: 'list' },
-      { title: 'Action Sheets', url: '/pages/demo/action-sheets', note: '底部操作列表 · Cancel', icon: 'bars' },
-      { title: 'Activity Views', url: '/pages/demo/activity-views', note: '分享面板 · 半高 / 全高', icon: 'paperplane' },
-      { title: 'Popover', url: '/pages/demo/popovers', note: '锚定浮层', icon: 'chat' },
-      { title: 'Tooltip', url: '/pages/demo/tooltip', note: '轻量说明 · hover / 点击 / 长按', icon: 'info' },
-      { title: 'Menus', url: '/pages/demo/menus', note: '弹出菜单 · 长按', icon: 'more' },
-      { title: 'Filter Menu', url: '/pages/demo/filter-menu', note: '顶部筛选 · 全宽菜单', icon: 'tune' },
-      { title: 'Toolbar Search', url: '/pages/demo/toolbar-search', note: '顶部搜索 · 输入框 / 取消', icon: 'search' },
-      { title: 'Toolbar Segments', url: '/pages/demo/toolbar-segments', note: '顶栏下方分段 · click / change', icon: 'more' },
-      { title: 'All In One', url: '/pages/demo/toolbar-comprehensive', note: '筛选 + 搜索 + 分段', icon: 'star' },
-      { title: 'Fab', url: '/pages/demo/fab', note: '悬浮按钮 · 展开菜单', icon: 'plusempty' },
-      { title: 'Goods Nav', url: '/pages/demo/goods-nav', note: '商品底栏 · 店铺 / 购物车 / 购买', icon: 'cart' },
-    ],
-  },
-  {
-    title: '图表',
-    items: [
-      { title: 'Column', url: '/pages/demo/charts/column', note: '柱状图', icon: 'bars' },
-      { title: 'Stack', url: '/pages/demo/charts/stack', note: '堆积图', icon: 'bars' },
-      { title: 'Bar', url: '/pages/demo/charts/bar', note: '条状图', icon: 'bars' },
-      { title: 'Line', url: '/pages/demo/charts/line', note: '折线图', icon: 'tune' },
-      { title: 'Curve', url: '/pages/demo/charts/curve', note: '曲线图', icon: 'tune' },
-      { title: 'Area', url: '/pages/demo/charts/area', note: '区域图', icon: 'image' },
-      { title: 'Pie', url: '/pages/demo/charts/pie', note: '饼图', icon: 'circle' },
-      { title: 'Ring', url: '/pages/demo/charts/ring', note: '圆环图', icon: 'loop' },
-      { title: 'Rose', url: '/pages/demo/charts/rose', note: '玫瑰图', icon: 'star' },
-      { title: 'Funnel', url: '/pages/demo/charts/funnel', note: '漏斗图', icon: 'download' },
-      { title: 'Radar', url: '/pages/demo/charts/radar', note: '雷达图', icon: 'flag' },
-      { title: 'Gauge', url: '/pages/demo/charts/gauge', note: '仪表盘', icon: 'info' },
-      { title: 'Arcbar', url: '/pages/demo/charts/arcbar', note: '圆弧进度', icon: 'loop' },
-      { title: 'Mount', url: '/pages/demo/charts/mount', note: '山峰图', icon: 'bars' },
-      { title: 'Mix', url: '/pages/demo/charts/mix', note: '混合图', icon: 'tune' },
-      { title: 'Scatter', url: '/pages/demo/charts/scatter', note: '散点图', icon: 'circle' },
-      { title: 'Bubble', url: '/pages/demo/charts/bubble', note: '气泡图', icon: 'circle' },
-      { title: 'Candle', url: '/pages/demo/charts/candle', note: 'K 线图', icon: 'bars' },
-      { title: 'Word', url: '/pages/demo/charts/word', note: '词云图', icon: 'font' },
-      { title: 'Map', url: '/pages/demo/charts/map', note: '地图', icon: 'map' },
-      { title: 'Time Line', url: '/pages/demo/charts/tline', note: '时间轴折线', icon: 'calendar' },
-      { title: 'Time Area', url: '/pages/demo/charts/tarea', note: '时间轴区域', icon: 'calendar' },
-    ],
-  },
+  { title: '页面', items: [...tabNavItems('guide'), ...tabNavItems('pages')] },
+  { title: '组件', items: tabNavItems('components') },
+  { title: '图表', items: tabNavItems('charts') },
 ]
 
 /** 运行时目录。H5 侧栏只挂一次，必须读这份响应式数据，页面 prop 到不了它。 */

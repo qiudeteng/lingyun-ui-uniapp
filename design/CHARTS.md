@@ -280,7 +280,7 @@ legend: {
 | `/pages/demo/charts/tline` | `tline` | 时间轴折线（矢量坐标 / 秒级时间戳） |
 | `/pages/demo/charts/tarea` | `tarea` | 时间轴区域（矢量轴 / 秒级时间戳） |
 
-示例数据集中在 `src/pages/demo/charts/samples.ts`。首页「图表」分组见 `src/router/pageNav.ts`。
+示例数据集中在 `src/pages/demo/charts/samples.ts`。首页 / Tab 的「图表」分组见 `src/config/pageTabs.ts` 的 `CHART_CHILDREN`。
 
 ---
 

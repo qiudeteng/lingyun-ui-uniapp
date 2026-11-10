@@ -123,6 +123,8 @@ H5/App 配置 `choose-fn` 时直接调用它；未配置时使用 `uni.chooseFil
 > web-view + H5 方案需要把 H5 域名配置到小程序的业务域名，并把登录态/上传结果带回小程序；属于业务侧接入，不在本组件内实现。
 >
 > 仓库 demo：`pages/demo/file-upload-system`（web-view + H5，H5 页面在 `public/system-file-picker.html`）。
+>
+> 只做 H5 文件选择页的独立示例见 `pages/demo/file-picker-webview`；设计说明见 `design/pages/demo/file-picker-webview.md`。
 
 ## 上传说明
 

@@ -231,6 +231,11 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Image' }
 	},
 	{
+		path: '/pages/demo/swiper',
+		name: 'pagesDemoSwiper',
+		meta: { title: 'Swiper' }
+	},
+	{
 		path: '/pages/demo/image-upload',
 		name: 'pagesDemoImageUpload',
 		meta: { title: 'Image Upload' }

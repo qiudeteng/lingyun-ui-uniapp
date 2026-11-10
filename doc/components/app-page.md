@@ -160,7 +160,7 @@ const result = applyLingyunPageFromMenus(menuTree, {
   workspaceUrl: '/pages/index/workbench',
 })
 // result.tabs      已写入全局页面壳配置
-// result.sections  220 完整目录分组（首页列表 / 旧目录侧栏）
+// result.sections  220 完整目录分组（宽屏侧栏 / 旧目录）
 // result.groups    一级 Tab key → 工作台分组
 ```
 

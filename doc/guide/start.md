@@ -49,9 +49,9 @@ export function createApp() {
 
 左栏顶部默认是「凌云UI」，下面一行是「一套对齐 Apple Liquid Glass 的 uni-app 多端组件库」。名称和右侧顶栏对齐，介绍超出一行会省略。
 
-组件演示列表在 `/pages/demo/demo`，固定读 `LINGYUN_PAGE_NAV`，不跟登录后的业务菜单走。首页「组件 Demo」也进这一页。
+组件演示列表在 `/pages/demo/demo`。首页、底部 Tab / 工作台和宽屏侧栏共用同一份导航数据：`src/config/pageTabs.ts` 的 `DEMO_PAGE_TABS`，侧栏由它派生，不再单独维护 `LINGYUN_PAGE_NAV`。
 
-首页列表和宽屏左栏读同一份运行时目录，默认仍是 `src/router/pageNav.ts`。登录后把后台菜单和顶部资料写进来，这两处会跟着变：
+首页和底部 Tab 固定读 `DEMO_PAGE_TABS`；宽屏左栏的运行时目录由它派生，默认仍是 `src/router/pageNav.ts` 的 `LINGYUN_PAGE_NAV`。登录后把后台菜单和顶部资料写进 `setLingyunPageNavSections` / `setLingyunPageNavProfile`，只会更新宽屏左栏：
 
 ```ts
 import { setLingyunPageNavProfile, setLingyunPageNavSections } from '@/router/pageNav'
