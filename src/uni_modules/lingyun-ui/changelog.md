@@ -1,3 +1,5 @@
+## 未发布
+- 「列表 + 详情」demo 手机模式底部日期切换器改回组件自身的 `fixed` + 安全区模式（与纯列表页一致），不再用页面内绝对定位，修复小程序上位置偏移；宽屏分栏仍为左栏内的浮层。
 ## 1.0.56（2026-11-10）
 - Demo 全站页面背景改为 iOS 标准纯色：移除全局彩色径向渐变与各页 `.page` 渐变，统一 `--lingyun-bg-grouped-primary`（浅 `#f2f2f7` / 暗黑 `#000`）；纯列表页仍用 Primary Background。
 - `lingyun-list` 新增 `plain`：Apple Plain 全宽平铺列表，去掉分组卡片的底色、圆角与左右 inset，行直接铺在页面背景上；顶部搜索 / 筛选 + 底部日期切换条的「纯列表」demo 见 `/pages/demo/plain-list`。

@@ -88,12 +88,12 @@
           <view class="list-bottom-spacer" />
         </scroll-view>
 
-        <view class="list-date">
+        <view class="list-date" :class="{ 'list-date--wide': wide }">
           <lingyun-date-switcher
             v-model:mode="dateMode"
             :model-value="dateValue"
-            :fixed="false"
-            :safe-area="false"
+            :fixed="!wide"
+            :safe-area="!wide"
             limit="past"
             @update:model-value="onDateValue"
             @change="onDateChange"
@@ -548,19 +548,23 @@
     padding: 24px 16px;
   }
 
-  /* 日期切换条浮在列表上方，不占列表布局高度 */
+  /* 宽屏：日期条浮在左栏列表上方（占位由 wrapper 提供）；
+     窄屏交给组件自己的 fixed + 安全区模式，与纯列表页的底部日期条一致 */
   .list-date {
+    pointer-events: none;
+  }
+
+  .list-date--wide {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
     z-index: 5;
     padding-bottom: calc(12px + env(safe-area-inset-bottom));
-    pointer-events: none;
   }
 
   .list-bottom-spacer {
-    height: calc(96px + env(safe-area-inset-bottom));
+    height: calc(108px + env(safe-area-inset-bottom));
   }
 
   .detail-pane {
