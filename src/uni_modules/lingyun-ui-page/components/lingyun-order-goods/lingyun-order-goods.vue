@@ -2496,6 +2496,11 @@ export default defineComponent({
   border-radius: 12px;
 }
 
+/* 卡片内数量角标向内收，避免被卡片圆角和右边缘裁切 */
+.lingyun-order-goods--wide .lingyun-order-goods__rail-cart-badge {
+  right: 6px;
+}
+
 .lingyun-order-goods--wide .lingyun-order-goods__rail-item {
   border-radius: 12px;
 }
