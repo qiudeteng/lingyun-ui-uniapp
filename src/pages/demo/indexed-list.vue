@@ -1,6 +1,6 @@
 <template>
   <lingyun-app-page title="Indexed List" :body-scroll="false" :page-scroll="false">
-    <view class="page">
+    <view class="page indexed-page">
       <lingyun-indexed-list :options="options" @click="onClick" />
     </view>
   </lingyun-app-page>
@@ -33,7 +33,8 @@
 </script>
 
 <style lang="scss">
-  .page {
+  /* 结构样式放独立类：避免 .page 的 flex / height 在 H5 里泄漏到其它页面 */
+  .indexed-page {
     display: flex;
     flex-direction: column;
     box-sizing: border-box;

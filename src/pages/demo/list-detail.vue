@@ -7,7 +7,7 @@
     :body-scroll="false"
     :show-toolbar="false"
   >
-    <view class="page" :class="{ 'page--wide': wide }">
+    <view class="page list-page" :class="{ 'list-page--wide': wide }">
       <!-- 左栏 = 独立页面：自己的 toolbar（工单 + 条数 + 搜索按钮） -->
       <view class="list-pane">
         <!-- toolbar（标题 / 搜索 / 状态分段）浮动在列表上方，列表从下方穿过 -->
@@ -462,22 +462,17 @@
 </script>
 
 <style lang="scss">
-  .page {
+  /*
+   * 页面根结构样式放在独立类上：H5 路由切换不会卸载页面样式，
+   * 若写在通用 .page 上会把 flex / 100vh 泄漏到其它用 .page 的页面。
+   */
+  .list-page {
     display: flex;
     flex-direction: row;
     box-sizing: border-box;
     height: 100vh;
     min-height: 0;
     padding: 0;
-  }
-
-  /*
-   * 宿主目录页（index / demo）的 .page 带 40px 底部 padding，
-   * 固定 100vh + border-box 时会把内容顶起 40；这里压掉。
-   */
-  .list-detail-page .page {
-    padding: 0;
-    min-height: 0;
   }
 
   /* #ifdef H5 */
@@ -511,7 +506,7 @@
   }
 
   /* 宽屏左栏固定为手机逻辑宽度 375 */
-  .page--wide .list-pane {
+  .list-page--wide .list-pane {
     flex: 0 0 375px;
     width: 375px;
   }

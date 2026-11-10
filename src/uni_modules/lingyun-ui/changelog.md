@@ -1,4 +1,5 @@
 ## 未发布
+- 修复 H5 页面样式跨页泄漏：`list-detail` / `refresh` / `search-bar` / `indexed-list` 的页面根结构样式（flex / 100vh / relative / height）改挂独立类（`list-page` / `refresh-page` / `search-page` / `indexed-page`），不再写在通用 `.page` 上，避免访问过这些页面后其它页面的 `.page` 被套上 flex / 100vh，导致目录工作台等内容被压成一列（小程序各页面样式隔离，不受影响）。
 - 「列表 + 详情」demo 手机模式底部日期切换器改回组件自身的 `fixed` + 安全区模式（与纯列表页一致），不再用页面内绝对定位，修复小程序上位置偏移；宽屏分栏仍为左栏内的浮层。
 ## 1.0.56（2026-11-10）
 - Demo 全站页面背景改为 iOS 标准纯色：移除全局彩色径向渐变与各页 `.page` 渐变，统一 `--lingyun-bg-grouped-primary`（浅 `#f2f2f7` / 暗黑 `#000`）；纯列表页仍用 Primary Background。

@@ -1,6 +1,6 @@
 <template>
   <lingyun-app-page title="Search Bar" :body-scroll="false">
-    <view class="page">
+    <view class="page search-page">
       <scroll-view
         class="page__scroll"
         scroll-y
@@ -64,7 +64,8 @@
 </script>
 
 <style lang="scss">
-  .page {
+  /* 结构样式放独立类：避免 .page 的 flex / 100vh / relative 在 H5 里泄漏到其它页面 */
+  .search-page {
     flex: 1;
     height: 100vh;
     min-height: 0;
