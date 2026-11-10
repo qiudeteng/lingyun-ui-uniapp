@@ -1,4 +1,4 @@
-## 未发布
+## 1.0.56（2026-11-10）
 - Demo 全站页面背景改为 iOS 标准纯色：移除全局彩色径向渐变与各页 `.page` 渐变，统一 `--lingyun-bg-grouped-primary`（浅 `#f2f2f7` / 暗黑 `#000`）；纯列表页仍用 Primary Background。
 - `lingyun-list` 新增 `plain`：Apple Plain 全宽平铺列表，去掉分组卡片的底色、圆角与左右 inset，行直接铺在页面背景上；顶部搜索 / 筛选 + 底部日期切换条的「纯列表」demo 见 `/pages/demo/plain-list`。
 - 新增「列表 + 详情」demo：宽屏隐藏页面壳 toolbar，左右各一个独立 `lingyun-toolbars`（左「工单 / N 条结果」+ 搜索按钮 + `segments` 状态分段，右「工单详情 / 当前单号」）；左栏为 375px 独立页面（纯列表，38 条样本，底部日期条浮动在列表上方），左右 toolbar 均浮动、列表与详情从下方穿过并驱动玻璃，窄屏点行进独立详情页 `/pages/demo/list-detail-item`；两栏各自滚动，详情复用 `ticket-detail` 面板。
