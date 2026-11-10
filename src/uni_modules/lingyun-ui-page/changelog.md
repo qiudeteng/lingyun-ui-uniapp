@@ -1,4 +1,4 @@
-## 1.1.5（2026-11-09）
+## 1.1.5 (2026-11-09)
 - 新增订货单列表标准页 `lingyun-purchase-order-list`：顶部 Tabs 状态筛选（全部 / 待审核 / 进行中 / 已完成 / 已取消）、订货单卡片、多批配送「分 N 个包裹」、空态与加载更多；筛选 / 点订货单 / 操作 / 加载更多抛事件。状态 Tabs 通过 `lingyun-app-page` 的 `segments` + `segmentControl="tabs"` 渲染在工具栏内。
 - 订货单列表卡片改为订货单号 + 业务状态标题行，商品横向展示前 `maxThumbnails` 张缩略图（多出显示 `+N`），右侧显示总件数与金额；底栏使用 `lingyun-date-text` 显示下单时间，并显示包裹数与操作。新增 `listStatus` / `listStatusText` / `listStatusColor` 用于业务状态归类与覆盖。
 - 新增订货单详情标准页 `lingyun-purchase-order-detail`：状态头、配送 / 自提（静态卡片）、商品清单、金额明细、物流进度、订货单信息与底部操作栏；数据驱动，操作 / 商品 / 子订货单 / 复制抛事件。
