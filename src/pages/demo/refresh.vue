@@ -1,6 +1,6 @@
 <template>
   <lingyun-app-page title="Refresh" :body-scroll="false">
-    <view class="page">
+    <view class="page refresh-page">
       <view class="hero">
         <text class="hero__title">Refresh</text>
         <text class="hero__desc">下拉刷新 · count = {{ count }}</text>
@@ -37,7 +37,8 @@
 </script>
 
 <style lang="scss">
-  .page {
+  /* 结构样式放独立类：避免 .page 的 flex / height 在 H5 里泄漏到其它页面 */
+  .refresh-page {
     box-sizing: border-box;
     height: 100%;
     display: flex;
