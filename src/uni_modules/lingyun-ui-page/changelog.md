@@ -1,5 +1,5 @@
-## 未发布
-- `lingyun-purchase-order-list` / `lingyun-purchase-order-detail` 面板内层滚动改用 `flex: 1 + height: 0` 确定高度（与列表与详情 demo 一致）；分栏 demo 同时给两个面板组件的**宿主节点**（`.po-panel`）设 `flex: 1 + height: 0`——微信小程序里自定义组件宿主默认高度随内容，面板的 `height: 100%` 撑不起高度链，会把整页顶出滚动、toolbar 不固定。已在微信开发者工具里验证：三个订货单页面 `pageScrollTo` 后 `scrollTop` 均为 0，内层 `scroll-view` 高度 = 视口高度、独立滚动。
+## 1.1.7（2026-11-11）
+- `lingyun-purchase-order-list` / `lingyun-purchase-order-detail` 面板内层滚动改用 `flex: 1 + height: 0` 确定高度（与列表与详情 demo 一致）；分栏页里的面板宿主节点在 `lingyun-split-layout` 的内容容器中绝对定位铺满（小程序 slot 内容不参与 flex 拉伸），修复微信小程序上整页滚动、toolbar 不固定的问题。已在微信开发者工具验证：订货单三个页面与列表详情分栏页 `pageScrollTo` 后 `scrollTop` 均为 0，内层 `scroll-view` 高度 = 视口高度、独立滚动。
 - `lingyun-purchase-order-detail` 底部操作栏改为悬浮玻璃胶囊：绝对定位浮在滚动内容上方（不再占一条实底栏，内容从下方穿过，内容尾部留出胶囊高度），玻璃能透出滚动内容。
 - `lingyun-purchase-order-list` / `lingyun-purchase-order-detail` 拆出内容面板 `lingyun-purchase-order-list-panel` / `lingyun-purchase-order-detail-panel`（同目录）：标准页 = 页面壳 + 面板，对外 API 与行为不变；面板新增 `topSpace`（浮层 toolbar 高度占位）与 `scroll` 事件，供「列表 + 详情」分栏 demo 直接复用，不复制内容；列表面板新增 `full` 宽度模式（内容区不留左右留白、卡片通宽直角，上下间距保留）与 `selectedKey` 选中态（页面底色填充，对齐列表与详情 demo）。
 ## 1.1.6（2026-11-10）
