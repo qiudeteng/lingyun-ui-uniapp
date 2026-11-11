@@ -1,84 +1,78 @@
 <template>
-  <lingyun-app-page
+  <lingyun-split-layout
     class="po-split-page"
-    :class="{ 'po-split-page--narrow': !wide }"
     title="订货单"
-    :show-toolbar="false"
-    :show-tabbar="false"
-    :body-scroll="false"
+    :split-at="900"
+    :list-width="375"
+    @wide-change="onWideChange"
   >
-    <view class="po-page" :class="{ 'po-page--wide': wide }">
-      <!-- 左栏 = 独立页面：自己的 toolbar + 订货单列表（inline 面板，不嵌套页面壳） -->
-      <view class="po-pane po-pane--list">
-        <view class="po-pane__header po-pane__header--list">
-          <lingyun-toolbars
-            :fixed="false"
-            :show-back="!navDocked && !hosted"
-            :show-trailing="false"
-            :show-window-controls="false"
-            :show-theme-switch="false"
-            title-style="title2LineLeft"
-            title="订货单"
-            :subtitle="`${filteredOrders.length} 条结果`"
-            :segments="filterOptions"
-            :segment-value="activeFilter"
-            segment-control="tabs"
-            :glass-progress="listGlass"
-            @segment-change="onFilterChange"
-            @back="onBack"
-          />
-        </view>
+    <!-- 左栏：自己的浮动 toolbar + 订货单列表 -->
+    <template #list-header>
+      <lingyun-toolbars
+        :fixed="false"
+        :show-back="!navDocked && !hosted"
+        :show-trailing="false"
+        :show-window-controls="false"
+        :show-theme-switch="false"
+        title-style="title2LineLeft"
+        title="订货单"
+        :subtitle="`${filteredOrders.length} 条结果`"
+        :segments="filterOptions"
+        :segment-value="activeFilter"
+        segment-control="tabs"
+        :glass-progress="listGlass"
+        @segment-change="onFilterChange"
+        @back="onBack"
+      />
+    </template>
 
-        <lingyun-purchase-order-list-panel
-          class="po-panel"
-          full
-          :orders="orders"
-          :filter="activeFilter"
-          :selected-key="wide && currentOrder ? currentOrder.key || currentOrder.number : ''"
-          :top-space="listHeaderHeight"
-          @scroll="onListScroll"
-          @purchase-order-click="onOrderClick"
-          @action="onAction"
-        />
-      </view>
+    <template #list="{ topSpace }">
+      <lingyun-purchase-order-list-panel
+        class="po-panel"
+        full
+        :orders="orders"
+        :filter="activeFilter"
+        :selected-key="wide && currentOrder ? currentOrder.key || currentOrder.number : ''"
+        :top-space="topSpace"
+        @scroll="onListScroll"
+        @purchase-order-click="onOrderClick"
+        @action="onAction"
+      />
+    </template>
 
-      <!-- 宽屏右侧详情；窄屏走独立详情页 -->
-      <template v-if="wide">
-        <view class="po-divider" />
-        <view class="po-pane po-pane--detail">
-          <view class="po-pane__header po-pane__header--detail">
-            <lingyun-toolbars
-              :fixed="false"
-              :show-back="false"
-              :show-trailing="false"
-              :show-window-controls="false"
-              :show-theme-switch="false"
-              title-style="title2LineLeft"
-              title="订货单详情"
-              :subtitle="currentOrder ? currentOrder.number : ''"
-              :glass-progress="detailGlass"
-            />
-          </view>
+    <!-- 宽屏右侧详情；窄屏点卡片进现有订货单详情页 -->
+    <template #detail-header>
+      <lingyun-toolbars
+        :fixed="false"
+        :show-back="false"
+        :show-trailing="false"
+        :show-window-controls="false"
+        :show-theme-switch="false"
+        title-style="title2LineLeft"
+        title="订货单详情"
+        :subtitle="currentOrder ? currentOrder.number : ''"
+        :glass-progress="detailGlass"
+      />
+    </template>
 
-          <lingyun-purchase-order-detail-panel
-            class="po-panel"
-            :order="currentOrder"
-            :top-space="detailHeaderHeight"
-            @scroll="onDetailScroll"
-            @action="onAction"
-            @item-click="onItemClick"
-            @sub-purchase-order-click="onSubOrderClick"
-            @copy="onCopy"
-            @payment-timeout="onPaymentTimeout"
-          />
-        </view>
-      </template>
-    </view>
-  </lingyun-app-page>
+    <template #detail="{ topSpace }">
+      <lingyun-purchase-order-detail-panel
+        class="po-panel"
+        :order="currentOrder"
+        :top-space="topSpace"
+        @scroll="onDetailScroll"
+        @action="onAction"
+        @item-click="onItemClick"
+        @sub-purchase-order-click="onSubOrderClick"
+        @copy="onCopy"
+        @payment-timeout="onPaymentTimeout"
+      />
+    </template>
+  </lingyun-split-layout>
 </template>
 
 <script setup lang="ts">
-  import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+  import { computed, onBeforeUnmount, ref, watch } from 'vue'
   import { isLingyunWideScreen } from '@/uni_modules/lingyun-ui'
   import { pageHostState } from '@/router/pageHost'
   import { demoPurchaseOrders } from './purchaseOrderDemo'
@@ -96,90 +90,18 @@
     LingyunPurchaseOrderListOrderPayload,
   } from '@/uni_modules/lingyun-ui-page/components/lingyun-purchase-order-list/types'
 
-  /** 左右分栏门槛与列表详情 demo 一致：900，iPad 竖屏单栏、横屏分栏 */
-  const SPLIT_MIN_WIDTH = 900
+  /** 分栏门槛由 lingyun-split-layout 按 split-at 判断，这里只跟随 wide-change 做业务分支 */
+  const wide = ref(false)
 
-  function readWindowWidth(): number {
-    try {
-      const info =
-        typeof uni.getWindowInfo === 'function'
-          ? uni.getWindowInfo()
-          : uni.getSystemInfoSync()
-      return Number(info.windowWidth) || 0
-    } catch {
-      return 0
-    }
+  function onWideChange(value: boolean): void {
+    wide.value = value
   }
 
-  const windowWidth = ref(readWindowWidth())
-  const wide = computed(() => windowWidth.value >= SPLIT_MIN_WIDTH)
   /** 左侧导航停靠时不显示页面返回 */
   const navDocked = computed(() => isLingyunWideScreen())
 
-  function onWindowResize(): void {
-    windowWidth.value = readWindowWidth()
-    scheduleHeaderMeasure()
-  }
-
-  try {
-    if (typeof uni.onWindowResize === 'function') uni.onWindowResize(onWindowResize)
-  } catch {
-    /* 端不支持 */
-  }
   onBeforeUnmount(() => {
-    try {
-      if (typeof uni.offWindowResize === 'function') uni.offWindowResize(onWindowResize)
-    } catch {
-      /* 端不支持 */
-    }
-    if (measureTimer) clearTimeout(measureTimer)
     pageHostState.hideToolbar = false
-  })
-
-  /* ---------- 浮动头部：量高度，作为面板顶部占位（与列表详情 demo 同一做法） ---------- */
-
-  const instance = getCurrentInstance()
-  const listHeaderHeight = ref(0)
-  const detailHeaderHeight = ref(0)
-  let measureTimer: ReturnType<typeof setTimeout> | null = null
-
-  function measurePaneHeader(): void {
-    const proxy = instance?.proxy
-    if (!proxy) return
-    const query = uni.createSelectorQuery().in(proxy)
-    query
-      .select('.po-pane__header--list')
-      .boundingClientRect((rect) => {
-        const box = Array.isArray(rect) ? rect[0] : rect
-        listHeaderHeight.value = Number(box?.height) || 0
-      })
-    query
-      .select('.po-pane__header--detail')
-      .boundingClientRect((rect) => {
-        const box = Array.isArray(rect) ? rect[0] : rect
-        detailHeaderHeight.value = Number(box?.height) || 0
-      })
-    query.exec(() => {})
-  }
-
-  function scheduleHeaderMeasure(): void {
-    clearTimeout(measureTimer ?? undefined)
-    measureTimer = setTimeout(() => {
-      measureTimer = null
-      measurePaneHeader()
-    }, 120)
-  }
-
-  onMounted(() => {
-    nextTick(() => {
-      measurePaneHeader()
-      scheduleHeaderMeasure()
-      setTimeout(measurePaneHeader, 360)
-    })
-  })
-
-  watch(wide, () => {
-    nextTick(() => scheduleHeaderMeasure())
   })
 
   function currentPageRoute(): string {
@@ -315,65 +237,19 @@
 
 <style lang="scss">
   /*
-   * 页面根结构样式放在独立类上：H5 路由切换不会卸载页面样式，
-   * 不能写到通用 .page 上，避免 flex / 100vh 泄漏到其它页面。
+   * 小程序：自定义组件的宿主节点是额外一层、默认高度随内容；
+   * split-layout 的内容容器有确定高度，这里用绝对定位把面板铺满容器
+   * （slot 内容在小程序里不参与 flex 拉伸）。
    */
-  .po-page {
-    display: flex;
-    flex-direction: row;
-    box-sizing: border-box;
-    height: 100vh;
-    min-height: 0;
-    padding: 0;
-  }
-
-  .po-pane {
-    position: relative;
-    flex: 1;
-    min-width: 0;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    box-sizing: border-box;
-  }
-
-  .po-page--wide .po-pane--list {
-    flex: 0 0 375px;
-    width: 375px;
-  }
-
-  /* 浮动头部：toolbar 盖在列表 / 详情上方，内容从下方穿过 */
-  .po-pane__header {
+  .po-panel {
     position: absolute;
     left: 0;
     top: 0;
     right: 0;
-    z-index: 4;
-  }
-
-  /*
-   * 小程序：自定义组件的宿主节点是额外一层、默认高度随内容，
-   * 面板根节点的 height:100% 撑不起来会随内容变高、把整页顶出滚动。
-   * 给宿主显式 flex + height:0，面板内层滚动才有确定高度（H5 下等价于铺满栏位）。
-   */
-  .po-panel {
+    bottom: 0;
     display: flex;
     flex-direction: column;
-    flex: 1 1 0;
-    min-width: 0;
     min-height: 0;
-    height: 0;
     overflow: hidden;
-  }
-
-  /* 两栏之间 0.5px 缝隙：透明、透出页面底色（对齐列表与详情 demo），
-     白色卡片 / 左栏与详情之间的色差自然形成边线 */
-  .po-divider {
-    flex: 0 0 1px;
-    width: 1px;
-    height: 100%;
-    background: transparent;
-    transform: scaleX(0.5);
-    transform-origin: center;
   }
 </style>

@@ -4,7 +4,7 @@
 
 订货单的「列表 + 详情」分栏 demo，做法与列表与详情 demo 一致：单独做一个组合页，不改动现有的订货单列表 / 详情两个标准页。
 
-- 分栏门槛 **900**：窗口 ≥ 900 左右分栏，窄屏只显示列表
+- 分栏门槛 **900**：窗口 ≥ 900 左右分栏，窄屏只显示列表。布局由 [`lingyun-split-layout`](../../../doc/components/split-layout.md) 提供（≥ `split-at` 分栏、左栏固定 `list-width`、头部量高经 `topSpace` 交给面板），本页只写两栏内容
 - 宽屏布局：左栏固定 **375px**（手机逻辑宽度），右侧详情占满剩余宽度，中间一条 0.5px 缝隙（透明、透出页面底色，白色卡片与详情之间的色差自然形成边线，对齐列表与详情 demo）；左右各自内层滚动
 - 复用标准页内容：标准页已拆成「页面壳 + 面板」——`lingyun-purchase-order-list-panel` / `lingyun-purchase-order-detail-panel`。本页左栏放列表面板、右栏放详情面板，页面壳（toolbar / 导航 / 顶部安全区）由本页自己提供，不改标准页行为；左栏列表面板使用 `full` 模式——内容区不留左右留白、卡片通宽直角（上下间距保留，对齐 `lingyun-section` 的 full），铺满 375 左栏
 - 选中态：列表面板传 `selectedKey`（当前详情单的 `order.key || order.number`），选中卡片用页面底色（`--lingyun-bg-grouped-primary`：浅色 `#f2f2f7` / 暗黑 `#000`）填充，与未选中的 `grouped-secondary` 卡片形成对比，和列表与详情 demo 的选中语义一致；点击卡片切换右侧详情时选中态跟随

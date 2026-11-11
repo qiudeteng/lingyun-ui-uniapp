@@ -1,4 +1,5 @@
 ## 未发布
+- 新增 `lingyun-split-layout`：列表 + 详情分栏布局组件。≥ `splitAt`（默认 900）左右分栏（左栏固定 `listWidth`，默认 375），窄屏只渲染左栏；`list-header` / `list` / `detail-header` / `detail` 四个插槽，头部自动量高并通过作用域插槽把 `topSpace` 交给内容，`wide-change` 事件区分宽窄屏行为。列表与详情 demo、订货单列表与详情 demo 均已改用该组件。分栏页面模板与踩坑清单见 `doc/guide/split-pages.md`。
 - 新增「订货单列表与详情」分栏 demo（`/pages/demo/purchase-order-split`）：宽屏左 375 列表 + 右详情、各自内层滚动与浮动玻璃 toolbar，窄屏点卡片进现有订货单详情标准页；左侧列表 full 通栏、选中态与分栏边线对齐列表与详情 demo，手机模式不显示选中态；不动原有列表 / 详情 demo，内容直接复用两个标准页拆出的面板组件。
 - 「列表 + 详情」demo 暗黑模式宽屏分层：左栏列表底色改用 `grouped-secondary`（浅色白 / 暗黑 `#1c1c1e`），与右侧黑色详情区分层次；选中行仍用页面底色（暗黑 `#000`），与详情无缝衔接，暗黑下选中效果清晰可见。窄屏列表不变。
 - 修复 H5 页面样式跨页泄漏：`list-detail` / `refresh` / `search-bar` / `indexed-list` 的页面根结构样式（flex / 100vh / relative / height）改挂独立类（`list-page` / `refresh-page` / `search-page` / `indexed-page`），不再写在通用 `.page` 上，避免访问过这些页面后其它页面的 `.page` 被套上 flex / 100vh，导致目录工作台等内容被压成一列（小程序各页面样式隔离，不受影响）。

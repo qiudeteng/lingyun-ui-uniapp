@@ -5,6 +5,7 @@
 列表 + 详情的主页面：宽屏左列表右详情，窄屏只显示列表，详情走独立页面（`/pages/demo/list-detail-item`）。左栏本身按「独立页面」设计，筛选、搜索、时间切换都在左栏内完成。
 
 - 分栏门槛：窗口宽度 **≥ 900**；iPad 竖屏 768 走单栏，横屏 1024 起分栏；阈值来自页面自己的 `windowWidth`，与页面壳 690 的导航档位解耦
+- 分栏布局由 [`lingyun-split-layout`](../../../doc/components/split-layout.md) 提供（≥ `split-at=900` 左右分栏、左栏固定 `list-width=375`，窄屏只渲染左栏；头部量高经作用域插槽 `topSpace` 交给列表 / 详情做占位），本页只写两栏内容与业务
 - 宽屏布局：左侧列表栏固定 **375px**（手机逻辑宽度，对齐 `UI_SPEC.md` 1pt = 1px），左右两栏之间一条 **0.5px** 缝隙（1px 布局 + scaleX(0.5)），缝隙透出页面 grouped 底色：白色列表旁自然形成细线，选中行与详情同为 grouped 底色时无缝衔接；右侧详情占满剩余宽度；左侧导航 / 二级菜单列的右边缘统一取内容区底色（视觉上无右线，白色列自身形成边界，不随菜单列有无变色），页面不再叠加，避免三栏时双线变粗；左右各自滚动
 - **页面自带 toolbar**：`lingyun-app-page` 的 toolbar 关闭；小程序宽屏宿主页的 toolbar 也通过 `pageHostState.hideToolbar` 隐藏。宽屏左右各一个 `lingyun-toolbars`（`title2LineLeft`、非 fixed、`safe-area` 默认 true，状态栏占位在 toolbar 内部）：左侧「工单 / N 条结果」+ 搜索按钮 + `segments` 状态分段，并设 `avoid-capsule=false`——左栏不是整宽，胶囊在右侧详情上方，不需要为它让位；右侧「工单详情 / 当前单号」保持默认胶囊避让，供详情工具使用。窄屏用同一个左栏 toolbar 作为整页 toolbar（整宽，胶囊避让默认开启；左侧导航未停靠且非宿主时才显示返回——iPad 竖屏从左侧 Tab 进入，不显示返回）。H5 没有系统状态栏，只给 toolbar 内部补 12px `padding-top`。
 - **固定高度铺满**：宿主目录页（index / demo）的内容根类已改为 `.directory`，不再用通用 `.page`，避免 40px 底部 padding 串到被托管页面；本页固定 `height:100vh` + `border-box`，仍用 `.list-detail-page .page { padding:0; min-height:0 }` 作为兜底，内容铺满窗口；日期切换条的底部安全区不受影响。
