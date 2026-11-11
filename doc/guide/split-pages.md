@@ -1,6 +1,8 @@
 # 分栏页面开发规范与踩坑清单（列表 + 详情）
 
 > 来源：`/pages/demo/list-detail`、`/pages/demo/purchase-order-split` 两轮开发中实际踩过的坑。做「宽屏左右分栏、窄屏独立详情页」这类页面之前先读一遍。
+>
+> **优先直接用 [`lingyun-split-layout`](/components/split-layout.html)**：页面结构、头部浮动与测高、分栏缝隙都已封装；本文档说明它内部做了什么、以及内容侧仍要注意的约束（尤其是小程序宿主节点高度）。
 
 ## 1. 页面结构模板
 
@@ -56,22 +58,24 @@ WXSS 里 `scroll-view` 的 `height: 100%` 在 flex 链路上拿不到确定高�
 
 在小程序里，这行会生成一个**宿主节点**，它默认高度随内容。面板内部的 `height: 100%` 全部失效 → 面板随列表内容变高 → **整页滚动、toolbar 不固定**（H5 没有这层节点，所以「H5 正常、小程序滚」多半是它）。
 
-- ✅ 给宿主节点显式尺寸（页面自己的 WXSS 里写，类名加在组件标签上）：
+- ✅ 用 `lingyun-split-layout` 时：插槽内容**绝对定位铺满内容容器**（容器有确定高度、是定位参照）：
   ```vue
-  <lingyun-purchase-order-list-panel class="po-panel" ... />
+  <template #list="{ topSpace }">
+    <lingyun-purchase-order-list-panel class="split-panel" :top-space="topSpace" ... />
+  </template>
   ```
   ```scss
-  .po-panel {
+  .split-panel {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
     display: flex;
     flex-direction: column;
-    flex: 1 1 0;
-    min-width: 0;
     min-height: 0;
-    height: 0;
     overflow: hidden;
   }
   ```
-- ❌ 不要在面板组件里写 `:host { height: … }`——会连带影响标准页（非 flex 容器里的正常用法）。
+- 不用布局组件、手写分栏时：给宿主节点显式 `flex: 1 1 0; height: 0`（页面的 pane 是 flex 列）。
+- ❌ 不要在面板组件里写 `:host { height: … }`——会连带影响标准页（非 flex 容器里的正常用法）；也不要在小程序里指望 slot 内容被 flex 拉伸。
 
 ### 2.5 ❌ 改完只看 H5；小程序不重新编译
 

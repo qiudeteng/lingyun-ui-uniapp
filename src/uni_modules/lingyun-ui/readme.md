@@ -163,6 +163,7 @@ lingyun-ui/
 ├── styles/               # variables、theme、Liquid Glass mixin
 └── components/
     ├── lingyun-app-page/ # 页面壳；宽屏时为左侧导航留位
+    ├── lingyun-split-layout/ # 列表 + 详情分栏布局（左列表 / 右详情，窄屏只显示左栏）
     ├── lingyun-mobile/   # 窄屏才显示
     ├── lingyun-pc/       # 平板和电脑才显示
     ├── lingyun-row/      # 24 分栏的行

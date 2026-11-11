@@ -1,42 +1,44 @@
 <template>
-  <lingyun-app-page
+  <lingyun-split-layout
     class="list-detail-page"
     :class="{ 'list-detail-page--narrow': !wide }"
     title="列表与详情"
-    :show-tabbar="false"
-    :body-scroll="false"
-    :show-toolbar="false"
+    :split-at="900"
+    :list-width="375"
+    @wide-change="onWideChange"
   >
-    <view class="page list-page" :class="{ 'list-page--wide': wide }">
-      <!-- 左栏 = 独立页面：自己的 toolbar（工单 + 条数 + 搜索按钮） -->
-      <view class="list-pane">
-        <!-- toolbar（标题 / 搜索 / 状态分段）浮动在列表上方，列表从下方穿过 -->
-        <view class="pane-header">
-          <lingyun-toolbars
-            :class="{ 'pane-toolbar--pc': weixinPc }"
-            :fixed="false"
-            :avoid-capsule="!wide"
-            :show-back="!navDocked && !hosted"
-            :show-trailing="false"
-            :show-window-controls="false"
-            :show-theme-switch="false"
-            title-style="title2LineLeft"
-            title="工单"
-            :subtitle="`${filteredTickets.length} 条结果`"
-            searchable
-            search-placeholder="搜索工单 / 客户"
-            :segments="statusOptions"
-            :segment-value="statusFilter"
-            segment-control="segmented"
-            :glass-progress="listGlass"
-            v-model:searching="searching"
-            v-model:search-value="keyword"
-            @search-cancel="onSearchCancel"
-            @segment-change="onStatusSegmentChange"
-            @back="onPageBack"
-          />
-        </view>
+    <!-- 左栏 = 独立页面：自己的 toolbar（工单 + 条数 + 搜索按钮） -->
+    <template #list-header>
+      <lingyun-toolbars
+        :class="{ 'pane-toolbar--pc': weixinPc }"
+        :fixed="false"
+        :avoid-capsule="!wide"
+        :show-back="!navDocked && !hosted"
+        :show-trailing="false"
+        :show-window-controls="false"
+        :show-theme-switch="false"
+        title-style="title2LineLeft"
+        title="工单"
+        :subtitle="`${filteredTickets.length} 条结果`"
+        searchable
+        search-placeholder="搜索工单 / 客户"
+        :segments="statusOptions"
+        :segment-value="statusFilter"
+        segment-control="segmented"
+        :glass-progress="listGlass"
+        v-model:searching="searching"
+        v-model:search-value="keyword"
+        @search-cancel="onSearchCancel"
+        @segment-change="onStatusSegmentChange"
+        @back="onPageBack"
+      />
+    </template>
 
+    <template #list="{ wide: isWide, topSpace }">
+      <view
+        class="list-pane-content"
+        :class="{ 'list-pane-content--wide': isWide }"
+      >
         <scroll-view
           class="list-scroll"
           scroll-y
@@ -47,7 +49,7 @@
           <view id="list-scroll-top" class="list-top-anchor" />
           <view
             class="list-top-spacer"
-            :style="{ height: `${headerHeight}px` }"
+            :style="{ height: `${topSpace}px` }"
           />
 
           <lingyun-list v-if="filteredTickets.length" plain>
@@ -55,7 +57,7 @@
               v-for="ticket in filteredTickets"
               :key="ticket.id"
               class="ticket-row"
-              :class="{ 'ticket-row--active': wide && ticket.id === selectedId }"
+              :class="{ 'ticket-row--active': isWide && ticket.id === selectedId }"
             >
               <lingyun-list-item
                 :title="ticket.title"
@@ -88,67 +90,63 @@
           <view class="list-bottom-spacer" />
         </scroll-view>
 
-        <view class="list-date" :class="{ 'list-date--wide': wide }">
+        <view class="list-date" :class="{ 'list-date--wide': isWide }">
           <lingyun-date-switcher
             v-model:mode="dateMode"
             :model-value="dateValue"
-            :fixed="!wide"
-            :safe-area="!wide"
+            :fixed="!isWide"
+            :safe-area="!isWide"
             limit="past"
             @update:model-value="onDateValue"
             @change="onDateChange"
           />
         </view>
       </view>
+    </template>
 
-      <!-- 宽屏右侧详情；窄屏走独立详情页 -->
-      <template v-if="wide">
-        <view class="split-divider" />
-        <view class="detail-pane">
-          <view class="detail-header">
-            <lingyun-toolbars
-              :class="{ 'pane-toolbar--pc': weixinPc }"
-              :fixed="false"
-              :show-back="false"
-              :show-trailing="false"
-              :show-window-controls="false"
-              :show-theme-switch="false"
-              title-style="title2LineLeft"
-              title="工单详情"
-              :subtitle="selectedTicket ? selectedTicket.id : '未选择工单'"
-              :glass-progress="detailGlass"
-            />
-          </view>
-          <scroll-view
-            class="detail-scroll"
-            scroll-y
-            :show-scrollbar="false"
-            :scroll-into-view="detailAnchor"
-            @scroll="onDetailScroll"
-          >
-            <view id="list-detail-top" class="detail-top-anchor" />
-            <view
-              class="detail-top-spacer"
-              :style="{ height: `${detailHeaderHeight}px` }"
-            />
-            <ticket-detail v-if="selectedTicket" :ticket="selectedTicket" />
-            <view v-else class="detail-empty">
-              <lingyun-empty title="选择一项工单" description="点左侧列表查看工单详情。" />
-            </view>
-          </scroll-view>
+    <!-- 宽屏右侧详情；窄屏走独立详情页 -->
+    <template #detail-header>
+      <lingyun-toolbars
+        :class="{ 'pane-toolbar--pc': weixinPc }"
+        :fixed="false"
+        :show-back="false"
+        :show-trailing="false"
+        :show-window-controls="false"
+        :show-theme-switch="false"
+        title-style="title2LineLeft"
+        title="工单详情"
+        :subtitle="selectedTicket ? selectedTicket.id : '未选择工单'"
+        :glass-progress="detailGlass"
+      />
+    </template>
+
+    <template #detail="{ topSpace }">
+      <scroll-view
+        class="detail-scroll"
+        scroll-y
+        :show-scrollbar="false"
+        :scroll-into-view="detailAnchor"
+        @scroll="onDetailScroll"
+      >
+        <view id="list-detail-top" class="detail-top-anchor" />
+        <view
+          class="detail-top-spacer"
+          :style="{ height: `${topSpace}px` }"
+        />
+        <ticket-detail v-if="selectedTicket" :ticket="selectedTicket" />
+        <view v-else class="detail-empty">
+          <lingyun-empty title="选择一项工单" description="点左侧列表查看工单详情。" />
         </view>
-      </template>
-    </view>
-  </lingyun-app-page>
+      </scroll-view>
+    </template>
+  </lingyun-split-layout>
 </template>
 
 <script setup lang="ts">
   import {
     computed,
-    getCurrentInstance,
     nextTick,
     onBeforeUnmount,
-    onMounted,
     ref,
     watch,
   } from 'vue'
@@ -177,23 +175,13 @@
 
   const reportScroll = useLingyunAppPageScroll()
 
-  /** 左右分栏门槛 900：iPad 竖屏 768 / 手机走单栏，详情开独立页；横屏 1024 起分栏 */
-  const SPLIT_MIN_WIDTH = 900
+  /** 分栏门槛 900 / 左栏宽度由 lingyun-split-layout 负责，这里只跟随 wide-change 做业务分支 */
+  const wide = ref(false)
 
-  function readWindowWidth(): number {
-    try {
-      const info =
-        typeof uni.getWindowInfo === 'function'
-          ? uni.getWindowInfo()
-          : uni.getSystemInfoSync()
-      return Number(info.windowWidth) || 0
-    } catch {
-      return 0
-    }
+  function onWideChange(value: boolean): void {
+    wide.value = value
   }
 
-  const windowWidth = ref(readWindowWidth())
-  const wide = computed(() => windowWidth.value >= SPLIT_MIN_WIDTH)
   /** 左侧导航是否停靠：导航停靠时不显示页面返回（iPad 竖屏 / 横屏） */
   const navDocked = computed(() => isLingyunWideScreen())
   /** 微信 PC 端没有系统状态栏 / 胶囊 / 底部安全区，按 Web 处理 */
@@ -224,63 +212,9 @@
     { immediate: true },
   )
 
-  /* ---------- 左栏浮动头部：量高度给列表做顶部占位，滚动时行从 toolbar 下穿过 ---------- */
-
-  const instance = getCurrentInstance()
-  const headerHeight = ref(0)
-  const detailHeaderHeight = ref(0)
-
-  function measurePaneHeader(): void {
-    const proxy = instance?.proxy
-    if (!proxy) return
-    const query = uni.createSelectorQuery().in(proxy)
-    query
-      .select('.pane-header')
-      .boundingClientRect((rect) => {
-        const box = Array.isArray(rect) ? rect[0] : rect
-        headerHeight.value = Number(box?.height) || 0
-      })
-    query
-      .select('.detail-header')
-      .boundingClientRect((rect) => {
-        const box = Array.isArray(rect) ? rect[0] : rect
-        detailHeaderHeight.value = Number(box?.height) || 0
-      })
-    query.exec()
-  }
-
-  function scheduleMeasure(): void {
-    nextTick(() => {
-      measurePaneHeader()
-    })
-  }
-
-  watch(wide, scheduleMeasure)
-
-  let resizeMeasureTimer: ReturnType<typeof setTimeout> | null = null
-
-  function handleWindowResize(res: {
-    size?: { windowWidth?: number }
-    windowWidth?: number
-  }): void {
-    const width =
-      Number(res?.size?.windowWidth) || Number(res?.windowWidth) || readWindowWidth()
-    if (width > 0) windowWidth.value = width
-    scheduleMeasure()
-  }
-
-  onMounted(() => {
-    scheduleMeasure()
-    /* toolbar 自身的布局同步晚一拍，再量一次兜底 */
-    resizeMeasureTimer = setTimeout(scheduleMeasure, 120)
-    uni.onWindowResize?.(handleWindowResize)
-  })
-
   onBeforeUnmount(() => {
-    if (resizeMeasureTimer) clearTimeout(resizeMeasureTimer)
     if (listAnchorTimer) clearTimeout(listAnchorTimer)
     if (detailAnchorTimer) clearTimeout(detailAnchorTimer)
-    uni.offWindowResize?.(handleWindowResize)
     pageHostState.hideToolbar = false
   })
 
@@ -288,9 +222,6 @@
 
   const searching = ref(false)
   const keyword = ref('')
-
-  /* 搜索模式切换可能改变 toolbar 高度，重新量一次占位 */
-  watch(searching, scheduleMeasure)
   const statusFilter = ref<StatusFilter>('all')
   const statusOptions: { key: StatusFilter; text: string }[] = [
     { key: 'all', text: '全部' },
@@ -462,23 +393,14 @@
 </script>
 
 <style lang="scss">
-  /*
-   * 页面根结构样式放在独立类上：H5 路由切换不会卸载页面样式，
-   * 若写在通用 .page 上会把 flex / 100vh 泄漏到其它用 .page 的页面。
-   */
-  .list-page {
-    display: flex;
-    flex-direction: row;
-    box-sizing: border-box;
-    height: 100vh;
-    min-height: 0;
-    padding: 0;
+  /* 窄屏整页就是左侧纯列表，页面壳背景也改 Primary，顶栏下不露分组渐变 */
+  .list-detail-page--narrow {
+    --lingyun-page-background: var(--lingyun-bg-primary, #ffffff);
   }
 
   /* #ifdef H5 */
   /* 网页没有系统状态栏：留白放进 toolbar 内部（chrome 盖住），避免上方透底 */
-  .pane-header .lingyun-toolbars,
-  .detail-header .lingyun-toolbars {
+  .ly-split-layout__header .lingyun-toolbars {
     padding-top: 12px;
   }
   /* #endif */
@@ -488,41 +410,26 @@
     padding-top: 12px;
   }
 
-  /* 左栏本身是一个独立页面：toolbar + 控件 + 纯列表 + 底部时间条 */
-  .list-pane {
-    position: relative;
-    flex: 1;
-    min-width: 0;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    box-sizing: border-box;
-    background: var(--lingyun-bg-primary, #ffffff);
-  }
-
-  /* 窄屏整页就是左侧纯列表，页面壳背景也改 Primary，顶栏下不露分组渐变 */
-  .list-detail-page--narrow {
-    --lingyun-page-background: var(--lingyun-bg-primary, #ffffff);
-  }
-
-  /* 宽屏左栏固定为手机逻辑宽度 375；暗黑下用 grouped-secondary（#1c1c1e）
-     与右侧黑色详情分层，选中行（页面底色 #000）仍能和详情无缝衔接 */
-  .list-page--wide .list-pane {
-    flex: 0 0 375px;
-    width: 375px;
-    background: var(--lingyun-bg-grouped-secondary, #ffffff);
-  }
-
   /*
-   * 浮动头部：toolbar（含状态分段行）盖在列表上方；
-   * 列表从下方穿过，滚动时 toolbar 的玻璃层覆盖整条 header。
+   * 左栏内容：绝对定位铺满 split-layout 的内容容器（小程序 slot 内容不参与 flex 拉伸）。
+   * 左栏本身是一个独立页面：toolbar + 控件 + 纯列表 + 底部时间条。
    */
-  .pane-header {
+  .list-pane-content {
     position: absolute;
     left: 0;
     top: 0;
     right: 0;
-    z-index: 4;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--lingyun-bg-primary, #ffffff);
+  }
+
+  /* 宽屏左栏用 grouped-secondary（浅色白 / 暗黑 #1c1c1e）与右侧详情分层 */
+  .list-pane-content--wide {
+    background: var(--lingyun-bg-grouped-secondary, #ffffff);
   }
 
   /* 纯列表：全宽平铺，不要悬浮卡片 */
@@ -530,6 +437,15 @@
     flex: 1;
     min-height: 0;
     height: 0;
+    box-sizing: border-box;
+  }
+
+  .detail-scroll {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
     box-sizing: border-box;
   }
 
@@ -564,43 +480,8 @@
     height: calc(108px + env(safe-area-inset-bottom));
   }
 
-  .detail-pane {
-    position: relative;
-    flex: 1;
-    min-width: 0;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* 右侧 toolbar 浮动在详情上方，详情内容从下方穿过 */
-  .detail-header {
-    position: absolute;
-    left: 0;
-    top: 0;
-    right: 0;
-    z-index: 4;
-  }
-
-  .detail-scroll {
-    flex: 1;
-    min-height: 0;
-    height: 0;
-    box-sizing: border-box;
-  }
-
   .detail-top-spacer {
     width: 100%;
-  }
-
-  .split-divider {
-    flex: 0 0 1px;
-    width: 1px;
-    height: 100%;
-    /* 透明：缝隙透出页面 grouped 底色——白色列表旁自然成线，选中行同为 grouped 底色时无缝 */
-    background: transparent;
-    transform: scaleX(0.5);
-    transform-origin: center;
   }
 
   .detail-empty {

@@ -123,6 +123,7 @@ const componentSidebar = [
     text: '页面与导航',
     children: [
       { text: '页面壳', link: '/components/app-page.html' },
+      { text: '分栏布局', link: '/components/split-layout.html' },
       { text: '窄屏', link: '/components/mobile.html' },
       { text: '平板与电脑', link: '/components/pc.html' },
       { text: '宽屏目录', link: '/components/page-nav.html' },
