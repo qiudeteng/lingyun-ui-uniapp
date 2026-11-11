@@ -436,6 +436,11 @@ export const routes: RouteConfig[] = [
 		meta: { title: '订货单详情' }
 	},
 	{
+		path: '/pages/demo/purchase-order-split',
+		name: 'pagesDemoPurchaseOrderSplit',
+		meta: { title: '订货单列表与详情' }
+	},
+	{
 		path: '/pages/demo/purchase-order-list',
 		name: 'pagesDemoPurchaseOrderList',
 		meta: { title: '订货单列表' }

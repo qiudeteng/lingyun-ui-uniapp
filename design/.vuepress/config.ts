@@ -144,6 +144,7 @@ export default defineUserConfig({
           { text: 'demo / order-goods', link: '/pages/demo/order-goods.md' },
           { text: 'demo / purchase-order-list', link: '/pages/demo/purchase-order-list.md' },
           { text: 'demo / purchase-order-detail', link: '/pages/demo/purchase-order-detail.md' },
+          { text: 'demo / purchase-order-split', link: '/pages/demo/purchase-order-split.md' },
           { text: 'demo / filter-menu', link: '/pages/demo/filter-menu.md' },
           { text: 'demo / toolbar-search', link: '/pages/demo/toolbar-search.md' },
           { text: 'demo / toolbar-segments', link: '/pages/demo/toolbar-segments.md' },

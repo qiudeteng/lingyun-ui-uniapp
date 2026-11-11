@@ -20,6 +20,7 @@ const NAV_META: Record<string, NavMeta> = {
   '/pages/demo/order-goods': { title: '点单加购', icon: 'cart', note: '标准页 · 分类联动 / 购物车' },
   '/pages/demo/purchase-order-list': { title: '订货单列表', icon: 'list', note: '标准页 · 状态筛选 / 多批配送' },
   '/pages/demo/purchase-order-detail': { title: '订货单详情', icon: 'list', note: '标准页 · 状态 / 商品 / 金额 / 物流' },
+  '/pages/demo/purchase-order-split': { title: '订货单列表与详情', icon: 'list', note: '标准页 · 宽屏左右分栏 / 窄屏独立详情' },
   '/pages/demo/records': { title: '记录列表', icon: 'list', note: '列表 · 筛选 · 搜索 · 时间选择' },
   '/pages/demo/plain-list': { title: '纯列表', icon: 'list', note: '全宽平铺 · 搜索 / 筛选 / 底部时间' },
   '/pages/demo/list-detail': { title: '列表与详情', icon: 'bars', note: '宽屏左右分栏 · 手机独立详情页' },
@@ -316,6 +317,13 @@ const PAGE_CHILDREN: LingyunPageTabChild[] = [
       'list',
       '/pages/demo/purchase-order-detail',
       '标准页 · 子订货单 / 物流 / 金额',
+    ),
+    pageChild(
+      'page-purchase-order-split',
+      '订货单列表与详情',
+      'list',
+      '/pages/demo/purchase-order-split',
+      '标准页 · 宽屏分栏 / 窄屏详情页',
     ),
     pageChild(
       'page-records',

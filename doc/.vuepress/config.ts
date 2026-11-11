@@ -41,6 +41,7 @@ const guideSidebar = [
       { text: '接入', link: '/guide/start.html' },
       { text: '屏幕', link: '/guide/screen.html' },
       { text: '反馈', link: '/guide/feedback.html' },
+      { text: '分栏页面（列表 + 详情）', link: '/guide/split-pages.html' },
     ],
   },
 ]

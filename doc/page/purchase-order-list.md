@@ -133,6 +133,7 @@ interface LingyunPurchaseOrderListOrder {
 | `filter-change` | `{ key, filter }` | 切换筛选 Tab |
 | `update:filter` | `key` | 配合 `v-model:filter` |
 | `load-more` | — | 滚动到底部且 `hasMore` 时抛出 |
+| `scroll` | `scrollTop` | 列表内层滚动；分栏模式下宿主用它驱动工具栏玻璃进度 |
 | `back` | — | 点返回；`autoBack=true` 时默认返回上一页 |
 
 ## 筛选与默认操作
@@ -151,3 +152,25 @@ interface LingyunPurchaseOrderListOrder {
 - 宽屏内容最大宽度 720px、居中，保留应用导航列（可传 `:show-nav="false"`）。
 - 订货单数据全部走 props；接口、筛选请求、支付 / 确认收货 / 跳转等业务放在路由页。
 - 所有尺寸 px；微信小程序可编译。
+
+## 分栏复用
+
+标准页已拆成「页面壳 + 内容面板」：内容面板在同目录 `lingyun-purchase-order-list-panel.vue`。需要做列表 + 详情分栏时直接引入面板自行提供 toolbar / 布局即可（参考 demo `/pages/demo/purchase-order-split`）：
+
+```vue
+<lingyun-purchase-order-list-panel
+  :orders="orders"
+  :top-space="headerHeight"
+  @purchase-order-click="onSelect"
+  @scroll="onScroll"
+/>
+```
+
+| 面板属性 / 事件 | 说明 |
+| --- | --- |
+| `topSpace` | 顶部占位高度 px（浮层 toolbar 的高度）；0 用页面壳的 `--lingyun-app-page-bar` |
+| `full` | full 宽度模式：内容区不留左右留白、卡片通宽直角（上下间距保留；对齐 `lingyun-section` 的 full，用于分栏左栏这类窄栏） |
+| `selectedKey` | 分栏选中项 key（`order.key \|\| order.number`）；空串不显示选中态，选中卡片用页面底色（`--lingyun-bg-grouped-primary`）填充，对齐列表与详情 demo |
+| `scroll` | `scrollTop`，供宿主驱动工具栏玻璃进度 |
+
+其余数据 / 事件与标准页一致；标准页行为不受影响。
