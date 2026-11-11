@@ -79,6 +79,8 @@ registerLingyunPageViews(
             '/pages/demo/workbench',
             /* 点单加购是固定高度 + 内层滚动页，宿主嵌入会拿不到确定高度，保持整页打开 */
             '/pages/demo/order-goods',
+            /* 订货单分栏同样是固定高度 + 双栏内层滚动页 */
+            '/pages/demo/purchase-order-split',
           ].includes(item.url),
       )
       .map((item) => ({

@@ -218,6 +218,7 @@ interface LingyunPurchaseOrderDetailAction {
 | `sub-purchase-order-click` | `{ order, subOrder }` | 多批配送时点子订货单行；由页面打开子订货单详情 |
 | `copy` | `{ text }` | 点复制订货单号；复制尝试完成后抛出，业务可自己提示 |
 | `payment-timeout` | `{ order }` | 待付款倒计时到 0；业务应把订货单更新为已取消 |
+| `scroll` | `scrollTop` | 内层滚动；分栏模式下宿主用它驱动工具栏玻璃进度 |
 
 ## 插槽
 
@@ -228,8 +229,27 @@ interface LingyunPurchaseOrderDetailAction {
 ## 接入说明
 
 - 标准页内部用 `lingyun-app-page`，整页固定高度、内容区自管滚动；不要再外层包 `scroll-view`。
-- 底部操作栏是悬浮玻璃胶囊（左右 12、底部 8 + 安全区、高 62、圆角 31、`lingyun-glass-control`），在滚动区之外；左侧显示需付款 / 实付款金额，右侧操作按钮。待发货 / 待收货 / 退款中不显示底部操作栏；待付款保留「取消订货单 / 去支付」，待审核 / 已完成 / 已取消显示；没有操作时也不显示。
+- 底部操作栏是悬浮玻璃胶囊（左右 12、底部 8 + 安全区、高 62、圆角 31、`lingyun-glass-control`），绝对定位悬浮在滚动内容上方（不再占一条实底栏，内容从下方穿过、尾部留出胶囊高度）；左侧显示需付款 / 实付款金额，右侧操作按钮。待发货 / 待收货 / 退款中不显示底部操作栏；待付款保留「取消订货单 / 去支付」，待审核 / 已完成 / 已取消显示；没有操作时也不显示。
 - 内层 `scroll-view` 会把滚动位置上报 `lingyun-app-page`，顶栏默认透明、滚动后渐显 Liquid Glass。
 - 宽屏内容最大宽度 720px、居中，保留应用导航列（可传 `:show-nav="false"`）。
 - 订货单状态色、商品图、备注等全部来自 props；接口请求与按钮业务放在路由页。
 - 所有尺寸 px；微信小程序可编译。
+
+## 分栏复用
+
+标准页已拆成「页面壳 + 内容面板」：内容面板在同目录 `lingyun-purchase-order-detail-panel.vue`。左右分栏时直接把面板放进右侧栏、toolbar 由宿主提供即可（参考 demo `/pages/demo/purchase-order-split`）：
+
+```vue
+<lingyun-purchase-order-detail-panel
+  :order="order"
+  :top-space="headerHeight"
+  @scroll="onScroll"
+/>
+```
+
+| 面板属性 / 事件 | 说明 |
+| --- | --- |
+| `topSpace` | 顶部占位高度 px（浮层 toolbar 的高度）；0 用页面壳的 `--lingyun-app-page-bar` |
+| `scroll` | `scrollTop`，供宿主驱动工具栏玻璃进度 |
+
+其余数据 / 事件与标准页一致；标准页行为不受影响。

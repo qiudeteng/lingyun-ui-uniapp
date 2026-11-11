@@ -1,3 +1,7 @@
+## 未发布
+- `lingyun-purchase-order-list` / `lingyun-purchase-order-detail` 面板内层滚动改用 `flex: 1 + height: 0` 确定高度（与列表与详情 demo 一致）；分栏 demo 同时给两个面板组件的**宿主节点**（`.po-panel`）设 `flex: 1 + height: 0`——微信小程序里自定义组件宿主默认高度随内容，面板的 `height: 100%` 撑不起高度链，会把整页顶出滚动、toolbar 不固定。已在微信开发者工具里验证：三个订货单页面 `pageScrollTo` 后 `scrollTop` 均为 0，内层 `scroll-view` 高度 = 视口高度、独立滚动。
+- `lingyun-purchase-order-detail` 底部操作栏改为悬浮玻璃胶囊：绝对定位浮在滚动内容上方（不再占一条实底栏，内容从下方穿过，内容尾部留出胶囊高度），玻璃能透出滚动内容。
+- `lingyun-purchase-order-list` / `lingyun-purchase-order-detail` 拆出内容面板 `lingyun-purchase-order-list-panel` / `lingyun-purchase-order-detail-panel`（同目录）：标准页 = 页面壳 + 面板，对外 API 与行为不变；面板新增 `topSpace`（浮层 toolbar 高度占位）与 `scroll` 事件，供「列表 + 详情」分栏 demo 直接复用，不复制内容；列表面板新增 `full` 宽度模式（内容区不留左右留白、卡片通宽直角，上下间距保留）与 `selectedKey` 选中态（页面底色填充，对齐列表与详情 demo）。
 ## 1.1.6（2026-11-10）
 - `lingyun-order-goods` 宽屏（≥690）布局优化：左侧分类栏与右侧商品列表各变为悬浮卡片（圆角 18、与店铺卡片同款投影，页面外边距 12、卡片间距 10），分类选中胶囊在卡片内左右内缩 4；商品列表按列表实际宽度自动分 1–4 列（每列约 300px 起），分组标题通栏，商品项变为圆角小卡片（浅色 `grouped-primary` / 暗黑 `bg-tertiary` 底色、去掉行分割线、列间距 10）；卡片底部停在悬浮购物车上方，与购物车间距 12（和页面上方间距一致），不再被购物车盖住圆角；窗口缩放与进入 / 退出搜索时自动重算列数并重测滚动联动位置。窄屏布局不变。
 - `lingyun-order-goods-variant-sheet` 规格 / 属性选择器宽屏优化：Sheet 沿用 `lingyun-sheets` 默认宽度（宽屏面板上限 936，与商品详情弹层一致），图片选项卡片按面板可用宽度自动计算一行的个数（每列至少约 170px，窄屏 3 列、宽屏 4~5 列），卡片随列数变小、最后一行左对齐，窗口缩放实时重算；纯规格列表的规格行在宽屏下一行两个、左对齐，每行改为独立圆角卡片（无行分割线，避免首行有线、末行没线），面板不够宽时自动回到一行一个并恢复行分割线。

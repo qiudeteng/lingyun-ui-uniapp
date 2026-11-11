@@ -505,10 +505,12 @@
     --lingyun-page-background: var(--lingyun-bg-primary, #ffffff);
   }
 
-  /* 宽屏左栏固定为手机逻辑宽度 375 */
+  /* 宽屏左栏固定为手机逻辑宽度 375；暗黑下用 grouped-secondary（#1c1c1e）
+     与右侧黑色详情分层，选中行（页面底色 #000）仍能和详情无缝衔接 */
   .list-page--wide .list-pane {
     flex: 0 0 375px;
     width: 375px;
+    background: var(--lingyun-bg-grouped-secondary, #ffffff);
   }
 
   /*

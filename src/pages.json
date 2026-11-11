@@ -603,6 +603,13 @@
 			}
 		},
 		{
+			"path": "pages/demo/purchase-order-split",
+			"style": {
+				"navigationBarTitleText": "订货单列表与详情",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/purchase-order-list",
 			"style": {
 				"navigationBarTitleText": "订货单列表",
