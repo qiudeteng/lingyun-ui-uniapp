@@ -3,6 +3,7 @@
     title="分栏布局"
     :split-at="900"
     :list-width="375"
+    :detail-open="coverOpen"
     @layout-change="onLayoutChange"
   >
     <template #list-header>
@@ -98,9 +99,15 @@
       </view>
     </template>
 
-    <!-- 右栏：详情（仅宽屏渲染） -->
+    <!-- 右栏：宽屏分栏；中屏在内容区滑入 -->
     <template #detail-header>
-      <lingyun-split-toolbar title="条目详情" :glass-progress="detailGlass" />
+      <lingyun-split-toolbar
+        title="条目详情"
+        :show-back="cover"
+        :avoid-capsule="cover"
+        :glass-progress="detailGlass"
+        @back="closeCover"
+      />
     </template>
 
     <template #detail>
@@ -169,6 +176,8 @@
   })
 
   const wide = ref(false)
+  const cover = ref(false)
+  const coverOpen = ref(false)
   const listTopSpace = ref(0)
   const detailTopSpace = ref(0)
   const listGlass = ref(0)
@@ -176,8 +185,14 @@
 
   function onLayoutChange(value: LingyunSplitLayoutChange): void {
     wide.value = value.wide
+    cover.value = value.cover
+    if (value.wide) coverOpen.value = false
     listTopSpace.value = value.listTopSpace
     detailTopSpace.value = value.detailTopSpace
+  }
+
+  function closeCover(): void {
+    coverOpen.value = false
   }
 
   /** 左侧导航停靠时不显示返回 */
@@ -270,11 +285,13 @@
   )
 
   function onItemTap(item: DemoItem): void {
-    if (wide.value) {
-      selectedId.value = item.id
+    selectedId.value = item.id
+    if (wide.value) return
+    if (cover.value) {
+      coverOpen.value = true
       return
     }
-    uni.showToast({ title: '窄屏只渲染左栏，宽屏查看右侧详情', icon: 'none' })
+    uni.showToast({ title: '手机宽度打开独立详情页', icon: 'none' })
   }
 
   function onListScroll(event: { detail?: { scrollTop?: number } }): void {

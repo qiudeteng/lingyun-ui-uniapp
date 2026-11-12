@@ -3,6 +3,7 @@
     title="列表与详情"
     :split-at="900"
     :list-width="375"
+    :detail-open="coverOpen"
     @layout-change="onLayoutChange"
   >
     <template #list-header>
@@ -81,7 +82,7 @@
           <lingyun-date-switcher
             v-model:mode="dateMode"
             :model-value="dateValue"
-            :fixed="!wide"
+            :fixed="!wide && !coverOpen"
             :safe-area="!wide"
             limit="past"
             @update:model-value="onDateValue"
@@ -91,9 +92,15 @@
       </view>
     </template>
 
-    <!-- 宽屏右侧详情；窄屏走独立详情页 -->
+    <!-- 宽屏右侧详情；中屏在内容区滑入；手机走独立详情页 -->
     <template #detail-header>
-      <lingyun-split-toolbar title="工单详情" :glass-progress="detailGlass" />
+      <lingyun-split-toolbar
+        title="工单详情"
+        :show-back="cover"
+        :avoid-capsule="cover"
+        :glass-progress="detailGlass"
+        @back="closeCover"
+      />
     </template>
 
     <template #detail>
@@ -153,11 +160,16 @@
 
   /** 分栏门槛 900 / 左栏宽度 / 头部量高由 lingyun-split-layout 负责，这里只跟随 layout-change */
   const wide = ref(false)
+  /** 有左侧导航、尚未分栏：详情在当前页滑入，不新开页面 */
+  const cover = ref(false)
+  const coverOpen = ref(false)
   const listTopSpace = ref(0)
   const detailTopSpace = ref(0)
 
   function onLayoutChange(value: LingyunSplitLayoutChange): void {
     wide.value = value.wide
+    cover.value = value.cover
+    if (value.wide) coverOpen.value = false
     listTopSpace.value = value.listTopSpace
     detailTopSpace.value = value.detailTopSpace
   }
@@ -332,9 +344,19 @@
     { immediate: true },
   )
 
+  function closeCover(): void {
+    coverOpen.value = false
+  }
+
   function onTicketTap(ticket: ListDetailTicket): void {
     if (wide.value) {
       selectedId.value = ticket.id
+      scrollDetailTop()
+      return
+    }
+    if (cover.value) {
+      selectedId.value = ticket.id
+      coverOpen.value = true
       scrollDetailTop()
       return
     }

@@ -3,6 +3,7 @@
     title="订货单"
     :split-at="900"
     :list-width="375"
+    :detail-open="coverOpen"
     @layout-change="onLayoutChange"
   >
     <template #list-header>
@@ -38,15 +39,21 @@
       />
     </template>
 
-    <!-- 宽屏右侧详情；窄屏走独立详情页 -->
+    <!-- 宽屏右侧详情；中屏在内容区滑入；手机走独立详情页 -->
     <template #detail-header>
-      <lingyun-split-toolbar title="订货单详情" :glass-progress="detailGlass" />
+      <lingyun-split-toolbar
+        :title="subKey ? '子订货单详情' : '订货单详情'"
+        :show-back="cover"
+        :avoid-capsule="cover"
+        :glass-progress="detailGlass"
+        @back="onDetailBack"
+      />
     </template>
 
     <template #detail>
       <lingyun-purchase-order-detail-panel
         class="lingyun-split-layout-pane"
-        :order="currentOrder"
+        :order="shownOrder"
         empty-text="选择左侧订货单查看详情"
         :top-space="detailTopSpace"
         @scroll="onDetailScroll"
@@ -67,6 +74,7 @@
   import { demoPurchaseOrders } from './purchaseOrderDemo'
   import LingyunPurchaseOrderListPanel from '@/uni_modules/lingyun-ui-page/components/lingyun-purchase-order-list/lingyun-purchase-order-list-panel.vue'
   import LingyunPurchaseOrderDetailPanel from '@/uni_modules/lingyun-ui-page/components/lingyun-purchase-order-detail/lingyun-purchase-order-detail-panel.vue'
+  import { buildLingyunPurchaseOrderSubDetail } from '@/uni_modules/lingyun-ui-page/components/lingyun-purchase-order-detail/subPurchaseOrder'
   import type {
     LingyunPurchaseOrderDetailCopyPayload,
     LingyunPurchaseOrderDetailItemPayload,
@@ -83,11 +91,21 @@
 
   /** 分栏门槛 900 / 左栏宽度 / 头部量高由 lingyun-split-layout 负责，这里只跟随 layout-change */
   const wide = ref(false)
+  /** 有左侧导航、尚未分栏：详情在当前页滑入，不新开页面 */
+  const cover = ref(false)
+  const coverOpen = ref(false)
+  /** 中屏盖层里正在看的子订货单；空则是父单 */
+  const subKey = ref('')
   const listTopSpace = ref(0)
   const detailTopSpace = ref(0)
 
   function onLayoutChange(value: LingyunSplitLayoutChange): void {
     wide.value = value.wide
+    cover.value = value.cover
+    if (value.wide) {
+      coverOpen.value = false
+      subKey.value = ''
+    }
     listTopSpace.value = value.listTopSpace
     detailTopSpace.value = value.detailTopSpace
   }
@@ -186,6 +204,12 @@
   const currentOrder = computed<LingyunPurchaseOrderDetailOrder | null>(
     () => visibleOrders.value.find((order) => order.number === selectedNumber.value) || null,
   )
+  const shownOrder = computed<LingyunPurchaseOrderDetailOrder | null>(() => {
+    const order = currentOrder.value
+    if (!order || !subKey.value) return order
+    const sub = (order.subOrders || []).find((item) => item.key === subKey.value)
+    return sub ? buildLingyunPurchaseOrderSubDetail(order, sub) : order
+  })
 
   /* 默认选中结果第一条；条件变化后选中项被过滤掉时同步换第一条 */
   watch(
@@ -198,19 +222,40 @@
     { immediate: true },
   )
 
-  /** 宽屏切右栏（面板换单自动回顶），窄屏进独立详情页 */
+  /** 宽屏切右栏；中屏在内容区滑入；手机进独立详情页 */
   function onOrderClick(payload: LingyunPurchaseOrderListOrderPayload): void {
     if (wide.value) {
       selectedNumber.value = payload.order.number
+      return
+    }
+    if (cover.value) {
+      selectedNumber.value = payload.order.number
+      subKey.value = ''
+      coverOpen.value = true
       return
     }
     uni.navigateTo({ url: `${DETAIL_URL}?number=${encodeURIComponent(payload.order.number)}` })
   }
 
   function onSubOrderClick(payload: LingyunPurchaseOrderDetailSubOrderPayload): void {
+    if (!wide.value && cover.value) {
+      selectedNumber.value = payload.order.number
+      subKey.value = payload.subOrder.key
+      coverOpen.value = true
+      return
+    }
     uni.navigateTo({
       url: `${DETAIL_URL}?number=${encodeURIComponent(payload.order.number)}&sub=${encodeURIComponent(payload.subOrder.key)}`,
     })
+  }
+
+  /** 中屏盖层：子单先回到父单，父单再滑出 */
+  function onDetailBack(): void {
+    if (subKey.value) {
+      subKey.value = ''
+      return
+    }
+    coverOpen.value = false
   }
 
   /** 窄屏、非宿主时显示返回：回到目录 */

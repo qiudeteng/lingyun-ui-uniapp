@@ -20,7 +20,7 @@ lingyun-app-page（show-toolbar=false、body-scroll=false、show-tabbar=false）
 
 > 用 `lingyun-split-layout` 时以上结构全部由组件提供；两栏 toolbar 用配套的 **`lingyun-split-toolbar`** 放进 `list-header` / `detail-header` 插槽，页面只传标题 / 搜索 / 分段等业务配置，**不要直接写 `lingyun-toolbars`，也不要设置 `title-style` 等展示属性**。下面的模板用于理解组件内部或手写分栏的场景。
 
-分栏门槛：窄屏 **< 900** 单栏 + 点行进独立详情页；≥ 900 分栏（与 `list-detail` 一致）。窗口宽度变化用 `uni.onWindowResize` 更新，`wide` 为 computed。
+分栏门槛：手机 **< 690** 单栏 + 点行进独立详情页；中屏 **690–899**（左侧导航已出现）详情在当前页内容区滑入，导航不参与动画；**≥ 900** 左右分栏。窗口宽度变化用 `uni.onWindowResize` 更新。
 
 ## 2. 必踩的坑（按出现频率排序）
 

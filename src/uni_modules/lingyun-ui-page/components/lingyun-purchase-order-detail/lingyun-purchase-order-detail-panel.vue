@@ -137,12 +137,13 @@
                   :key="item.key"
                   class="lingyun-purchase-order-detail__sub-thumb"
                 >
-                  <image
+                  <lingyun-image
                     v-if="item.image"
-                    class="lingyun-purchase-order-detail__sub-thumb-img"
                     :src="item.image"
                     mode="aspectFill"
-                    lazy-load
+                    :width="52"
+                    :height="52"
+                    :radius="10"
                   />
                   <text v-else class="lingyun-purchase-order-detail__sub-thumb-fallback">
                     {{ firstChar(item.name) }}
@@ -207,12 +208,13 @@
                     :key="item.key"
                     class="lingyun-purchase-order-detail__items-thumb"
                   >
-                    <image
+                    <lingyun-image
                       v-if="item.image"
-                      class="lingyun-purchase-order-detail__items-thumb-img"
                       :src="item.image"
                       mode="aspectFill"
-                      lazy-load
+                      :width="52"
+                      :height="52"
+                      :radius="10"
                     />
                     <text v-else class="lingyun-purchase-order-detail__items-thumb-fallback">
                       {{ firstChar(item.name) }}
@@ -239,12 +241,13 @@
                 @click="onItemClick(item, index)"
               >
                 <view class="lingyun-purchase-order-detail__item-image">
-                  <image
+                  <lingyun-image
                     v-if="item.image"
-                    class="lingyun-purchase-order-detail__item-image-img"
                     :src="item.image"
                     mode="aspectFill"
-                    lazy-load
+                    :width="72"
+                    :height="72"
+                    :radius="12"
                   />
                   <text v-else class="lingyun-purchase-order-detail__item-image-fallback">
                     {{ firstChar(item.name) }}
@@ -1506,12 +1509,6 @@ export default defineComponent({
   background-color: var(--lingyun-fill-secondary, #{$lingyun-fill-secondary});
 }
 
-.lingyun-purchase-order-detail__sub-thumb-img {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
 .lingyun-purchase-order-detail__sub-thumb-fallback {
   font-size: 20px;
   font-weight: 600;
@@ -1585,12 +1582,6 @@ export default defineComponent({
   background-color: var(--lingyun-fill-secondary, #{$lingyun-fill-secondary});
 }
 
-.lingyun-purchase-order-detail__items-thumb-img {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
 .lingyun-purchase-order-detail__items-thumb-fallback {
   font-size: 20px;
   font-weight: 600;
@@ -1658,12 +1649,6 @@ export default defineComponent({
   overflow: hidden;
   border-radius: 12px;
   background-color: var(--lingyun-fill-secondary, #{$lingyun-fill-secondary});
-}
-
-.lingyun-purchase-order-detail__item-image-img {
-  display: block;
-  width: 100%;
-  height: 100%;
 }
 
 .lingyun-purchase-order-detail__item-image-fallback {

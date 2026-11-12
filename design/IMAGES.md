@@ -94,7 +94,7 @@
 | `width` / `height` | — | 显式宽高 |
 | `radius` | `2xl` | 仅 rounded。`2xl` 为 26px |
 | `mode` | `aspectFill` | 拉伸；可用别名 |
-| `lazy` / `lazyLoad` | `true` | 懒加载 |
+| `lazy` / `lazyLoad` | `true` | 懒加载。小程序用 `image` 的 `lazy-load`（`scroll-view` 内也生效）；H5 的 `image` 会忽略该属性，组件改为进视口前不挂 `src` |
 | `showLoading` | `true` | 加载中显示扫光占位 |
 | `errorSrc` | `''` | 失败替换图 |
 | `preview` | `false` | 点击预览 |

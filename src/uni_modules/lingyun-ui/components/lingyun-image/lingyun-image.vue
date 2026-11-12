@@ -139,6 +139,12 @@ export default defineComponent({
       loaded: false,
       failed: false,
       useErrorSrc: false,
+      /**
+       * 小程序默认 true：src 照常挂上，由 image 的 lazy-load 在滚进视口（含 scroll-view）时再拉取。
+       * H5 在 created 里按 lazy 改成 false，等 IntersectionObserver 进视口再挂 src。
+       */
+      inView: true,
+      _lazyObserver: null as IntersectionObserver | null,
     }
   },
   computed: {
@@ -212,6 +218,8 @@ export default defineComponent({
     showImage() {
       if (!this.displaySrc) return false
       if (this.failed) return false
+      /* H5 的 image 不理会 lazy-load，未进视口前不挂 src；小程序仍交给原生 lazy-load */
+      if (this.resolvedLazy && !this.inView) return false
       return true
     },
     showPlaceholderLayer() {
@@ -250,8 +258,61 @@ export default defineComponent({
     src() {
       this.resetState()
     },
+    resolvedLazy() {
+      this.bindLazy()
+    },
+  },
+  created() {
+    // #ifdef H5
+    if (this.resolvedLazy) this.inView = false
+    // #endif
+  },
+  mounted() {
+    this.bindLazy()
+  },
+  beforeUnmount() {
+    this.unbindLazy()
   },
   methods: {
+    bindLazy(): void {
+      // #ifndef H5
+      this.inView = true
+      // #endif
+      // #ifdef H5
+      this.unbindLazy()
+      if (!this.resolvedLazy) {
+        this.inView = true
+        return
+      }
+      this.inView = false
+      this.$nextTick(() => {
+        const el = this.$el as Element | undefined
+        if (!el || typeof IntersectionObserver === 'undefined') {
+          this.inView = true
+          return
+        }
+        const observer = new IntersectionObserver(
+          (entries) => {
+            if (!entries.some((entry) => entry.isIntersecting)) return
+            this.inView = true
+            this.unbindLazy()
+          },
+          { root: null, rootMargin: '200px 0px', threshold: 0.01 },
+        )
+        observer.observe(el)
+        this._lazyObserver = observer
+      })
+      // #endif
+    },
+    unbindLazy(): void {
+      // #ifdef H5
+      const observer = this._lazyObserver
+      if (observer) {
+        observer.disconnect()
+        this._lazyObserver = null
+      }
+      // #endif
+    },
     resetState() {
       this.loaded = false
       this.failed = false

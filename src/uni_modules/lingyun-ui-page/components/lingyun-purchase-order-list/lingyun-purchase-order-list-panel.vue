@@ -63,12 +63,13 @@
                   :key="item.key"
                   class="lingyun-purchase-order-list__thumb"
                 >
-                  <image
+                  <lingyun-image
                     v-if="item.image"
-                    class="lingyun-purchase-order-list__thumb-img"
                     :src="item.image"
                     mode="aspectFill"
-                    lazy-load
+                    :width="52"
+                    :height="52"
+                    :radius="10"
                   />
                   <text v-else class="lingyun-purchase-order-list__thumb-fallback">
                     {{ firstChar(item.name) }}
@@ -604,12 +605,6 @@ export default defineComponent({
   overflow: hidden;
   border-radius: 10px;
   background-color: var(--lingyun-fill-secondary, #{$lingyun-fill-secondary});
-}
-
-.lingyun-purchase-order-list__thumb-img {
-  display: block;
-  width: 100%;
-  height: 100%;
 }
 
 .lingyun-purchase-order-list__thumb-fallback {

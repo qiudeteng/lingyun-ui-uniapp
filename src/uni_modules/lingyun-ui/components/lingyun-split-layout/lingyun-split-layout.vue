@@ -20,18 +20,23 @@
         </view>
       </view>
 
-      <!-- 宽屏右侧详情；窄屏不渲染，由业务在点行时打开独立详情页 -->
-      <template v-if="wide">
-        <view class="ly-split-layout__divider" />
-        <view class="ly-split-layout__pane ly-split-layout__pane--detail">
-          <view class="ly-split-layout__header ly-split-layout__header--detail">
-            <slot name="detail-header" :wide="wide" :top-space="detailHeaderHeight" />
-          </view>
-          <view class="ly-split-layout__content">
-            <slot name="detail" :wide="wide" :top-space="detailHeaderHeight" />
-          </view>
+      <!-- 宽屏右侧详情；中屏（有左侧导航、未分栏）由 detailOpen 在内容区滑入，不新开页面 -->
+      <view v-if="wide" class="ly-split-layout__divider" />
+      <view
+        v-if="showDetail"
+        class="ly-split-layout__pane ly-split-layout__pane--detail"
+        :class="{
+          'ly-split-layout__pane--cover': !wide,
+          'ly-split-layout__pane--cover-in': !wide && coverIn,
+        }"
+      >
+        <view class="ly-split-layout__header ly-split-layout__header--detail">
+          <slot name="detail-header" :wide="wide" :top-space="detailHeaderHeight" />
         </view>
-      </template>
+        <view class="ly-split-layout__content">
+          <slot name="detail" :wide="wide" :top-space="detailHeaderHeight" />
+        </view>
+      </view>
     </view>
   </lingyun-app-page>
 </template>
@@ -39,7 +44,10 @@
 <script lang="ts">
 /**
  * lingyun-split-layout
- * 列表 + 详情分栏布局：≥ splitAt 左右分栏（左栏固定 listWidth），窄屏只显示左栏。
+ * 列表 + 详情分栏布局：≥ splitAt 左右分栏（左栏固定 listWidth）。
+ * 手机（< 690）只显示左栏，点行由业务打开独立详情页。
+ * 中屏（≥ 690 且 < splitAt，左侧导航已出现）不要再 navigateTo：
+ * 把 detailOpen 设为 true，详情只在内容区滑入滑出，左侧导航留在原位。
  * 左右栏各自的 toolbar 放在 header 插槽里（绝对定位浮在栏顶），布局负责量高并通过
  * layout-change 事件把 wide / 两栏 topSpace 交给页面（面板的 top-space / 自绘占位）。
  * 页面用普通具名插槽，不要解构作用域插槽参数：微信小程序里页面重渲染会清掉作用域插槽内
@@ -47,7 +55,11 @@
  * 使用约定见 doc/guide/split-pages.md。
  */
 import { defineComponent } from 'vue'
+import { LINGYUN_SCREEN_PAD_MIN } from '../../utils/screenResolve'
 import type { LingyunSplitLayoutChange } from './types'
+
+/** 与 iOS 推入接近的时长；收起后再卸掉节点 */
+const COVER_MS = 320
 
 function readWindowWidth(): number {
   try {
@@ -74,6 +86,11 @@ export default defineComponent({
     showNav: { type: Boolean, default: true },
     /** 透传 app-page：是否显示底部 Tab（分栏页一般关掉） */
     showTabbar: { type: Boolean, default: false },
+    /**
+     * 中屏详情是否打开。仅 cover（有左侧导航、未分栏）时生效：
+     * 详情盖住内容区并横向滑入，不新开页面，左侧导航不参与动画。
+     */
+    detailOpen: { type: Boolean, default: false },
   },
   emits: ['wide-change', 'layout-change', 'ready'],
   data() {
@@ -81,13 +98,25 @@ export default defineComponent({
       windowWidth: 0,
       listHeaderHeight: 0,
       detailHeaderHeight: 0,
+      /** 中屏详情节点是否挂上（滑出动画结束后才卸） */
+      coverMounted: false,
+      /** 中屏详情是否已滑到内容区 */
+      coverIn: false,
       _measureTimer: null as ReturnType<typeof setTimeout> | null,
+      _coverTimer: null as ReturnType<typeof setTimeout> | null,
       _onWindowResize: null as (() => void) | null,
     }
   },
   computed: {
     wide(): boolean {
       return this.windowWidth >= Number(this.splitAt || 900)
+    },
+    /** 左侧导航已出现、尚未分栏：详情在当前页滑入 */
+    cover(): boolean {
+      return this.windowWidth >= LINGYUN_SCREEN_PAD_MIN && !this.wide
+    },
+    showDetail(): boolean {
+      return this.wide || this.coverMounted
     },
     listPaneStyle(): Record<string, string> {
       if (!this.wide) return {}
@@ -100,6 +129,7 @@ export default defineComponent({
     layoutState(): LingyunSplitLayoutChange {
       return {
         wide: this.wide,
+        cover: this.cover,
         listTopSpace: this.listHeaderHeight,
         detailTopSpace: this.detailHeaderHeight,
       }
@@ -108,7 +138,14 @@ export default defineComponent({
   watch: {
     wide(value: boolean) {
       this.$emit('wide-change', value)
+      this.syncCover()
       this.scheduleMeasure()
+    },
+    detailOpen() {
+      this.syncCover()
+    },
+    cover() {
+      this.syncCover()
     },
     layoutState(value: LingyunSplitLayoutChange) {
       this.$emit('layout-change', value)
@@ -116,6 +153,7 @@ export default defineComponent({
   },
   mounted() {
     this.syncWindowWidth()
+    this.syncCover()
     this.$emit('wide-change', this.wide)
     this.$emit('layout-change', this.layoutState)
     this._onWindowResize = () => {
@@ -142,7 +180,9 @@ export default defineComponent({
   },
   beforeUnmount() {
     clearTimeout(this._measureTimer ?? undefined)
+    clearTimeout(this._coverTimer ?? undefined)
     this._measureTimer = null
+    this._coverTimer = null
     const handler = this._onWindowResize
     try {
       if (handler && typeof uni.offWindowResize === 'function') {
@@ -154,6 +194,39 @@ export default defineComponent({
     this._onWindowResize = null
   },
   methods: {
+    syncCover(): void {
+      const open = !!this.detailOpen && this.cover && !this.wide
+      clearTimeout(this._coverTimer ?? undefined)
+      this._coverTimer = null
+      if (open) {
+        if (!this.coverMounted) {
+          this.coverMounted = true
+          this.coverIn = false
+          this.$nextTick(() => {
+            this._coverTimer = setTimeout(() => {
+              this._coverTimer = null
+              if (!(this.detailOpen && this.cover && !this.wide)) return
+              this.coverIn = true
+              this.measureHeaders()
+            }, 32)
+          })
+          return
+        }
+        this.coverIn = true
+        return
+      }
+      if (!this.coverMounted || this.wide) {
+        this.coverIn = false
+        this.coverMounted = false
+        return
+      }
+      this.coverIn = false
+      this._coverTimer = setTimeout(() => {
+        this._coverTimer = null
+        if (this.detailOpen && this.cover && !this.wide) return
+        this.coverMounted = false
+      }, COVER_MS)
+    },
     syncWindowWidth(): void {
       const width = readWindowWidth()
       if (width > 0) this.windowWidth = width
@@ -196,12 +269,14 @@ export default defineComponent({
  * display:flex / height:100vh 会泄漏到其它页面，详见 doc/guide/split-pages.md）。
  */
 .ly-split-layout__page {
+  position: relative;
   display: flex;
   flex-direction: row;
   box-sizing: border-box;
   height: 100vh;
   min-height: 0;
   padding: 0;
+  overflow: hidden;
 }
 
 .ly-split-layout__pane {
@@ -253,6 +328,28 @@ export default defineComponent({
   min-height: 0;
   height: 0;
   overflow: hidden;
+}
+
+/*
+ * 中屏详情：只盖住内容区（导航在 app-page 里，是这块的左侧兄弟，不在动画里）。
+ * 实底挡住下面的列表；滑入滑出只用 transform，不改玻璃节点的 opacity。
+ */
+.ly-split-layout__pane--cover {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  flex: none;
+  width: auto;
+  background-color: var(--lingyun-bg-grouped-primary, #{$lingyun-bg-grouped-primary});
+  transform: translateX(100%);
+  transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.ly-split-layout__pane--cover-in {
+  transform: translateX(0);
 }
 
 /* 两栏之间 0.5px 缝隙：透明、透出页面底色，由内容列自身的色差形成边线 */

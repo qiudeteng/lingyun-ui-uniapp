@@ -1,4 +1,6 @@
 ## 1.0.61（2026-11-12）
+- `lingyun-image`：H5 补上真正的懒加载。`uni-h5` 的 `image` 会忽略 `lazy-load`，组件在进入视口前不挂 `src`（提前 200px）；小程序仍用原生 `lazy-load`（含 `scroll-view`）。`lazy` 默认仍是 `true`。
+- `lingyun-split-layout`：中屏（有左侧导航、未到分栏门槛）点列表不再新开页面。`detailOpen` 为 true 时详情只在内容区滑入滑出，左侧导航留在原位。`layout-change` 增加 `cover`。
 - `lingyun-app-page` 新增 `autoBack`（默认 `true`）：`false` 时返回钮只抛 `back`，由使用方返回，避免一次返回退两层。
 - Demo：宽屏小程序从列表 `navigateTo` 进入的详情页不再被并入目录宿主页，保留返回钮与地址参数。
 ## 1.0.60 (2026-11-12)

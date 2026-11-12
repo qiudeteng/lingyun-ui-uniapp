@@ -1,4 +1,5 @@
 ## 1.1.10（2026-11-12）
+- 订货单列表与详情的商品图改为 `lingyun-image`（缩略图 52、圆角 10；详情商品行 72、圆角 12），加载时走扫光占位，不再用原生 `image`。
 - 修复 `lingyun-purchase-order-list` / `lingyun-purchase-order-detail` 点返回会退两层：`autoBack` 改为透传给 `lingyun-app-page`，页面壳只返回一次。`lingyun-order-goods` 同样新增 `autoBack`。
 - `lingyun-purchase-order-list-panel` 切换状态筛选时回到列表顶部。
 - Demo：删除订货单列表、订货单详情两个单独入口，统一由「订货单列表与详情」演示（新增搜索，窄屏详情页改为 `purchase-order-split-item`，与列表与详情一致）。

@@ -1,6 +1,6 @@
 # lingyun-split-layout
 
-列表 + 详情分栏布局组件。窗口 **≥ `splitAt`（默认 900）** 左右分栏：左栏固定 `listWidth`（默认 375，手机逻辑宽度），右栏占满剩余；**窄屏只渲染左栏**，详情由业务在点行时打开独立页面。
+列表 + 详情分栏布局组件。窗口 **≥ `splitAt`（默认 900）** 左右分栏：左栏固定 `listWidth`（默认 375，手机逻辑宽度），右栏占满剩余。**手机（< 690）只渲染左栏**，点行打开独立详情页。**中屏（≥ 690 且 < `splitAt`，左侧导航已出现）** 把 `detailOpen` 设为 true，详情只在内容区滑入滑出，左侧导航不跟着动。
 
 组件内部封好了 [`doc/guide/split-pages.md`](/guide/split-pages.html) 里的坑：app-page（关顶栏、`body-scroll=false`）+ 专属类 flex 行 + 浮动头部 + 0.5px 透明缝隙 + 头部高度测量，业务只写左右两栏自己的内容。
 
@@ -81,6 +81,7 @@ function onLayoutChange(value: LingyunSplitLayoutChange): void {
 | `listWidth` | 宽屏左栏宽度 px | 375 |
 | `showNav` | 透传 `lingyun-app-page`：宽屏是否保留应用导航列 | true |
 | `showTabbar` | 透传 `lingyun-app-page`：是否显示底部 Tab | false |
+| `detailOpen` | 中屏（`cover`）时详情是否打开。为 true 时详情只在内容区滑入，左侧导航不参与动画 | false |
 
 ## 插槽
 
@@ -88,8 +89,8 @@ function onLayoutChange(value: LingyunSplitLayoutChange): void {
 | --- | --- |
 | `list-header` | 左栏浮动头部（放 `lingyun-split-toolbar`） |
 | `list` | 左栏内容；顶部占位用 `layout-change` 的 `listTopSpace` |
-| `detail-header` | 右栏浮动头部（放 `lingyun-split-toolbar`，仅宽屏渲染） |
-| `detail` | 右栏内容（仅宽屏渲染）；顶部占位用 `detailTopSpace` |
+| `detail-header` | 右栏 / 中屏盖层的浮动头部（放 `lingyun-split-toolbar`） |
+| `detail` | 右栏 / 中屏盖层内容；顶部占位用 `detailTopSpace`。手机宽度不渲染 |
 
 插槽仍带 `{ wide, topSpace }` 作用域参数以兼容旧写法，但小程序上不可靠，新页面不要用。
 
@@ -97,7 +98,7 @@ function onLayoutChange(value: LingyunSplitLayoutChange): void {
 
 | 名称 | 说明 |
 | --- | --- |
-| `layout-change` | `(value: LingyunSplitLayoutChange)`，即 `{ wide, listTopSpace, detailTopSpace }`；挂载时抛一次，分栏状态或头部高度变化时再抛。业务用 `wide` 决定点行是切换右侧还是打开独立详情页 |
+| `layout-change` | `(value: LingyunSplitLayoutChange)`，即 `{ wide, cover, listTopSpace, detailTopSpace }`；挂载时抛一次，分栏状态或头部高度变化时再抛。`wide` 切右侧，`cover` 设 `detailOpen` 在内容区滑入，两者都不是时才打开独立详情页 |
 | `wide-change` | `(wide: boolean)`，挂载时立即抛一次；只关心分栏时可用 |
 | `ready` | 首次测量完成后抛 |
 | `measureHeaders()` | 通过 ref 调用，动态插拔头部内容后手动重测 |
