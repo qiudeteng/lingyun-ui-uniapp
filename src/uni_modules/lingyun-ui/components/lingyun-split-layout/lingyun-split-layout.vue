@@ -41,10 +41,13 @@
  * lingyun-split-layout
  * 列表 + 详情分栏布局：≥ splitAt 左右分栏（左栏固定 listWidth），窄屏只显示左栏。
  * 左右栏各自的 toolbar 放在 header 插槽里（绝对定位浮在栏顶），布局负责量高并通过
- * 作用域插槽把 topSpace 交给内容（面板的 top-space / 自绘占位）。
+ * layout-change 事件把 wide / 两栏 topSpace 交给页面（面板的 top-space / 自绘占位）。
+ * 页面用普通具名插槽，不要解构作用域插槽参数：微信小程序里页面重渲染会清掉作用域插槽内
+ * 子组件的 props 缓存，插槽里的组件会退回默认值（列表空白、日期条错位）。
  * 使用约定见 doc/guide/split-pages.md。
  */
 import { defineComponent } from 'vue'
+import type { LingyunSplitLayoutChange } from './types'
 
 function readWindowWidth(): number {
   try {
@@ -72,7 +75,7 @@ export default defineComponent({
     /** 透传 app-page：是否显示底部 Tab（分栏页一般关掉） */
     showTabbar: { type: Boolean, default: false },
   },
-  emits: ['wide-change', 'ready'],
+  emits: ['wide-change', 'layout-change', 'ready'],
   data() {
     return {
       windowWidth: 0,
@@ -94,16 +97,27 @@ export default defineComponent({
         width: `${width}px`,
       }
     },
+    layoutState(): LingyunSplitLayoutChange {
+      return {
+        wide: this.wide,
+        listTopSpace: this.listHeaderHeight,
+        detailTopSpace: this.detailHeaderHeight,
+      }
+    },
   },
   watch: {
     wide(value: boolean) {
       this.$emit('wide-change', value)
       this.scheduleMeasure()
     },
+    layoutState(value: LingyunSplitLayoutChange) {
+      this.$emit('layout-change', value)
+    },
   },
   mounted() {
     this.syncWindowWidth()
     this.$emit('wide-change', this.wide)
+    this.$emit('layout-change', this.layoutState)
     this._onWindowResize = () => {
       this.syncWindowWidth()
       this.scheduleMeasure()

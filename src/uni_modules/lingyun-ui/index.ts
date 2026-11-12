@@ -20,6 +20,10 @@ export * from './utils/pageLayout'
 export * from './utils/pageMenu'
 export * from './utils/theme'
 export * from './utils/themeSwitch'
+export {
+  configureLingyunUpload,
+  type LingyunUploadAuthorization,
+} from './utils/upload'
 // #ifdef H5
 export * from './utils/h5Scrollbar'
 // #endif
@@ -44,6 +48,7 @@ export type {
   LingyunDateSwitcherRange,
   LingyunDateSwitcherValue,
 } from './components/lingyun-date-switcher/types'
+export type { LingyunSplitLayoutChange } from './components/lingyun-split-layout/types'
 export type {
   LingyunDevice,
   LingyunDuoPose,

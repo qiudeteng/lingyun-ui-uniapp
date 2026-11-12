@@ -56,6 +56,7 @@
   <plain-list-page v-else-if="currentPath === 'pages/demo/plain-list'" />
   <list-detail-page v-else-if="currentPath === 'pages/demo/list-detail'" />
   <split-layout-page v-else-if="currentPath === 'pages/demo/split-layout'" />
+  <purchase-order-split-page v-else-if="currentPath === 'pages/demo/purchase-order-split'" />
   <charts-column-page v-else-if="currentPath === 'pages/demo/charts/column'" />
   <charts-stack-page v-else-if="currentPath === 'pages/demo/charts/stack'" />
   <charts-bar-page v-else-if="currentPath === 'pages/demo/charts/bar'" />
@@ -168,6 +169,7 @@ import PurchaseOrderDetailPage from '@/pages/demo/purchase-order-detail.vue'
 import PlainListPage from '@/pages/demo/plain-list.vue'
 import ListDetailPage from '@/pages/demo/list-detail.vue'
 import SplitLayoutPage from '@/pages/demo/split-layout.vue'
+import PurchaseOrderSplitPage from '@/pages/demo/purchase-order-split.vue'
 import RecordsPage from '@/pages/demo/records.vue'
 import ScanPage from '@/pages/demo/scan.vue'
 import QrcodePage from '@/pages/demo/qrcode.vue'

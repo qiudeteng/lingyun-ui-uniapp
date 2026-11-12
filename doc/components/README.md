@@ -5,7 +5,7 @@
 ## 页面与导航
 
 - [页面壳](./app-page.md)
-- [窄屏](./mobile.md)
+- [分栏布局](./split-layout.md)- [窄屏](./mobile.md)
 - [平板与电脑](./pc.md)
 - [宽屏目录](./page-nav.md)
 - [顶栏](./toolbars.md)

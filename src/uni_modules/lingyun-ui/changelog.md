@@ -1,3 +1,12 @@
+## 1.0.60（2026-11-12）
+- 新增 `lingyun-split-toolbar`：分栏页统一浮动顶栏。内部固定 `title2LineLeft`、无副标题、非 fixed、不显示窗口按钮 / 主题钮、`segments` 固定渲染为分段控件，并统一处理 H5 / 微信 PC 的 12px 顶部补偿；页面只传标题 / 搜索 / 分段 / 自定义按钮（支持 `v-model:searching` / `v-model:search-value` / `v-model:segment-value`）与 `#trailing-menu` 浮层。分栏页不再直接写 `lingyun-toolbars` 或 `title-style` 等展示属性，三个分栏 demo 已全部改用该组件。
+- `lingyun-toolbars`：移除 `onResize` 注册（窗口尺寸变化已由 `uni.onWindowResize` / H5 `resize` 兜底），修复 toolbar 在嵌套组件 / 分栏插槽内注册生命周期导致微信小程序白屏的问题。
+- `lingyun-toolbars` 新增 `topInset`：额外顶部留白计入玻璃内部高度（供分栏顶栏在 H5 / 微信 PC 补 12px，栏顶不再露出滚动内容）。
+- Demo：订货单列表与详情分栏页筛选固定为分段控件，toolbar 高度、标题位置与列表与详情 demo 完全一致；页面菜单移除「工作台」示例入口（工作台仍作为一级 Tab 落地页保留），同步移除手册页面文档。
+- `lingyun-split-layout` 新增 `layout-change` 事件（`{ wide, listTopSpace, detailTopSpace }`）。修复小程序点击分栏左侧列表后整栏空白、日期条错位：页面改用普通插槽，不再解构作用域插槽参数。
+- 上传组件不再读取宿主 `@/utils/auth`：新增 `configureLingyunUpload({ getAuthorization })`，宿主启动时注入鉴权头（未注入则不带 `Authorization`）。
+- `lingyun-toolbars`：微信胶囊在左上角时（iPad 横屏等宽屏）不再做右侧避让，修复分栏右栏顶栏标题不显示。
+- Demo：订货单列表与详情页登记为宽屏宿主视图（`pageViews.ts` + `app-page-view-host` 静态分支），左侧导航点击原地切换，不再整页打开刷新。
 ## 1.0.59（2026-11-12）
 - 新增分栏插槽结构工具类（全局样式 `styles/setting/_split-layout.scss`）：`lingyun-split-layout-pane`（插槽根容器绝对铺满 + 纵向 flex）、`lingyun-split-layout-fill`（根节点是 scroll-view 时绝对铺满）、`lingyun-split-layout-scroll`（内层滚动 `flex:1 + height:0`）。列表与详情、分栏布局、订货单列表与详情三个 demo 改用工具类，删掉各自重复的绝对定位 / 高度样板，并同步组件文档与分栏 guide。
 - `lingyun-tabs`：Tab 角标改为上标定位——挂在文字右上角、不占行内排版宽度，选中 pill 内文字保持居中；角标仍使用 `lingyun-badge size="small"`，可随 Tab 一起点击。

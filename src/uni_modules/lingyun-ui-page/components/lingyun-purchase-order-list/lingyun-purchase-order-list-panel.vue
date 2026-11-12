@@ -1,5 +1,8 @@
 <template>
-<view class="lingyun-purchase-order-list">
+<view
+  class="lingyun-purchase-order-list"
+  :class="{ 'lingyun-purchase-order-list--full': full }"
+>
   <view class="lingyun-purchase-order-list__body">
     <scroll-view
       class="lingyun-purchase-order-list__scroll"
@@ -434,6 +437,15 @@ export default defineComponent({
   background-color: var(--lingyun-bg-grouped-primary, #{$lingyun-bg-grouped-primary});
 }
 
+/*
+ * full：嵌入分栏列表列（lingyun-split-layout）时，列底色由宿主提供
+ * （窄屏 Primary / 宽屏 grouped-secondary），面板不再铺页面底色——否则选中行（页面底色）
+ * 与列底色相同、选中态不可见，且与列表与详情 demo 的背景分层不一致。
+ */
+.lingyun-purchase-order-list--full {
+  background-color: transparent;
+}
+
 .lingyun-purchase-order-list__top-space {
   height: calc(
     var(--lingyun-app-page-bar, 60px) + var(--lingyun-page-nav-safe-top, 0px)
@@ -467,7 +479,7 @@ export default defineComponent({
   padding: 4px 16px calc(24px + env(safe-area-inset-bottom));
 }
 
-/* full：占满所在栏宽度，不留左右留白，卡片直角（上下间距保留，与 lingyun-section full 一致） */
+/* full：占满所在栏宽度，不留左右留白，卡片收成列表行（对齐 lingyun-list plain） */
 .lingyun-purchase-order-list__content--full {
   max-width: none;
   padding-left: 0;
@@ -475,7 +487,22 @@ export default defineComponent({
 }
 
 .lingyun-purchase-order-list__content--full .lingyun-purchase-order-list__card {
+  position: relative;
+  margin-bottom: 0;
   border-radius: 0;
+}
+
+/* 行间 1px 全宽分割线：卡片背景与列底色相同，只靠分割线区分行 */
+.lingyun-purchase-order-list__content--full
+  .lingyun-purchase-order-list__card
+  + .lingyun-purchase-order-list__card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background-color: var(--lingyun-separator, #{$lingyun-separator});
 }
 
 /* 分栏选中态：对齐列表与详情 demo——选中卡片用页面底色（浅色 #f2f2f7 / 暗黑 #000），

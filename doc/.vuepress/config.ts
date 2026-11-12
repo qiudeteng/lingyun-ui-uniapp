@@ -133,7 +133,6 @@ const pageSidebar = [
       { text: '记录列表 Demo', link: '/page/records.html' },
       { text: '纯列表 Demo', link: '/page/plain-list.html' },
       { text: '列表与详情 Demo', link: '/page/list-detail.html' },
-      { text: '工作台 Demo', link: '/page/workbench.html' },
     ],
   },
 ]

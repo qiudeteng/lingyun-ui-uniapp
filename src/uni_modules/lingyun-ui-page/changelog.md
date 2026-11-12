@@ -1,3 +1,7 @@
+## 1.1.9（2026-11-12）
+- `lingyun-purchase-order-list` 面板 `full` 模式（分栏列表列）：面板不再铺页面底色，列底色交给宿主（`lingyun-split-layout`：窄屏 Primary / 宽屏 grouped-secondary）；卡片收成列表行——行间以 1px 全宽分割线区分、直角，选中行仍用页面底色，修复分栏页左栏背景与列表与详情 demo 不一致、选中行与列底色相同导致选中态不可见的问题；标准页（非 full）卡片外观不变。
+- 分栏 demo（列表与详情、订货单列表与详情）两栏 toolbar 去掉副标题，标题更简洁。
+- 标准页 `lingyun-order-goods` / `lingyun-purchase-order-list` / `lingyun-purchase-order-detail` 的 `showBack` 改为三态、默认 `auto`：宽屏左侧导航停靠时自动隐藏返回钮（对齐 `lingyun-app-page` 的约定），窄屏独立页面仍显示。
 ## 1.1.8（2026-11-12）
 - 订货单列表卡片：标题行状态右侧增加箭头，列表与详情分栏的左侧列表有可点击提示。
 ## 1.1.7 (2026-11-12)

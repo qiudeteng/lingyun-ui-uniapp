@@ -1,5 +1,3 @@
-import { formatToken, getToken } from '@/utils/auth'
-
 export interface LingyunUploadTask {
   abort?: () => void
 }
@@ -32,11 +30,23 @@ export interface LingyunUploadRequestResult {
   raw: unknown
 }
 
+/** 宿主提供的上传鉴权头，如 `Bearer xxx`；未登录返回空 */
+export type LingyunUploadAuthorization = () => string | null | undefined
+
+let uploadAuthorization: LingyunUploadAuthorization | null = null
+
+/** 宿主在 app 启动时注入登录态；组件包不读取宿主的 token 存储 */
+export function configureLingyunUpload(options: {
+  getAuthorization?: LingyunUploadAuthorization
+}): void {
+  uploadAuthorization = options?.getAuthorization || null
+}
+
 export function buildUploadHeader(
   custom?: Record<string, string>,
 ): Record<string, string> {
   const header: Record<string, string> = { ...(custom || {}) }
-  const authorization = formatToken(getToken())
+  const authorization = uploadAuthorization?.()
   if (authorization && !header.Authorization) header.Authorization = authorization
   return header
 }

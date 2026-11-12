@@ -1,7 +1,7 @@
 <template>
   <lingyun-app-page
     :show-toolbar="showToolbar"
-    :show-back="showBack && showToolbar"
+    :show-back="showToolbar ? showBack : false"
     :show-nav="showNav"
     :show-tabbar="false"
     :title="title"
@@ -819,7 +819,7 @@ export default defineComponent({
     },
     banner: { type: String, default: '' },
     bannerHeight: { type: Number, default: 140 },
-    showBack: { type: Boolean, default: true },
+    showBack: { type: [Boolean, String], default: 'auto' },
     showNav: { type: Boolean, default: true },
     showToolbar: { type: Boolean, default: false },
     /** 工具栏是否自动给页面加顶部安全区；false 时页面内容顶到顶部（Banner 垫在工具栏下） */
