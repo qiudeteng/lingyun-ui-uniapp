@@ -1,3 +1,5 @@
+## 1.0.62（2026-11-12）
+- `lingyun-toolbars`：搜索打开和关闭时标题不再上下跳。位移动画从栏身内容行挪到标题和两侧按钮上；内容行带 `transform` 时会变成绝对定位标题的参照，宽屏上下内边距不对称，标题会各跳 5px。
 ## 1.0.61 (2026-11-12)
 - `lingyun-list-item` 的 `thumb` 改为 `lingyun-image`（lg 42 / 圆角 10，base 30 / 圆角 7），加载走扫光占位，不再用原生 `image`。
 - `lingyun-image`：H5 补上真正的懒加载。`uni-h5` 的 `image` 会忽略 `lazy-load`，组件在进入视口前不挂 `src`（提前 200px）；小程序仍用原生 `lazy-load`（含 `scroll-view`）。`lazy` 默认仍是 `true`。

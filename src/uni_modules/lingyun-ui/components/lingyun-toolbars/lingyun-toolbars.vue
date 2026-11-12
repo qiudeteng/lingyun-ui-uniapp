@@ -1084,14 +1084,17 @@ $ly-toolbar-gap: 8px;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  transition:
-    opacity 0.18s ease,
-    transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: opacity 0.18s ease;
 }
 
+/*
+ * 位移动画不能加在这一层。标题是绝对定位，父节点一旦出现 transform
+ * 就会变成它的定位参照；宽屏栏身上下内边距不对称（上 0 / 下 10），
+ * 参照从整条栏身换成内容行时，标题会在搜索打开和关闭时各跳 5px。
+ * 淡出留在这一层，滑动放到标题和按钮自己身上。
+ */
 .lingyun-toolbars__bar--search .lingyun-toolbars__bar-left {
   opacity: 0;
-  transform: translateX(-28px);
   pointer-events: none;
 }
 
@@ -1104,6 +1107,14 @@ $ly-toolbar-gap: 8px;
   flex-shrink: 0;
   z-index: 1;
   min-width: $ly-toolbar-action;
+  transform: translateX(0);
+  transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.lingyun-toolbars__bar--search .lingyun-toolbars__leading,
+.lingyun-toolbars__bar--search .lingyun-toolbars__trailing,
+.lingyun-toolbars__bar--search .lingyun-toolbars__title-wrap {
+  transform: translateX(-28px);
 }
 
 .lingyun-toolbars__trailing {
@@ -1304,6 +1315,7 @@ $ly-toolbar-gap: 8px;
   z-index: 0;
   /* 微信胶囊右侧 inset 后，校正到屏宽几何中心（左对齐样式见 --left） */
   transform: translateX(var(--ly-toolbar-center-shift, 0px));
+  transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
 
   &--left {
     align-items: flex-start;
