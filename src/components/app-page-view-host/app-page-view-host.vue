@@ -2,6 +2,8 @@
   <buttons-page v-if="currentPath === 'pages/demo/buttons'" />
   <guide-start-page v-else-if="currentPath === 'pages/guide/start'" />
   <icons-page v-else-if="currentPath === 'pages/demo/icons'" />
+  <copy-page v-else-if="currentPath === 'pages/demo/copy'" />
+  <save-image-page v-else-if="currentPath === 'pages/demo/save-image'" />
   <badges-page v-else-if="currentPath === 'pages/demo/badges'" />
   <segmented-controls-page v-else-if="currentPath === 'pages/demo/segmented-controls'" />
   <tags-page v-else-if="currentPath === 'pages/demo/tags'" />
@@ -53,6 +55,7 @@
   <purchase-order-detail-page v-else-if="currentPath === 'pages/demo/purchase-order-detail'" />
   <plain-list-page v-else-if="currentPath === 'pages/demo/plain-list'" />
   <list-detail-page v-else-if="currentPath === 'pages/demo/list-detail'" />
+  <split-layout-page v-else-if="currentPath === 'pages/demo/split-layout'" />
   <charts-column-page v-else-if="currentPath === 'pages/demo/charts/column'" />
   <charts-stack-page v-else-if="currentPath === 'pages/demo/charts/stack'" />
   <charts-bar-page v-else-if="currentPath === 'pages/demo/charts/bar'" />
@@ -111,6 +114,8 @@ import { computed, nextTick, watch } from 'vue'
 import ButtonsPage from '@/pages/demo/buttons.vue'
 import GuideStartPage from '@/pages/guide/start.vue'
 import IconsPage from '@/pages/demo/icons.vue'
+import CopyPage from '@/pages/demo/copy.vue'
+import SaveImagePage from '@/pages/demo/save-image.vue'
 import BadgesPage from '@/pages/demo/badges.vue'
 import SegmentedControlsPage from '@/pages/demo/segmented-controls.vue'
 import TagsPage from '@/pages/demo/tags.vue'
@@ -162,6 +167,7 @@ import PurchaseOrderListPage from '@/pages/demo/purchase-order-list.vue'
 import PurchaseOrderDetailPage from '@/pages/demo/purchase-order-detail.vue'
 import PlainListPage from '@/pages/demo/plain-list.vue'
 import ListDetailPage from '@/pages/demo/list-detail.vue'
+import SplitLayoutPage from '@/pages/demo/split-layout.vue'
 import RecordsPage from '@/pages/demo/records.vue'
 import ScanPage from '@/pages/demo/scan.vue'
 import QrcodePage from '@/pages/demo/qrcode.vue'

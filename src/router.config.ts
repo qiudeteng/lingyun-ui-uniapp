@@ -46,6 +46,16 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Icons' }
 	},
 	{
+		path: '/pages/demo/copy',
+		name: 'pagesDemoCopy',
+		meta: { title: '复制' }
+	},
+	{
+		path: '/pages/demo/save-image',
+		name: 'pagesDemoSaveImage',
+		meta: { title: '保存为图片' }
+	},
+	{
 		path: '/pages/demo/tabbars',
 		name: 'pagesDemoTabbars',
 		meta: { title: 'Tab Bars' }
@@ -404,6 +414,11 @@ export const routes: RouteConfig[] = [
 		path: '/pages/demo/list-detail',
 		name: 'pagesDemoListDetail',
 		meta: { title: '列表与详情' }
+	},
+	{
+		path: '/pages/demo/split-layout',
+		name: 'pagesDemoSplitLayout',
+		meta: { title: '分栏布局' }
 	},
 	{
 		path: '/pages/demo/list-detail-item',

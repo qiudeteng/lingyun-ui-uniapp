@@ -45,6 +45,12 @@
                 class="lingyun-purchase-order-list__status"
                 :style="{ color: listStatusMeta(order).color }"
               >{{ listStatusMeta(order).text }}</text>
+              <lingyun-icon
+                class="lingyun-purchase-order-list__chevron"
+                type="right"
+                :size="16"
+                color="var(--lingyun-system-gray3, #c7c7cc)"
+              />
             </view>
 
             <view v-if="order.items && order.items.length" class="lingyun-purchase-order-list__media">
@@ -535,6 +541,11 @@ export default defineComponent({
   font-size: 14px;
   line-height: 20px;
   font-weight: 600;
+}
+
+.lingyun-purchase-order-list__chevron {
+  flex-shrink: 0;
+  margin-left: -4px;
 }
 
 .lingyun-purchase-order-list__media {
