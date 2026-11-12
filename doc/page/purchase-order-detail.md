@@ -253,3 +253,9 @@ interface LingyunPurchaseOrderDetailAction {
 | `scroll` | `scrollTop`，供宿主驱动工具栏玻璃进度 |
 
 其余数据 / 事件与标准页一致；标准页行为不受影响。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/purchase-order-detail.vue -->

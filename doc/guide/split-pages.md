@@ -84,7 +84,8 @@ WXSS 里 `scroll-view` 的 `height: 100%` 在 flex 链路上拿不到确定高�
 
 ### 2.6 ⚠️ 选中态、暗黑分层与边线语义
 
-- 选中行 = **页面底色**（`--lingyun-bg-grouped-primary`）；未选中行 / 列表列 = `grouped-secondary`。暗黑下 `Primary` 和 `Grouped Primary` **都是 #000**，想分层只能靠把列表列用 `grouped-secondary`（#1c1c1e）「抬升」一级。
+- **左栏底色由 `lingyun-split-layout` 统一提供**：窄屏 Primary、宽屏 grouped-secondary（浅色白 / 暗黑 `#1c1c1e`）；页面插槽内容不要再自己设左栏背景。
+- 选中行 = **页面底色**（`--lingyun-bg-grouped-primary`）；未选中列表列 = `grouped-secondary`。暗黑下 `Primary` 和 `Grouped Primary` **都是 #000**，想分层只能靠把列表列用 `grouped-secondary`（#1c1c1e）「抬升」一级。
 - 分栏缝隙给 `transparent`、透出页面底色即可；**不要**再画 `--lingyun-separator` 灰线，也不要按「右侧有没有白色列」切换颜色。
 - 手机模式没有「选中」概念：`selectedKey` 只在宽屏传，窄屏不传。
 

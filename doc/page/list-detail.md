@@ -53,3 +53,11 @@
 ```
 
 组件用法见 [列表](../components/list.md)、[顶栏](../components/toolbars.md)、[分段控件](../components/segmented-control.md)、[日期切换器](../components/date-switcher.md)、[时间线](../components/timeline.md)。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/list-detail.vue -->
+<!-- demo-source: src/pages/demo/listDetailDemo.ts -->
+<!-- demo-source: src/components/ticket-detail/ticket-detail.vue -->

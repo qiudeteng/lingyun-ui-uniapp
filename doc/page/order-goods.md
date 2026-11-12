@@ -199,3 +199,9 @@ type LingyunOrderCart = Record<string, number> // 行 key → 数量
 - 组件内部使用 `lingyun-app-page` 管理状态栏安全区，整页固定高度、页面自管滚动；不要再在外层包 `scroll-view`。
 - 标准页不请求接口、不读写登录态：结算、返回都通过事件交给路由页；规格 / 属性选择由内置 Sheet 处理。
 - 宽屏默认保留应用导航列（和业务其它页面一致）；需要整页点单时传 `:show-nav="false"`。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/order-goods.vue -->

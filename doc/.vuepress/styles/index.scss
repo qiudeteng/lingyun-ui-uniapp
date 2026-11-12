@@ -1,5 +1,23 @@
 @import './lingyun-tokens.scss';
 
+/* 文档内嵌演示源码（<!-- demo-source: ... --> 展开） */
+details.demo-source {
+  margin: 16px 0;
+  padding: 4px 12px 8px;
+  border: 1px solid var(--vp-c-divider, rgba(60, 60, 67, 0.16));
+  border-radius: 8px;
+}
+
+details.demo-source > summary {
+  padding: 6px 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+details.demo-source[open] > summary {
+  margin-bottom: 4px;
+}
+
 @media (min-width: 1180px) {
   body.has-phone-preview main.vp-page {
     padding-right: var(--ly-phone-pad, 360px);

@@ -34,6 +34,58 @@ const lingyunVersionPlugin: Plugin = {
   },
 }
 
+/**
+ * 文档里的 `<!-- demo-source: 相对仓库根的文件路径 -->` 在构建 / dev 时读取源码，
+ * 展开成可折叠的代码块：文档里不用手贴代码，改了源码文档自动跟着变。
+ */
+const REPO_ROOT = new URL('../../', import.meta.url)
+const SOURCE_LANG: Record<string, string> = {
+  vue: 'vue',
+  ts: 'typescript',
+  js: 'javascript',
+  json: 'json',
+  scss: 'scss',
+  css: 'css',
+  md: 'md',
+}
+
+function buildDemoSource(relativePath: string): string {
+  try {
+    if (!/^(src|design|doc)\//.test(relativePath)) throw new Error('outside repo')
+    const raw = readFileSync(new URL(relativePath, REPO_ROOT), 'utf8')
+    const content = raw.replace(/\r\n/g, '\n').replace(/\s+$/, '')
+    const longestRun = Math.max(2, ...(content.match(/`+/g) || []).map((run) => run.length))
+    const fence = '`'.repeat(longestRun + 1)
+    const ext = relativePath.split('.').pop() || ''
+    const lang = SOURCE_LANG[ext] || 'text'
+    const lines = content ? content.split('\n').length : 0
+    return [
+      '<details class="demo-source">',
+      `<summary>查看演示源码 · <code>${relativePath}</code>（${lines} 行）</summary>`,
+      '',
+      `${fence}${lang}`,
+      content,
+      fence,
+      '',
+      '</details>',
+    ].join('\n')
+  } catch {
+    return `> ⚠️ 演示源码读取失败：\`${relativePath}\``
+  }
+}
+
+const demoSourcePlugin: Plugin = {
+  name: 'lingyun-demo-source',
+  extendsMarkdown: (md) => {
+    md.core.ruler.before('normalize', 'lingyun-demo-source', (state) => {
+      state.src = state.src.replace(
+        /<!--\s*demo-source:\s*([^\s>]+)\s*-->/g,
+        (_match: string, file: string) => buildDemoSource(String(file)),
+      )
+    })
+  },
+}
+
 const guideSidebar = [
   {
     text: '接入',
@@ -73,12 +125,15 @@ const pageSidebar = [
     children: [
       { text: '页面扩展', link: '/page/' },
       { text: '登录', link: '/page/login.html' },
+      { text: '404', link: '/page/404.html' },
       { text: '点单加购', link: '/page/order-goods.html' },
       { text: '订货单列表', link: '/page/purchase-order-list.html' },
       { text: '订货单详情', link: '/page/purchase-order-detail.html' },
+      { text: '订货单列表与详情', link: '/page/purchase-order-split.html' },
       { text: '记录列表 Demo', link: '/page/records.html' },
       { text: '纯列表 Demo', link: '/page/plain-list.html' },
       { text: '列表与详情 Demo', link: '/page/list-detail.html' },
+      { text: '工作台 Demo', link: '/page/workbench.html' },
     ],
   },
 ]
@@ -141,6 +196,8 @@ const componentSidebar = [
       { text: '布局', link: '/components/layout.html' },
       { text: '按钮', link: '/components/button.html' },
       { text: '图标', link: '/components/icon.html' },
+      { text: '复制', link: '/components/copy.html' },
+      { text: '保存为图片', link: '/components/save-image.html' },
       { text: '扫码', link: '/components/scan.html' },
       { text: '二维码', link: '/components/qrcode.html' },
       { text: '条码', link: '/components/barcode.html' },
@@ -292,6 +349,7 @@ export default defineUserConfig({
   }),
   plugins: [
     lingyunVersionPlugin,
+    demoSourcePlugin,
     injectChangelogs(),
     slimsearchPlugin({
       indexContent: true,

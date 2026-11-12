@@ -84,6 +84,8 @@
 | ✅ | `lingyun-theme-action` | 内置浅色 / 暗黑 / 自动切换钮；进入工具栏右侧按钮组或 Duo 工具组 | [`TOOLBARS.md`](./TOOLBARS.md) |
 | ✅ | `lingyun-duo-rail` | 内部组件：iPhone Duo 右侧全高栏（84 宽，工具组 / 仅图标 Tab / 搜索 / 外屏横屏溢出），由 `lingyun-app-page` 使用 | [`SIDEBARS.md`](./SIDEBARS.md) |
 | ✅ | `lingyun-split-layout` | 列表 + 详情分栏布局：≥ splitAt（默认 900）左列表（固定 listWidth）+ 右详情，窄屏只显示左栏；`list-header` / `list` / `detail-header` / `detail` 插槽，头部高度实测后以 `topSpace` 交给内容 | [`split-pages`](../doc/guide/split-pages.md) · [`split-layout`](../doc/components/split-layout.md) |
+| ✅ | `lingyun-copy` | 复制触发器 · 文字 / 图标 · 点击把 text 写入剪贴板 | [`UI_SPEC.md`](./UI_SPEC.md) · [`copy`](../doc/components/copy.md) |
+| ✅ | `lingyun-save-image` | 保存为图片 · ref 元素 / 整页截图 / 小程序 canvas 导出 | [`UI_SPEC.md`](./UI_SPEC.md) · [`save-image`](../doc/components/save-image.md) |
 | ✅ | `lingyun-split-view` | 内部组件：iPhone Duo 内屏横屏 Split View（左主栏 456 / 折痕带 40 / 右详情 371），由 `lingyun-app-page` 使用 | [`SIDEBARS.md`](./SIDEBARS.md) |
 | ✅ | `lingyun-mobile` / `lingyun-pc` | 窄屏与平板、电脑分开展示。宽度小于 690 / 达到 690 | demo [`responsive`](../src/pages/demo/responsive.vue) |
 | ✅ | `lingyun-row` / `lingyun-col` | 24 分栏。间隔、偏移、对齐、五档响应式 | demo [`layout`](../src/pages/demo/layout.vue) |
@@ -154,6 +156,7 @@
 
 | 日期 | 说明 |
 |------|------|
+| 2026-11-12 | 新增 `lingyun-copy`（复制 · 文字 / 图标触发）与 `lingyun-save-image`（元素 / 整页截图 · canvas 导出）；demo `/pages/demo/copy`、`/pages/demo/save-image` |
 | 2026-10-20 | 凌云UI 1.0.31：新增 `formFactor` / `duoPose` 设备形态；iPad/PC + 全局 tabs 改为 84 浮动玻璃窄栏；iPhone Duo 内屏竖屏接入 84 Duo Toolbar + 95 Duo Tab（半折 40 横向折痕安全带）；外屏竖/横与内屏横屏接入右侧 84 全高栏；内屏横屏折叠/半折接入 Split View（456 / 40 / 371 + 右侧 84 返回列） |
 | 2026-10-20 | 凌云UI 1.0.30：`lingyun-app-page` 支持全局 `tabs` 数据驱动，窄屏底部 Tab / 宽屏左侧导航自动切换；PC + tabs 时侧栏收窄为 84 窄栏（图标在上、文字在下），选中胶囊上下滑动；`lingyun-tabbars` 支持 `iconMode` |
 | 2026-10-16 | 图表：新增地图 Demo / 文档（`type="map"`，省级简图） |

@@ -16,3 +16,9 @@
 ## 使用
 
 直接打开 `pages/demo/plain-list` 体验。整页列表场景给 `lingyun-list` 加 `plain`，页面底色用 Primary Background；其余行内容按 [列表组件](../components/list.md) 的 `lingyun-list-item` 用法组合。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/plain-list.vue -->

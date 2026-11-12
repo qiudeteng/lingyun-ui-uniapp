@@ -51,3 +51,10 @@ function goDemo(): void {
 ## 业务工程怎么接
 
 接真实登录时：在 `@submit` 里调接口并写登录态，成功后再跳转；需要静默登录时用 `booting`。本演示站关闭了路由鉴权，任意页可直接打开。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/login/login.vue -->
+<!-- demo-source: src/uni_modules/lingyun-ui-page/components/lingyun-login/lingyun-login.vue -->
