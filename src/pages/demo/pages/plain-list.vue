@@ -188,9 +188,19 @@
     return value - Math.floor(value)
   }
 
-  /** 商品缩略图；微信小程序需在小程序后台配置 downloadFile 合法域名 picsum.photos */
-  function picsum(seed: string, width: number, height: number): string {
-    return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${width}/${height}`
+  /** 与订货单演示同一组 Unsplash 图。picsum.photos 在当前网络下会超时，缩略图会空白。 */
+  const FLOW_THUMBS = [
+    'photo-1578985545062-69928b1d9587',
+    'photo-1464349095431-e9a21285b5f3',
+    'photo-1563729784474-d77dbb933a9e',
+    'photo-1565958011703-44f9829ba187',
+    'photo-1551024506-0bccd828d307',
+    'photo-1571115177098-24ec42ed204d',
+  ]
+
+  function flowThumb(seq: number): string {
+    const id = FLOW_THUMBS[seq % FLOW_THUMBS.length]
+    return `https://images.unsplash.com/${id}?w=120&h=120&fit=crop&q=80`
   }
 
   function createFlows(): FlowItem[] {
@@ -235,7 +245,7 @@
           time: `${pad2(hour)}:${pad2(minute)}`,
           orderNo: `NO.${dateText.replace(/-/g, '')}${pad2(index + 1)}`,
           note: pseudoRandom(seed + 9) > 0.82 ? '月结' : '',
-          thumb: picsum(`lingyun-flow-${seq}`, 120, 120),
+          thumb: flowThumb(seq),
         })
       }
     }

@@ -2,7 +2,7 @@
 
 非模态通知条：信息 / 成功 / 警告 / 错误，支持操作与关闭。
 
-规范见 [`design/NOTICE_BARS.md`](../../design/NOTICE_BARS.md)。
+规范见 `design/NOTICE_BARS.md`。
 
 ## 示例
 

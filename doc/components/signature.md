@@ -2,7 +2,7 @@
 
 手写签名板：触控 / 鼠标绘制、清除、重新签名、导出 PNG。用于送货签收、门店确认、审批等场景。
 
-规范见 [`design/SIGNATURE.md`](../../design/SIGNATURE.md)。
+规范见 `design/SIGNATURE.md`。
 
 ## 示例
 

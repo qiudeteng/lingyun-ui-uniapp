@@ -17,11 +17,13 @@
     <view class="lingyun-list-item__row">
       <view v-if="showLeading" class="lingyun-list-item__leading" :class="leadingSizeClass">
         <slot name="icon">
-          <image
+          <lingyun-image
             v-if="thumb"
-            class="lingyun-list-item__thumb"
             :src="thumb"
             mode="aspectFill"
+            :width="thumbBox"
+            :height="thumbBox"
+            :radius="thumbRadius"
           />
         </slot>
       </view>
@@ -241,6 +243,14 @@ export default defineComponent({
         ? 'lingyun-list-item__leading--lg'
         : 'lingyun-list-item__leading--base'
     },
+    /** 与 Sketch List Image 一致：lg 42 / base 30 */
+    thumbBox(): number {
+      return this.resolvedThumbSize === 'lg' ? 42 : 30
+    },
+    /** lg 圆角 10，base 圆角 7 */
+    thumbRadius(): number {
+      return this.resolvedThumbSize === 'lg' ? 10 : 7
+    },
     dividerLeadingClass() {
       if (!this.showLeading) return ''
       return this.resolvedThumbSize === 'lg'
@@ -445,13 +455,6 @@ $ly-row-pad-x: 16px;
       height: 42px;
       border-radius: 10px;
     }
-  }
-
-  &__thumb {
-    display: block;
-    width: 100%;
-    height: 100%;
-    border-radius: inherit;
   }
 
   &__body {

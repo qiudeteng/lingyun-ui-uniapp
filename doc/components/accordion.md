@@ -2,7 +2,7 @@
 
 折叠分组：单开 / 多开、标题 / 副标题 / 自定义内容。
 
-规范见 [`design/ACCORDION.md`](../../design/ACCORDION.md)。
+规范见 `design/ACCORDION.md`。
 
 ## 示例
 

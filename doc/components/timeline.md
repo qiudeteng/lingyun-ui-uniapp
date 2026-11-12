@@ -2,7 +2,7 @@
 
 纵向时间线：时间、标题、说明、状态圆点与图标。用于订单轨迹、操作日志、审批记录。
 
-规范见 [`design/TIMELINE.md`](../../design/TIMELINE.md)。
+规范见 `design/TIMELINE.md`。
 
 ## 示例
 

@@ -2,7 +2,7 @@
 
 评分控件：整星 / 半星、只读 / 禁用、可清除、显示分值。用于评价、满意度、门店打分。
 
-规范见 [`design/RATING.md`](../../design/RATING.md)。
+规范见 `design/RATING.md`。
 
 ## 示例
 

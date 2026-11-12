@@ -300,6 +300,16 @@ export default defineUserConfig({
   description: '组件用法与示例',
   bundler: viteBundler({
     viteOptions: {
+      build: {
+        // 订货单页内嵌多份演示源码，压缩后约 840KB，超过默认 500KB 提示线
+        chunkSizeWarningLimit: 1200,
+        rolldownOptions: {
+          checks: {
+            // 关掉构建结束时的插件耗时统计
+            pluginTimings: false,
+          },
+        },
+      },
       css: {
         preprocessorOptions: {
           scss: {

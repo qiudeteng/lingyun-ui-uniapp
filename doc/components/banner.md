@@ -2,7 +2,7 @@
 
 营销横幅：图片 / 卡片、标题 / 说明 / 操作 / 关闭。
 
-规范见 [`design/BANNERS.md`](../../design/BANNERS.md)。
+规范见 `design/BANNERS.md`。
 
 ## 示例
 

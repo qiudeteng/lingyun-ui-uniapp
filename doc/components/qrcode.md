@@ -2,7 +2,7 @@
 
 前端二维码：组件内置 QR 编码器生成矩阵，Canvas 绘制；支持颜色、纠错级别、边框与图片导出。
 
-规范见 [`design/QRCODE.md`](../../design/QRCODE.md)。
+规范见 `design/QRCODE.md`。
 
 ## 示例
 

@@ -2,7 +2,7 @@
 
 位置选择：门店 / 收货地址。小程序 / App 走原生 `uni.chooseLocation`，H5 使用 uni 内置地图并注入腾讯地图 Key。
 
-规范见 [`design/LOCATION_PICKER.md`](../../design/LOCATION_PICKER.md)。
+规范见 `design/LOCATION_PICKER.md`。
 
 ## 示例
 

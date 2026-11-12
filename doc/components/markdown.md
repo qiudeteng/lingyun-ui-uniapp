@@ -2,7 +2,7 @@
 
 Markdown 预览组件。组件内自带解析器，把 Markdown 解析成原生 `view` / `text` / `image` 节点，不使用 `v-html`，也不使用 `rich-text`；不依赖任何第三方 npm 扩展，微信小程序不依赖递归自定义组件。
 
-- 设计规范：[`design/MARKDOWN.md`](../../design/MARKDOWN.md)
+- 设计规范：`design/MARKDOWN.md`
 - 演示：`/pages/demo/markdown`
 
 ## 示例

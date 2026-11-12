@@ -2,7 +2,7 @@
 
 长列表底部的加载更多：更多 / 加载中 / 没有更多 / 失败重试。支持手动点击与自动触底。
 
-规范见 [`design/LOAD_MORE.md`](../../design/LOAD_MORE.md)。
+规范见 `design/LOAD_MORE.md`。
 
 ## 示例
 

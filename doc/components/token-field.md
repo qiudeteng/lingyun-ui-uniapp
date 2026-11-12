@@ -2,7 +2,7 @@
 
 多选标签输入：回车 / 分隔符添加、建议、去重、上限。
 
-规范见 [`design/TOKEN_FIELDS.md`](../../design/TOKEN_FIELDS.md)。
+规范见 `design/TOKEN_FIELDS.md`。
 
 ## 示例
 

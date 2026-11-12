@@ -2,7 +2,7 @@
 
 一维条码：Code128 / Code39 / EAN-13，Canvas 绘制与图片导出。
 
-规范见 [`design/BARCODE.md`](../../design/BARCODE.md)。
+规范见 `design/BARCODE.md`。
 
 ## 示例
 

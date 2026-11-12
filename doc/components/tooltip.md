@@ -2,7 +2,7 @@
 
 轻量说明气泡：H5 悬停 / 点击，移动端长按 / 点击；复用 `lingyun-popover`。
 
-规范见 [`design/TOOLTIPS.md`](../../design/TOOLTIPS.md)。
+规范见 `design/TOOLTIPS.md`。
 
 ## 示例
 

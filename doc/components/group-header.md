@@ -2,7 +2,7 @@
 
 分组卡片上方的分组标题。统一 Nested / Prominent / Extra Prominent 三种高度、字阶、次级色与右侧操作；`lingyun-list` 的 `header` 也由本组件渲染。
 
-- 设计规范：[`design/LISTS.md`](../../design/LISTS.md)
+- 设计规范：`design/LISTS.md`
 - 演示：`/pages/demo/demo`（页面 / 组件 / 图表分组）、`/pages/demo/lists`
 
 ## 示例

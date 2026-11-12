@@ -2,7 +2,7 @@
 
 可搜索选择：字段触发 + Popover 搜索列表。
 
-规范见 [`design/COMBOBOX.md`](../../design/COMBOBOX.md)。
+规范见 `design/COMBOBOX.md`。
 
 ## 示例
 

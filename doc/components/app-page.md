@@ -240,7 +240,7 @@ setLingyunPageConfig({
 显示规则（页面壳默认不接管 Tab）：
 
 - 只有**一级 Tab 根页**（`url` 等于当前页）或带 `children` 的工作台页在窄屏显示底部 Tab；子页 / 详情页 / 普通页默认没有 Tab，也不留底部空间。
-- 宽屏（≥690）同一份 tabs 变成左侧导航：220 完整目录 → 配置 tabs 后收窄为 84 通高窄栏；PC（≥1200）再向右多一列 220 的内联二级 / 三级菜单（合计让出 304）。详见 [`design/SIDEBARS.md`](../../design/SIDEBARS.md) §4。
+- 宽屏（≥690）同一份 tabs 变成左侧导航：220 完整目录 → 配置 tabs 后收窄为 84 通高窄栏；PC（≥1200）再向右多一列 220 的内联二级 / 三级菜单（合计让出 304）。详见 `design/SIDEBARS.md` §4。
 - 选中态由路由推导；详情页可用 `match` 归入某个 Tab 高亮；点带 `children` 的项在平板弹菜单、PC 切内联菜单、窄屏进工作台页。
 
 页面级控制（优先级：props > `pages[path]` 覆盖 > `layout` 全局 > 宽度自动）：
@@ -266,7 +266,7 @@ setLingyunPageConfig({
 - 默认 `showNav=true`：宽度 ≥ 690 时停靠左侧；导航内容优先取全局 `tabs`，其次宿主目录（`LINGYUN_PAGE_NAV`）。
 - 页面级覆盖：`navSections` prop 显式指定当前页的分组目录（只影响当前渲染，H5 常驻侧栏请用 `setLingyunPageConfig` / `setLingyunPageNavSections`）；`:show-nav="false"` 或 `pages[path].hideNav` 关闭。
 - 左栏顶部资料：`#nav-avatar` / `#nav-name` / `#nav-subtitle` 插槽，或全局 `setLingyunPageNavProfile({ avatar, name, subtitle })`；不传时显示「凌云UI」和默认介绍。
-- 宽度档位（220 / 84 / 304）、选中胶囊动效、PC 二级菜单规则见 [`design/SIDEBARS.md`](../../design/SIDEBARS.md) §4，这里不重复。
+- 宽度档位（220 / 84 / 304）、选中胶囊动效、PC 二级菜单规则见 `design/SIDEBARS.md` §4，这里不重复。
 
 ## 滚动与留白
 
@@ -307,7 +307,7 @@ function onScroll(event: { detail?: { scrollTop?: number } }) {
 
 - **Sheet 形态**：`placement="sheet"` + `showGrabber`，用于底部面板内容（表单一类），不显示宽屏导航。
 - **嵌入宿主**：宿主页（工作台 / 小程序宽屏托管）里的页面壳自动降级为 embedded，不再渲染导航 / Tab / 背景层。**不要在一个页面壳里再嵌一个页面壳**做分栏（会互相干扰），分栏用 `lingyun-split-layout`。
-- **iPhone Duo**：`duo-tools` / `split-primary` / `split-detail` 插槽与 `duo-search` / `duo-overflow` 事件，规则见下文 API 表与 [`design/SIDEBARS.md`](../../design/SIDEBARS.md) §5。
+- **iPhone Duo**：`duo-tools` / `split-primary` / `split-detail` 插槽与 `duo-search` / `duo-overflow` 事件，规则见下文 API 表与 `design/SIDEBARS.md` §5。
 
 ## 属性
 

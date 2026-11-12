@@ -2,7 +2,7 @@
 
 独立日历：单选 / 日期范围、月份切换、今天、标记与禁用日期。用于配送日期、促销日历、生产排期。
 
-规范见 [`design/CALENDAR.md`](../../design/CALENDAR.md)。
+规范见 `design/CALENDAR.md`。
 
 ## 示例
 

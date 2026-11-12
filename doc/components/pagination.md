@@ -2,7 +2,7 @@
 
 分页控件：总数、页码窗口、上一页 / 下一页、简单模式、小尺寸。
 
-规范见 [`design/PAGINATION.md`](../../design/PAGINATION.md)。
+规范见 `design/PAGINATION.md`。
 
 ## 示例
 

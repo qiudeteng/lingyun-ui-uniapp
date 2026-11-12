@@ -2,7 +2,7 @@
 
 扫码入口：小程序 / App 走 `uni.scanCode`；H5 与自定义场景用 `scanFn` 覆盖。只负责触发与结果事件，不内置相机取景 UI。
 
-规范见 [`design/SCAN.md`](../../design/SCAN.md)。
+规范见 `design/SCAN.md`。
 
 ## 示例
 
