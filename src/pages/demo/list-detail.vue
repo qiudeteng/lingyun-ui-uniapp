@@ -3,26 +3,17 @@
     title="列表与详情"
     :split-at="900"
     :list-width="375"
-    @wide-change="onWideChange"
+    @layout-change="onLayoutChange"
   >
-    <!-- 左栏 = 独立页面：自己的 toolbar（工单 + 条数 + 搜索按钮） -->
     <template #list-header>
-      <lingyun-toolbars
-        :class="{ 'pane-toolbar--pc': weixinPc }"
-        :fixed="false"
-        :avoid-capsule="!wide"
-        :show-back="!navDocked && !hosted"
-        :show-trailing="false"
-        :show-window-controls="false"
-        :show-theme-switch="false"
-        title-style="title2LineLeft"
+      <lingyun-split-toolbar
         title="工单"
-        :subtitle="`${filteredTickets.length} 条结果`"
         searchable
         search-placeholder="搜索工单 / 客户"
         :segments="statusOptions"
         :segment-value="statusFilter"
-        segment-control="segmented"
+        :show-back="!navDocked && !hosted"
+        :avoid-capsule="!wide"
         :glass-progress="listGlass"
         v-model:searching="searching"
         v-model:search-value="keyword"
@@ -32,7 +23,7 @@
       />
     </template>
 
-    <template #list="{ wide: isWide, topSpace }">
+    <template #list>
       <view class="lingyun-split-layout-pane">
         <scroll-view
           class="lingyun-split-layout-scroll"
@@ -44,7 +35,7 @@
           <view id="list-scroll-top" class="list-top-anchor" />
           <view
             class="list-top-spacer"
-            :style="{ height: `${topSpace}px` }"
+            :style="{ height: `${listTopSpace}px` }"
           />
 
           <lingyun-list v-if="filteredTickets.length" plain>
@@ -52,7 +43,7 @@
               v-for="ticket in filteredTickets"
               :key="ticket.id"
               class="ticket-row"
-              :class="{ 'ticket-row--active': isWide && ticket.id === selectedId }"
+              :class="{ 'ticket-row--active': wide && ticket.id === selectedId }"
             >
               <lingyun-list-item
                 :title="ticket.title"
@@ -86,12 +77,12 @@
           <view class="list-bottom-spacer" />
         </scroll-view>
 
-        <view class="list-date" :class="{ 'list-date--wide': isWide }">
+        <view class="list-date" :class="{ 'list-date--wide': wide }">
           <lingyun-date-switcher
             v-model:mode="dateMode"
             :model-value="dateValue"
-            :fixed="!isWide"
-            :safe-area="!isWide"
+            :fixed="!wide"
+            :safe-area="!wide"
             limit="past"
             @update:model-value="onDateValue"
             @change="onDateChange"
@@ -102,21 +93,10 @@
 
     <!-- 宽屏右侧详情；窄屏走独立详情页 -->
     <template #detail-header>
-      <lingyun-toolbars
-        :class="{ 'pane-toolbar--pc': weixinPc }"
-        :fixed="false"
-        :show-back="false"
-        :show-trailing="false"
-        :show-window-controls="false"
-        :show-theme-switch="false"
-        title-style="title2LineLeft"
-        title="工单详情"
-        :subtitle="selectedTicket ? selectedTicket.id : '未选择工单'"
-        :glass-progress="detailGlass"
-      />
+      <lingyun-split-toolbar title="工单详情" :glass-progress="detailGlass" />
     </template>
 
-    <template #detail="{ topSpace }">
+    <template #detail>
       <scroll-view
         class="lingyun-split-layout-fill"
         scroll-y
@@ -127,7 +107,7 @@
         <view id="list-detail-top" class="detail-top-anchor" />
         <view
           class="detail-top-spacer"
-          :style="{ height: `${topSpace}px` }"
+          :style="{ height: `${detailTopSpace}px` }"
         />
         <ticket-detail v-if="selectedTicket" :ticket="selectedTicket" />
         <view v-else class="detail-empty">
@@ -147,11 +127,11 @@
     watch,
   } from 'vue'
   import {
-    isLingyunWeixinPc,
     isLingyunWideScreen,
     type LingyunDateSwitcherChange,
     type LingyunDateSwitcherMode,
     type LingyunDateSwitcherValue,
+    type LingyunSplitLayoutChange,
   } from '@/uni_modules/lingyun-ui'
   import { useLingyunAppPageScroll } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
   import { pageHostState } from '@/router/pageHost'
@@ -171,18 +151,19 @@
 
   const reportScroll = useLingyunAppPageScroll()
 
-  /** 分栏门槛 900 / 左栏宽度由 lingyun-split-layout 负责，这里只跟随 wide-change 做业务分支 */
+  /** 分栏门槛 900 / 左栏宽度 / 头部量高由 lingyun-split-layout 负责，这里只跟随 layout-change */
   const wide = ref(false)
+  const listTopSpace = ref(0)
+  const detailTopSpace = ref(0)
 
-  function onWideChange(value: boolean): void {
-    wide.value = value
+  function onLayoutChange(value: LingyunSplitLayoutChange): void {
+    wide.value = value.wide
+    listTopSpace.value = value.listTopSpace
+    detailTopSpace.value = value.detailTopSpace
   }
 
   /** 左侧导航是否停靠：导航停靠时不显示页面返回（iPad 竖屏 / 横屏） */
   const navDocked = computed(() => isLingyunWideScreen())
-  /** 微信 PC 端没有系统状态栏 / 胶囊 / 底部安全区，按 Web 处理 */
-  const weixinPc = isLingyunWeixinPc()
-
   function currentPageRoute(): string {
     try {
       const pages = getCurrentPages()
@@ -341,9 +322,8 @@
 
   /* 宽屏下默认选中筛选结果第一条；条件变化后选中项被过滤掉时同步换第一条 */
   watch(
-    [wide, filteredTickets],
+    filteredTickets,
     () => {
-      if (!wide.value) return
       const list = filteredTickets.value
       if (!list.some((ticket) => ticket.id === selectedId.value)) {
         selectedId.value = list[0]?.id || ''
@@ -384,23 +364,12 @@
   }
 
   function onSearchCancel(): void {
+    searching.value = false
     keyword.value = ''
   }
 </script>
 
 <style lang="scss">
-  /* #ifdef H5 */
-  /* 网页没有系统状态栏：留白放进 toolbar 内部（chrome 盖住），避免上方透底 */
-  .ly-split-layout__header .lingyun-toolbars {
-    padding-top: 12px;
-  }
-  /* #endif */
-
-  /* 微信 PC 端按 Web：toolbar 顶部同样补 12 */
-  .pane-toolbar--pc {
-    padding-top: 12px;
-  }
-
   /*
    * 左栏内容的结构（绝对铺满 / 内层滚动）来自 lingyun-split-layout 的全局工具类：
    * lingyun-split-layout-pane / -scroll / -fill（见 styles/setting/_split-layout.scss）。

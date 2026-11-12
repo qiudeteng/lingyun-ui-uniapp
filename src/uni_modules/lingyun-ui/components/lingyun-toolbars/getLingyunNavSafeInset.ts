@@ -211,9 +211,12 @@ export function getLingyunNavLayout(
           barHeight = Math.max(menu.height + spaceHeight * 2, ACTION_PX)
           fromCapsule = true
         }
-        if (menu.left > 0 && windowWidth > 0) {
-          /* PC 端的胶囊在窗口标题栏里，不在页面内，按 Web 不避让 */
-          rightInset = weixinPc ? 0 : Math.max(0, windowWidth - menu.left)
+        /*
+         * PC 端的胶囊在窗口标题栏里，不在页面内，按 Web 不避让；
+         * iPad 横屏等宽屏胶囊在左上角，右侧也不需要避让
+         */
+        if (!weixinPc && windowWidth > 0 && menu.left >= windowWidth / 2) {
+          rightInset = Math.max(0, windowWidth - menu.left)
         }
       }
     }

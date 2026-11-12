@@ -26,7 +26,6 @@ const NAV_META: Record<string, NavMeta> = {
   '/pages/demo/plain-list': { title: '纯列表', icon: 'list', note: '全宽平铺 · 搜索 / 筛选 / 底部时间' },
   '/pages/demo/list-detail': { title: '列表与详情', icon: 'chatboxes', note: '宽屏左右分栏 · 手机独立详情页' },
   '/pages/demo/list-detail-item': { title: '工单详情', icon: 'list', note: '列表与详情 · 手机端独立页面' },
-  '/pages/demo/workbench': { title: '工作台', icon: 'bars', note: '二级 / 三级菜单工作台' },
   '/pages/demo/buttons': { title: 'Buttons', icon: 'circle', note: '按钮 · Glass / Prominent' },
   '/pages/demo/icons': { title: 'Icons', icon: 'star', note: '图标字体 · lingyun-icon' },
   '/pages/demo/copy': { title: '复制', icon: 'chatboxes', note: '复制文本 · 文字 / 图标触发' },
@@ -351,13 +350,6 @@ const PAGE_CHILDREN: LingyunPageTabChild[] = [
       'chatboxes',
       '/pages/demo/list-detail',
       '宽屏左右分栏 · 手机独立详情页',
-    ),
-    pageChild(
-      'page-workbench',
-      '工作台',
-      'bars',
-      '/pages/demo/workbench',
-      '二级 / 三级菜单工作台',
     ),
   ]),
 ]

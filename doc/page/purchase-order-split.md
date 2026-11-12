@@ -8,11 +8,11 @@
 ## 结构
 
 - **布局**：`lingyun-split-layout`，`split-at=900`、`list-width=375`。≥900 左右分栏，窄屏只渲染左栏；点卡片在窄屏 `navigateTo` 到 `/pages/demo/purchase-order-detail`，宽屏切换右侧选中项。
-- **左栏**：浮动 `lingyun-toolbars`（标题「订货单」+ 条数 + 状态 Tabs）+ [`lingyun-purchase-order-list-panel`](./purchase-order-list.md)：
-  - `full` 模式：卡片通宽、直角，铺满左栏；
+- **左栏**：配套 `lingyun-split-toolbar`（标题「订货单」+ 分段控件，无副标题）+ [`lingyun-purchase-order-list-panel`](./purchase-order-list.md)：
+  - `full` 模式：卡片收成列表行——通宽、直角、行间 1px 全宽分割线，面板不铺页面底色，列底色由 `lingyun-split-layout` 提供；
   - `selected-key`：宽屏时高亮当前详情单，窄屏不显示选中；
   - `top-space`：由布局实测的头部高度，内容从浮动 toolbar 下方穿过。
-- **右栏**：浮动 `lingyun-toolbars`（「订货单详情」+ 当前单号）+ [`lingyun-purchase-order-detail-panel`](./purchase-order-detail.md)，内层滚动、底部悬浮操作栏。
+- **右栏**：配套 `lingyun-split-toolbar`（「订货单详情」，无副标题）+ [`lingyun-purchase-order-detail-panel`](./purchase-order-detail.md)，内层滚动、底部悬浮操作栏。
 - **联动**：状态筛选直接传给列表面板；筛选后当前单不在结果里时自动选中第一条；停止筛选 / 无结果时右侧空态。
 - **滚动**：两栏各自内层滚动，`scroll` 事件驱动各自工具栏玻璃进度；整页不滚动。
 
@@ -23,7 +23,7 @@
 自己做类似页面时：
 
 1. 页面壳用 `lingyun-split-layout`，左右内容放进 `list` / `detail` 插槽（插槽内容在小程序里需按约定绝对定位铺满内容容器，见 [组件文档](../components/split-layout.md)）；
-2. 列表 / 详情优先复用现成的面板组件（`top-space` 直接接插槽作用域的 `topSpace`），不要在分栏里嵌套两个 `lingyun-app-page`；
+2. 列表 / 详情优先复用现成的面板组件（`top-space` 接 `layout-change` 抛出的 `listTopSpace` / `detailTopSpace`），不要在分栏里嵌套两个 `lingyun-app-page`；
 3. 分栏页面模板、暗黑分层、选中态与常见坑见 [分栏页面 guide](../guide/split-pages.md)。
 
 ## 演示源码

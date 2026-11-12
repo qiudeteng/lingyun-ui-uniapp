@@ -9,7 +9,7 @@
 ## 结构
 
 - 分栏门槛：窗口宽度 ≥ 900 才左右分栏（iPad 竖屏 768 走单栏，横屏 1024 起分栏）。
-- 宽屏：隐藏页面壳 / 宿主 toolbar；左右 pane toolbar 用默认 `safe-area` 在内部预留状态栏，左侧再设 `avoid-capsule=false`（胶囊在右侧详情上方，左栏不需要避让），右侧保持默认胶囊避让；左侧 375px、0.5px 分隔线，右侧详情占满剩余宽度；左右各自滚动。两栏各用一个 `lingyun-toolbars`（左对齐两行标题）：左侧「工单 / N 条结果」+ 搜索按钮 + 状态分段，右侧「工单详情 / 当前单号」。
+- 宽屏：隐藏页面壳 / 宿主 toolbar；左右 pane toolbar 用默认 `safe-area` 在内部预留状态栏，左侧再设 `avoid-capsule=false`（胶囊在右侧详情上方，左栏不需要避让），右侧保持默认胶囊避让；左侧 375px、0.5px 分隔线，右侧详情占满剩余宽度；左右各自滚动。两栏各用一个 `lingyun-toolbars`（左对齐标题、不显示副标题）：左侧「工单」+ 搜索按钮 + 状态分段，右侧「工单详情」。
 - 左栏独立页面：toolbar 搜索按钮与移动端列表页一致，点击展开输入框、取消清空；状态分段用 toolbar 的 `segments` 行；底部 `lingyun-date-switcher` 浮在列表上方（绝对定位，不占列表高度，列表尾部留出可滚过的缓冲）。
 - 滚动效果：左右两栏 toolbar 都是浮动头部，列表 / 详情从下方穿过；头部高度实测后给内容做顶部占位，滚动时整条 toolbar 进入玻璃。
 - 纯列表：左栏用 Primary 底色，`lingyun-list plain` 全宽平铺，行直接贴左栏两边，无卡片 / 圆角 / 投影 / 分组头。
@@ -20,37 +20,44 @@
 
 ## 使用
 
-左栏的搜索、分段与日期条只作用于列表，不放进全局工具栏——这样右栏详情不会被无关的筛选控件干扰。页面结构用 `lingyun-split-layout`（内部已关掉页面壳 toolbar，并量好浮动头部高度）；插槽内容用组件的结构工具类（`lingyun-split-layout-pane` / `-scroll`），`topSpace` 是头部实测高度：
+左栏的搜索、分段与日期条只作用于列表，不放进全局工具栏——这样右栏详情不会被无关的筛选控件干扰。页面结构用 `lingyun-split-layout`（内部已关掉页面壳 toolbar、量好浮动头部高度），两栏 toolbar 用配套的 `lingyun-split-toolbar` 放进 header 插槽（固定标题样式 / 分段形态 / 顶部补偿）；插槽内容用组件的结构工具类（`lingyun-split-layout-pane` / `-scroll`）。`wide` 与头部实测高度从 `layout-change` 存进页面状态，不要解构作用域插槽参数（小程序点行后会空白，见 [分栏布局](../components/split-layout.md)）：
 
 ```vue
-<lingyun-split-layout title="列表与详情" :split-at="900" :list-width="375" @wide-change="onWideChange">
+<lingyun-split-layout
+  title="列表与详情"
+  :split-at="900"
+  :list-width="375"
+  @layout-change="onLayoutChange"
+>
   <template #list-header>
-    <lingyun-toolbars
-      title-style="title2LineLeft"
+    <lingyun-split-toolbar
       title="工单"
-      :subtitle="`${filtered.length} 条结果`"
       searchable
+      search-placeholder="搜索工单 / 客户"
       :segments="statusOptions"
       :segment-value="statusFilter"
-      segment-control="segmented"
-      :fixed="false"
+      :show-back="!navDocked && !hosted"
       :avoid-capsule="!wide"
-      :show-back="!wide && !hosted"
+      :glass-progress="listGlass"
       v-model:searching="searching"
       v-model:search-value="keyword"
+      @search-cancel="onSearchCancel"
       @segment-change="onStatusSegmentChange"
       @back="onPageBack"
     />
   </template>
-  <template #list="{ topSpace }">
+  <template #list>
     <view class="lingyun-split-layout-pane">
       <scroll-view scroll-y class="lingyun-split-layout-scroll">
-        <view class="list-top-spacer" :style="{ height: topSpace + 'px' }" />
+        <view class="list-top-spacer" :style="{ height: listTopSpace + 'px' }" />
         <lingyun-list plain>…</lingyun-list>
         <view class="list-bottom-spacer" />
       </scroll-view>
-      <lingyun-date-switcher class="list-date" :fixed="false" :safe-area="false" @change="onDateChange" />
+      <lingyun-date-switcher class="list-date" :fixed="!wide" :safe-area="!wide" @change="onDateChange" />
     </view>
+  </template>
+  <template #detail-header>
+    <lingyun-split-toolbar title="工单详情" :glass-progress="detailGlass" />
   </template>
 </lingyun-split-layout>
 ```

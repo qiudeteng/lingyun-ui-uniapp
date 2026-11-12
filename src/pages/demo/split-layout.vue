@@ -3,23 +3,17 @@
     title="分栏布局"
     :split-at="900"
     :list-width="375"
-    @wide-change="onWideChange"
+    @layout-change="onLayoutChange"
   >
-    <!-- 左栏：独立列表页（自己的浮动 toolbar + 搜索 / 筛选 + 列表） -->
     <template #list-header>
-      <lingyun-toolbars
-        :fixed="false"
-        :avoid-capsule="!wide"
-        :show-back="!navDocked && !hosted"
-        :show-trailing="false"
-        :show-window-controls="false"
-        :show-theme-switch="false"
-        title-style="title2LineLeft"
+      <lingyun-split-toolbar
         title="条目"
         searchable
         search-placeholder="搜索条目 / 说明"
         :trailing-buttons="toolbarButtons"
         trailing-menu-enabled
+        :show-back="!navDocked && !hosted"
+        :avoid-capsule="!wide"
         :glass-progress="listGlass"
         v-model:searching="searching"
         v-model:search-value="keyword"
@@ -50,10 +44,10 @@
             </view>
           </view>
         </template>
-      </lingyun-toolbars>
+      </lingyun-split-toolbar>
     </template>
 
-    <template #list="{ wide: isWide, topSpace }">
+    <template #list>
       <view class="lingyun-split-layout-pane">
         <scroll-view
           class="lingyun-split-layout-scroll"
@@ -61,14 +55,14 @@
           :show-scrollbar="false"
           @scroll="onListScroll"
         >
-          <view class="demo-space" :style="{ height: `${topSpace}px` }" />
+          <view class="demo-space" :style="{ height: `${listTopSpace}px` }" />
 
           <lingyun-list v-if="filteredItems.length" plain>
             <view
               v-for="item in filteredItems"
               :key="item.id"
               class="demo-row"
-              :class="{ 'demo-row--active': isWide && item.id === selectedId }"
+              :class="{ 'demo-row--active': wide && item.id === selectedId }"
               @click="onItemTap(item)"
             >
               <lingyun-list-item
@@ -106,26 +100,17 @@
 
     <!-- 右栏：详情（仅宽屏渲染） -->
     <template #detail-header>
-      <lingyun-toolbars
-        :fixed="false"
-        :show-back="false"
-        :show-trailing="false"
-        :show-window-controls="false"
-        :show-theme-switch="false"
-        title-style="title2LineLeft"
-        title="条目详情"
-        :glass-progress="detailGlass"
-      />
+      <lingyun-split-toolbar title="条目详情" :glass-progress="detailGlass" />
     </template>
 
-    <template #detail="{ topSpace }">
+    <template #detail>
       <scroll-view
         class="lingyun-split-layout-fill"
         scroll-y
         :show-scrollbar="false"
         @scroll="onDetailScroll"
       >
-        <view class="demo-space" :style="{ height: `${topSpace}px` }" />
+        <view class="demo-space" :style="{ height: `${detailTopSpace}px` }" />
         <view class="demo-detail">
           <lingyun-section title="lingyun-split-layout" hint="宽屏左右分栏 · 窄屏只渲染左栏">
             <view class="demo-hint">
@@ -156,7 +141,7 @@
 
 <script setup lang="ts">
   import { computed, onBeforeUnmount, ref, watch } from 'vue'
-  import { isLingyunWideScreen } from '@/uni_modules/lingyun-ui'
+  import { isLingyunWideScreen, type LingyunSplitLayoutChange } from '@/uni_modules/lingyun-ui'
   import { pageHostState } from '@/router/pageHost'
 
   interface DemoItem {
@@ -184,11 +169,15 @@
   })
 
   const wide = ref(false)
+  const listTopSpace = ref(0)
+  const detailTopSpace = ref(0)
   const listGlass = ref(0)
   const detailGlass = ref(0)
 
-  function onWideChange(value: boolean): void {
-    wide.value = value
+  function onLayoutChange(value: LingyunSplitLayoutChange): void {
+    wide.value = value.wide
+    listTopSpace.value = value.listTopSpace
+    detailTopSpace.value = value.detailTopSpace
   }
 
   /** 左侧导航停靠时不显示返回 */
@@ -247,6 +236,7 @@
   })
 
   function onSearchCancel(): void {
+    searching.value = false
     keyword.value = ''
   }
 

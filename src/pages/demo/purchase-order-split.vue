@@ -3,62 +3,44 @@
     title="订货单"
     :split-at="900"
     :list-width="375"
-    @wide-change="onWideChange"
+    @layout-change="onLayoutChange"
   >
-    <!-- 左栏：自己的浮动 toolbar + 订货单列表 -->
     <template #list-header>
-      <lingyun-toolbars
-        :fixed="false"
-        :show-back="!navDocked && !hosted"
-        :show-trailing="false"
-        :show-window-controls="false"
-        :show-theme-switch="false"
-        title-style="title2LineLeft"
+      <lingyun-split-toolbar
         title="订货单"
-        :subtitle="`${filteredOrders.length} 条结果`"
         :segments="filterOptions"
         :segment-value="activeFilter"
-        segment-control="tabs"
+        :show-back="!navDocked && !hosted"
+        :avoid-capsule="!wide"
         :glass-progress="listGlass"
         @segment-change="onFilterChange"
         @back="onBack"
       />
     </template>
 
-    <template #list="{ topSpace }">
+    <template #list>
       <lingyun-purchase-order-list-panel
         class="lingyun-split-layout-pane"
         full
         :orders="orders"
         :filter="activeFilter"
         :selected-key="wide && currentOrder ? currentOrder.key || currentOrder.number : ''"
-        :top-space="topSpace"
+        :top-space="listTopSpace"
         @scroll="onListScroll"
         @purchase-order-click="onOrderClick"
         @action="onAction"
       />
     </template>
 
-    <!-- 宽屏右侧详情；窄屏点卡片进现有订货单详情页 -->
     <template #detail-header>
-      <lingyun-toolbars
-        :fixed="false"
-        :show-back="false"
-        :show-trailing="false"
-        :show-window-controls="false"
-        :show-theme-switch="false"
-        title-style="title2LineLeft"
-        title="订货单详情"
-        :subtitle="currentOrder ? currentOrder.number : ''"
-        :glass-progress="detailGlass"
-      />
+      <lingyun-split-toolbar title="订货单详情" :glass-progress="detailGlass" />
     </template>
 
-    <template #detail="{ topSpace }">
+    <template #detail>
       <lingyun-purchase-order-detail-panel
         class="lingyun-split-layout-pane"
         :order="currentOrder"
-        :top-space="topSpace"
+        :top-space="detailTopSpace"
         @scroll="onDetailScroll"
         @action="onAction"
         @item-click="onItemClick"
@@ -72,7 +54,7 @@
 
 <script setup lang="ts">
   import { computed, onBeforeUnmount, ref, watch } from 'vue'
-  import { isLingyunWideScreen } from '@/uni_modules/lingyun-ui'
+  import { isLingyunWideScreen, type LingyunSplitLayoutChange } from '@/uni_modules/lingyun-ui'
   import { pageHostState } from '@/router/pageHost'
   import { demoPurchaseOrders } from './purchaseOrderDemo'
   import LingyunPurchaseOrderListPanel from '@/uni_modules/lingyun-ui-page/components/lingyun-purchase-order-list/lingyun-purchase-order-list-panel.vue'
@@ -89,11 +71,15 @@
     LingyunPurchaseOrderListOrderPayload,
   } from '@/uni_modules/lingyun-ui-page/components/lingyun-purchase-order-list/types'
 
-  /** 分栏门槛由 lingyun-split-layout 按 split-at 判断，这里只跟随 wide-change 做业务分支 */
+  /** 分栏门槛 / 头部量高由 lingyun-split-layout 负责，这里只跟随 layout-change 做业务分支 */
   const wide = ref(false)
+  const listTopSpace = ref(0)
+  const detailTopSpace = ref(0)
 
-  function onWideChange(value: boolean): void {
-    wide.value = value
+  function onLayoutChange(value: LingyunSplitLayoutChange): void {
+    wide.value = value.wide
+    listTopSpace.value = value.listTopSpace
+    detailTopSpace.value = value.detailTopSpace
   }
 
   /** 左侧导航停靠时不显示页面返回 */

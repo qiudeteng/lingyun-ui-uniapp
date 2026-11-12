@@ -253,8 +253,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, getCurrentInstance, type PropType } from 'vue'
-import { onResize } from '@dcloudio/uni-app'
+import { defineComponent, type PropType } from 'vue'
 import {
   coerceTriFlag,
   getLingyunNavLayout,
@@ -354,6 +353,8 @@ export default defineComponent({
     },
     /** 开启顶部搜索：右侧多一个独立搜索按钮，点击进入搜索模式 */
     searchable: { type: Boolean, default: false },
+    /** 额外顶部留白（进玻璃内部）：H5 / 微信 PC 分栏页由 lingyun-split-toolbar 传入 */
+    topInset: { type: Number, default: 0 },
     /** 搜索模式；输入框替换左侧内容，原搜索按钮变为取消 */
     searching: { type: Boolean, default: false },
     searchValue: { type: String, default: '' },
@@ -435,18 +436,10 @@ export default defineComponent({
       _themeAnchorTimers: [] as ReturnType<typeof setTimeout>[],
     }
   },
-  setup() {
-    const instance = getCurrentInstance()
-    onResize((res) => {
-      const proxy = (instance && instance.proxy) as
-        | { syncNavLayout?: (windowWidth?: number) => void }
-        | null
-      if (proxy && typeof proxy.syncNavLayout === 'function') {
-        proxy.syncNavLayout(readLingyunResizeWidth(res))
-      }
-    })
-    return {}
-  },
+  /*
+   * 窗口尺寸变化统一走 mounted 里的 bindResize（uni.onWindowResize + H5 resize）。
+   * 不再注册 uni-app 的 onResize：在分栏等嵌套组件里注册会中断渲染（小程序白屏）。
+   */
   created() {
     this.syncNavLayout()
   },
@@ -680,11 +673,14 @@ export default defineComponent({
         h +=
           this.styleKey === 'title2LineLarge' ? this.title2LineLargeExtraPx : this.largeExtraPx
       }
-      return h
+      return h + Math.max(0, Number(this.topInset) || 0)
     },
     rootStyle(): Record<string, string> {
       const style: Record<string, string> = {
         minHeight: `${this.contentMinHeightPx}px`,
+      }
+      if (this.topInset > 0) {
+        style.paddingTop = `${this.topInset}px`
       }
       /*
        * 微信右侧避让胶囊：root paddingRight = rightInset。

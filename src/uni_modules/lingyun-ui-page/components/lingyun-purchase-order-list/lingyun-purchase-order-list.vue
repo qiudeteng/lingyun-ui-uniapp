@@ -1,7 +1,7 @@
 <template>
   <lingyun-app-page
     :show-toolbar="showToolbar"
-    :show-back="showBack && showToolbar"
+    :show-back="showToolbar ? showBack : false"
     :show-nav="showNav"
     :show-tabbar="false"
     :title="title"
@@ -92,7 +92,7 @@ export default defineComponent({
     noMoreText: { type: String, default: '没有更多订货单' },
     title: { type: String, default: '订货单列表' },
     showToolbar: { type: Boolean, default: true },
-    showBack: { type: Boolean, default: true },
+    showBack: { type: [Boolean, String], default: 'auto' },
     showNav: { type: Boolean, default: true },
     autoTopInset: { type: Boolean, default: true },
     /** 返回钮默认返回上一页；false 时只抛 back，由页面处理 */

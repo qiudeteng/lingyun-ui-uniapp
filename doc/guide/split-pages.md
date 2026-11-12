@@ -10,13 +10,15 @@
 lingyun-app-page（show-toolbar=false、body-scroll=false、show-tabbar=false）
 └── .xxx-page（专属类，flex 行、height:100vh、padding:0）
     ├── 左栏 .xxx-pane--list（宽屏固定 375px；position:relative）
-    │   ├── .xxx-pane__header（position:absolute，放非 fixed 的 lingyun-toolbars）
+    │   ├── .xxx-pane__header（position:absolute，放 lingyun-split-toolbar）
     │   └── 列表内容（内层 scroll-view 或面板组件）
     ├── 分隔（0.5px 透明缝隙，或按设计）
     └── 右栏 .xxx-pane--detail（仅宽屏渲染）
-        ├── .xxx-pane__header（浮动 toolbar：标题 / 当前项副标题）
+        ├── .xxx-pane__header（放 lingyun-split-toolbar）
         └── 详情内容
 ```
+
+> 用 `lingyun-split-layout` 时以上结构全部由组件提供；两栏 toolbar 用配套的 **`lingyun-split-toolbar`** 放进 `list-header` / `detail-header` 插槽，页面只传标题 / 搜索 / 分段等业务配置，**不要直接写 `lingyun-toolbars`，也不要设置 `title-style` 等展示属性**。下面的模板用于理解组件内部或手写分栏的场景。
 
 分栏门槛：窄屏 **< 900** 单栏 + 点行进独立详情页；≥ 900 分栏（与 `list-detail` 一致）。窗口宽度变化用 `uni.onWindowResize` 更新，`wide` 为 computed。
 
@@ -47,7 +49,7 @@ WXSS 里 `scroll-view` 的 `height: 100%` 在 flex 链路上拿不到确定高�
 
 `lingyun-app-page` 会通过 provide/inject 把任何内层实例降级为 **embedded**（内容随页面流、没有固定高度、内层 scroll 失效）；同时 H5 的导航宿主 `setLingyunH5PageNavAllowed` 会被内层覆盖、`--nav` 类会往里叠加导航内边距，出现「列表钻到导航下面、详情内容大幅右移」。
 
-- ✅ 标准页拆成「**页面壳 + 内容面板**」：面板组件（如 `lingyun-purchase-order-list-panel`）不含 app-page，分栏页直接用面板 + 自备 toolbar；面板暴露 `topSpace`（工具条高度占位）与 `scroll`（驱动玻璃进度）事件。
+- ✅ 标准页拆成「**页面壳 + 内容面板**」：面板组件（如 `lingyun-purchase-order-list-panel`）不含 app-page，分栏页直接用面板，toolbar 用 `lingyun-split-toolbar`；面板暴露 `topSpace`（工具条高度占位）与 `scroll`（驱动玻璃进度）事件。
 - ❌ 不要为了复用给标准页加 `inline` 之类往 app-page 里塞特例的开关。
 
 ### 2.4 ❌ 小程序自定义组件宿主节点没有高度（本轮最大坑）
@@ -60,10 +62,10 @@ WXSS 里 `scroll-view` 的 `height: 100%` 在 flex 链路上拿不到确定高�
 
 - ✅ 用 `lingyun-split-layout` 时：插槽内容直接用组件自带的全局结构工具类（容器有确定高度、是定位参照）：
   ```vue
-  <template #list="{ topSpace }">
+  <template #list>
     <lingyun-purchase-order-list-panel
       class="lingyun-split-layout-pane"
-      :top-space="topSpace"
+      :top-space="listTopSpace"
       ...
     />
   </template>
@@ -94,9 +96,8 @@ WXSS 里 `scroll-view` 的 `height: 100%` 在 flex 链路上拿不到确定高�
 
 ### 2.8 ⚠️ 浮动 toolbar 的占位与玻璃
 
-- toolbar 用 `:fixed="false"` + 外层 `position:absolute`；用 `createSelectorQuery` 量高度作为内容顶部占位（`topSpace` 或自绘 spacer），容器切换宽度 / 横竖屏后要重测。
-- 滚动驱动 `glass-progress = min(1, top / 56)`；面板内层滚动要通过 `scroll` 事件把 scrollTop 抛给宿主。
-- 分栏 pane 不是整宽时 `:avoid-capsule="false"`（微信胶囊在别的栏上面），窄屏恢复默认。
+- 用 `lingyun-split-layout` 时只需要：把 `lingyun-split-toolbar` 放进 header 插槽并传业务配置（标题 / 搜索 / 分段 / 自定义按钮）、把内容滚动换算成 `glass-progress`（`min(1, top / 56)`）、用 `layout-change` 的 `listTopSpace` / `detailTopSpace` 做顶部占位（不要解构作用域插槽参数：微信小程序里页面重渲染后插槽内组件会丢 props，点行后整栏空白）。头部高度由分栏组件实测，`title-style` / 分段形态 / 12px 顶部补偿都固定在 `lingyun-split-toolbar` 里。
+- 手写分栏时才需要自己放 `:fixed="false"` 的 toolbar、`createSelectorQuery` 量高、`:avoid-capsule="false"`（微信胶囊在别的栏上面）；这些在组件里已经固定处理，页面层不要重复。
 
 ## 3. 验证清单
 

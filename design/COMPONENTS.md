@@ -83,7 +83,8 @@
 | ✅ | `lingyun-duo-toolbar` | 内部组件：iPhone Duo 内屏竖屏顶部工具栏（84 高，Leading 48 / 标题 17-22 左对齐 / 164×48 工具组 / 右侧状态预留 134），由 `lingyun-app-page` 使用 | [`TOOLBARS.md`](./TOOLBARS.md) · [`SIDEBARS.md`](./SIDEBARS.md) |
 | ✅ | `lingyun-theme-action` | 内置浅色 / 暗黑 / 自动切换钮；进入工具栏右侧按钮组或 Duo 工具组 | [`TOOLBARS.md`](./TOOLBARS.md) |
 | ✅ | `lingyun-duo-rail` | 内部组件：iPhone Duo 右侧全高栏（84 宽，工具组 / 仅图标 Tab / 搜索 / 外屏横屏溢出），由 `lingyun-app-page` 使用 | [`SIDEBARS.md`](./SIDEBARS.md) |
-| ✅ | `lingyun-split-layout` | 列表 + 详情分栏布局：≥ splitAt（默认 900）左列表（固定 listWidth）+ 右详情，窄屏只显示左栏；`list-header` / `list` / `detail-header` / `detail` 插槽，头部高度实测后以 `topSpace` 交给内容；插槽结构工具类 `lingyun-split-layout-pane` / `-fill` / `-scroll` | [`split-pages`](../doc/guide/split-pages.md) · [`split-layout`](../doc/components/split-layout.md) |
+| ✅ | `lingyun-split-layout` | 列表 + 详情分栏布局：≥ splitAt（默认 900）左列表（固定 listWidth）+ 右详情，窄屏只显示左栏；`list-header` / `list` / `detail-header` / `detail` 插槽，头部实测高度以 `topSpace` 交给内容；插槽结构工具类 `lingyun-split-layout-pane` / `-fill` / `-scroll` | [`split-pages`](../doc/guide/split-pages.md) · [`split-layout`](../doc/components/split-layout.md) |
+| ✅ | `lingyun-split-toolbar` | 分栏页统一浮动顶栏：固定标题样式 / 无副标题 / 分段形态 / H5 与微信 PC 12px 顶部补偿；页面只传标题 / 搜索 / 分段 / 自定义按钮 | [`split-layout`](../doc/components/split-layout.md) |
 | ✅ | `lingyun-copy` | 复制触发器 · 文字 / 图标 · 点击把 text 写入剪贴板 | [`UI_SPEC.md`](./UI_SPEC.md) · [`copy`](../doc/components/copy.md) |
 | ✅ | `lingyun-save-image` | 保存为图片 · ref 元素 / 整页截图 / 小程序 canvas 导出 | [`UI_SPEC.md`](./UI_SPEC.md) · [`save-image`](../doc/components/save-image.md) |
 | ✅ | `lingyun-split-view` | 内部组件：iPhone Duo 内屏横屏 Split View（左主栏 456 / 折痕带 40 / 右详情 371），由 `lingyun-app-page` 使用 | [`SIDEBARS.md`](./SIDEBARS.md) |
@@ -157,6 +158,7 @@
 | 日期 | 说明 |
 |------|------|
 | 2026-11-12 | 新增 `lingyun-copy`（复制 · 文字 / 图标触发）与 `lingyun-save-image`（元素 / 整页截图 · canvas 导出）；demo `/pages/demo/copy`、`/pages/demo/save-image` |
+| 2026-11-12 | 新增 `lingyun-split-toolbar`（分栏页统一浮动顶栏）；三个分栏 demo 改用，页面不再写 `title-style`；`lingyun-toolbars` 移除 `onResize` 修复嵌套白屏 |
 | 2026-10-20 | 凌云UI 1.0.31：新增 `formFactor` / `duoPose` 设备形态；iPad/PC + 全局 tabs 改为 84 浮动玻璃窄栏；iPhone Duo 内屏竖屏接入 84 Duo Toolbar + 95 Duo Tab（半折 40 横向折痕安全带）；外屏竖/横与内屏横屏接入右侧 84 全高栏；内屏横屏折叠/半折接入 Split View（456 / 40 / 371 + 右侧 84 返回列） |
 | 2026-10-20 | 凌云UI 1.0.30：`lingyun-app-page` 支持全局 `tabs` 数据驱动，窄屏底部 Tab / 宽屏左侧导航自动切换；PC + tabs 时侧栏收窄为 84 窄栏（图标在上、文字在下），选中胶囊上下滑动；`lingyun-tabbars` 支持 `iconMode` |
 | 2026-10-16 | 图表：新增地图 Demo / 文档（`type="map"`，省级简图） |

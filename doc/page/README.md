@@ -19,7 +19,6 @@
 | [记录列表 Demo](./records.md) | `pages/demo/records` | 列表 + 筛选菜单 + 搜索 + 日期切换联动示例（非标准页组件） |
 | [纯列表 Demo](./plain-list.md) | `pages/demo/plain-list` | 全宽平铺列表 + 顶部搜索 / 筛选 + 底部日期切换示例（非标准页组件） |
 | [列表与详情 Demo](./list-detail.md) | `pages/demo/list-detail` | 宽屏左列表（375px）右详情、窄屏独立详情页示例（非标准页组件） |
-| [工作台 Demo](./workbench.md) | `pages/demo/workbench` | 一级 Tab 带 children 时的窄屏落地页：二级 / 三级菜单分组卡片（非标准页组件） |
 
 ## 约定
 

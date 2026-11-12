@@ -1,5 +1,5 @@
 <template>
-  <view class="ticket-detail">
+  <view v-if="ticket.id" class="ticket-detail">
     <view class="ticket-detail__hero">
       <view class="ticket-detail__head">
         <text class="ticket-detail__title">{{ ticket.title }}</text>
@@ -43,7 +43,26 @@
   } from '@/pages/demo/listDetailDemo'
   import type { LingyunTimelineItem } from '@/uni_modules/lingyun-ui/components/lingyun-timeline/types'
 
-  const props = defineProps<{ ticket: ListDetailTicket }>()
+  /*
+   * 小程序里 props 可能比模板晚一步到达；uni-app 编译出的渲染数据会先读 ticket.title，
+   * 所以必须给 ticket 一个默认对象，不能只在 WXML 上写 v-if。
+   */
+  const props = withDefaults(defineProps<{ ticket: ListDetailTicket }>(), {
+    ticket: () =>
+      ({
+        id: '',
+        title: '',
+        customer: '',
+        status: 'open',
+        priority: '低',
+        assignee: '',
+        createdAt: '',
+        updatedAt: '',
+        address: '',
+        description: '',
+        logs: [],
+      }) as ListDetailTicket,
+  })
 
   const statusText = computed(() => LIST_DETAIL_STATUS_TEXT[props.ticket.status] || '—')
 

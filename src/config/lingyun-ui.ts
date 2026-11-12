@@ -1,6 +1,7 @@
 import { toRef } from 'vue'
 import {
   configureLingyunPageNav,
+  configureLingyunUpload,
   setLingyunLayoutOverride,
   setLingyunPageConfig,
   type LingyunDuoPose,
@@ -9,6 +10,7 @@ import { DEMO_PAGE_CONFIG } from './pageTabs'
 import router from '@/router'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
+import { formatToken, getToken } from '@/utils/auth'
 import { pageRequiresLogin } from '@/router/guards'
 import {
   LINGYUN_PAGE_NAV_GUEST_HOME,
@@ -142,6 +144,7 @@ export function configureLingyunUi(): void {
     onRouteChange: (cb) => router.onRouteChange((to) => cb(to.path)),
     useHostedPath: () => toRef(pageHostState, 'path'),
   })
+  configureLingyunUpload({ getAuthorization: () => formatToken(getToken()) })
   setLingyunPageConfig(DEMO_PAGE_CONFIG)
   installLingyunLayoutPreviewBridge()
 }
