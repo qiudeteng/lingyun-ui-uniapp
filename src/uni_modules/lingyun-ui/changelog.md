@@ -1,4 +1,4 @@
-## 1.0.60（2026-11-12）
+## 1.0.60 (2026-11-12)
 - 新增 `lingyun-split-toolbar`：分栏页统一浮动顶栏。内部固定 `title2LineLeft`、无副标题、非 fixed、不显示窗口按钮 / 主题钮、`segments` 固定渲染为分段控件，并统一处理 H5 / 微信 PC 的 12px 顶部补偿；页面只传标题 / 搜索 / 分段 / 自定义按钮（支持 `v-model:searching` / `v-model:search-value` / `v-model:segment-value`）与 `#trailing-menu` 浮层。分栏页不再直接写 `lingyun-toolbars` 或 `title-style` 等展示属性，三个分栏 demo 已全部改用该组件。
 - `lingyun-toolbars`：移除 `onResize` 注册（窗口尺寸变化已由 `uni.onWindowResize` / H5 `resize` 兜底），修复 toolbar 在嵌套组件 / 分栏插槽内注册生命周期导致微信小程序白屏的问题。
 - `lingyun-toolbars` 新增 `topInset`：额外顶部留白计入玻璃内部高度（供分栏顶栏在 H5 / 微信 PC 补 12px，栏顶不再露出滚动内容）。
