@@ -19,7 +19,7 @@
 | `pill` | 分类/筛选切换 | 玻璃胶囊轨道 + 白色/玻璃选中胶囊 |
 
 - 两种形态都支持横向滚动、自动滚入、badge、icon、禁用。
-- Tab 内 badge 使用 `lingyun-badge size="small"`（18px 高 / 11px 文案）。
+- Tab 内 badge 使用 `lingyun-badge size="small"`（18px 高 / 11px 文案），按上标挂在文字右上角、不占行内排版宽度；选中 pill 内文字保持居中。
 - 不要与底部 `lingyun-tabbars` 混用：底部负责一级导航，顶部负责页面内切换。
 
 ## 2. 尺寸
