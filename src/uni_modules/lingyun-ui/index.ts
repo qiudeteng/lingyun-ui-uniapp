@@ -24,6 +24,15 @@ export {
   configureLingyunUpload,
   type LingyunUploadAuthorization,
 } from './utils/upload'
+export {
+  commitLingyunToolbarPicker,
+  lingyunToolbarPicker,
+  setLingyunToolbarPicker,
+  setLingyunToolbarPickerEnabled,
+  setLingyunToolbarPickerValue,
+  type LingyunToolbarPickerConfig,
+  type LingyunToolbarPickerOption,
+} from './utils/toolbarPicker'
 // #ifdef H5
 export * from './utils/h5Scrollbar'
 // #endif

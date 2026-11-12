@@ -8,6 +8,7 @@
       :show-theme-switch="false"
       title-style="title2LineLeft"
       :title="title"
+      :subtitle-picker="subtitlePicker"
       :searchable="searchable"
       :search-placeholder="searchPlaceholder"
       :searching="searching"
@@ -99,6 +100,8 @@ export default defineComponent({
   name: 'LingyunSplitToolbar',
   props: {
     title: { type: String, default: '' },
+    /** 副标题位置显示全局选择器。默认关 */
+    subtitlePicker: { type: Boolean, default: false },
     showBack: { type: Boolean, default: false },
     searchable: { type: Boolean, default: false },
     searchPlaceholder: { type: String, default: '搜索' },

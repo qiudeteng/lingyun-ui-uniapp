@@ -15,7 +15,8 @@
 | 属性 | 说明 | 默认值 |
 | --- | --- | --- |
 | `title` | 标题 | '' |
-| `subtitle` | 副标题 | '' |
+| `subtitle` | 副标题。全局副标题选择器开启时忽略 | '' |
+| `subtitlePicker` | 副标题位置显示全局选择器。默认关，需要的顶栏设为 `true`；打开后忽略 `subtitle` | false |
 | `titleStyle` | `title` / `large` / `title2LineLarge` | title |
 | `placement` | `standard` 或 `sheet` | standard |
 | `showBack` | 返回。`auto` 按场景决定 | auto |
@@ -56,6 +57,8 @@
 | `segment-change` | 分段切换，参数 `{ value, item }` |
 
 `trailingButtons` 支持一维 / 二维数组：一维是一组，二维按子数组拆成多个玻璃胶囊。单个按钮是 44×44 圆钮，多个是 36×36 + gap 18 的胶囊组。点击后发 `trailing-action`，`anchor` 是**按钮组**的视口矩形（整组会隐藏，菜单按组右上角对齐），可直接作为 `lingyun-menu` 的 `anchor` 打开自定义浮层；如果设置 `trailing-menu-enabled` 并传入 `#trailing-menu="{ button, index, groupIndex, buttonIndex, close }"` 插槽，也会自动在按钮组下方弹出自定义菜单内容。主题钮菜单同样按第一组右上角定位。
+
+副标题选择器是全站一份，不跟某一页的数据请求走。使用方准备好选项后调用一次 `setLingyunToolbarPicker({ options, value, title, onChange })`，之后换页不要再查询。顶栏默认不显示。需要的页面给 `lingyun-app-page`、`lingyun-toolbars` 或 `lingyun-split-toolbar` 设 `subtitle-picker`。打开后副标题位置变成「当前项 + 箭头」，点击弹出 `lingyun-picker`，这一页写的 `subtitle` 会被忽略。选项可以是门店，也可以是别的名单。`setLingyunToolbarPickerEnabled(false)` 会把已经打开的顶栏一起关掉，名单还在。
 
 `segments` 会在 toolbar 下方渲染数据驱动控件：默认 `segmentControl="segmented"` 是 48 高 Large 分段控制、行高 56；`segmentControl="tabs"` 用 `lingyun-tabs` 渲染顶部 Tabs，Tabs 行 44 贴底，页面顶部额外留 8 间距（toolbar 栈 52）。两者共用同一份数据和事件，`segmentValue` 受控，切换发 `update:segmentValue`、`segment-click`、`segment-change`。搜索模式只让左侧输入框从右往左滑入，搜索/取消按钮位置固定不变，关闭时输入框反向滑出。
 

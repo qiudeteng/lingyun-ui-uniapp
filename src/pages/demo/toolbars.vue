@@ -1,5 +1,5 @@
 <template>
-  <lingyun-app-page title="Toolbars">
+  <lingyun-app-page title="Toolbars" :subtitle-picker="pickerOn">
     <view class="page">
       <view class="hero">
         <text class="hero__title">Toolbars</text>
@@ -8,8 +8,7 @@
 
       <lingyun-section title="Standard · Title（60）">
         <view class="preview">
-          <lingyun-toolbars
-            :safe-area="false"
+          <lingyun-toolbars :safe-area="false"
             title="Title"
             @back="toast('back')"
             @trailing="toast('trailing')"
@@ -25,8 +24,7 @@
 
       <lingyun-section title="Standard · Title 2 Line">
         <view class="preview">
-          <lingyun-toolbars
-            :safe-area="false"
+          <lingyun-toolbars :safe-area="false"
             title-style="title2Line"
             title="Title"
             subtitle="Subtitle"
@@ -37,8 +35,7 @@
 
       <lingyun-section title="Standard · Title 2 Line Left">
         <view class="preview">
-          <lingyun-toolbars
-            :safe-area="false"
+          <lingyun-toolbars :safe-area="false"
             title-style="title2LineLeft"
             title="Title"
             subtitle="Subtitle"
@@ -49,8 +46,7 @@
 
       <lingyun-section title="Standard · Title 2 Line Large（131）">
         <view class="preview">
-          <lingyun-toolbars
-            :safe-area="false"
+          <lingyun-toolbars :safe-area="false"
             title-style="title2LineLarge"
             title="Title"
             subtitle="Subtitle"
@@ -61,8 +57,7 @@
 
       <lingyun-section title="Sheet · Title（76 · Grabber）">
         <view class="preview">
-          <lingyun-toolbars
-            :safe-area="false"
+          <lingyun-toolbars :safe-area="false"
             placement="sheet"
             title="Title"
             @close="toast('close')"
@@ -73,12 +68,28 @@
 
       <lingyun-section title="Sheet · Large（127）">
         <view class="preview">
-          <lingyun-toolbars
-            :safe-area="false"
+          <lingyun-toolbars :safe-area="false"
             placement="sheet"
             title-style="large"
             title="Title"
             @close="toast('close')"
+          />
+        </view>
+      </lingyun-section>
+
+      <lingyun-section title="副标题选择器" hint="名单只传一次。打开后当前页顶栏副标题换成当前项，写了副标题也会被忽略。">
+        <view class="picker-row">
+          <text class="picker-row__label">在本页显示</text>
+          <lingyun-switch v-model="pickerOn" />
+        </view>
+        <view class="preview">
+          <lingyun-toolbars
+            :safe-area="false"
+            title-style="title2Line"
+            title="调拨单"
+            subtitle="这条副标题会被忽略"
+            :subtitle-picker="pickerOn"
+            @back="toast('back')"
           />
         </view>
       </lingyun-section>
@@ -95,8 +106,7 @@
 
       <lingyun-section title="Grouped trailing buttons" hint="二维数组 · 多组胶囊">
         <view class="preview">
-          <lingyun-toolbars
-            :safe-area="false"
+          <lingyun-toolbars :safe-area="false"
             title="Groups"
             :trailing-buttons="groupedButtons"
             @trailing-action="onGroupedAction"
@@ -107,8 +117,7 @@
 
       <lingyun-section title="Right action group" hint="trailing-buttons + trailing-menu" is-last>
         <view class="preview">
-          <lingyun-toolbars
-            :safe-area="false"
+          <lingyun-toolbars :safe-area="false"
             title="Actions"
             :trailing-buttons="actionButtons"
             trailing-menu-enabled
@@ -133,6 +142,7 @@
 
 <script setup lang="ts">
   import { ref } from 'vue'
+  import { setLingyunToolbarPicker } from '@/uni_modules/lingyun-ui'
 
   const actionButtons = [
     { key: 'search', icon: 'search', label: 'Search' },
@@ -147,6 +157,19 @@
     [{ key: 'filter', icon: 'tune', label: 'Filter' }],
   ]
   const groupedAction = ref('—')
+  const pickerOn = ref(false)
+
+  setLingyunToolbarPicker({
+    title: '选择门店',
+    placeholder: '请选择',
+    searchPlaceholder: '搜索门店',
+    options: [
+      { value: 'dg', label: '八喜冰淇淋蛋糕(东莞店)' },
+      { value: 'zc', label: '八喜冰淇淋蛋糕(禅城店)' },
+      { value: 'bz', label: '八喜冰淇淋蛋糕(北滘店)' },
+    ],
+    value: 'dg',
+  })
 
   function onGroupedAction(payload: {
     key?: string
@@ -211,6 +234,20 @@
 
   .action-menu {
     padding: 4px 0;
+  }
+
+  .picker-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+  }
+
+  .picker-row__label {
+    font-size: 17px;
+    line-height: 22px;
+    color: var(--lingyun-label, #1c1c1e);
   }
 
   .grouped-hint {

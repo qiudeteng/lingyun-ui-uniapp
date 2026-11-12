@@ -60,6 +60,7 @@
       class="lingyun-app-page__toolbar"
       :title="displayTitle"
       :subtitle="hostedMiss ? '' : subtitle"
+      :subtitle-picker="subtitlePicker"
       :title-style="titleStyle"
       :placement="placement"
       :show-back="showBackEffective"
@@ -306,6 +307,7 @@ import {
   readLingyunWindowWidth,
 } from '../lingyun-toolbars/getLingyunNavSafeInset'
 import { useLingyunTheme } from '../../utils/theme'
+import { lingyunToolbarPicker } from '../../utils/toolbarPicker'
 import { useLingyunThemeSwitchVisible } from '../../utils/themeSwitch'
 import { lingyun } from '../../utils/screen'
 import { resolveLingyunFormFactor } from '../../utils/layoutAdapter'
@@ -420,6 +422,8 @@ export default defineComponent({
   props: {
     title: { type: String, default: '' },
     subtitle: { type: String, default: '' },
+    /** 副标题位置显示全局选择器。默认关，需要的页面设为 true */
+    subtitlePicker: { type: Boolean, default: false },
     titleStyle: { type: String, default: 'title' },
     placement: { type: String, default: 'standard' },
     showBack: { default: 'auto' },
@@ -748,7 +752,12 @@ export default defineComponent({
       let h = this.barHeightPx
       if (!this.searchActive) {
         const style = this.titleStyle || 'title'
-        if (style === 'large') h += this.largeExtraPx
+        if (style === 'large') {
+          h +=
+            this.subtitlePicker && lingyunToolbarPicker.enabled
+              ? this.title2LineLargeExtraPx
+              : this.largeExtraPx
+        }
         if (style === 'title2LineLarge') h += this.title2LineLargeExtraPx
       }
       if (this.placement === 'sheet' || this.showGrabberEffective) h += 16

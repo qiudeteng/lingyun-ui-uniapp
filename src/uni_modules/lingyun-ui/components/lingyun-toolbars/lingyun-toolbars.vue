@@ -96,7 +96,25 @@
         <slot name="title">
           <text class="lingyun-toolbars__title">{{ title }}</text>
         </slot>
-        <slot v-if="showInlineSubtitle" name="subtitle">
+        <lingyun-picker
+          v-if="pickerActive"
+          :model-value="pickerIndex"
+          :range="pickerOptions"
+          range-key="label"
+          :title="pickerTitle"
+          :show-search="pickerSearchable"
+          :search-placeholder="pickerSearchPlaceholder"
+          :disabled="!pickerOptions.length"
+          @change="onToolbarPickerChange"
+        >
+          <template #trigger>
+            <view class="lingyun-toolbars__picker">
+              <text class="lingyun-toolbars__picker-text">{{ pickerLabel }}</text>
+              <lingyun-icon class="lingyun-toolbars__picker-mark" type="bottom" :size="10" color="secondary" />
+            </view>
+          </template>
+        </lingyun-picker>
+        <slot v-else-if="showInlineSubtitle" name="subtitle">
           <text class="lingyun-toolbars__subtitle">{{ subtitle }}</text>
         </slot>
       </view>
@@ -222,7 +240,25 @@
       <slot name="title">
         <text class="lingyun-toolbars__large-title">{{ title }}</text>
       </slot>
-      <slot v-if="showLargeSubtitle" name="subtitle">
+      <lingyun-picker
+        v-if="pickerActive"
+        :model-value="pickerIndex"
+        :range="pickerOptions"
+        range-key="label"
+        :title="pickerTitle"
+        :show-search="pickerSearchable"
+        :search-placeholder="pickerSearchPlaceholder"
+        :disabled="!pickerOptions.length"
+        @change="onToolbarPickerChange"
+      >
+        <template #trigger>
+          <view class="lingyun-toolbars__picker lingyun-toolbars__picker--large">
+            <text class="lingyun-toolbars__picker-text">{{ pickerLabel }}</text>
+            <lingyun-icon class="lingyun-toolbars__picker-mark" type="bottom" :size="12" color="secondary" />
+          </view>
+        </template>
+      </lingyun-picker>
+      <slot v-else-if="showLargeSubtitle" name="subtitle">
         <text class="lingyun-toolbars__large-subtitle">{{ subtitle }}</text>
       </slot>
     </view>
@@ -270,6 +306,10 @@ import {
 } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
 import { useLingyunTheme } from '../../utils/theme'
 import { useLingyunThemeSwitchVisible } from '../../utils/themeSwitch'
+import {
+  commitLingyunToolbarPicker,
+  lingyunToolbarPicker,
+} from '../../utils/toolbarPicker'
 
 export type LingyunToolbarButton = {
   key: string
@@ -323,6 +363,14 @@ export default defineComponent({
     subtitle: {
       type: String,
       default: '',
+    },
+    /**
+     * 副标题位置是否显示全局选择器。默认不显示。
+     * 需要的顶栏设为 true；写了 subtitle 也会被忽略。
+     */
+    subtitlePicker: {
+      type: Boolean,
+      default: false,
     },
     showBack: {
       default: 'auto',
@@ -704,19 +752,51 @@ export default defineComponent({
     showInlineTitle() {
       return !this.isLarge
     },
+    /** 只有显式打开的顶栏才显示。全局总开关关掉时也不显示。 */
+    pickerActive(): boolean {
+      const flag = this.subtitlePicker as unknown
+      if (flag !== true && flag !== 'true') return false
+      return lingyunToolbarPicker.enabled
+    },
+    pickerOptions() {
+      return lingyunToolbarPicker.options
+    },
+    pickerTitle(): string {
+      return lingyunToolbarPicker.title
+    },
+    pickerSearchable(): boolean {
+      return lingyunToolbarPicker.searchable
+    },
+    pickerSearchPlaceholder(): string {
+      return lingyunToolbarPicker.searchPlaceholder
+    },
+    pickerIndex(): number {
+      const current = lingyunToolbarPicker.value
+      const index = lingyunToolbarPicker.options.findIndex(
+        (item) => current != null && String(item.value) === String(current),
+      )
+      return index < 0 ? 0 : index
+    },
+    pickerLabel(): string {
+      const current = lingyunToolbarPicker.value
+      const hit = lingyunToolbarPicker.options.find(
+        (item) => current != null && String(item.value) === String(current),
+      )
+      return hit?.label || lingyunToolbarPicker.placeholder
+    },
     showInlineSubtitle() {
-      return this.showInlineTitle && this.isTwoLine && !!this.subtitle
+      return this.showInlineTitle && this.isTwoLine && !!this.subtitle && !this.pickerActive
     },
     showLargeTitle() {
       return this.isLarge
     },
     showLargeSubtitle() {
-      return this.isLarge && this.isTwoLine && !!this.subtitle
+      return this.isLarge && this.isTwoLine && !!this.subtitle && !this.pickerActive
     },
     titleWrapClass() {
       return {
         'lingyun-toolbars__title-wrap--left': this.isTitleLeft,
-        'lingyun-toolbars__title-wrap--two': this.isTwoLine,
+        'lingyun-toolbars__title-wrap--two': this.isTwoLine || (this.pickerActive && !this.isLarge),
       }
     },
     glassAmount() {
@@ -831,6 +911,11 @@ export default defineComponent({
       }
       // #endif
       this._onWindowResize = null
+    },
+    onToolbarPickerChange(payload: { value?: number | string | Array<number | string> }) {
+      const index = Number(payload?.value)
+      if (!Number.isFinite(index) || index < 0) return
+      commitLingyunToolbarPicker(index)
     },
     onBack() {
       this.$emit('back')
@@ -1359,6 +1444,46 @@ $ly-toolbar-gap: 8px;
 
 .lingyun-toolbars__title-wrap--left .lingyun-toolbars__subtitle {
   text-align: left;
+}
+
+.lingyun-toolbars__picker {
+  max-width: 100%;
+  margin-top: 1px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  pointer-events: auto;
+}
+
+.lingyun-toolbars__title-wrap--left .lingyun-toolbars__picker {
+  justify-content: flex-start;
+}
+
+.lingyun-toolbars__picker--large {
+  margin-top: 2px;
+}
+
+.lingyun-toolbars__picker-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--lingyun-label-secondary, #{$lingyun-label-secondary});
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 16px;
+}
+
+.lingyun-toolbars__picker--large .lingyun-toolbars__picker-text {
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.lingyun-toolbars__picker-mark {
+  flex-shrink: 0;
+  margin-left: 2px;
 }
 
 .lingyun-toolbars__segments {
