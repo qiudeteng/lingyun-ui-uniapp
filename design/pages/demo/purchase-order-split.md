@@ -13,7 +13,7 @@
 - 联动：面板的内层滚动抛 `scroll`，驱动各自 toolbar 的玻璃进度；宽屏点列表卡片切换右侧详情（切换筛选后当前单不在结果里时自动选中第一条）；状态筛选传给列表面板
 - 窄屏：页面就是一个订货单列表页（自己的 toolbar 带返回），点卡片 `uni.navigateTo` 打开现有的 `/pages/demo/purchase-order-detail` 标准详情页
 - 小程序宽屏宿主：本页是固定高度 + 双栏内层滚动页，注册在 `pageViews.ts` 的整页打开名单里，不进入宿主嵌入
-- 小程序高度链：面板组件的宿主节点（页内 `<lingyun-purchase-order-list-panel class="po-panel">`）必须显式 `flex: 1 + height: 0`——自定义组件宿主默认高度随内容，只靠面板内部的 `height: 100%` 撑不出确定高度，会随内容变高把整页顶出滚动、toolbar 跟着页面滚；面板内部 body / `scroll-view` 同样用 `flex: 1 + height: 0`
+- 小程序高度链：面板组件宿主节点用 `lingyun-split-layout-pane`（组件提供的全局结构工具类：绝对铺满内容容器 + 纵向 flex），否则自定义组件宿主默认高度随内容、只靠面板内部的 `height: 100%` 撑不出确定高度，会随内容变高把整页顶出滚动、toolbar 跟着页面滚；面板内部 body / `scroll-view` 同样用 `flex: 1 + height: 0`
 - 详情面板的事件（操作 / 商品 / 子订货单 / 复制 / 付款超时）与标准详情页一致；付款超时把当前订货单状态更新为已取消
 
 规范：[`UI_SPEC.md`](../../UI_SPEC.md)、[`TOOLBARS.md`](../../TOOLBARS.md)、[`purchase-order-list.md`](./purchase-order-list.md)、[`purchase-order-detail.md`](./purchase-order-detail.md)。

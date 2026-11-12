@@ -83,7 +83,7 @@
 | ✅ | `lingyun-duo-toolbar` | 内部组件：iPhone Duo 内屏竖屏顶部工具栏（84 高，Leading 48 / 标题 17-22 左对齐 / 164×48 工具组 / 右侧状态预留 134），由 `lingyun-app-page` 使用 | [`TOOLBARS.md`](./TOOLBARS.md) · [`SIDEBARS.md`](./SIDEBARS.md) |
 | ✅ | `lingyun-theme-action` | 内置浅色 / 暗黑 / 自动切换钮；进入工具栏右侧按钮组或 Duo 工具组 | [`TOOLBARS.md`](./TOOLBARS.md) |
 | ✅ | `lingyun-duo-rail` | 内部组件：iPhone Duo 右侧全高栏（84 宽，工具组 / 仅图标 Tab / 搜索 / 外屏横屏溢出），由 `lingyun-app-page` 使用 | [`SIDEBARS.md`](./SIDEBARS.md) |
-| ✅ | `lingyun-split-layout` | 列表 + 详情分栏布局：≥ splitAt（默认 900）左列表（固定 listWidth）+ 右详情，窄屏只显示左栏；`list-header` / `list` / `detail-header` / `detail` 插槽，头部高度实测后以 `topSpace` 交给内容 | [`split-pages`](../doc/guide/split-pages.md) · [`split-layout`](../doc/components/split-layout.md) |
+| ✅ | `lingyun-split-layout` | 列表 + 详情分栏布局：≥ splitAt（默认 900）左列表（固定 listWidth）+ 右详情，窄屏只显示左栏；`list-header` / `list` / `detail-header` / `detail` 插槽，头部高度实测后以 `topSpace` 交给内容；插槽结构工具类 `lingyun-split-layout-pane` / `-fill` / `-scroll` | [`split-pages`](../doc/guide/split-pages.md) · [`split-layout`](../doc/components/split-layout.md) |
 | ✅ | `lingyun-copy` | 复制触发器 · 文字 / 图标 · 点击把 text 写入剪贴板 | [`UI_SPEC.md`](./UI_SPEC.md) · [`copy`](../doc/components/copy.md) |
 | ✅ | `lingyun-save-image` | 保存为图片 · ref 元素 / 整页截图 / 小程序 canvas 导出 | [`UI_SPEC.md`](./UI_SPEC.md) · [`save-image`](../doc/components/save-image.md) |
 | ✅ | `lingyun-split-view` | 内部组件：iPhone Duo 内屏横屏 Split View（左主栏 456 / 折痕带 40 / 右详情 371），由 `lingyun-app-page` 使用 | [`SIDEBARS.md`](./SIDEBARS.md) |

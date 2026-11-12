@@ -1,6 +1,5 @@
 <template>
   <lingyun-split-layout
-    class="po-split-page"
     title="订货单"
     :split-at="900"
     :list-width="375"
@@ -28,7 +27,7 @@
 
     <template #list="{ topSpace }">
       <lingyun-purchase-order-list-panel
-        class="po-panel"
+        class="lingyun-split-layout-pane"
         full
         :orders="orders"
         :filter="activeFilter"
@@ -57,7 +56,7 @@
 
     <template #detail="{ topSpace }">
       <lingyun-purchase-order-detail-panel
-        class="po-panel"
+        class="lingyun-split-layout-pane"
         :order="currentOrder"
         :top-space="topSpace"
         @scroll="onDetailScroll"
@@ -234,22 +233,3 @@
     })
   }
 </script>
-
-<style lang="scss">
-  /*
-   * 小程序：自定义组件的宿主节点是额外一层、默认高度随内容；
-   * split-layout 的内容容器有确定高度，这里用绝对定位把面板铺满容器
-   * （slot 内容在小程序里不参与 flex 拉伸）。
-   */
-  .po-panel {
-    position: absolute;
-    left: 0;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-  }
-</style>

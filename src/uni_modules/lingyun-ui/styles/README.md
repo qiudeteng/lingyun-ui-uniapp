@@ -60,5 +60,6 @@ styles/
 控件档与面板档的差异（模糊 6 vs 20、0.5px 中性描边、投影近乎为 0、透镜内缘）见 [`design/BUTTONS.md`](../../../../design/BUTTONS.md) §3.1。
 
 插槽布局类（`lingyun-section-row` 等）在 `setting/_section-layout.scss`，**不要**写进组件 scoped/隔离 wxss。
+分栏插槽结构类（`lingyun-split-layout-pane` / `-fill` / `-scroll`）同样在 `setting/_split-layout.scss`，供 `lingyun-split-layout` 的页面插槽使用。
 
 更多复盘：[`design/UI_SPEC.md`](../../../../design/UI_SPEC.md) §6.2。

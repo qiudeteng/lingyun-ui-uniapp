@@ -1,0 +1,37 @@
+// lingyun-split-layout 插槽结构工具类
+// 写在插槽内容根节点 / 内层 scroll-view 上；必须进全局样式（App.vue → styles/index），
+// 否则微信小程序组件 styleIsolation 下插槽节点吃不到组件 wxss。
+// 用法见 doc/components/split-layout.md、doc/guide/split-pages.md。
+
+/* 插槽根容器：绝对铺满内容容器（小程序 slot 不参与 flex 拉伸），纵向堆叠滚动区与浮层 */
+.lingyun-split-layout-pane {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* 插槽根节点本身就是滚动区：绝对铺满，不再叠 flex */
+.lingyun-split-layout-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+/* 容器内的内层滚动区：拿确定高度（flex: 1 + height: 0），避免被内容撑开 */
+.lingyun-split-layout-scroll {
+  flex: 1;
+  min-height: 0;
+  height: 0;
+  box-sizing: border-box;
+}
