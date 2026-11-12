@@ -19,3 +19,9 @@
 ## 使用
 
 直接打开 `pages/demo/records` 体验；页面请求、筛选条件和分页由业务路由页自行管理。组件用法见 [列表](../components/list.md)、[筛选菜单](../components/menu.md)、[日期切换器](../components/date-switcher.md)、[搜索栏](../components/search-bar.md)。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/records.vue -->

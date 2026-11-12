@@ -4,7 +4,7 @@
 
 组件内部封好了 [`doc/guide/split-pages.md`](/guide/split-pages.html) 里的坑：app-page（关顶栏、`body-scroll=false`）+ 专属类 flex 行 + 浮动头部 + 0.5px 透明缝隙 + 头部高度测量，业务只写左右两栏自己的内容。
 
-参考 demo：`/pages/demo/list-detail`（纯列表 + 工单详情，含搜索 / 状态分段 / 底部日期条）、`/pages/demo/purchase-order-split`（订货单列表 + 详情面板）。
+参考 demo：`/pages/demo/split-layout`（组件 Demo，整页即分栏）、`/pages/demo/list-detail`（纯列表 + 工单详情，含搜索 / 状态分段 / 底部日期条）、`/pages/demo/purchase-order-split`（订货单列表 + 详情面板）。
 
 ## 示例
 
@@ -81,6 +81,7 @@
 
 - 头部插槽里用 **非 fixed** 的 `lingyun-toolbars`；玻璃进度由内容区的滚动事件驱动（`scroll` 事件 → `:glass-progress`），组件本身不监听内层滚动。
 - `topSpace` 交给内容做顶部占位（面板的 `top-space` 或自绘 spacer），不要再自己 `createSelectorQuery` 量头部。
+- **左栏底色由组件统一提供**：窄屏整页是列表页 → Primary 背景；宽屏左栏是抬升的列表列 → grouped-secondary（浅色白 / 暗黑 `#1c1c1e`），与右侧详情分层。插槽内容**不要再自己设左栏背景**，否则暗黑下会和右侧详情糊成一片。
 - **小程序**：插槽内容在小程序里不参与 flex 拉伸，内容容器（`.ly-split-layout__content`）有确定高度并作为定位参照——插槽里的根节点用绝对定位铺满容器（示例里的 `.split-panel`），否则会被内容撑高或塌成 0：
   ```scss
   .split-panel {
@@ -93,4 +94,4 @@
   }
   ```
 - 窄屏左栏头部的返回钮由业务判断（导航停靠 / 宿主页时不显示），组件不管导航状态。
-- 选中态（`selectedKey`）、暗黑分层、列表底色等视觉语义仍由两栏内容自己决定，参考 [`split-pages.md`](/guide/split-pages.html) §2.6。
+- 选中态（`selectedKey`）等视觉语义仍由两栏内容自己决定，参考 [`split-pages.md`](/guide/split-pages.html) §2.6。

@@ -1,6 +1,7 @@
 <template>
   <lingyun-app-page
     class="ly-split-layout"
+    :class="{ 'ly-split-layout--narrow': !wide }"
     :title="title"
     :show-toolbar="false"
     :show-tabbar="showTabbar"
@@ -197,6 +198,25 @@ export default defineComponent({
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+}
+
+/*
+ * 左栏底色统一由组件提供（对齐列表与详情 demo）：
+ * 窄屏整页就是列表页 → Primary 背景；
+ * 宽屏左栏是抬升的列表列 → grouped-secondary（浅色白 / 暗黑 #1c1c1e），与右侧详情分层。
+ * 页面的插槽内容不要再自己设左栏背景。
+ */
+.ly-split-layout__pane--list {
+  background-color: var(--lingyun-bg-primary, #{$lingyun-bg-primary});
+}
+
+.ly-split-layout__page--wide .ly-split-layout__pane--list {
+  background-color: var(--lingyun-bg-grouped-secondary, #{$lingyun-bg-grouped-secondary});
+}
+
+/* 窄屏页面壳背景同样用 Primary，顶栏下不露分组渐变 */
+.ly-split-layout--narrow {
+  --lingyun-page-background: var(--lingyun-bg-primary, #{$lingyun-bg-primary});
 }
 
 /* 浮动头部：toolbar 盖在内容上方，内容从下方穿过 */

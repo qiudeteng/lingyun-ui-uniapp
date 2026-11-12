@@ -57,6 +57,20 @@
 			}
 		},
 		{
+			"path": "pages/demo/copy",
+			"style": {
+				"navigationBarTitleText": "复制",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/save-image",
+			"style": {
+				"navigationBarTitleText": "保存为图片",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/tabbars",
 			"style": {
 				"navigationBarTitleText": "Tab Bars",
@@ -557,6 +571,13 @@
 			"path": "pages/demo/list-detail",
 			"style": {
 				"navigationBarTitleText": "列表与详情",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/demo/split-layout",
+			"style": {
+				"navigationBarTitleText": "分栏布局",
 				"navigationStyle": "custom"
 			}
 		},

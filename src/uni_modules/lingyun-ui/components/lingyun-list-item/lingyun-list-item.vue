@@ -52,13 +52,6 @@
       <view v-if="showTrailing" class="lingyun-list-item__extra">
         <slot name="extra">
           <text v-if="detail" class="lingyun-list-item__detail">{{ detail }}</text>
-          <lingyun-icon
-            v-if="resolvedAccessory === 'disclosure'"
-            class="lingyun-list-item__chevron"
-            type="right"
-            :size="18"
-            color="var(--lingyun-system-gray3, #c7c7cc)"
-          />
           <text v-if="resolvedAccessory === 'popup'" class="lingyun-list-item__popup">{{ popupLabel }}</text>
           <view v-if="resolvedAccessory === 'stepper'" class="lingyun-list-item__stepper" @click.stop>
             <view
@@ -93,6 +86,14 @@
             />
           </view>
         </slot>
+        <!-- disclosure 箭头放在 #extra 之后：自定义右侧内容时也保留可点击提示 -->
+        <lingyun-icon
+          v-if="resolvedAccessory === 'disclosure'"
+          class="lingyun-list-item__chevron"
+          type="right"
+          :size="18"
+          color="var(--lingyun-system-gray3, #c7c7cc)"
+        />
       </view>
     </view>
   </view>

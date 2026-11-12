@@ -69,14 +69,57 @@ const DEMO: Record<string, string> = {
   'indexed-list': '/pages/demo/indexed-list',
   charts: '/pages/demo/charts/column',
   login: '/pages/login/login',
+  accordion: '/pages/demo/accordion',
+  banner: '/pages/demo/banner',
+  barcode: '/pages/demo/barcode',
+  calendar: '/pages/demo/calendar',
+  combobox: '/pages/demo/combobox',
+  'file-upload': '/pages/demo/file-upload',
+  'group-header': '/pages/demo/lists',
+  'image-upload': '/pages/demo/image-upload',
+  'load-more': '/pages/demo/load-more',
+  'location-picker': '/pages/demo/location-picker',
+  markdown: '/pages/demo/markdown',
+  mobile: '/pages/demo/responsive',
+  'notice-bar': '/pages/demo/notice-bar',
+  pagination: '/pages/demo/pagination',
+  pc: '/pages/demo/responsive',
+  qrcode: '/pages/demo/qrcode',
+  rating: '/pages/demo/rating',
+  scan: '/pages/demo/scan',
+  signature: '/pages/demo/signature',
+  'split-layout': '/pages/demo/split-layout',
+  'split-pages': '/pages/demo/purchase-order-split',
+  steps: '/pages/demo/steps',
+  swiper: '/pages/demo/swiper',
+  tabs: '/pages/demo/tabs',
+  timeline: '/pages/demo/timeline',
+  'token-field': '/pages/demo/token-field',
+  tooltip: '/pages/demo/tooltip',
+  'list-detail': '/pages/demo/list-detail',
+  'plain-list': '/pages/demo/plain-list',
+  'purchase-order-list': '/pages/demo/purchase-order-list',
+  'purchase-order-detail': '/pages/demo/purchase-order-detail',
+  'purchase-order-split': '/pages/demo/purchase-order-split',
+  records: '/pages/demo/records',
+  '404': '/pages/404/404',
+  workbench: '/pages/demo/workbench',
 }
 
-/** 这些文档默认用宽屏视口，才能看到左侧导航 */
-const WIDE_DEFAULT = new Set(['page-nav', 'app-page'])
+/** 这些文档默认用宽屏视口，才能看到左侧导航 / 左右分栏 */
+const WIDE_DEFAULT = new Set([
+  'page-nav',
+  'app-page',
+  'list-detail',
+  'split-layout',
+  'split-pages',
+  'purchase-order-split',
+])
 
 const SIZES = {
   phone: { w: 390, h: 844, label: '390 × 844', name: '手机' },
   wide: { w: 717, h: 781, label: '717 × 781', name: '宽屏' },
+  ultra: { w: 1280, h: 800, label: '1280 × 800', name: '超宽屏' },
   duo: { w: 669, h: 951, label: '内屏竖 · 669 × 951', name: 'iPhone Duo' },
 } as const
 
@@ -178,6 +221,7 @@ const logical = computed(() => {
 
 const maxPreviewWidth = computed(() => {
   if (sizeMode.value === 'wide') return 520
+  if (sizeMode.value === 'ultra') return 720
   if (sizeMode.value === 'duo') return 560
   return phoneOrientation.value === 'landscape' ? 520 : 390
 })
@@ -247,7 +291,7 @@ function onResize(): void {
 }
 
 function setSize(mode: string): void {
-  if (mode !== 'phone' && mode !== 'wide' && mode !== 'duo') return
+  if (mode !== 'phone' && mode !== 'wide' && mode !== 'ultra' && mode !== 'duo') return
   sizePicked.value = true
   sizeMode.value = mode
 }
@@ -317,6 +361,8 @@ onMounted(() => {
   window.addEventListener('resize', onResize)
   window.addEventListener('message', onPreviewMessage)
   syncBodyClass(!!demoPath.value)
+  /* 切换设备后同步右侧留白，否则超宽屏预览会压住正文 */
+  watch([sizeMode, scale], () => syncBodyClass(!!demoPath.value))
   if (demoPath.value) probe()
 })
 

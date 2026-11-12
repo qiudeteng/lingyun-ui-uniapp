@@ -20,6 +20,8 @@
 - [布局](./layout.md)
 - [按钮](./button.md)
 - [图标](./icon.md)
+- [复制](./copy.md)
+- [保存为图片](./save-image.md)
 - [扫码](./scan.md)
 - [二维码](./qrcode.md)
 - [条码](./barcode.md)

@@ -11,12 +11,15 @@
 | 页面 | 标签 | 说明 |
 | --- | --- | --- |
 | [登录](./login.md) | `lingyun-login` | 账号密码登录；协议用 Sheet 展示；可选次按钮 |
+| [404 Demo](./404.md) | `pages/404/404` | 缺失页空态：说明 + 返回首页；支持 `?from=` 显示来源（非标准页组件） |
 | [订单商品加购](./order-goods.md) | `lingyun-order-goods` | 店铺头 + 左右分类商品联动 + 购物车结算；数据驱动，抛结算 / 规格事件 |
 | [订货单列表](./purchase-order-list.md) | `lingyun-purchase-order-list` | 顶部 Tabs 状态筛选 + 订货单卡片 + 横向商品缩略图 + 金额 / 操作；多批配送显示包裹数 |
 | [订货单详情](./purchase-order-detail.md) | `lingyun-purchase-order-detail` | 状态头 + 配送 / 自提 + 商品 + 金额 + 物流 + 订货单信息；支持子订货单 |
+| [订货单列表与详情 Demo](./purchase-order-split.md) | `pages/demo/purchase-order-split` | `lingyun-split-layout` + 前面两个标准页的面板：宽屏分栏、窄屏独立详情（非标准页组件） |
 | [记录列表 Demo](./records.md) | `pages/demo/records` | 列表 + 筛选菜单 + 搜索 + 日期切换联动示例（非标准页组件） |
 | [纯列表 Demo](./plain-list.md) | `pages/demo/plain-list` | 全宽平铺列表 + 顶部搜索 / 筛选 + 底部日期切换示例（非标准页组件） |
 | [列表与详情 Demo](./list-detail.md) | `pages/demo/list-detail` | 宽屏左列表（375px）右详情、窄屏独立详情页示例（非标准页组件） |
+| [工作台 Demo](./workbench.md) | `pages/demo/workbench` | 一级 Tab 带 children 时的窄屏落地页：二级 / 三级菜单分组卡片（非标准页组件） |
 
 ## 约定
 

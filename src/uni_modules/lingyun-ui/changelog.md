@@ -1,4 +1,10 @@
-## 1.0.57（2026-11-11）
+## 1.0.58（2026-11-12）
+- 新增 `lingyun-copy`：显示文字或图标的复制触发器，点击把 `text` 属性值写入剪贴板；支持 `size` / `variant` / `toast` / `toastText` / `disabled`、默认插槽，抛出 `copy` / `success` / `error` 事件。微信端沿用 `setClipboardData` 的系统「内容已复制」提示，H5 / App 由组件 toast。
+- 新增 `lingyun-save-image`：保存为图片触发器。H5 传入 ref 截取该元素，不传则截取整个页面；克隆 DOM 后内联计算样式、图片与图标字体，经 SVG foreignObject + Canvas 导出 PNG（默认触发下载，`pixelRatio` / `background` / `download` 可配）。小程序没有整页截图能力，需传入 canvas 节点或带 `toTempFilePath()` 的组件 ref，导出后默认保存到相册（`album`）。`save()` 方法返回 `Promise<string>`。
+- `lingyun-list-item`：`accessory="disclosure"` 的右侧箭头改到 `#extra` 插槽之后渲染，自定义右侧内容（如状态文案）时也保留可点击提示。
+- `lingyun-split-layout`：左栏底色统一由组件提供——窄屏 Primary、宽屏 grouped-secondary（浅色白 / 暗黑 `#1c1c1e`），与右侧详情分层；列表与详情 demo 不再自己设置左栏背景。
+- Demo：「屏幕」菜单改名「屏幕信息」并改用信息图标；新增复制（`/pages/demo/copy`）、保存为图片（`/pages/demo/save-image`）演示与组件文档；分栏布局 demo 左列表状态按进行中 / 待处理 / 已完成使用蓝 / 橙 / 绿三色，右栏标题去掉副标题。
+## 1.0.57 (2026-11-12)
 - 新增 `lingyun-split-layout`：列表 + 详情分栏布局组件。≥ `splitAt`（默认 900）左右分栏（左栏固定 `listWidth`，默认 375），窄屏只渲染左栏；`list-header` / `list` / `detail-header` / `detail` 四个插槽，头部自动量高并通过作用域插槽把 `topSpace` 交给内容，`wide-change` 事件区分宽窄屏行为。列表与详情 demo、订货单列表与详情 demo 均已改用该组件。分栏页面模板与踩坑清单见 `doc/guide/split-pages.md`。
 - 新增「订货单列表与详情」分栏 demo（`/pages/demo/purchase-order-split`）：宽屏左 375 列表 + 右详情、各自内层滚动与浮动玻璃 toolbar，窄屏点卡片进现有订货单详情标准页；左侧列表 full 通栏、选中态与分栏边线对齐列表与详情 demo，手机模式不显示选中态；不动原有列表 / 详情 demo，内容直接复用两个标准页拆出的面板组件。
 - 「列表 + 详情」demo 暗黑模式宽屏分层：左栏列表底色改用 `grouped-secondary`（浅色白 / 暗黑 `#1c1c1e`），与右侧黑色详情区分层次；选中行仍用页面底色（暗黑 `#000`），与详情无缝衔接，暗黑下选中效果清晰可见。窄屏列表不变。

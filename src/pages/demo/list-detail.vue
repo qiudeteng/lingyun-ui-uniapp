@@ -1,7 +1,6 @@
 <template>
   <lingyun-split-layout
     class="list-detail-page"
-    :class="{ 'list-detail-page--narrow': !wide }"
     title="列表与详情"
     :split-at="900"
     :list-width="375"
@@ -35,10 +34,7 @@
     </template>
 
     <template #list="{ wide: isWide, topSpace }">
-      <view
-        class="list-pane-content"
-        :class="{ 'list-pane-content--wide': isWide }"
-      >
+      <view class="list-pane-content">
         <scroll-view
           class="list-scroll"
           scroll-y
@@ -63,6 +59,7 @@
                 :title="ticket.title"
                 :note="`${ticket.customer} · ${ticket.updatedAt.slice(5)}`"
                 clickable
+                accessory="disclosure"
                 @click="onTicketTap(ticket)"
               >
                 <template #extra>
@@ -393,11 +390,6 @@
 </script>
 
 <style lang="scss">
-  /* 窄屏整页就是左侧纯列表，页面壳背景也改 Primary，顶栏下不露分组渐变 */
-  .list-detail-page--narrow {
-    --lingyun-page-background: var(--lingyun-bg-primary, #ffffff);
-  }
-
   /* #ifdef H5 */
   /* 网页没有系统状态栏：留白放进 toolbar 内部（chrome 盖住），避免上方透底 */
   .ly-split-layout__header .lingyun-toolbars {
@@ -412,7 +404,7 @@
 
   /*
    * 左栏内容：绝对定位铺满 split-layout 的内容容器（小程序 slot 内容不参与 flex 拉伸）。
-   * 左栏本身是一个独立页面：toolbar + 控件 + 纯列表 + 底部时间条。
+   * 左栏底色由 split-layout 统一提供（宽屏 grouped-secondary、窄屏 Primary），这里不要再设背景。
    */
   .list-pane-content {
     position: absolute;
@@ -424,12 +416,6 @@
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
-    background: var(--lingyun-bg-primary, #ffffff);
-  }
-
-  /* 宽屏左栏用 grouped-secondary（浅色白 / 暗黑 #1c1c1e）与右侧详情分层 */
-  .list-pane-content--wide {
-    background: var(--lingyun-bg-grouped-secondary, #ffffff);
   }
 
   /* 纯列表：全宽平铺，不要悬浮卡片 */

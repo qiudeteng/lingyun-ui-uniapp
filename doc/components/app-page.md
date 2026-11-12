@@ -1,227 +1,457 @@
 # lingyun-app-page
 
-业务页的外壳：自定义顶栏、滚动时顶栏变玻璃、宽屏左侧导航留位。反馈 Toast / HUD 也挂在这一层里。搜索 / 分段 / 综合示例见 `pages/demo/toolbar-search`、`pages/demo/toolbar-segments`、`pages/demo/toolbar-comprehensive`。
+业务页的外壳：自定义顶栏（可带搜索 / 分段控件 / 顶部 Tabs / 右侧按钮）、滚动时顶栏渐显 Liquid Glass、宽屏左侧导航 / 窄屏底部 Tab、Toast / HUD 反馈层。**几乎所有业务页都应该用它当根节点**。
 
-## 示例
+页面结构（自上而下）：
+
+```
+┌───────────────────────────────────────────────┐
+│ lingyun-toolbars      标题 / 返回 / 搜索 / 右侧按钮组  │ ← 固定，可透明垫在内容上
+│ segments 控件行       分段控制（56）或顶部 Tabs（44）   │ ← 有 segments 才占高度
+├───────────────────────────────────────────────┤
+│ 页面内容（本组件默认管滚动）                          │
+│  · 页面级滚动（默认） / 内层 scroll-view（bodyScroll=false）
+│  · 宽屏时左侧让出导航列（220 / 84 / 304）
+├───────────────────────────────────────────────┤
+│ lingyun-tabbars       窄屏底部 Tab（配置全局 tabs 的根页才显示）
+└───────────────────────────────────────────────┘
++ 反馈层（Toast / HUD / Alert）挂在页面壳内
+```
+
+相关 demo：`pages/demo/toolbar-search`（搜索）、`pages/demo/toolbar-segments`（分段）、`pages/demo/toolbar-comprehensive`（搜索 + 分段 + 筛选器全套）、`pages/demo/purchase-order-list`（顶部 Tabs）、`pages/demo/sidebars` / `pages/demo/tabbars`（导航）。
+
+## 最小示例
 
 ```vue
 <lingyun-app-page title="首页" :show-back="false">
   <view>正文</view>
 </lingyun-app-page>
 
-<!-- 子页：自动显示返回 -->
-<lingyun-app-page title="详情" subtitle="今天">
-  <view>正文</view>
-</lingyun-app-page>
-
-<!-- 关掉头部顶栏，正文从顶部开始 -->
-<lingyun-app-page :show-toolbar="false">
-  <view>正文</view>
-</lingyun-app-page>
-
-<!-- 关掉宽屏左侧导航 -->
-<lingyun-app-page title="登录" :show-nav="false" />
-
-<!-- 宽屏左栏顶部：头像、名称、副标题 -->
-<lingyun-app-page title="首页">
-  <template #nav-avatar>
-    <image src="/static/avatar.png" mode="aspectFill" />
-  </template>
-  <template #nav-name>
-    <text>凌云</text>
-  </template>
-  <template #nav-subtitle>
-    <text>组件库</text>
-  </template>
+<!-- 子页：showBack=auto（默认）时自动出现返回钮 -->
+<lingyun-app-page title="订单详情" subtitle="T-20261111-01">
   <view>正文</view>
 </lingyun-app-page>
 ```
 
-## 属性
+- 内容默认用**页面级滚动**，壳会自动处理状态栏 / 顶栏占位（`autoTopInset`）。
+- `showBack` 默认 `auto`：一级 Tab 根页不显示返回；从子页进入时显示；宽屏左侧导航停靠时隐藏。
+- 富交互页面建议把内容包一层自己的根 view（如 `.page`）控制背景和底部留白，注意结构样式不要写进通用 `.page`（见文末 FAQ 与 [分栏页面 guide](/guide/split-pages.html)）。
 
-| 属性 | 说明 | 默认值 |
-| --- | --- | --- |
-| `title` | 顶栏标题 | '' |
-| `subtitle` | 副标题 | '' |
-| `titleStyle` | `title` / `large` / `title2LineLarge` | title |
-| `placement` | `standard` 页面，或 `sheet` | standard |
-| `showBack` | 返回按钮。`auto` 时显示；宽屏已停靠左侧导航则隐藏 | auto |
-| `showClose` | 关闭按钮 | false |
-| `showGrabber` | 顶部抓手。打开后不显示宽屏导航 | false |
-| `showTrailing` | 右侧按钮 | false |
-| `safeArea` | 状态栏安全区 | true |
-| `bodyScroll` | 是否由本组件滚动正文 | true |
-| `pageScroll` | 页面级滚动。有输入框时必须保持 true | true |
-| `showNav` | 宽屏（窗口 ≥ 690）是否显示左侧导航 | true |
-| `showToolbar` | 是否显示头部顶栏。关掉后不再预留顶栏高度 | true |
-| `navSections` | 显式分组目录，优先级高于全局 tabs 与宿主目录。只影响当前这次渲染；H5 常驻侧栏请用 `setLingyunPageConfig` 或 `setLingyunPageNavSections` | null |
-| `showTabbar` | 全局 tabs 的底部 Tab 栏。`auto` 时只有一级 Tab 根页 / 工作台页在窄屏显示；显式 `false` 永远隐藏 | auto |
-| `navMode` | `auto / tabbar / sidebar / none`。页面级最高优先 | auto |
-| `autoBottomInset` | 自动为底部 Tab 留白（仅当前页实际渲染 Tab 时生效）。关掉后组件不再加 padding，但 CSS 变量与注入仍给出真实值 | true |
-| `autoTopInset` | 自动计算顶部工具栏 / 状态栏留白。设为 `false` 时页面内容顶到视口顶部、可垫在透明工具栏下（如点单页 Banner）；被宿主页嵌入时仍应保持 true（小程序宿主节点接不到外层 padding，设 false 会丢状态栏安全区） | true |
-| `trailingButtons` | 顶栏右侧自定义按钮组；一维为一组，二维按组渲染多个胶囊；点击发 `trailing-action` | [] |
-| `trailingButtonsHidden` | 隐藏顶栏按钮组；页面打开自己的锚点浮层时使用 | false |
-| `trailingMenuEnabled` | 显式启用 `#trailing-menu` 内置浮层；小程序必须开启 | false |
-| `showThemeSwitch` | 页面级主题钮开关；`auto` 跟随全局，`false` 只隐藏当前页，不改进程全局状态 | auto |
-| `searchable` | 开启顶部搜索：右侧多一个独立分组的搜索按钮 | false |
-| `searching` | 搜索模式；支持 `v-model:searching` | false |
-| `searchValue` | 搜索关键词；支持 `v-model:search-value` | '' |
-| `searchPlaceholder` | 搜索占位文案 | 搜索 |
-| `segments` | 顶栏下方数据驱动控件数据 `{ key, text?, icon?, badge?, disabled? }[]`；为空不占高度 | [] |
-| `segmentValue` | 当前控件 key；支持 `v-model:segment-value` | '' |
-| `segmentControl` | `segmented` / `tabs`；同一份 `segments` 渲染成分段控件或顶部 Tabs | segmented |
+## 顶部搜索
 
-### 顶部搜索
+开启 `searchable` 后，顶栏右侧多一个独立分组的搜索按钮；点它进入搜索模式：左侧返回 / 标题和右侧其它按钮隐藏，标题位置换成输入框，原搜索按钮变成取消按钮。
 
 ```vue
 <lingyun-app-page
   ref="pageRef"
   title="订单"
   searchable
+  search-placeholder="搜索订单 / 客户"
   v-model:searching="searching"
   v-model:search-value="keyword"
-  search-placeholder="搜索订单"
   @search-open="onSearchOpen"
   @search-cancel="onSearchCancel"
   @search-input="onSearchInput"
-  @search="onSearch"
+  @search="onSearchConfirm"
 >
-  <!-- 搜索模式打开时页面可以只渲染搜索专用内容 -->
+  <!-- 搜索态可以整页换成搜索视图 -->
+  <view v-if="searching" class="search-view">
+    <view v-if="!keyword">输入关键词开始搜索</view>
+    <view v-else>共 {{ results.length }} 个结果</view>
+  </view>
+  <view v-else>普通页面内容</view>
 </lingyun-app-page>
 ```
 
-按钮和输入框的实际渲染在 `lingyun-toolbars` 内，`app-page` 只负责透传属性 / 事件，并提供 `openSearch()` / `closeSearch()` 方法；搜索模式打开时右侧搜索按钮变为取消按钮。关闭搜索（点取消、调 `closeSearch()` 或外部把 `searching` 置为 false）会清空关键词并同步 `v-model:search-value`，`search-cancel` 仍会带上关闭前的关键词。
+```ts
+const searching = ref(false)
+const keyword = ref('')
 
-### 顶栏数据驱动控件（分段 / Tabs）
+function onSearchInput(value: string) { /* 实时过滤用这个 */ }
+function onSearchConfirm(value: string) { /* 键盘「搜索」确认时触发 */ }
+```
+
+要点：
+
+| 行为 | 说明 |
+| --- | --- |
+| 打开 | 点搜索按钮，或 `ref.openSearch()`；未开 `searchable` 时忽略 |
+| 关闭 | 点取消、`ref.closeSearch()`、或外部把 `searching` 置 `false`。**关闭会清空关键词**并同步 `v-model:search-value`；`search-cancel` 事件仍携带关闭前的关键词 |
+| 静默关闭 | `ref.closeSearch(false)` 不发 `search-cancel`（父级主动收起时用） |
+| 切换 | `ref.toggleSearch()` |
+| 搜索态内容 | 用 `v-if="searching"` 自行渲染搜索视图（历史、结果、空态都可以） |
+| 滚动 | 含输入框的页面保持默认 `pageScroll=true`，不要关 |
+
+## 顶栏数据驱动控件：分段控制 / 顶部 Tabs
+
+`segments` 是一行数据配置，同一份数据可以渲染成**分段控制**（默认）或**顶部 Tabs**，显示在顶栏正下方，页面内容会自动让出对应高度。
+
+数据字段：`{ key, text?, icon?, badge?, disabled? }`。
+
+### 分段控制（`segment-control="segmented"`，默认）
+
+```vue
+<lingyun-app-page
+  title="工单"
+  :segments="[
+    { key: 'all', text: '全部' },
+    { key: 'open', text: '待处理' },
+    { key: 'doing', text: '处理中' },
+    { key: 'done', text: '已完成' },
+  ]"
+  v-model:segment-value="status"
+  @segment-change="onStatusChange"
+>
+  <view>{{ status }}</view>
+</lingyun-app-page>
+```
+
+- 行高 **56**（Large 48 + 下边距 8），白底胶囊分段控件。
+- `segment-change` 与 `segment-click` 在用户切换时**同时触发**，载荷 `{ value, item }`；`v-model:segment-value` 同步当前 key。
+
+### 顶部 Tabs（`segment-control="tabs"`）
 
 ```vue
 <lingyun-app-page
   title="订货单"
   :segments="[
     { key: 'all', text: '全部' },
-    { key: 'active', text: '进行中' },
-    { key: 'done', text: '已完成' },
+    { key: 'pendingReview', text: '待审核' },
+    { key: 'inProgress', text: '进行中', badge: 2 },
+    { key: 'completed', text: '已完成' },
+    { key: 'cancelled', text: '已取消' },
   ]"
   segment-control="tabs"
-  v-model:segment-value="segment"
-  @segment-click="onSegmentClick"
-  @segment-change="onSegmentChange"
-/>
+  v-model:segment-value="filter"
+  @segment-change="onFilterChange"
+>
+  <!-- 列表 -->
+</lingyun-app-page>
 ```
 
-控件行显示在 toolbar 下方，两者共用同一份 `segments` 数据和事件：
+- 渲染成 `lingyun-tabs` 顶部 Tabs：行高 **44**、贴顶栏底、背景透明、跟随顶栏玻璃；页面顶部额外留 8 间距。
+- 支持 `badge`（数字 / 文案）与 `disabled`。
+- 和分段控制互斥：只渲染其中一种；`segments` 为空时不渲染也不占高度。
+- **不要在页面内容里再放一份同样的 Tabs / 分段**，否则会出现两条控件。
 
-- `segmentControl="segmented"`（默认）：分段控制，行高 **56**（Large 48 + 下边距 8）。
-- `segmentControl="tabs"`：`lingyun-tabs` 顶部 Tabs，Tabs 行 44 贴底，页面顶部额外留 8 间距（toolbar 栈 52），背景透明，跟随 toolbar 玻璃。
-- 只渲染其中一种控件；`segments` 为空时不渲染也不占高度，页面顶部留白会自动增加对应行高。
-| `glassDistance` | 滚动多少 px 后顶栏玻璃铺满 | 56 |
+## 右侧按钮与筛选器
 
-## 一级导航（数据驱动）
+顶栏右侧可以放自定义玻璃按钮组 `trailingButtons`：一维数组为一组，二维数组按组渲染多个胶囊。点击抛 `trailing-action`，载荷 `{ key, button, index, groupIndex, buttonIndex, anchor }`，`anchor` 是整组按钮的矩形，可直接传给 `lingyun-menu` 的 `anchor`。
 
-一次配置，窄屏渲染底部玻璃 Tab，宽屏（≥690）渲染左侧停靠导航：
+### 方式一：内置浮层（`trailingMenuEnabled` + `#trailing-menu`）
+
+最简单的筛选器形态——点按钮自动弹内置玻璃浮层，内容由插槽提供：
+
+```vue
+<lingyun-app-page
+  title="点单"
+  :trailing-buttons="[{ key: 'filter', icon: 'tune', label: '筛选' }]"
+  trailing-menu-enabled
+>
+  <template #toolbar-menu="{ close }">
+    <view class="filter-panel">
+      <text class="filter-panel__title">加载模式</text>
+      <view class="filter-chips">
+        <view
+          v-for="option in options"
+          :key="option.key"
+          class="filter-chip"
+          :class="{ 'filter-chip--active': mode === option.key }"
+          @click="mode = option.key"
+        >{{ option.text }}</view>
+      </view>
+      <lingyun-button block text="完成" @click="close()" />
+    </view>
+  </template>
+
+  <!-- 内容 -->
+</lingyun-app-page>
+```
+
+- **小程序必须显式 `trailing-menu-enabled`**（插槽检测不可靠）。
+- 插槽作用域 `{ button, index, groupIndex, buttonIndex, close }`；点外面 / 再点按钮也会关闭。
+- 参考 demo：`pages/demo/order-goods`。
+
+### 方式二：自管浮层（`@trailing-action` 拿 anchor）
+
+需要完全控制浮层（比如和 `lingyun-date-switcher`、多级筛选联动）时，自己放 `lingyun-menu`，并设 `trailing-buttons-hidden` 在浮层打开期间隐藏按钮组：
+
+```vue
+<lingyun-app-page
+  title="记录"
+  :trailing-buttons="[{ key: 'filter', icon: 'tune', label: '筛选' }]"
+  :trailing-buttons-hidden="filterOpen"
+  @trailing-action="onTrailingAction"
+>
+  <lingyun-menu v-model:show="filterOpen" full-width :anchor="menuAnchor" @closed="menuAnchor = null">
+    <!-- 自己的筛选表单 -->
+  </lingyun-menu>
+</lingyun-app-page>
+```
 
 ```ts
+function onTrailingAction(payload: { anchor?: unknown }) {
+  menuAnchor.value = payload?.anchor || null
+  filterOpen.value = true
+}
+```
+
+- 参考 demo：`pages/demo/toolbar-comprehensive`。
+- 复杂多条件筛选（日期 / 标签 / 排序组合）也可以用现成的 `lingyun-filter-menu` 复合组件，事件和 UI 都已封装。
+
+### 其它右侧形态
+
+- `#trailing` 插槽放自定义内容（点击自己处理）；`showTrailing` 会额外渲染一个内置主按钮（分享样式），点它抛 `trailing`。
+- 主题切换钮：`showThemeSwitch`（`auto` 跟随全局；`false` 只隐藏当前页）。
+- 左侧完全自定义：`#leading` 插槽（提供后不再渲染默认返回钮）。
+
+## 底部 Tabs（全局一级导航）
+
+底部 Tab 和宽屏左侧导航是**同一份全局配置**：窄屏渲染底部玻璃 Tab，宽屏（≥690）渲染左侧停靠导航。
+
+```ts
+// main.ts / config 注入处执行一次
 import { setLingyunPageConfig } from '@/uni_modules/lingyun-ui'
 
 setLingyunPageConfig({
   tabs: [
     { key: 'home', text: '首页', icon: 'home', url: '/pages/index/index' },
     { key: 'orders', text: '订单', icon: 'list', url: '/pages/orders/orders', badge: 3 },
+    {
+      key: 'pages',
+      text: '页面',
+      icon: 'grid',
+      url: '/pages/pages/pages',
+      children: [
+        { key: 'list', text: '记录列表', url: '/pages/records/records' },
+        { key: 'detail', text: '记录详情', url: '/pages/record-detail/record-detail', match: '/pages/record-detail/' },
+      ],
+    },
   ],
-  sidebarTitle: '主导航',
-  layout: { navMode: 'auto' },
+  tabbar: { safeArea: true, variant: 'default' },
+  // 页面级覆盖（按归一化路径）
   pages: {
+    '/pages/goods/goods': { hideTabbar: true },     // 带商品底栏的页面
     '/pages/login/login': { hideTabbar: true, hideNav: true },
   },
 })
 ```
 
-- 选中态从当前路由推导；详情页可用 `match` 归入某个 Tab。
-- iPad（690–1199）与 PC（≥1200）配置全局 tabs 后，左侧导航收窄为 **84** 通高窄栏，图标在上、文字在下；整列铺满左侧区域（无外边距、无圆角、无侧边线），底色与内容卡片相同的 grouped 背景，叠加固定的顶栏同款 tint（不随滚动变化），滚动后与顶栏玻璃同亮度。`.lingyun-page-safe-left` 保留兼容。未配置 tabs 的完整目录仍为 220。PC 再向右多一列 **220** 的内联二级 / 三级菜单（合计让出 304），当前一级 Tab 没有子项时菜单列自动收起、只让出 84。
-- Tab 支持 `children` 二级菜单；二级项还可再带 `children` 作为三级菜单：工作台把有三级的分组渲染成带标题的分组卡片，三级项是卡片里的按钮；只有二级菜单的 Tab 渲染成一张没有标题的卡片。PC 宽屏点一级 Tab 直接切换右侧内联菜单列，点菜单项跳转，不再弹出 `lingyun-menu`；平板（690–1199）仍点击父项弹出菜单（透明遮罩，点击外部关闭）；底部 Tab / Duo Tab 点击有 children 的父项进入固定工作台页（`workspaceUrl?tab=<key>`），没有 children 直接进 `url`。工作台子项用 `navigateTo` 压栈，返回父 Tab 工作台。子项路径自动归入父 Tab 高亮。tabs 与子项均可用 `iconSrc` / `activeIconSrc` 图片图标，选中态优先 `activeIconSrc`。
-- 优先级：props > `pages[path]` 页面覆盖 > `layout` > 宽度自动规则。
-- 窄屏由首页 / 目录宿主页在页内切换一级 Tab，页面栈不增长；H5 地址保持为宿主路由的 `?tab=<key>`，刷新或从子页返回后按这个 key 恢复。微信宽屏优先走 `openLingyunHostedPage`，不增加页面栈；从其他页面直接进入工作台时仍走一次路由。
-- 页面壳默认不接管底部 Tab：只有一级 Tab 根页或带 children 的工作台页渲染 Tab；子页/详情页/首页默认没有 Tab，也不会留出底部空间。其他页面需要 Tab 请自行使用 `lingyun-tabbars`。
-- 壳只在当前页实际渲染底部 Tab 时留白，写入 `--lingyun-app-page-inset-bottom` 与 `LINGYUN_APP_PAGE_BOTTOM_INSET`。页面不要再手写 `padding-bottom`；已有手写值时设 `:auto-bottom-inset="false"`。
-- 页面背景由独立的固定背景层绘制，固定在视口，不随页面级滚动 / 内层 scroll-view / body 自管滚动移动；壳根节点只保留纯色兜底。宿主可只配一次 `--lingyun-page-background`（可放渐变或纯色），所有页面共用，底部 Tab 留白、安全区和宿主页都会露出同一张背景。
-- 跨页 `reLaunch` 本身没有页面动画：壳会在换页后让内容淡入。底部 Tab 指示器按 Tab 顺序左右滑动，左侧菜单的选中胶囊按菜单顺序上下滑动；工作台内切换只让内容区淡入。
-- 带商品底栏 / 底部搜索条的页面请配置 `pages[path].hideTabbar = true`。
+显示规则（页面壳默认不接管 Tab）：
 
-### 后台菜单树接入
+- 只有**一级 Tab 根页**（`url` 等于当前页）或带 `children` 的工作台页在窄屏显示底部 Tab；子页 / 详情页 / 普通页默认没有 Tab，也不留底部空间。
+- 宽屏（≥690）同一份 tabs 变成左侧导航：220 完整目录 → 配置 tabs 后收窄为 84 通高窄栏；PC（≥1200）再向右多一列 220 的内联二级 / 三级菜单（合计让出 304）。详见 [`design/SIDEBARS.md`](../../design/SIDEBARS.md) §4。
+- 选中态由路由推导；详情页可用 `match` 归入某个 Tab 高亮；点带 `children` 的项在平板弹菜单、PC 切内联菜单、窄屏进工作台页。
 
-后台菜单（`name / path / meta.title / meta.icon / meta.activeIcon / meta.hideInMenu / children`）不用宿主自己转 tabs，包内已提供统一换算：
+页面级控制（优先级：props > `pages[path]` 覆盖 > `layout` 全局 > 宽度自动）：
 
-```ts
-import { applyLingyunPageFromMenus } from '@/uni_modules/lingyun-ui'
+| 需求 | 做法 |
+| --- | --- |
+| 普通页强制不出 Tab（默认就不出） | 无 |
+| 有商品底栏 / 搜索条的页面必须隐藏 | `pages[path].hideTabbar = true` 或临时 `:show-tabbar="false"` |
+| 强制底部 Tab / 侧栏模式 | `:nav-mode="'tabbar' \| 'sidebar' \| 'none'"` |
+| 关闭宽屏左侧导航 | `:show-nav="false"` 或 `pages[path].hideNav = true` |
+| 页面自己实现底部导航 | `:show-tabbar="false"` + 自行使用 `lingyun-tabbars` |
 
-const result = applyLingyunPageFromMenus(menuTree, {
-  homeTab: { key: 'home', text: '首页', icon: 'home', url: '/pages/index/index' },
-  homePath: '/pages/index/index',
-  workspaceUrl: '/pages/index/workbench',
-})
-// result.tabs      已写入全局页面壳配置
-// result.sections  220 完整目录分组（宽屏侧栏 / 旧目录）
-// result.groups    一级 Tab key → 工作台分组
+底部留白：
+
+- 壳**只在该页实际渲染 Tab 时**给内容加底部留白，并写入 `--lingyun-app-page-inset-bottom` 与 `LINGYUN_APP_PAGE_BOTTOM_INSET`（`bodyScroll=false` 的页面用它给固定浮层 / 列表尾部让位）。
+- 页面**不要再手写 `padding-bottom`**；已有手写值时设 `:auto-bottom-inset="false"`，变量仍然可用。
+- Tab 点击抛 `tab-change`（`{ key, tab }`），内部负责 `reLaunch` / 宽屏托管，无需业务处理。
+
+全局外观：`tabbar.safeArea`（底部安全区，默认 true）、`tabbar.variant`（传给 `lingyun-tabbars` 的变体）。
+
+## 宽屏左侧导航
+
+- 默认 `showNav=true`：宽度 ≥ 690 时停靠左侧；导航内容优先取全局 `tabs`，其次宿主目录（`LINGYUN_PAGE_NAV`）。
+- 页面级覆盖：`navSections` prop 显式指定当前页的分组目录（只影响当前渲染，H5 常驻侧栏请用 `setLingyunPageConfig` / `setLingyunPageNavSections`）；`:show-nav="false"` 或 `pages[path].hideNav` 关闭。
+- 左栏顶部资料：`#nav-avatar` / `#nav-name` / `#nav-subtitle` 插槽，或全局 `setLingyunPageNavProfile({ avatar, name, subtitle })`；不传时显示「凌云UI」和默认介绍。
+- 宽度档位（220 / 84 / 304）、选中胶囊动效、PC 二级菜单规则见 [`design/SIDEBARS.md`](../../design/SIDEBARS.md) §4，这里不重复。
+
+## 滚动与留白
+
+三种模式，按页面内容选一种：
+
+| 模式 | 写法 | 适用 |
+| --- | --- | --- |
+| 页面级滚动（默认） | 不传 | 绝大多数页面；内容正常流式排布 |
+| 内层 scroll-view | `:body-scroll="false"` | 固定高度页面、需要内层滚动联动顶栏玻璃（列表页、分栏页） |
+| 关掉页面滚动 | `:page-scroll="false"` | 只有需要锁竖向滚动（横向 swipe 行）时才用；**含文本输入的页面必须保持默认 true** |
+
+内层滚动 + 顶栏玻璃：
+
+```vue
+<lingyun-app-page title="订单" :body-scroll="false">
+  <scroll-view class="list" scroll-y @scroll="onScroll">
+    <view class="list-top-space" /> <!-- 顶栏高度占位（scrollUnderToolbar=默认时用变量） -->
+    <!-- 列表 -->
+  </scroll-view>
+</lingyun-app-page>
 ```
 
-- 顶层叶子生成一级 Tab；有 `children` 的顶层节点生成带二级 / 三级菜单的 Tab，`meta.hideInMenu` 的节点会跳过。
-- `meta.icon` / `meta.activeIcon` 是图片地址时自动转成 `iconSrc` / `activeIconSrc`，二级 / 三级子项同样保留；是字形名时直接作为 `icon`。
-- 没有可用图标时按标题关键词与序号取兜底字形，可用 `iconKeywords` / `iconFallbacks` / `fallbackIcon` 覆盖。
-- `homeTab` + `homePath`：后台首页节点不重复生成 Tab，只把它的图片图标补到首页 Tab。
-- 只要纯映射不写配置时用 `buildLingyunPageFromMenus`；只取 220 目录分组时用 `buildLingyunSectionsFromMenus`。
+```ts
+import { useLingyunAppPageScroll } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
+const reportScroll = useLingyunAppPageScroll()
 
-## iPhone Duo（P1）
+function onScroll(event: { detail?: { scrollTop?: number } }) {
+  reportScroll(Number(event?.detail?.scrollTop) || 0) // 顶栏随内层滚动渐显玻璃
+}
+```
 
-- 设备形态由 `lingyun.formFactor` / `lingyun.duoPose` 决定；宿主可通过 `configureLingyunLayout({ getFormFactor, getDuoPose })` 接入已有型号判断。
-- 内屏竖屏：顶部使用 `lingyun-duo-toolbar`（84 高；Leading 48、标题 17/22 左对齐、右侧 164×48 工具组、最右预留 134），底部使用 `lingyun-tabbars size="duo"`（95 高，玻璃条 62，Tab 77×54，图标 22，文字 10/12）。页面的 `duo-tools` 插槽会渲染到顶部工具组，最多 3 个 36×36 项。
-- 半折：屏幕中心显示 40px 横向折痕安全带；交互控件应避开，滚动内容可跨越。
-- 外屏竖屏 / 外屏横屏 / 内屏横屏：右侧 `lingyun-duo-rail`（84 宽，工具组、4 个仅图标 Tab、搜索；外屏横屏工具收进「…」溢出）。页面用 `duo-tools` 插槽放工具按钮，监听 `duo-search` / `duo-overflow`；同一组工具在 Duo 内屏竖屏会进入顶部玻璃工具组。独立页（非一级 Tab 根页）只在摄像头 / 状态栏下方显示返回钮，不显示 Tab 组和搜索；Tab 根页默认也不显示搜索，需配置 `tabbar.search = true`。
-- 内屏横屏折叠/半折：Split View（左主栏 / 40 折痕避让带 / 右详情栏），顶部 84 高 Duo Toolbar，右侧 84 返回列，Tab 隐藏。页面用 `split-primary` / `split-detail` 插槽；右侧返回触发 `back`。
-- H5 与微信小程序都按设备形态进入 Duo 分支；宿主可调用 `setLingyunDuoSupported(false)` 关闭。
+- 壳的 `@scroll` 事件同样会抛当前滚动位置（px），需要自己驱动外部元素时可用。
+- 透明顶栏 / Banner 垫在下面：`:auto-top-inset="false"`（内容顶到视口顶部，顶栏透明覆盖）；被宿主页嵌入的页面不要关（会丢状态栏安全区）。
+- 完全自绘头部（分栏页、点单页）：`:show-toolbar="false"`，不再预留顶栏高度；分栏页直接用 [`lingyun-split-layout`](/components/split-layout.html)。
+- 页面背景：壳用独立固定背景层绘制（不随滚动移动），默认 `--lingyun-bg-grouped-primary`；宿主可配置 `--lingyun-page-background` 统一换背景。
 
-不传左栏顶部插槽、也不调用 `setLingyunPageNavProfile` 时，宽屏左栏显示「凌云UI」和介绍「一套对齐 Apple Liquid Glass 的 uni-app 多端组件库」。传入自定义名称且不传副标题时，不显示这句介绍。
+## 其它形态
+
+- **Sheet 形态**：`placement="sheet"` + `showGrabber`，用于底部面板内容（表单一类），不显示宽屏导航。
+- **嵌入宿主**：宿主页（工作台 / 小程序宽屏托管）里的页面壳自动降级为 embedded，不再渲染导航 / Tab / 背景层。**不要在一个页面壳里再嵌一个页面壳**做分栏（会互相干扰），分栏用 `lingyun-split-layout`。
+- **iPhone Duo**：`duo-tools` / `split-primary` / `split-detail` 插槽与 `duo-search` / `duo-overflow` 事件，规则见下文 API 表与 [`design/SIDEBARS.md`](../../design/SIDEBARS.md) §5。
+
+## 属性
+
+### 标题与顶栏
+
+| 属性 | 说明 | 默认值 |
+| --- | --- | --- |
+| `title` | 顶栏标题 | '' |
+| `subtitle` | 副标题（标题下方一行） | '' |
+| `titleStyle` | `title` / `large` / `title2LineLarge` | title |
+| `showToolbar` | 是否显示顶栏；`false` 时不再预留顶栏高度 | true |
+| `showBack` | 返回钮。`auto`：宽屏导航停靠、或窄屏底部 Tab 的一级 Tab 根页时隐藏，其余显示 | auto |
+| `showClose` | 关闭钮（Sheet 场景常用） | false |
+| `showTrailing` | 额外渲染一个内置右侧主按钮（分享样式），点击抛 `trailing`；自定义内容用 `#trailing` 插槽，不需要它 | false |
+| `showGrabber` | 顶部抓手（Sheet）；打开后不显示宽屏导航 | false |
+| `placement` | `standard` 页面 / `sheet` 面板 | standard |
+| `safeArea` | 状态栏安全区 | true |
+| `autoTopInset` | 自动留出顶栏 + 状态栏高度；`false` 内容顶到视口顶部（透明顶栏垫 Banner） | true |
+| `glassDistance` | 内层滚动多少 px 后顶栏玻璃完全铺满 | 56 |
+| `showThemeSwitch` | 主题钮：`auto` 跟随全局，`false` 只隐藏当前页 | auto |
+
+### 搜索
+
+| 属性 | 说明 | 默认值 |
+| --- | --- | --- |
+| `searchable` | 开启顶部搜索（右侧独立搜索按钮） | false |
+| `searching` | 搜索模式；支持 `v-model:searching` | false |
+| `searchValue` | 关键词；支持 `v-model:search-value` | '' |
+| `searchPlaceholder` | 输入框占位 | 搜索 |
+
+### 分段 / 顶部 Tabs
+
+| 属性 | 说明 | 默认值 |
+| --- | --- | --- |
+| `segments` | 控件数据 `{ key, text?, icon?, badge?, disabled? }[]`；空数组不占高度 | [] |
+| `segmentValue` | 当前 key；支持 `v-model:segment-value` | '' |
+| `segmentControl` | `segmented` 分段控制（行高 56）/ `tabs` 顶部 Tabs（行高 44） | segmented |
+
+### 右侧按钮
+
+| 属性 | 说明 | 默认值 |
+| --- | --- | --- |
+| `trailingButtons` | 按钮组；一维一组，二维按组渲染多个胶囊；点击抛 `trailing-action` | [] |
+| `trailingButtonsHidden` | 隐藏按钮组（自管浮层打开期间用，避免按钮从浮层边缘露出） | false |
+| `trailingMenuEnabled` | 启用内置 `#trailing-menu` 浮层；**小程序必须显式开启** | false |
+
+### 导航与 Tab
+
+| 属性 | 说明 | 默认值 |
+| --- | --- | --- |
+| `showNav` | 宽屏（≥690）是否显示左侧导航 | true |
+| `navSections` | 覆盖当前页左侧目录；`null` 用全局 tabs / 宿主目录 | null |
+| `showTabbar` | 底部 Tab。`auto`：只有一级 Tab 根页 / 工作台页在窄屏显示；`false` 永远隐藏 | auto |
+| `navMode` | `auto` / `tabbar` / `sidebar` / `none`；页面级最高优先 | auto |
+| `autoBottomInset` | 自动为底部 Tab 留白（仅实际渲染 Tab 时生效）；关掉后变量与注入仍给出真实值 | true |
+
+### 滚动
+
+| 属性 | 说明 | 默认值 |
+| --- | --- | --- |
+| `bodyScroll` | 是否由壳滚动正文；`false` 用内层 `scroll-view` | true |
+| `pageScroll` | 页面级滚动；含文本输入的页面必须保持 true | true |
+
+## 事件
+
+| 事件 | 载荷 | 说明 |
+| --- | --- | --- |
+| `back` | — | 点返回 |
+| `close` | — | 点关闭 |
+| `trailing` | — | 点顶栏右侧内置主按钮（`showTrailing`）；`#trailing` 插槽内容自行处理点击 |
+| `trailing-action` | `{ key, button, index, groupIndex, buttonIndex, anchor }` | 点 `trailingButtons`；`anchor` 可直接给 `lingyun-menu` |
+| `scroll` | `scrollTop`（px） | 页面 / 内层滚动位置 |
+| `tab-change` | `{ key, tab }` | 点底部 Tab（壳内部已处理跳转） |
+| `search-open` | — | 搜索模式打开 |
+| `search-cancel` | 关闭前关键词 | 点取消 / `closeSearch()` |
+| `search-input` | 当前关键词 | 输入变化 |
+| `search` | 当前关键词 | 键盘确认 |
+| `update:searching` / `update:searchValue` | — | v-model 同步 |
+| `update:segmentValue` | key | v-model 同步 |
+| `segment-click` / `segment-change` | `{ value, item }` | 用户切换分段 / Tabs（两者同时触发） |
+| `duo-search` / `duo-overflow` | — | Duo 右侧栏搜索 / 更多 |
 
 ## 插槽
 
 | 插槽 | 说明 |
 | --- | --- |
-| `leading` | 顶栏左侧；Duo 内屏竖屏下接管 48×48 Leading，提供后不再渲染默认返回钮 |
-| `trailing` | 顶栏右侧；Duo 内屏竖屏作为 `duo-tools` 的兼容回退 |
-| `duo-tools` | Duo 工具项；内屏竖屏进入顶部 164×48 玻璃工具组（1~3 个 36×36），其他姿态进入右侧全高栏 |
-| `trailing-menu` | 配合 `trailing-menu-enabled` 使用；`trailingButtons` 点击后的自定义菜单内容，参数 `{ button, index, groupIndex, buttonIndex, close }`，可放 menu / activity view |
-| `nav-avatar` | 宽屏左栏顶部头像 |
-| `nav-name` | 宽屏左栏顶部名称，对齐原来的「凌云UI」 |
-| `nav-subtitle` | 宽屏左栏顶部副标题，挂在名称下面 |
-
-H5 侧栏在页面外面，这三个插槽会送进那一列。微信小程序直接嵌在当前页。离开页面后，顶部回到没有插槽时的样子。
+| 默认 | 页面内容 |
+| `leading` | 顶栏左侧；提供后不再渲染默认返回钮（Duo 内屏竖屏接管 48×48 Leading） |
+| `trailing` | 顶栏右侧自定义内容；`showTrailing` 为内置主按钮 |
+| `trailing-menu` | `trailingButtons` 的内置浮层内容，作用域 `{ button, index, groupIndex, buttonIndex, close }` |
+| `duo-tools` | Duo 工具项（1~3 个 36×36） |
+| `nav-avatar` / `nav-name` / `nav-subtitle` | 宽屏左侧导航顶部头像 / 名称 / 副标题 |
+| `split-primary` / `split-detail` | Duo 内屏横屏 Split View 左右栏 |
 
 ## 方法
 
-通过组件 `ref` 调用，属性 / 事件两种方式可同时使用：
+通过组件 `ref` 调用：
 
 | 方法 | 说明 |
 | --- | --- |
-| `openSearch()` | 打开搜索模式；未开启 `searchable` 时忽略 |
-| `closeSearch(cancel = true)` | 关闭搜索；默认发 `search-cancel`，传 `false` 可静默关闭 |
+| `openSearch()` | 打开搜索；未开启 `searchable` 时忽略 |
+| `closeSearch(cancel = true)` | 关闭搜索并清空关键词；`cancel=false` 时不发 `search-cancel` |
 | `toggleSearch()` | 切换搜索模式 |
 
-## 事件
+## 全局页面配置（一次配置，全部页面生效）
 
-| 事件 | 说明 |
+```ts
+import {
+  setLingyunPageConfig,
+  applyLingyunPageFromMenus,
+  setLingyunPageNavProfile,
+} from '@/uni_modules/lingyun-ui'
+
+setLingyunPageConfig({
+  tabs: [...],                 // 一级导航；底部 Tab 与宽屏侧栏共用
+  sidebarTitle: '主导航',
+  layout: { navMode: 'auto' }, // 全局布局模式
+  tabbar: { safeArea: true, variant: 'default' },
+  pages: {                     // 页面级覆盖，key 为归一化路径
+    '/pages/login/login': { hideTabbar: true, hideNav: true },
+  },
+})
+```
+
+- 后台菜单树可直接用 `applyLingyunPageFromMenus(menuTree, options)` 生成 tabs / 目录 / 工作台分组，无需手写转换。
+- 侧栏顶部资料用 `setLingyunPageNavProfile({ avatar, name, subtitle })`，插槽可覆盖。
+- 优先级：**props > `pages[path]` 覆盖 > `layout` 全局 > 宽度自动规则**。
+
+## 常见问题
+
+| 现象 | 原因 / 解决 |
 | --- | --- |
-| `back` | 点返回 |
-| `close` | 点关闭 |
-| `trailing` | 点右侧按钮 |
-| `trailing-action` | 点 `trailingButtons`，参数 `{ key, button, index, groupIndex, buttonIndex, anchor }`；`anchor` 是整组矩形，可直接传给 `lingyun-menu` 的 `anchor` |
-| `update:searching` | 搜索模式变化，配合 `v-model:searching` |
-| `update:searchValue` | 搜索关键词变化，配合 `v-model:search-value` |
-| `search-open` | 搜索模式打开 |
-| `search-cancel` | 点取消 / 调 `closeSearch()`，参数为当前关键词 |
-| `search-input` | 搜索输入变化，参数为当前关键词 |
-| `search` | 键盘确认搜索，参数为当前关键词 |
-| `update:segmentValue` | 分段值变化，配合 `v-model:segment-value` |
-| `segment-click` | 点击分段项，参数 `{ value, item }` |
-| `segment-change` | 分段切换，参数 `{ value, item }` |
-| `tab-change` | 点底部 Tab，参数 `{ key, tab }` |
+| 内容被顶栏挡住 / 顶部空一大截 | 用 `autoTopInset=false` 又没自己处理占位；透明顶栏页面自己加占位或让内容顶到顶部 |
+| 页面整页滚动、顶栏跟着滚 | 用了内层 `scroll-view` 却没设 `bodyScroll=false`，或内层高度链没有确定高度；参考 [分栏页面 guide](/guide/split-pages.html) §2.2 |
+| 底部 Tab 不显示 | 只有一级 Tab 根页 / 工作台页会显示；检查当前路由是否等于 tab 的 `url`、是否被 `pages[path].hideTabbar` 或 `:show-tabbar="false"` 关掉 |
+| 有商品底栏但被 Tab 挡住 | 给该页配置 `pages[path].hideTabbar = true` |
+| 搜索输入框在小程序上错位 | 页面保持默认 `pageScroll=true`，不要用整屏 `scroll-view` 包输入框（见 `design/TEXTFIELDS.md` §5） |
+| 访问别的页面后布局错乱 | 页面结构样式写进了通用 `.page` 类，H5 路由不卸载旧样式；结构样式挂页面专属类，见 guide §2.1 |
+| 想在页面里做左右分栏 | 不要手写 / 不要嵌套两个页面壳；直接用 `lingyun-split-layout` |
+| 筛选按钮点击没弹浮层 | 小程序需要显式 `trailing-menu-enabled`，并提供 `#trailing-menu` 插槽 |
 
-含文本输入的页面不要设 `:page-scroll="false"`。横向滑动行需要锁竖向滚动时才关。
+## iPhone Duo（摘要）
+
+- 内屏竖屏：顶部 `lingyun-duo-toolbar` + 底部 `lingyun-tabbars size="duo"`；页面 `duo-tools` 插槽进顶部工具组。
+- 外屏：右侧 `lingyun-duo-rail`（工具组 / Tab / 搜索）；独立页只显示返回钮。
+- 内屏横屏折叠 / 半折：Split View，页面用 `split-primary` / `split-detail` 插槽，右侧返回列触发 `back`。
+- 设备形态由 `lingyun.formFactor` / `lingyun.duoPose` 决定，宿主可用 `configureLingyunLayout` 接入自有型号判断；`setLingyunDuoSupported(false)` 可整体关闭。
