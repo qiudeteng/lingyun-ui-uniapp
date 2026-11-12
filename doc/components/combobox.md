@@ -68,3 +68,9 @@ const store = ref<string | number | null>('jiuxianqiao')
 - 搜索按 label / description 过滤；回车选择第一条可选项。
 - 禁用项不可选；`readonly` 不打开。
 - 下拉复用 Popover 玻璃，不另造浮层。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/combobox.vue -->

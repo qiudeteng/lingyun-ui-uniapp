@@ -23,3 +23,9 @@
 | `emphasized / bold` | 加粗 | false |
 | `block` | 块级 | false |
 | `selectable` | 允许选择复制 | false |
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/texts.vue -->

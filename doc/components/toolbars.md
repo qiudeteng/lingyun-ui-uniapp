@@ -60,3 +60,9 @@
 `segments` 会在 toolbar 下方渲染数据驱动控件：默认 `segmentControl="segmented"` 是 48 高 Large 分段控制、行高 56；`segmentControl="tabs"` 用 `lingyun-tabs` 渲染顶部 Tabs，Tabs 行 44 贴底，页面顶部额外留 8 间距（toolbar 栈 52）。两者共用同一份数据和事件，`segmentValue` 受控，切换发 `update:segmentValue`、`segment-click`、`segment-change`。搜索模式只让左侧输入框从右往左滑入，搜索/取消按钮位置固定不变，关闭时输入框反向滑出。
 
 返回、关闭、分享都用 `lingyun-icon`。圆钮保持 **44**。返回是 `left`、字号 **28**；关闭是 `closeempty`、分享是 `upload`，字号都是 **26**。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/toolbars.vue -->

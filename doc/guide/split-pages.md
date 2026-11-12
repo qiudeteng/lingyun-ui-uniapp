@@ -117,3 +117,10 @@ H5（所有宽度 + 明暗两套主题）：
 - [ ] 模拟器上状态栏 / 胶囊 / 底部安全区正常，toolbar 固定
 
 脚本化验证（miniprogram-automator 连 `cli auto --auto-port 9420`）可用 `mp.pageScrollTo` + `page.scrollTop()` + `page.$('.lingyun-split-layout-pane').offset()` 快速回归。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/purchase-order-split.vue -->
+<!-- demo-source: src/pages/demo/purchaseOrderDemo.ts -->

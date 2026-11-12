@@ -98,3 +98,9 @@
 事件：`row-click`、`sort-change`、`filter-change`、`page-change`、`query-change`、`selection-change`、`refresh`、`export`。
 
 自定义工具按钮放在 `#tools`，排在内置按钮后面。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/tables.vue -->

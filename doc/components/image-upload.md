@@ -103,3 +103,9 @@ uploadRef.value?.retryAll()
 - 编辑模式一次可选多张，编辑器按顺序逐张处理；取消时若还有未编辑图片，会弹窗确认。
 - 微信小程序使用 Canvas 2D 导出，基础库需 **2.9.0+**；H5 用 DOM Canvas 导出。
 - 导出按原图分辨率计算，并用 `output-max-size` 限制最长边。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/image-upload.vue -->

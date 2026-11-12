@@ -59,3 +59,9 @@ const score = ref(3)
 - `allowHalf=false` 时 `modelValue` 向下取整。
 - 星星由灰色空心星 + 裁剪的实心星叠加，半星通过 50% 宽度裁剪实现。
 - 内容层控件，不铺 Liquid Glass；可放在 `lingyun-form-item` 或分组卡片中。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/rating.vue -->

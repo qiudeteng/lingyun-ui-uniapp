@@ -62,3 +62,9 @@ function onAction() {
 ## 与 lingyun-list 的关系
 
 `lingyun-list` 的 `header` / `headerType` / `headerAction` / `#header` / `#header-action` 用法保持不变，内部统一渲染为 `lingyun-group-header`。需要单独放在卡片上方时直接用本组件即可，样式与列表头一致。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/lists.vue -->

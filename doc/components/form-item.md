@@ -22,3 +22,9 @@
 | `required` | 显示必填 | false |
 | `error` | 行内错误 | '' |
 | `layout` | `row` 左右，或 `column` 上下 | row |
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/forms.vue -->

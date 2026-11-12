@@ -74,6 +74,8 @@ const DEMO: Record<string, string> = {
   barcode: '/pages/demo/barcode',
   calendar: '/pages/demo/calendar',
   combobox: '/pages/demo/combobox',
+  copy: '/pages/demo/copy',
+  'save-image': '/pages/demo/save-image',
   'file-upload': '/pages/demo/file-upload',
   'group-header': '/pages/demo/lists',
   'image-upload': '/pages/demo/image-upload',

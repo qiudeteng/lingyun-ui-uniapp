@@ -81,3 +81,10 @@ const curveOpts = {
 ```
 
 接法、属性、事件见 [图表总览](/charts/)。相关：[柱状图](./column.md) · [折线图](./line.md) · [曲线图](./curve.md) · [区域图](./area.md)。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/charts/stack.vue -->
+<!-- demo-source: src/pages/demo/charts/samples.ts -->

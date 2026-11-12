@@ -100,3 +100,9 @@ function onConfirm(payload: LingyunSignatureConfirmPayload) {
 - 画布是内容层白纸，不使用 Liquid Glass；外层卡片是标准分组材质。
 - 笔画坐标按画布归一化，窗口尺寸变化后重绘。
 - 不提供撤销与手掌防误触；需要重来直接清除。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/signature.vue -->

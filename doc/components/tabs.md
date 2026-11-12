@@ -102,3 +102,9 @@ tabsRef.value?.refresh()
 - `sticky` 依赖 CSS `position: sticky`；**长内容必须放在默认插槽内**，否则包含块过短，无法持续吸顶。
 - 页面有固定顶栏时传 `sticky-top`（如 `60`）；在 `lingyun-app-page` 内未传时会尝试使用其顶部 inset。
 - 图标使用 `lingyun-icon`，badge 使用 `lingyun-badge size="small"`，按上标挂在文字右上角（不占行内宽度，选中 pill 内文字保持居中）。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/tabs.vue -->

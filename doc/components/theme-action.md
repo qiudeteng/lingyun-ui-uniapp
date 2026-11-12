@@ -30,3 +30,9 @@
 | `menu-closed` | 主题菜单退场完成 |
 
 主题切换逻辑走 `useLingyunTheme()`，选择后写入 `light / dark / system` 偏好。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/toolbars.vue -->

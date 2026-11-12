@@ -29,3 +29,9 @@
 | `update:modelValue` | 数值变化 |
 
 数值框宽度会随数字位数自动调整，保证多位数字完整显示；不要给 `.lingyun-stepper__value` 再设固定宽度，容器需要能换行或留出空间。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/switches.vue -->

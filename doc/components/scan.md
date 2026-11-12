@@ -98,3 +98,9 @@ function webScan(options: LingyunScanOptions): Promise<LingyunScanResult> {
 - H5：无原生扫码；不传 `scanFn` 会提示不支持并抛 `error`。
 - `scanFn` 可返回字符串或结果对象，支持同步 / Promise；错误信息含 cancel 时抛 `cancel`。
 - 组件不申请相机权限、不内置取景框。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/scan.vue -->

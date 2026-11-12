@@ -71,3 +71,9 @@ const range = ref<string[]>(['2026-11-10', '2026-11-14'])
 - `marks` 有值时日期进入紧凑布局（角标 / 圆点 / 农历）。
 - 日期单元格复用 `lingyun-picker-cal-day`，选中 / 今天 / 禁用样式与日期选择器一致。
 - 内容层标准卡片，不铺 Liquid Glass。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/calendar.vue -->

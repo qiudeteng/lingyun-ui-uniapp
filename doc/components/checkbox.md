@@ -21,3 +21,9 @@
 | 事件 | 说明 |
 | --- | --- |
 | `update:modelValue` | 勾选变化 |
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/checks.vue -->

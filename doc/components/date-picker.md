@@ -95,3 +95,9 @@
 | `update:modelValue` / `update:value` | 点完成后写入 |
 | `change` | `{ value }`，与上面的值相同 |
 | `cancel` | 取消或关闭，不改当前值 |
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/date-time-pickers.vue -->

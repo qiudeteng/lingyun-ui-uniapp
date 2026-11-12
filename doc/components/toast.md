@@ -20,3 +20,9 @@ uni.hideLingyunToast()
 | `duration` | 毫秒。`loading` 默认不自动关 | 2000 |
 
 调用前需要 `app.use(pinia)` 和 `app.use(lingyunUi)`，并且页面使用 `lingyun-app-page`。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/toasts.vue -->

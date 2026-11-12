@@ -81,3 +81,9 @@ const tags = ref<string[]>(['招牌'])
 - `allowCustom=false` 时只能选择建议项。
 - 建议列表为内容层卡片，不做浮层。
 - 点击建议添加；点击 token 关闭移除。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/token-field.vue -->

@@ -132,3 +132,9 @@ H5/App 配置 `choose-fn` 时直接调用它；未配置时使用 `uni.chooseFil
 - 内置上传默认从 `data.url`、`url`、`data` 取地址；后端结构不同用 `parse-response`。
 - 选择文件后会再次校验扩展名与大小；不符合的文件不入列。
 - 上传串行执行；删除上传中的文件会中止请求。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/file-upload.vue -->

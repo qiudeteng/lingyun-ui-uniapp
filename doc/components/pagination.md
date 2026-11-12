@@ -76,3 +76,9 @@ function onPageChange(payload: LingyunPaginationChangePayload) {
 - 省略号可点击向前 / 后跳若干页。
 - `total` / `pageSize` 变化时当前页自动限制在 1–总页数。
 - 内容层控件，不铺 Liquid Glass。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/pagination.vue -->

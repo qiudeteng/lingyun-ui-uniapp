@@ -19,3 +19,9 @@
 | `customPrefix` | 自定义字体前缀。不是 `lyicon` 时仍用 class，不走下面的字符 | lyicon |
 
 内置图标直接画出字库里的字符，放在 1em 的方盒里，并开启 `virtualHost`。圆钮用 flex 居中这个方盒。不要再用 `::before` 画内置图标，小程序上盒模型不稳，符号会对不齐。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/icons.vue -->

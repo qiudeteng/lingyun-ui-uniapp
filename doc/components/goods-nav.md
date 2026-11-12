@@ -129,3 +129,9 @@
 | `closeDetail()` | 收起详情 |
 | `toggleDetail()` | 展开 / 收起 |
 | `refreshDetail()` | 重新测量底栏位置与最大高度（页面布局变化后调用） |
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/goods-nav.vue -->

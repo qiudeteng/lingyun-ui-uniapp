@@ -68,3 +68,9 @@ interface LingyunTimelineItem {
 - 固定纵向左轨布局，不做左右交替。
 - 连接线不随状态变色，保持 Separator；状态只影响圆点与标题。
 - 内容层标准材质，不铺 Liquid Glass。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/timeline.vue -->

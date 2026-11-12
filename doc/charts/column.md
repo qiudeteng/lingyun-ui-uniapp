@@ -65,3 +65,10 @@ const chartOpts = {
 堆积折线 / 曲线另见 [堆积图](./stack.md)。
 
 接法、属性、事件见 [图表总览](/charts/)。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/charts/column.vue -->
+<!-- demo-source: src/pages/demo/charts/samples.ts -->

@@ -38,3 +38,9 @@
 | `focus / blur` | 聚焦 / 失焦 |
 
 H5 浏览器自动填充会自动同步到组件并隐藏占位符；原生密码框自带的眼睛 / 清除装饰已隐藏，只保留组件自己的显隐与清除按钮。登录页账号传 `autocomplete="username"`，密码传 `autocomplete="current-password"`。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/text-fields.vue -->

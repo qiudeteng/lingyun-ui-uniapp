@@ -55,3 +55,9 @@
 - 微信小程序的 `wx.setClipboardData` 自带「内容已复制」系统提示，组件在 `MP-WEIXIN` 下不再叠加自己的 toast；H5 / App 由 `toast` 控制。
 - `text` 为空时不写剪贴板，直接抛 `error`。
 - 走 `lingyun-icon` 字库，图标名与 `/pages/demo/icons` 一致。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/copy.vue -->

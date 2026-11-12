@@ -152,3 +152,9 @@ function onLayoutChange(value: LingyunSplitLayoutChange): void {
 | `segment-click` / `segment-change` | 分段点击 / 切换，参数 `{ value, item }` |
 | `trailing-action` | 自定义按钮点击，参数 `{ key, button, index, groupIndex, buttonIndex, anchor }` |
 | `update:searching` / `update:searchValue` / `update:segmentValue` | `v-model` 更新 |
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/split-layout.vue -->

@@ -81,3 +81,9 @@ const current = ref(0)
 
 - 宽度始终 100%，高度按 `ratio` 撑开；图片 `aspectFill` 铺满。
 - 商品详情多图使用该组件：大图左右滑动、自动轮播，底部缩略图作为指示器；点缩略图同时写回 `current`。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/swiper.vue -->

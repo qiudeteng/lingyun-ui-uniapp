@@ -23,3 +23,9 @@
 | `max` | 超过后显示 `max+` | 99 |
 | `dot` | 只显示圆点 | false |
 | `size` | `small` 小号（18px 高、11px 文案、8px 圆点）/ `medium` 默认 | medium |
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/badges.vue -->

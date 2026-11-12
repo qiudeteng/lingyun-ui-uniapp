@@ -97,3 +97,9 @@ interface LingyunStepItem {
 - 纵向步骤的说明可多行，连接线穿过圆点间隙。
 - 禁用步骤不响应点击，也不参与 `next` / `prev`。
 - 内容层标准材质，不铺 Liquid Glass。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/steps.vue -->

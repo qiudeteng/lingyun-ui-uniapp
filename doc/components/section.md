@@ -43,3 +43,9 @@
 放 `lingyun-grid` 时 body 同样没有内边距；宫格用透明底，圆角由 section 负责（`--lingyun-grid-radius: 0`），外壳 `spacing` 保留。
 
 插槽里的 `lingyun-section-row` 是全局样式类，写在插槽节点上才能在小程序里生效。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/sections.vue -->

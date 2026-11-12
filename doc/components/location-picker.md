@@ -72,3 +72,9 @@ function onChange(value: LingyunLocation) {
 - **App**：需在本地 manifest 配置地图 SDK / Key；仓库不提交 App Key。
 - 坐标统一为 GCJ-02，业务存库保留名称 / 地址 / 经纬度。
 - H5 的内置地图 UI 由 uni-h5 提供，不是凌云UI 自绘；触发器遵循内容层规范。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/location-picker.vue -->

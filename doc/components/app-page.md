@@ -455,3 +455,9 @@ setLingyunPageConfig({
 - 外屏：右侧 `lingyun-duo-rail`（工具组 / Tab / 搜索）；独立页只显示返回钮。
 - 内屏横屏折叠 / 半折：Split View，页面用 `split-primary` / `split-detail` 插槽，右侧返回列触发 `back`。
 - 设备形态由 `lingyun.formFactor` / `lingyun.duoPose` 决定，宿主可用 `configureLingyunLayout` 接入自有型号判断；`setLingyunDuoSupported(false)` 可整体关闭。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/demo.vue -->

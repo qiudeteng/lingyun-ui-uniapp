@@ -65,3 +65,9 @@ async function loadMore(payload: { source: 'click' | 'auto' }) {
 - `auto` 使用 IntersectionObserver 观察底部 80px；状态回到 `more` 会重新观察。
 - `loading` / `nomore` 不响应点击；`error` 点击即重试。
 - 内容层控件，不铺 Liquid Glass。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/load-more.vue -->

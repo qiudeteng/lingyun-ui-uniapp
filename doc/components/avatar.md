@@ -23,3 +23,9 @@
 | `backgroundColor` | 底色 | '' |
 
 `md` 写在 `size` 上是尺寸，写在 `radius` 上是圆角。`square` 和 `circle` 忽略 `radius`。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/avatars.vue -->

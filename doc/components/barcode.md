@@ -93,3 +93,9 @@ async function exportBarcode() {
 - 条码始终白底深色（或高对比自定义色），不跟随暗黑反色。
 - 不内置 logo、保存相册；导出后由业务上传或保存。
 - 内容非法或过长时显示错误占位并抛 `error`。
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/barcode.vue -->

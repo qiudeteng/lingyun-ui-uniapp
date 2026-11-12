@@ -17,3 +17,9 @@
 | `color` | 颜色 | '' |
 | `animating` | 是否转动 | true |
 | `hidesWhenStopped` | 停下来后隐藏 | true |
+
+## 演示源码
+
+文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+
+<!-- demo-source: src/pages/demo/activity-indicator.vue -->
