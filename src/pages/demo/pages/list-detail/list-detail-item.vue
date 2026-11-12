@@ -20,7 +20,7 @@
 <script setup lang="ts">
   import { ref } from 'vue'
   import { onLoad } from '@dcloudio/uni-app'
-  import TicketDetail from '@/components/ticket-detail/ticket-detail.vue'
+  import TicketDetail from './components/ticket-detail/ticket-detail.vue'
   import { findListDetailTicket, type ListDetailTicket } from './listDetailDemo'
 
   const ticket = ref<ListDetailTicket | null>(null)
@@ -35,7 +35,7 @@
       uni.navigateBack()
       return
     }
-    uni.redirectTo({ url: '/pages/demo/list-detail' })
+    uni.redirectTo({ url: '/pages/demo/pages/list-detail/list-detail' })
   }
 </script>
 

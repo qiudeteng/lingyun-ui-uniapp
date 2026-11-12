@@ -1,3 +1,7 @@
+## 1.1.10（2026-11-12）
+- 修复 `lingyun-purchase-order-list` / `lingyun-purchase-order-detail` 点返回会退两层：`autoBack` 改为透传给 `lingyun-app-page`，页面壳只返回一次。`lingyun-order-goods` 同样新增 `autoBack`。
+- `lingyun-purchase-order-list-panel` 切换状态筛选时回到列表顶部。
+- Demo：删除订货单列表、订货单详情两个单独入口，统一由「订货单列表与详情」演示（新增搜索，窄屏详情页改为 `purchase-order-split-item`，与列表与详情一致）。
 ## 1.1.9 (2026-11-12)
 - `lingyun-purchase-order-list` 面板 `full` 模式（分栏列表列）：面板不再铺页面底色，列底色交给宿主（`lingyun-split-layout`：窄屏 Primary / 宽屏 grouped-secondary）；卡片收成列表行——行间以 1px 全宽分割线区分、直角，选中行仍用页面底色，修复分栏页左栏背景与列表与详情 demo 不一致、选中行与列底色相同导致选中态不可见的问题；标准页（非 full）卡片外观不变。
 - 分栏 demo（列表与详情、订货单列表与详情）两栏 toolbar 去掉副标题，标题更简洁。

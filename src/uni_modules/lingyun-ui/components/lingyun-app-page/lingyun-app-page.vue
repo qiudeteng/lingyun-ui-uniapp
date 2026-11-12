@@ -423,6 +423,8 @@ export default defineComponent({
     titleStyle: { type: String, default: 'title' },
     placement: { type: String, default: 'standard' },
     showBack: { default: 'auto' },
+    /** 返回钮默认自己返回上一页；false 时只抛 back，由使用方返回（避免重复返回两层） */
+    autoBack: { type: Boolean, default: true },
     showClose: { default: false },
     showGrabber: { default: false },
     showTrailing: { type: Boolean, default: false },
@@ -1473,6 +1475,7 @@ export default defineComponent({
     },
     onBack() {
       this.$emit('back')
+      if (!this.autoBack) return
       const pages = getCurrentPages()
       if (pages.length > 1) {
         uni.navigateBack()

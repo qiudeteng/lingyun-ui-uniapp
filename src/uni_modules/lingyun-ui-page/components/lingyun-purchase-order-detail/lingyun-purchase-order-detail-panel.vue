@@ -548,7 +548,7 @@ const DEFAULT_ACTIONS: Record<LingyunPurchaseOrderDetailStatus, LingyunPurchaseO
  * lingyun-purchase-order-detail
  * 订货单详情标准页：状态头 + 配送 / 自提 + 商品清单 + 金额 + 物流 + 订货单信息 + 操作栏。
  * 数据驱动，不请求接口；操作 / 商品 / 地址 / 复制抛事件。
- * @see design/pages/demo/purchase-order-detail.md
+ * @see doc/page/purchase-order-detail.md
  */
 export default defineComponent({
   name: 'LingyunPurchaseOrderDetailPanel',

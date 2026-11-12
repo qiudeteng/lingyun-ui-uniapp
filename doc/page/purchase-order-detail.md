@@ -2,8 +2,8 @@
 
 订货单详情标准页。数据驱动，包含状态头、配送 / 自提、商品清单、金额明细、物流进度、订货单信息与悬浮玻璃操作栏；支持审核拆单后的多批配送子订货单。不请求接口、不读写登录态，操作和跳转通过事件交给路由页。
 
-- 演示：`/pages/demo/purchase-order-detail`
-- 设计说明：`design/pages/demo/purchase-order-detail.md`
+- 演示：`/pages/demo/pages/purchase-order-split/purchase-order-split-item`（订货单列表与详情的窄屏详情页；宽屏右栏直接用详情面板）
+- 设计说明：`design/pages/demo/pages/purchase-order-split/purchase-order-split-item.md`
 - 页面包：`lingyun-ui-page`
 
 ## 示例
@@ -237,7 +237,7 @@ interface LingyunPurchaseOrderDetailAction {
 
 ## 分栏复用
 
-标准页已拆成「页面壳 + 内容面板」：内容面板在同目录 `lingyun-purchase-order-detail-panel.vue`。左右分栏时直接把面板放进右侧栏、toolbar 由宿主提供即可（参考 demo `/pages/demo/purchase-order-split`）：
+标准页已拆成「页面壳 + 内容面板」：内容面板在同目录 `lingyun-purchase-order-detail-panel.vue`。左右分栏时直接把面板放进右侧栏、toolbar 由宿主提供即可（参考 demo `/pages/demo/pages/purchase-order-split/purchase-order-split`）：
 
 ```vue
 <lingyun-purchase-order-detail-panel
@@ -258,4 +258,4 @@ interface LingyunPurchaseOrderDetailAction {
 
 文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
 
-<!-- demo-source: src/pages/demo/purchase-order-detail.vue -->
+<!-- demo-source: src/pages/demo/pages/purchase-order-split/purchase-order-split-item.vue -->

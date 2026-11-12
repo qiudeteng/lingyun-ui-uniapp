@@ -1,6 +1,6 @@
-# design/pages/demo/order-goods
+# design/pages/demo/pages/order-goods
 
-对应源码：`src/pages/demo/order-goods.vue`（标准页：`src/uni_modules/lingyun-ui-page/components/lingyun-order-goods`）
+对应源码：`src/pages/demo/pages/order-goods.vue`（标准页：`src/uni_modules/lingyun-ui-page/components/lingyun-order-goods`）
 
 参考美团外卖点单页的左右布局，做一个数据驱动的「订单商品加购」标准页：
 
@@ -25,4 +25,4 @@
 - 顶部工具栏：demo 开启 `show-toolbar`（标题「点单」）+ `searchable`，并设 `auto-top-inset="false"`：Banner 顶到页面顶部、垫在透明工具栏下，头部只保留这一层工具栏，不再出现 Banner 自带的返回钮与标题；Banner 顶部按主题渐隐保证标题可读。小程序顶栏由 `lingyun-app-page` 处理状态栏安全区。点搜索进入搜索态：隐藏 Banner / 店铺卡片 / 左侧分类，列表切换为搜索结果（按原分类分组、显示结果数 / 未输入提示 / 无结果空态），搜索结果可直接加购、改数量或打开商品详情；关闭搜索回到原列表并定位当前分类，顶部留白自动恢复
 - 角标：商品标签、详情页商品名旁角标、分类栏分类角标 / 数量角标统一使用 `lingyun-badge size="small"`（18px 高）；商品标签与详情角标为 `color="orange"`，不再使用自定义小 `text`
 
-规范：[`UI_SPEC.md`](../../UI_SPEC.md)（Liquid Glass、px、暗黑）、[`GOODS_NAV.md`](../../GOODS_NAV.md)（商品底栏约定）、[`SHEETS.md`](../../SHEETS.md)。
+规范：[`UI_SPEC.md`](../../../UI_SPEC.md)（Liquid Glass、px、暗黑）、[`GOODS_NAV.md`](../../../GOODS_NAV.md)（商品底栏约定）、[`SHEETS.md`](../../../SHEETS.md)。

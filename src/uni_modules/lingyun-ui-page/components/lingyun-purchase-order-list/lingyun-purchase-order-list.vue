@@ -2,6 +2,7 @@
   <lingyun-app-page
     :show-toolbar="showToolbar"
     :show-back="showToolbar ? showBack : false"
+    :auto-back="autoBack"
     :show-nav="showNav"
     :show-tabbar="false"
     :title="title"
@@ -126,10 +127,6 @@ export default defineComponent({
   methods: {
     onBack(): void {
       this.$emit('back')
-      if (!this.autoBack) return
-      const pages =
-        typeof getCurrentPages === 'function' ? getCurrentPages() : []
-      if (pages.length > 1) uni.navigateBack()
     },
     onSegmentChange(payload: { value?: string | number }): void {
       const key = String(payload?.value || '')

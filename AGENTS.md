@@ -163,6 +163,7 @@ H5 界面改完后，用 Cursor 内置浏览器验收，地址是 `http://localh
 ## 6. 约定（应做）
 
 - 新页面：在 `src/pages/<name>/` 加页面，并登记到 `pages.json`；对应设计稿放 `design/pages/<name>/`。
+- 演示页按 Tab 分目录（图表 `pages/demo/charts/`、页面 `pages/demo/pages/`）；由多个页面 / 组件组成的功能独占一个子目录，专用组件放在该目录的 `components/`。详见 `.cursor/rules/demo-page-directories.mdc`。
 - 新业务组件：放 `src/components/...`；对应设计稿放 `design/components/...` 同相对路径。
 - 新自研 UI：放 `src/uni_modules/lingyun-ui/components/lingyun-<name>/lingyun-<name>.vue`，样式用 `$lingyun-glass-*` / `$lingyun-*`、**`px`（禁止 `rpx`）** 并符合 Liquid Glass，更新该包 `readme.md` / `changelog.md`。
 - 新标准页：放 `src/uni_modules/lingyun-ui-page/components/lingyun-<name>/`。`src/pages` 只登记路由并接业务（请求、登录态、跳转），不重写界面。详见 `.cursor/rules/lingyun-ui-page.mdc`。

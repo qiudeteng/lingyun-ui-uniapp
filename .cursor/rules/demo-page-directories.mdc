@@ -1,0 +1,34 @@
+---
+description: 演示页按 Tab 分目录；多文件功能独占一个子目录
+alwaysApply: true
+---
+
+# 演示页目录（按 Tab / 功能分目录）
+
+`src/pages/demo/` 下的演示页按导航 Tab 分目录，和图表一样，不要再全部平铺在 `demo/` 根目录。
+
+## 放哪里
+
+| Tab（`src/config/pageTabs.ts`） | 目录 |
+|---|---|
+| 图表 | `src/pages/demo/charts/` |
+| 页面 | `src/pages/demo/pages/` |
+| 组件 | `src/pages/demo/` 根目录（历史页面，待统一迁移；迁移前新增组件演示页也先放这里） |
+
+登录、404 等真实业务路由不算演示页，仍在 `src/pages/<name>/`。
+
+## 硬规则
+
+1. **单文件功能**：直接放在 Tab 目录下，如 `pages/demo/pages/records.vue`。
+2. **多文件功能**（多个页面，或页面 + 专用组件 / 数据）：建独立目录，所有页面、组件、数据都放在里面，目录名 = 主页面文件名：
+   ```
+   src/pages/demo/pages/list-detail/
+   ├── list-detail.vue          # 主页面（宽屏分栏）
+   ├── list-detail-item.vue     # 子页面（窄屏详情）
+   ├── listDetailDemo.ts        # 本功能演示数据
+   └── components/ticket-detail/ticket-detail.vue
+   ```
+3. 功能专用组件放功能目录的 `components/`，**不要**放 `src/components/`；目录内互相引用用相对路径。
+4. 设计稿同相对路径：`design/pages/demo/pages/list-detail/...`（见 `design/README.md` 路径映射）。
+5. 新增 / 移动时同步：`pages.json`、`pageTabs.ts`、`app-page-view-host.vue`（宽屏承载）、`router/pageViews.ts`、文档 `doc/`（含 `doc/.vuepress/components/PhonePreview.vue`）、`design/.vuepress/config.ts` 侧栏。
+6. 移动后**必须重启** `pnpm dev` 与 `pnpm dev:mp-weixin`（easycom / 路由表 / 旧产物不会热更新），删掉 `dist/dev/mp-weixin` 里旧路径产物，再按 `mp-weixin-compat.mdc` 清编译缓存。

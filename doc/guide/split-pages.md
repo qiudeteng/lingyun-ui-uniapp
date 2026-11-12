@@ -1,6 +1,6 @@
 # 分栏页面开发规范与踩坑清单（列表 + 详情）
 
-> 来源：`/pages/demo/list-detail`、`/pages/demo/purchase-order-split` 两轮开发中实际踩过的坑。做「宽屏左右分栏、窄屏独立详情页」这类页面之前先读一遍。
+> 来源：`/pages/demo/pages/list-detail/list-detail`、`/pages/demo/pages/purchase-order-split/purchase-order-split` 两轮开发中实际踩过的坑。做「宽屏左右分栏、窄屏独立详情页」这类页面之前先读一遍。
 >
 > **优先直接用 [`lingyun-split-layout`](/components/split-layout.html)**：页面结构、头部浮动与测高、分栏缝隙都已封装；本文档说明它内部做了什么、以及内容侧仍要注意的约束（尤其是小程序宿主节点高度）。
 
@@ -122,5 +122,5 @@ H5（所有宽度 + 明暗两套主题）：
 
 文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
 
-<!-- demo-source: src/pages/demo/purchase-order-split.vue -->
-<!-- demo-source: src/pages/demo/purchaseOrderDemo.ts -->
+<!-- demo-source: src/pages/demo/pages/purchase-order-split/purchase-order-split.vue -->
+<!-- demo-source: src/pages/demo/pages/purchase-order-split/purchaseOrderDemo.ts -->

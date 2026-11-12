@@ -1,6 +1,6 @@
-# design/pages/demo/records
+# design/pages/demo/pages/records
 
-对应源码：`src/pages/demo/records.vue`
+对应源码：`src/pages/demo/pages/records.vue`
 
 完整的「列表 + 筛选 + 搜索 + 时间选择」联动示例：收支记录列表同时受顶部搜索、右上筛选菜单和底部日期切换条影响。
 
@@ -13,4 +13,4 @@
 - 分页：首次渲染 12 条，「加载更多」每次追加 12 条；搜索、筛选、时间范围变化时回到第一页
 - 空态：无匹配结果时展示 `lingyun-empty`，提供「重置搜索与筛选」按钮
 - 演示数据：按当前日期向前生成 120 天记录，金额、状态、支付方式固定随机种子，便于稳定复现
-- 相关规范：[`SEARCHBARS.md`](../../SEARCHBARS.md)、[`LISTS.md`](../../LISTS.md)、[`DATE_SWITCHERS.md`](../../DATE_SWITCHERS.md)、[`MENUS.md`](../../MENUS.md)、[`TOOLBARS.md`](../../TOOLBARS.md)
+- 相关规范：[`SEARCHBARS.md`](../../../SEARCHBARS.md)、[`LISTS.md`](../../../LISTS.md)、[`DATE_SWITCHERS.md`](../../../DATE_SWITCHERS.md)、[`MENUS.md`](../../../MENUS.md)、[`TOOLBARS.md`](../../../TOOLBARS.md)

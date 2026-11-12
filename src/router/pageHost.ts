@@ -206,10 +206,12 @@ export function openLingyunHostedPage(url: string, highlight?: string): boolean 
 /**
  * 宽屏直接进入内容页时，立即归并到它登记的常驻宿主页。
  * 这样用户第一次点击左栏前就已经进入 Tab 容器。
+ * 只处理栈底页：从列表 navigateTo 进来的详情页要保留返回，不能被替换成宿主页。
  */
 export function ensureLingyunWidePageHost(): boolean {
   // #ifdef MP-WEIXIN
   if (!isLingyunWideNav()) return false
+  if (getCurrentPages().length > 1) return false
   const route = currentRoute()
   const view = getLingyunPageView(route)
   if (!view || normalizeLingyunPagePath(view.host) === route) return false

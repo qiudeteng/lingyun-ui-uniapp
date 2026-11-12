@@ -16,6 +16,7 @@
     :toolbar-buttons="toolbarButtons"
     toolbar-menu-enabled
     :banner-height="bannerEnabled ? bannerHeight : 0"
+    :auto-back="false"
     @back="goBack"
     @checkout="onCheckout"
     @cart-clear="onCartClear"

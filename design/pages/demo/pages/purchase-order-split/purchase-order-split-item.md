@@ -1,8 +1,8 @@
-# design/pages/demo/purchase-order-detail
+# design/pages/demo/pages/purchase-order-split/purchase-order-split-item
 
-对应源码：`src/pages/demo/purchase-order-detail.vue`（标准页：`src/uni_modules/lingyun-ui-page/components/lingyun-purchase-order-detail`）
+对应源码：`src/pages/demo/pages/purchase-order-split/purchase-order-split-item.vue`（标准页：`src/uni_modules/lingyun-ui-page/components/lingyun-purchase-order-detail`）
 
-订货单详情演示，数据来自 `src/pages/demo/purchaseOrderDemo.ts`，从订货单列表点卡片进入；也可以直接打开本页（默认展示多批配送的主订货单）。
+订货单详情演示，数据来自 `src/pages/demo/pages/purchase-order-split/purchaseOrderDemo.ts`。不进菜单：「订货单列表与详情」窄屏（< 900）点卡片进入本页，宽屏右栏直接用同一个详情面板；子订货单详情也打开本页（`?number=&sub=`）。对齐列表与详情 demo 的 `list-detail-item`，始终显示返回钮（`show-back=true`）。
 
 - 页面壳：`lingyun-app-page`，标题「订货单详情」/ 子订货单「子订货单详情」，开启返回；`body-scroll=false` / `page-scroll=false`，内容区使用内层 `scroll-view`；底部操作栏悬浮在滚动内容上方。
 - 主订货单状态头：分组卡片，状态图标（44 圆角方块、状态色浅底）+ 20px 粗体状态标题 + 13px 提示；待付款下方显示「支付剩余 mm:ss」倒计时，超时抛 `payment-timeout` 后订货单转为已取消。底部「实付款 / 需付款 / 订货单金额」与金额。**有子订货单时隐藏整张状态卡**，以子订货单状态为准。
@@ -26,4 +26,4 @@
 - 页面重新进入 / 切换订货单时内部滚动回到顶部，避免 H5 恢复上一次的内部滚动位置。
 - 内容宽屏最大 720px 居中；状态卡与卡片圆角 20px，分组标题使用 `lingyun-group-header`，与卡片内容对齐。
 - 图片沿用 order-goods demo 的 `images.unsplash.com`；微信真机需配置 downloadFile 合法域名，或在开发者工具勾选「不校验合法域名」。
-- 规范：[`UI_SPEC.md`](../../UI_SPEC.md)、[`GOODS_NAV.md`](../../GOODS_NAV.md)（底部栏玻璃）、[`LISTS.md`](../../LISTS.md)；组件手册 `doc/page/purchase-order-detail.md`。
+- 规范：[`UI_SPEC.md`](../../../../UI_SPEC.md)、[`GOODS_NAV.md`](../../../../GOODS_NAV.md)（底部栏玻璃）、[`LISTS.md`](../../../../LISTS.md)；组件手册 `doc/page/purchase-order-detail.md`。

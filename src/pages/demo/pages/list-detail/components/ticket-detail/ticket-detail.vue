@@ -40,7 +40,7 @@
   import {
     LIST_DETAIL_STATUS_TEXT,
     type ListDetailTicket,
-  } from '@/pages/demo/listDetailDemo'
+  } from '../../listDetailDemo'
   import type { LingyunTimelineItem } from '@/uni_modules/lingyun-ui/components/lingyun-timeline/types'
 
   /*

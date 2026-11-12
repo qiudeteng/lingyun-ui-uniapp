@@ -18,7 +18,7 @@
 + 反馈层（Toast / HUD / Alert）挂在页面壳内
 ```
 
-相关 demo：`pages/demo/toolbar-search`（搜索）、`pages/demo/toolbar-segments`（分段）、`pages/demo/toolbar-comprehensive`（搜索 + 分段 + 筛选器全套）、`pages/demo/purchase-order-list`（顶部 Tabs）、`pages/demo/sidebars` / `pages/demo/tabbars`（导航）。
+相关 demo：`pages/demo/toolbar-search`（搜索）、`pages/demo/toolbar-segments`（分段）、`pages/demo/toolbar-comprehensive`（搜索 + 分段 + 筛选器全套）、`pages/demo/sidebars` / `pages/demo/tabbars`（导航）。
 
 ## 最小示例
 
@@ -170,7 +170,7 @@ function onSearchConfirm(value: string) { /* 键盘「搜索」确认时触发 *
 
 - **小程序必须显式 `trailing-menu-enabled`**（插槽检测不可靠）。
 - 插槽作用域 `{ button, index, groupIndex, buttonIndex, close }`；点外面 / 再点按钮也会关闭。
-- 参考 demo：`pages/demo/order-goods`。
+- 参考 demo：`pages/demo/pages/order-goods`。
 
 ### 方式二：自管浮层（`@trailing-action` 拿 anchor）
 

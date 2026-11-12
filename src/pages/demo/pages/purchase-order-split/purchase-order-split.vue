@@ -8,13 +8,18 @@
     <template #list-header>
       <lingyun-split-toolbar
         title="订货单"
+        searchable
+        search-placeholder="搜索订货单号 / 商品"
         :segments="filterOptions"
         :segment-value="activeFilter"
         :show-back="!navDocked && !hosted"
         :avoid-capsule="!wide"
         :glass-progress="listGlass"
+        v-model:searching="searching"
+        v-model:search-value="keyword"
+        @search-cancel="onSearchCancel"
         @segment-change="onFilterChange"
-        @back="onBack"
+        @back="onPageBack"
       />
     </template>
 
@@ -22,8 +27,9 @@
       <lingyun-purchase-order-list-panel
         class="lingyun-split-layout-pane"
         full
-        :orders="orders"
+        :orders="searchedOrders"
         :filter="activeFilter"
+        :empty-text="keyword.trim() ? '没有匹配的订货单' : '暂无订货单'"
         :selected-key="wide && currentOrder ? currentOrder.key || currentOrder.number : ''"
         :top-space="listTopSpace"
         @scroll="onListScroll"
@@ -32,6 +38,7 @@
       />
     </template>
 
+    <!-- 宽屏右侧详情；窄屏走独立详情页 -->
     <template #detail-header>
       <lingyun-split-toolbar title="订货单详情" :glass-progress="detailGlass" />
     </template>
@@ -40,6 +47,7 @@
       <lingyun-purchase-order-detail-panel
         class="lingyun-split-layout-pane"
         :order="currentOrder"
+        empty-text="选择左侧订货单查看详情"
         :top-space="detailTopSpace"
         @scroll="onDetailScroll"
         @action="onAction"
@@ -71,7 +79,9 @@
     LingyunPurchaseOrderListOrderPayload,
   } from '@/uni_modules/lingyun-ui-page/components/lingyun-purchase-order-list/types'
 
-  /** 分栏门槛 / 头部量高由 lingyun-split-layout 负责，这里只跟随 layout-change 做业务分支 */
+  const DETAIL_URL = '/pages/demo/pages/purchase-order-split/purchase-order-split-item'
+
+  /** 分栏门槛 900 / 左栏宽度 / 头部量高由 lingyun-split-layout 负责，这里只跟随 layout-change */
   const wide = ref(false)
   const listTopSpace = ref(0)
   const detailTopSpace = ref(0)
@@ -82,12 +92,8 @@
     detailTopSpace.value = value.detailTopSpace
   }
 
-  /** 左侧导航停靠时不显示页面返回 */
+  /** 左侧导航是否停靠：导航停靠时不显示页面返回（iPad 竖屏 / 横屏） */
   const navDocked = computed(() => isLingyunWideScreen())
-
-  onBeforeUnmount(() => {
-    pageHostState.hideToolbar = false
-  })
 
   function currentPageRoute(): string {
     try {
@@ -102,8 +108,8 @@
   /** 小程序宽屏宿主内：toolbar 属于宿主，本页的 app-page 要保留顶栏占位 */
   const hosted = computed(
     () =>
-      pageHostState.path === 'pages/demo/purchase-order-split' &&
-      currentPageRoute() !== 'pages/demo/purchase-order-split',
+      pageHostState.path === 'pages/demo/pages/purchase-order-split/purchase-order-split' &&
+      currentPageRoute() !== 'pages/demo/pages/purchase-order-split/purchase-order-split',
   )
   /* 本页自己出 toolbar：宿主页（小程序宽屏 / 目录）隐藏自己的 toolbar */
   watch(
@@ -113,6 +119,109 @@
     },
     { immediate: true },
   )
+
+  onBeforeUnmount(() => {
+    pageHostState.hideToolbar = false
+  })
+
+  /* ---------- 左栏：搜索 / 状态 ---------- */
+
+  const searching = ref(false)
+  const keyword = ref('')
+  const activeFilter = ref('all')
+  const filterOptions = [
+    { key: 'all', text: '全部' },
+    { key: 'pendingReview', text: '待审核' },
+    { key: 'inProgress', text: '进行中' },
+    { key: 'completed', text: '已完成' },
+    { key: 'cancelled', text: '已取消' },
+  ]
+
+  function onFilterChange(payload: { value?: string | number }): void {
+    const value = String(payload?.value || '')
+    if (filterOptions.some((item) => item.key === value)) activeFilter.value = value
+  }
+
+  function onSearchCancel(): void {
+    searching.value = false
+    keyword.value = ''
+  }
+
+  /** 与列表面板一致的状态归类 */
+  function listStatusOf(order: LingyunPurchaseOrderDetailOrder): string {
+    const explicit = (order as { listStatus?: string }).listStatus
+    if (explicit) return explicit
+    if (order.status === 'pendingReview') return 'pendingReview'
+    if (order.status === 'completed') return 'completed'
+    if (order.status === 'cancelled') return 'cancelled'
+    return 'inProgress'
+  }
+
+  function searchTextOf(order: LingyunPurchaseOrderDetailOrder): string {
+    const names = [
+      ...(order.items || []),
+      ...(order.subOrders || []).flatMap((sub) => sub.items || []),
+    ].map((item) => item.name)
+    return [order.number, ...names].join(' ').toLowerCase()
+  }
+
+  const orders = ref<LingyunPurchaseOrderDetailOrder[]>([...demoPurchaseOrders])
+
+  /** 搜索交给页面，状态筛选交给列表面板（filter） */
+  const searchedOrders = computed(() => {
+    const text = keyword.value.trim().toLowerCase()
+    if (!text) return orders.value
+    return orders.value.filter((order) => searchTextOf(order).includes(text))
+  })
+
+  const visibleOrders = computed(() =>
+    activeFilter.value === 'all'
+      ? searchedOrders.value
+      : searchedOrders.value.filter((order) => listStatusOf(order) === activeFilter.value),
+  )
+
+  /* ---------- 选中与详情 ---------- */
+
+  const selectedNumber = ref('')
+  const currentOrder = computed<LingyunPurchaseOrderDetailOrder | null>(
+    () => visibleOrders.value.find((order) => order.number === selectedNumber.value) || null,
+  )
+
+  /* 默认选中结果第一条；条件变化后选中项被过滤掉时同步换第一条 */
+  watch(
+    visibleOrders,
+    (list) => {
+      if (!list.some((order) => order.number === selectedNumber.value)) {
+        selectedNumber.value = list[0]?.number || ''
+      }
+    },
+    { immediate: true },
+  )
+
+  /** 宽屏切右栏（面板换单自动回顶），窄屏进独立详情页 */
+  function onOrderClick(payload: LingyunPurchaseOrderListOrderPayload): void {
+    if (wide.value) {
+      selectedNumber.value = payload.order.number
+      return
+    }
+    uni.navigateTo({ url: `${DETAIL_URL}?number=${encodeURIComponent(payload.order.number)}` })
+  }
+
+  function onSubOrderClick(payload: LingyunPurchaseOrderDetailSubOrderPayload): void {
+    uni.navigateTo({
+      url: `${DETAIL_URL}?number=${encodeURIComponent(payload.order.number)}&sub=${encodeURIComponent(payload.subOrder.key)}`,
+    })
+  }
+
+  /** 窄屏、非宿主时显示返回：回到目录 */
+  function onPageBack(): void {
+    const pages = getCurrentPages()
+    if (pages.length > 1) {
+      uni.navigateBack()
+      return
+    }
+    uni.reLaunch({ url: '/pages/index/index' })
+  }
 
   /* 头部玻璃进度：由两栏各自的内层滚动驱动 */
   const listGlass = ref(0)
@@ -126,63 +235,7 @@
     detailGlass.value = Math.min(1, Math.max(0, Number(top) / 56))
   }
 
-  /* ---------- 状态筛选与选中订货单 ---------- */
-
-  const filterOptions = [
-    { key: 'all', text: '全部' },
-    { key: 'pendingReview', text: '待审核' },
-    { key: 'inProgress', text: '进行中' },
-    { key: 'completed', text: '已完成' },
-    { key: 'cancelled', text: '已取消' },
-  ]
-
-  const activeFilter = ref('all')
-
-  /** 与标准列表页一致的状态归类 */
-  function listStatusOf(order: LingyunPurchaseOrderDetailOrder): string {
-    const explicit = (order as { listStatus?: string }).listStatus
-    if (explicit) return explicit
-    if (order.status === 'pendingReview') return 'pendingReview'
-    if (order.status === 'completed') return 'completed'
-    if (order.status === 'cancelled') return 'cancelled'
-    return 'inProgress'
-  }
-
-  const orders = ref<LingyunPurchaseOrderDetailOrder[]>([...demoPurchaseOrders])
-  const filteredOrders = computed(() =>
-    activeFilter.value === 'all'
-      ? orders.value
-      : orders.value.filter((order) => listStatusOf(order) === activeFilter.value),
-  )
-
-  const selectedNumber = ref(orders.value[0]?.number || '')
-  const currentOrder = computed<LingyunPurchaseOrderDetailOrder | null>(
-    () =>
-      filteredOrders.value.find((order) => order.number === selectedNumber.value) ||
-      filteredOrders.value[0] ||
-      null,
-  )
-
-  function onFilterChange(payload: { value?: string | number }): void {
-    const value = String(payload?.value || '')
-    if (!filterOptions.some((item) => item.key === value)) return
-    activeFilter.value = value
-    /* 宽屏下选中的订货单不在新筛选里时，自动选中第一条 */
-    const first = filteredOrders.value[0]
-    if (first && !filteredOrders.value.some((order) => order.number === selectedNumber.value)) {
-      selectedNumber.value = first.number
-    }
-  }
-
-  function onOrderClick(payload: LingyunPurchaseOrderListOrderPayload): void {
-    if (wide.value) {
-      selectedNumber.value = payload.order.number
-      return
-    }
-    uni.navigateTo({
-      url: `/pages/demo/purchase-order-detail?number=${encodeURIComponent(payload.order.number)}`,
-    })
-  }
+  /* ---------- 演示操作 ---------- */
 
   function onAction(payload: LingyunPurchaseOrderListActionPayload | { action?: { text?: string } }): void {
     uni.showToast({ title: payload?.action?.text || '操作', icon: 'none' })
@@ -190,12 +243,6 @@
 
   function onItemClick(payload: LingyunPurchaseOrderDetailItemPayload): void {
     uni.showToast({ title: payload.item.name, icon: 'none' })
-  }
-
-  function onSubOrderClick(payload: LingyunPurchaseOrderDetailSubOrderPayload): void {
-    uni.navigateTo({
-      url: `/pages/demo/purchase-order-detail?number=${encodeURIComponent(payload.order.number)}&sub=${encodeURIComponent(payload.subOrder.key)}`,
-    })
   }
 
   function onCopy(payload: LingyunPurchaseOrderDetailCopyPayload): void {
@@ -209,13 +256,5 @@
     next[index] = { ...next[index], status: 'cancelled' }
     orders.value = next
     uni.showToast({ title: '订货单已超时取消', icon: 'none' })
-  }
-
-  function onBack(): void {
-    uni.navigateBack({
-      fail: () => {
-        uni.reLaunch({ url: '/pages/demo/demo' })
-      },
-    })
   }
 </script>

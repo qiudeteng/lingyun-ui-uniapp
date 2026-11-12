@@ -1,14 +1,14 @@
 # 订货单列表与详情 Demo
 
-演示页面：`/pages/demo/purchase-order-split`  
-设计说明：`design/pages/demo/purchase-order-split.md`
+演示页面：`/pages/demo/pages/purchase-order-split/purchase-order-split`  
+设计说明：`design/pages/demo/pages/purchase-order-split/purchase-order-split.md`
 
 订货单的「列表 + 详情」左右分栏示例：宽屏左侧订货单列表、右侧订货单详情，窄屏点卡片进入独立的详情页。它不是新标准页，而是 [`lingyun-split-layout`](../components/split-layout.md) + 两个标准页拆出的内容面板的组合示例。
 
 ## 结构
 
-- **布局**：`lingyun-split-layout`，`split-at=900`、`list-width=375`。≥900 左右分栏，窄屏只渲染左栏；点卡片在窄屏 `navigateTo` 到 `/pages/demo/purchase-order-detail`，宽屏切换右侧选中项。
-- **左栏**：配套 `lingyun-split-toolbar`（标题「订货单」+ 分段控件，无副标题）+ [`lingyun-purchase-order-list-panel`](./purchase-order-list.md)：
+- **布局**：`lingyun-split-layout`，`split-at=900`、`list-width=375`。≥900 左右分栏，窄屏只渲染左栏；点卡片在窄屏 `navigateTo` 到 `/pages/demo/pages/purchase-order-split/purchase-order-split-item`（不进菜单、始终带返回），宽屏切换右侧选中项。交互与 [列表与详情](./list-detail.md) 一致。
+- **左栏**：配套 `lingyun-split-toolbar`（标题「订货单」+ 搜索 + 分段控件，无副标题；搜索按订货单号 / 商品名匹配）+ [`lingyun-purchase-order-list-panel`](./purchase-order-list.md)：
   - `full` 模式：卡片收成列表行——通宽、直角、行间 1px 全宽分割线，面板不铺页面底色，列底色由 `lingyun-split-layout` 提供；
   - `selected-key`：宽屏时高亮当前详情单，窄屏不显示选中；
   - `top-space`：由布局实测的头部高度，内容从浮动 toolbar 下方穿过。
@@ -18,7 +18,7 @@
 
 ## 使用
 
-直接打开 `pages/demo/purchase-order-split` 体验（建议宽屏查看分栏，预览框可切 717 宽屏 / 1280 超宽屏 / 390 手机）。
+直接打开 `pages/demo/pages/purchase-order-split/purchase-order-split` 体验（建议宽屏查看分栏，预览框可切 717 宽屏 / 1280 超宽屏 / 390 手机）。
 
 自己做类似页面时：
 
@@ -30,7 +30,8 @@
 
 文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
 
-<!-- demo-source: src/pages/demo/purchase-order-split.vue -->
-<!-- demo-source: src/pages/demo/purchaseOrderDemo.ts -->
+<!-- demo-source: src/pages/demo/pages/purchase-order-split/purchase-order-split.vue -->
+<!-- demo-source: src/pages/demo/pages/purchase-order-split/purchase-order-split-item.vue -->
+<!-- demo-source: src/pages/demo/pages/purchase-order-split/purchaseOrderDemo.ts -->
 <!-- demo-source: src/uni_modules/lingyun-ui-page/components/lingyun-purchase-order-list/lingyun-purchase-order-list-panel.vue -->
 <!-- demo-source: src/uni_modules/lingyun-ui-page/components/lingyun-purchase-order-detail/lingyun-purchase-order-detail-panel.vue -->

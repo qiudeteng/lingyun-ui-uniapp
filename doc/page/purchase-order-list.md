@@ -2,8 +2,8 @@
 
 订货单列表标准页。顶部状态 Tabs + 订货单卡片：列表业务状态固定为**全部 / 待审核 / 进行中 / 已完成 / 已取消**；卡片只显示订货单号与业务状态，商品改为横向缩略图，底栏显示时间、包裹数与操作。不请求接口、不读写登录态，筛选、点订货单、操作和加载更多都通过事件交给路由页。
 
-- 演示：`/pages/demo/purchase-order-list`（点订货单进入 `/pages/demo/purchase-order-detail`）
-- 设计说明：`design/pages/demo/purchase-order-list.md`
+- 演示：`/pages/demo/pages/purchase-order-split/purchase-order-split`（订货单列表与详情：宽屏左右分栏，窄屏点订货单进入 `/pages/demo/pages/purchase-order-split/purchase-order-split-item`）
+- 设计说明：`design/pages/demo/pages/purchase-order-split/purchase-order-split.md`
 - 页面包：`lingyun-ui-page`
 
 ## 示例
@@ -155,7 +155,7 @@ interface LingyunPurchaseOrderListOrder {
 
 ## 分栏复用
 
-标准页已拆成「页面壳 + 内容面板」：内容面板在同目录 `lingyun-purchase-order-list-panel.vue`。需要做列表 + 详情分栏时直接引入面板自行提供 toolbar / 布局即可（参考 demo `/pages/demo/purchase-order-split`）：
+标准页已拆成「页面壳 + 内容面板」：内容面板在同目录 `lingyun-purchase-order-list-panel.vue`。需要做列表 + 详情分栏时直接引入面板自行提供 toolbar / 布局即可（参考 demo `/pages/demo/pages/purchase-order-split/purchase-order-split`）：
 
 ```vue
 <lingyun-purchase-order-list-panel
@@ -179,4 +179,4 @@ interface LingyunPurchaseOrderListOrder {
 
 文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
 
-<!-- demo-source: src/pages/demo/purchase-order-list.vue -->
+<!-- demo-source: src/pages/demo/pages/purchase-order-split/purchase-order-split.vue -->

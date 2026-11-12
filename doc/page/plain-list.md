@@ -1,7 +1,7 @@
 # 纯列表 Demo
 
-演示页面：`/pages/demo/plain-list`  
-设计说明：`design/pages/demo/plain-list.md`
+演示页面：`/pages/demo/pages/plain-list`  
+设计说明：`design/pages/demo/pages/plain-list.md`
 
 整页就是一张列表：顶部搜索 + 筛选，底部日期切换条，列表全宽平铺（HIG Plain），不使用 `lingyun-section` 分组卡片。它不是 `lingyun-ui-page` 标准页组件，而是 `lingyun-app-page` + `lingyun-list plain` + `lingyun-menu` + `lingyun-date-switcher` 的组合示例。
 
@@ -15,10 +15,10 @@
 
 ## 使用
 
-直接打开 `pages/demo/plain-list` 体验。整页列表场景给 `lingyun-list` 加 `plain`，页面底色用 Primary Background；其余行内容按 [列表组件](../components/list.md) 的 `lingyun-list-item` 用法组合。
+直接打开 `pages/demo/pages/plain-list` 体验。整页列表场景给 `lingyun-list` 加 `plain`，页面底色用 Primary Background；其余行内容按 [列表组件](../components/list.md) 的 `lingyun-list-item` 用法组合。
 
 ## 演示源码
 
 文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
 
-<!-- demo-source: src/pages/demo/plain-list.vue -->
+<!-- demo-source: src/pages/demo/pages/plain-list.vue -->

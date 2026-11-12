@@ -140,7 +140,7 @@ const goods = {
 |------|------|
 | `toolbar-menu` | 工具栏按钮点击后弹出的菜单内容，作用域 `{ button, index, groupIndex, buttonIndex, close }`；需要配合 `toolbarButtons` + `toolbarMenuEnabled` |
 
-大数据量：默认 auto，商品 ≤100 全部加载、100～500 分段加载、>500 按分类加载；可用 `renderMode` 强制。按分类模式只渲染当前分类、关闭滚动联动，商品图带 `lazy-load`。数据结构与完整说明见手册 `/page/order-goods`，演示页 `pages/demo/order-goods`（Banner 右上角可切换全部 / 分段 / 按分类）。
+大数据量：默认 auto，商品 ≤100 全部加载、100～500 分段加载、>500 按分类加载；可用 `renderMode` 强制。按分类模式只渲染当前分类、关闭滚动联动，商品图带 `lazy-load`。数据结构与完整说明见手册 `/page/order-goods`，演示页 `pages/demo/pages/order-goods`（Banner 右上角可切换全部 / 分段 / 按分类）。
 
 ## 订货单列表
 
@@ -240,4 +240,4 @@ import { buildLingyunPurchaseOrderSubDetail } from '@/uni_modules/lingyun-ui-pag
 order.value = buildLingyunPurchaseOrderSubDetail(parent, subOrder)
 ```
 
-- 数据结构和完整说明见手册 `/page/purchase-order-list`、`/page/purchase-order-detail`；演示页 `pages/demo/purchase-order-list` → `pages/demo/purchase-order-detail` → 子订货单详情。
+- 数据结构和完整说明见手册 `/page/purchase-order-list`、`/page/purchase-order-detail`；演示页 `pages/demo/pages/purchase-order-split/purchase-order-split`（宽屏左右分栏，窄屏点卡片进 `pages/demo/pages/purchase-order-split/purchase-order-split-item`）→ 子订货单详情。

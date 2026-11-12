@@ -1,8 +1,8 @@
 # 列表与详情 Demo
 
-演示页面：`/pages/demo/list-detail`  
-独立详情页：`/pages/demo/list-detail-item`  
-设计说明：`design/pages/demo/list-detail.md`
+演示页面：`/pages/demo/pages/list-detail/list-detail`  
+独立详情页：`/pages/demo/pages/list-detail/list-detail-item`  
+设计说明：`design/pages/demo/pages/list-detail/list-detail.md`
 
 宽屏「列表 + 详情」分栏示例：左侧是固定手机宽度（375px）的独立小页面，搜索、状态筛选、时间切换都在左栏内完成；窄屏只显示左栏，点行进入独立详情页。
 
@@ -15,7 +15,7 @@
 - 纯列表：左栏用 Primary 底色，`lingyun-list plain` 全宽平铺，行直接贴左栏两边，无卡片 / 圆角 / 投影 / 分组头。
 - 联动：关键词、状态、日期范围同时过滤；宽屏自动选中第一条结果；条件变化时列表回到顶部；无结果时列表区空态可一键重置。
 - 数据：`listDetailDemo.ts` 提供 38 条工单（8 条完整样例 + 30 条批量样本），方便验证长列表滚动与筛选。
-- 窄屏：页面 toolbar 就是整页顶部（左侧导航未停靠且非宿主时才带返回；`safe-area` 处理状态栏与胶囊）；点行 `navigateTo` 到 `/pages/demo/list-detail-item?id=<工单号>`，详情是普通页面，带返回。
+- 窄屏：页面 toolbar 就是整页顶部（左侧导航未停靠且非宿主时才带返回；`safe-area` 处理状态栏与胶囊）；点行 `navigateTo` 到 `/pages/demo/pages/list-detail/list-detail-item?id=<工单号>`，详情是普通页面，带返回。
 - 详情：共用 `ticket-detail` 组件，含工单信息、问题描述与处理记录时间线；右栏 toolbar 同样浮动，详情从下方穿过并驱动自身玻璃。
 
 ## 使用
@@ -68,6 +68,6 @@
 
 文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
 
-<!-- demo-source: src/pages/demo/list-detail.vue -->
-<!-- demo-source: src/pages/demo/listDetailDemo.ts -->
-<!-- demo-source: src/components/ticket-detail/ticket-detail.vue -->
+<!-- demo-source: src/pages/demo/pages/list-detail/list-detail.vue -->
+<!-- demo-source: src/pages/demo/pages/list-detail/listDetailDemo.ts -->
+<!-- demo-source: src/pages/demo/pages/list-detail/components/ticket-detail/ticket-detail.vue -->

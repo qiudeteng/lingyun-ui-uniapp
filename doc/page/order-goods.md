@@ -2,7 +2,7 @@
 
 标准「订单商品加购」页：店铺头 + 左侧分类 + 右侧商品列表 + 底部购物车结算栏，参考美团外卖点单页的左右联动布局。界面、滚动联动、规格 / 属性选择和加购逻辑都在 `lingyun-ui-page`，路由页只传数据、接结算。
 
-本仓库的演示页是 `src/pages/demo/order-goods`（纯演示数据，不请求接口）。
+本仓库的演示页是 `src/pages/demo/pages/order-goods`（纯演示数据，不请求接口）。
 
 商品 / 分类的 `badge` 统一用 `lingyun-badge size="small"`（18px）渲染；分类栏数量角标同样使用 small。
 
@@ -204,4 +204,4 @@ type LingyunOrderCart = Record<string, number> // 行 key → 数量
 
 文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
 
-<!-- demo-source: src/pages/demo/order-goods.vue -->
+<!-- demo-source: src/pages/demo/pages/order-goods.vue -->

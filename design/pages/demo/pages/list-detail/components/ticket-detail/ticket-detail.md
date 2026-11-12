@@ -1,6 +1,6 @@
 # design/components/ticket-detail
 
-对应源码：`src/components/ticket-detail/ticket-detail.vue`
+对应源码：`src/pages/demo/pages/list-detail/components/ticket-detail/ticket-detail.vue`
 
 工单详情内容面板，供列表 + 详情 demo 的宽屏右栏与手机独立详情页共用。
 

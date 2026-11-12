@@ -8,7 +8,7 @@
 
 > 为什么 toolbar 不内置进分栏组件：微信小程序里，在分栏（app-page 的插槽）内部渲染 toolbar 并绑定事件会中断渲染（白屏）。配套组件仍由页面声明、由页面绑定事件，因此在小程序上稳定；展示样式集中在配套组件里，页面无法改偏。
 
-参考 demo：`/pages/demo/split-layout`（组件 Demo，整页即分栏）、`/pages/demo/list-detail`（纯列表 + 工单详情，含搜索 / 状态分段 / 底部日期条）、`/pages/demo/purchase-order-split`（订货单列表 + 详情面板）。
+参考 demo：`/pages/demo/split-layout`（组件 Demo，整页即分栏）、`/pages/demo/pages/list-detail/list-detail`（纯列表 + 工单详情，含搜索 / 状态分段 / 底部日期条）、`/pages/demo/pages/purchase-order-split/purchase-order-split`（订货单列表 + 详情面板）。
 
 ## 示例
 

@@ -1,6 +1,6 @@
-# design/pages/demo/plain-list
+# design/pages/demo/pages/plain-list
 
-对应源码：`src/pages/demo/plain-list.vue`
+对应源码：`src/pages/demo/pages/plain-list.vue`
 
 整页就是一张列表的纯列表示例：顶部搜索 + 筛选，底部日期切换条，列表全宽平铺、不使用分组卡片。
 
@@ -10,4 +10,4 @@
 - 筛选菜单：全宽 `lingyun-menu`，锚到筛选按钮；类型 / 状态 / 排序三组 `lingyun-segmented-control`，底部重置 / 应用
 - 底部：`lingyun-date-switcher` 日期切换条，默认「月」，支持天 / 周 / 月 / 年 / 日期段，`limit="past"`；搜索态隐藏给键盘让位
 - 联动：关键词、筛选、时间范围三者同时生效；无匹配结果展示 `lingyun-empty`，可一键重置
-- 相关规范：[`LISTS.md`](../../LISTS.md) §2.1 Plain、[`DATE_SWITCHERS.md`](../../DATE_SWITCHERS.md)、[`MENUS.md`](../../MENUS.md)、[`SEARCHBARS.md`](../../SEARCHBARS.md)
+- 相关规范：[`LISTS.md`](../../../LISTS.md) §2.1 Plain、[`DATE_SWITCHERS.md`](../../../DATE_SWITCHERS.md)、[`MENUS.md`](../../../MENUS.md)、[`SEARCHBARS.md`](../../../SEARCHBARS.md)

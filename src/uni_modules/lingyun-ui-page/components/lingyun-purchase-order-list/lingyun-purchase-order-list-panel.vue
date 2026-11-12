@@ -290,6 +290,7 @@ export default defineComponent({
   watch: {
     filter(value: string) {
       this.activeFilter = value || 'all'
+      this.resetScroll()
     },
   },
   methods: {

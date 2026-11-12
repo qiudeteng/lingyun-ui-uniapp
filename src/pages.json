@@ -554,21 +554,21 @@
 			}
 		},
 		{
-			"path": "pages/demo/records",
+			"path": "pages/demo/pages/records",
 			"style": {
 				"navigationBarTitleText": "记录列表",
 				"navigationStyle": "custom"
 			}
 		},
 		{
-			"path": "pages/demo/plain-list",
+			"path": "pages/demo/pages/plain-list",
 			"style": {
 				"navigationBarTitleText": "纯列表",
 				"navigationStyle": "custom"
 			}
 		},
 		{
-			"path": "pages/demo/list-detail",
+			"path": "pages/demo/pages/list-detail/list-detail",
 			"style": {
 				"navigationBarTitleText": "列表与详情",
 				"navigationStyle": "custom"
@@ -582,7 +582,7 @@
 			}
 		},
 		{
-			"path": "pages/demo/list-detail-item",
+			"path": "pages/demo/pages/list-detail/list-detail-item",
 			"style": {
 				"navigationBarTitleText": "工单详情",
 				"navigationStyle": "custom"
@@ -610,30 +610,23 @@
 			}
 		},
 		{
-			"path": "pages/demo/order-goods",
+			"path": "pages/demo/pages/order-goods",
 			"style": {
 				"navigationBarTitleText": "Order Goods",
 				"navigationStyle": "custom"
 			}
 		},
 		{
-			"path": "pages/demo/purchase-order-detail",
-			"style": {
-				"navigationBarTitleText": "订货单详情",
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/demo/purchase-order-split",
+			"path": "pages/demo/pages/purchase-order-split/purchase-order-split",
 			"style": {
 				"navigationBarTitleText": "订货单列表与详情",
 				"navigationStyle": "custom"
 			}
 		},
 		{
-			"path": "pages/demo/purchase-order-list",
+			"path": "pages/demo/pages/purchase-order-split/purchase-order-split-item",
 			"style": {
-				"navigationBarTitleText": "订货单列表",
+				"navigationBarTitleText": "订货单详情",
 				"navigationStyle": "custom"
 			}
 		},

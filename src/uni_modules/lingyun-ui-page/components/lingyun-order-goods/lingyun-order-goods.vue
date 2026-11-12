@@ -2,6 +2,7 @@
   <lingyun-app-page
     :show-toolbar="showToolbar"
     :show-back="showToolbar ? showBack : false"
+    :auto-back="autoBack"
     :show-nav="showNav"
     :show-tabbar="false"
     :title="title"
@@ -729,7 +730,7 @@ function sanitizeKey(value: unknown): string {
  * @description 标准「订单商品加购」页：店铺头 + 左侧分类 + 右侧商品 + 底部悬浮购物车。
  * 点商品图 / 名称打开大模式商品详情 Sheet（商品介绍）；商品数据带 specs / attributeGroups 时
  * 自动进入规格列表或「规格 + 属性」组合选择；加购数量走 v-model，提交和跳转抛事件。
- * @see design/pages/demo/order-goods.md
+ * @see design/pages/demo/pages/order-goods.md
  *
  * @property {Object} store 店铺信息 { name, logo, rating, salesText, deliveryText, notice }
  * @property {Array} categories 分类与商品 [{ key, text, title, iconSrc, icon, iconColor, badge, goods }]；商品支持 image / images / details / description / priceUnit / quantityUnit / specs / attributeGroups / multiSpec / soldOut 等字段
@@ -820,6 +821,8 @@ export default defineComponent({
     banner: { type: String, default: '' },
     bannerHeight: { type: Number, default: 140 },
     showBack: { type: [Boolean, String], default: 'auto' },
+    /** 顶栏返回钮默认返回上一页；false 时只抛 back，由页面处理 */
+    autoBack: { type: Boolean, default: true },
     showNav: { type: Boolean, default: true },
     showToolbar: { type: Boolean, default: false },
     /** 工具栏是否自动给页面加顶部安全区；false 时页面内容顶到顶部（Banner 垫在工具栏下） */

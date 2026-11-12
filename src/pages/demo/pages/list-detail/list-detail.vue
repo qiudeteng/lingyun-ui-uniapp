@@ -135,7 +135,7 @@
   } from '@/uni_modules/lingyun-ui'
   import { useLingyunAppPageScroll } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
   import { pageHostState } from '@/router/pageHost'
-  import TicketDetail from '@/components/ticket-detail/ticket-detail.vue'
+  import TicketDetail from './components/ticket-detail/ticket-detail.vue'
   import {
     LIST_DETAIL_STATUS_TEXT,
     listDetailTickets,
@@ -177,8 +177,8 @@
   /** 小程序宽屏宿主内：toolbar 属于宿主，本页的 app-page 要保留顶栏占位 */
   const hosted = computed(
     () =>
-      pageHostState.path === 'pages/demo/list-detail' &&
-      currentPageRoute() !== 'pages/demo/list-detail',
+      pageHostState.path === 'pages/demo/pages/list-detail/list-detail' &&
+      currentPageRoute() !== 'pages/demo/pages/list-detail/list-detail',
   )
   /* 本页自己出 toolbar：宿主页（小程序宽屏 / 目录）隐藏自己的 toolbar */
   watch(
@@ -338,7 +338,7 @@
       scrollDetailTop()
       return
     }
-    uni.navigateTo({ url: `/pages/demo/list-detail-item?id=${encodeURIComponent(ticket.id)}` })
+    uni.navigateTo({ url: `/pages/demo/pages/list-detail/list-detail-item?id=${encodeURIComponent(ticket.id)}` })
   }
 
   /** 窄屏、非宿主时显示返回：回到目录 */

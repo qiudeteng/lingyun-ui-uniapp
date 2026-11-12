@@ -401,18 +401,18 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'All In One' }
 	},
 	{
-		path: '/pages/demo/records',
-		name: 'pagesDemoRecords',
+		path: '/pages/demo/pages/records',
+		name: 'pagesDemoPagesRecords',
 		meta: { title: '记录列表' }
 	},
 	{
-		path: '/pages/demo/plain-list',
-		name: 'pagesDemoPlainList',
+		path: '/pages/demo/pages/plain-list',
+		name: 'pagesDemoPagesPlainList',
 		meta: { title: '纯列表' }
 	},
 	{
-		path: '/pages/demo/list-detail',
-		name: 'pagesDemoListDetail',
+		path: '/pages/demo/pages/list-detail/list-detail',
+		name: 'pagesDemoPagesListDetailListDetail',
 		meta: { title: '列表与详情' }
 	},
 	{
@@ -421,8 +421,8 @@ export const routes: RouteConfig[] = [
 		meta: { title: '分栏布局' }
 	},
 	{
-		path: '/pages/demo/list-detail-item',
-		name: 'pagesDemoListDetailItem',
+		path: '/pages/demo/pages/list-detail/list-detail-item',
+		name: 'pagesDemoPagesListDetailListDetailItem',
 		meta: { title: '工单详情' }
 	},
 	{
@@ -441,24 +441,19 @@ export const routes: RouteConfig[] = [
 		meta: { title: 'Goods Nav' }
 	},
 	{
-		path: '/pages/demo/order-goods',
-		name: 'pagesDemoOrderGoods',
+		path: '/pages/demo/pages/order-goods',
+		name: 'pagesDemoPagesOrderGoods',
 		meta: { title: 'Order Goods' }
 	},
 	{
-		path: '/pages/demo/purchase-order-detail',
-		name: 'pagesDemoPurchaseOrderDetail',
-		meta: { title: '订货单详情' }
-	},
-	{
-		path: '/pages/demo/purchase-order-split',
-		name: 'pagesDemoPurchaseOrderSplit',
+		path: '/pages/demo/pages/purchase-order-split/purchase-order-split',
+		name: 'pagesDemoPagesPurchaseOrderSplitPurchaseOrderSplit',
 		meta: { title: '订货单列表与详情' }
 	},
 	{
-		path: '/pages/demo/purchase-order-list',
-		name: 'pagesDemoPurchaseOrderList',
-		meta: { title: '订货单列表' }
+		path: '/pages/demo/pages/purchase-order-split/purchase-order-split-item',
+		name: 'pagesDemoPagesPurchaseOrderSplitPurchaseOrderSplitItem',
+		meta: { title: '订货单详情' }
 	},
 	{
 		path: '/pages/demo/grid',
