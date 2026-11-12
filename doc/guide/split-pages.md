@@ -1,126 +1,250 @@
-# 分栏页面开发规范与踩坑清单（列表 + 详情）
+# 分栏页面开发指南（列表 + 详情）
 
-> 来源：`/pages/demo/pages/list-detail/list-detail`、`/pages/demo/pages/purchase-order-split/purchase-order-split` 两轮开发中实际踩过的坑。做「宽屏左右分栏、窄屏独立详情页」这类页面之前先读一遍。
+> 写「左边列表、右边详情」这类页面之前先读完本文。下面每条坑都在 `list-detail`、`purchase-order-split` 两个演示里真实出过问题。
 >
-> **优先直接用 [`lingyun-split-layout`](/components/split-layout.html)**：页面结构、头部浮动与测高、分栏缝隙都已封装；本文档说明它内部做了什么、以及内容侧仍要注意的约束（尤其是小程序宿主节点高度）。
+> 参考实现：`src/pages/demo/pages/list-detail/`（纯列表 + 工单详情，最完整）、`src/pages/demo/pages/purchase-order-split/`（标准页面板 + 详情内二级页）。新页面照 `list-detail` 抄结构。
 
-## 1. 页面结构模板
+## 1. 三档宽度，三种行为
+
+| 窗口宽度 | 左侧导航 | 点列表行 | 详情返回 |
+| --- | --- | --- | --- |
+| 手机 **< 690** | 无（底部 Tab） | `uni.navigateTo` 打开独立详情页 | 页面栈返回 |
+| 中屏 **690 – 899** | 有 | **不跳页**。设 `detailOpen=true`，详情只在内容区滑入 | 设 `detailOpen=false`，滑出 |
+| 宽屏 **≥ 900** | 有 | 只改选中项，右栏刷新 | 无返回钮 |
+
+三档由 `lingyun-split-layout` 的 `layout-change` 事件告诉页面：`wide` 为宽屏，`cover` 为中屏，两者都为 false 才是手机。页面不要自己读窗口宽度。
+
+## 2. 从零做一页：要动的文件
+
+以新功能 `foo-detail` 为例（多文件功能独占目录，见 `.cursor/rules/demo-page-directories.mdc`）：
 
 ```
-lingyun-app-page（show-toolbar=false、body-scroll=false、show-tabbar=false）
-└── .xxx-page（专属类，flex 行、height:100vh、padding:0）
-    ├── 左栏 .xxx-pane--list（宽屏固定 375px；position:relative）
-    │   ├── .xxx-pane__header（position:absolute，放 lingyun-split-toolbar）
-    │   └── 列表内容（内层 scroll-view 或面板组件）
-    ├── 分隔（0.5px 透明缝隙，或按设计）
-    └── 右栏 .xxx-pane--detail（仅宽屏渲染）
-        ├── .xxx-pane__header（放 lingyun-split-toolbar）
-        └── 详情内容
+src/pages/demo/pages/foo-detail/
+├── foo-detail.vue                   # 分栏主页面（三档都在这一页）
+├── foo-detail-item.vue              # 手机独立详情页（读 ?id=）
+├── fooDetailDemo.ts                 # 数据与 findXxx(id)
+└── components/foo-panel/foo-panel.vue  # 详情内容，两页共用
 ```
 
-> 用 `lingyun-split-layout` 时以上结构全部由组件提供；两栏 toolbar 用配套的 **`lingyun-split-toolbar`** 放进 `list-header` / `detail-header` 插槽，页面只传标题 / 搜索 / 分段等业务配置，**不要直接写 `lingyun-toolbars`，也不要设置 `title-style` 等展示属性**。下面的模板用于理解组件内部或手写分栏的场景。
+1. **详情内容做成组件**，主页面右栏和手机详情页都用它。不要在两页各写一遍。
+2. `src/pages.json` 登记两个页面，都要 `"navigationStyle": "custom"`。
+3. `src/config/pageTabs.ts`：页面元信息（标题 / 图标）+ 「页面」Tab 下的 `pageChild`。详情页只登记元信息，不进菜单。
+4. `src/components/app-page-view-host/app-page-view-host.vue`：静态 `import` 主页面并加一条 `v-else-if` 分支。小程序宽屏靠它在宿主页内渲染，不加就会整页跳转。`src/router/pageViews.ts` 会从菜单自动登记，不用手写。
+5. 文档：`doc/page/foo-detail.md`、`doc/.vuepress/config.ts` 侧栏、`doc/.vuepress/components/PhonePreview.vue` 映射；设计说明放 `design/pages/demo/pages/foo-detail/`。
+6. 改完 `pages.json` 或移动文件后，**重启** `pnpm dev` 和 `pnpm dev:mp-weixin`，删掉 `dist/dev/mp-weixin` 里的旧路径，再清微信编译缓存。
 
-分栏门槛：手机 **< 690** 单栏 + 点行进独立详情页；中屏 **690–899**（左侧导航已出现）详情在当前页内容区滑入，导航不参与动画；**≥ 900** 左右分栏。窗口宽度变化用 `uni.onWindowResize` 更新。
-
-## 2. 必踩的坑（按出现频率排序）
-
-### 2.1 ❌ 用通用 `.page` 承载页面结构样式（H5 跨页错版）
-
-H5 路由切换**不会卸载旧页面的 CSS**。如果页面根内容元素叫 `.page` 并写了 `display:flex / height:100vh / position`，离开该页后这些样式会套到其它页面的 `.page` 上，典型症状：目录页内容缩成一列、只有图标没文字、底栏不见了。
-
-- ✅ 结构样式挂**页面专属类**（`.list-page` / `.po-page` / `.refresh-page` / `.indexed-page` …），元素上同时保留 `.page` 让全局规则（导航让位、透明背景）继续生效：
-  ```scss
-  .po-page { display: flex; height: 100vh; min-height: 0; padding: 0; }
-  ```
-- ✅ `.page` 上只留 padding / 背景这类「可以被下一页覆盖」的属性。
-- 排查口诀：**访问过 A 之后 B 才错版 → 查 A 的样式是否写在通用类上。**
-
-### 2.2 ❌ 内层滚动给百分比高度，小程序整页跟着滚
-
-WXSS 里 `scroll-view` 的 `height: 100%` 在 flex 链路上拿不到确定高度，会被内容撑开，页面整体滚动、浮动 toolbar 跟着滚走。
-
-- ✅ 统一用 `flex: 1 + height: 0`：
-  ```scss
-  .xxx-body { flex: 1; min-height: 0; height: 0; display: flex; flex-direction: column; overflow: hidden; }
-  .xxx-scroll { flex: 1; min-height: 0; height: 0; }
-  ```
-
-### 2.3 ❌ 分栏里直接嵌整页标准页（嵌套 app-page）
-
-`lingyun-app-page` 会通过 provide/inject 把任何内层实例降级为 **embedded**（内容随页面流、没有固定高度、内层 scroll 失效）；同时 H5 的导航宿主 `setLingyunH5PageNavAllowed` 会被内层覆盖、`--nav` 类会往里叠加导航内边距，出现「列表钻到导航下面、详情内容大幅右移」。
-
-- ✅ 标准页拆成「**页面壳 + 内容面板**」：面板组件（如 `lingyun-purchase-order-list-panel`）不含 app-page，分栏页直接用面板，toolbar 用 `lingyun-split-toolbar`；面板暴露 `topSpace`（工具条高度占位）与 `scroll`（驱动玻璃进度）事件。
-- ❌ 不要为了复用给标准页加 `inline` 之类往 app-page 里塞特例的开关。
-
-### 2.4 ❌ 小程序自定义组件宿主节点没有高度（本轮最大坑）
+## 3. 主页面骨架
 
 ```vue
-<lingyun-purchase-order-list-panel ... />
-```
-
-在小程序里，这行会生成一个**宿主节点**，它默认高度随内容。面板内部的 `height: 100%` 全部失效 → 面板随列表内容变高 → **整页滚动、toolbar 不固定**（H5 没有这层节点，所以「H5 正常、小程序滚」多半是它）。
-
-- ✅ 用 `lingyun-split-layout` 时：插槽内容直接用组件自带的全局结构工具类（容器有确定高度、是定位参照）：
-  ```vue
-  <template #list>
-    <lingyun-purchase-order-list-panel
-      class="lingyun-split-layout-pane"
-      :top-space="listTopSpace"
-      ...
+<lingyun-split-layout
+  :split-at="900"
+  :list-width="375"
+  :detail-open="coverOpen"
+  @layout-change="onLayoutChange"
+>
+  <template #list-header>
+    <lingyun-split-toolbar
+      title="工单"
+      :show-back="!navDocked && !hosted"
+      :avoid-capsule="!wide"
+      :glass-progress="listGlass"
+      @back="onPageBack"
     />
   </template>
-  ```
-  - 插槽根容器：`lingyun-split-layout-pane`（绝对铺满 + 纵向 flex）
-  - 插槽根节点本身就是 `scroll-view`：`lingyun-split-layout-fill`
-  - 容器内的内层 `scroll-view`：`lingyun-split-layout-scroll`（`flex:1 + height:0`）
 
-  工具类在 `styles/setting/_split-layout.scss`，经 `App.vue` 全局注入；不要写进组件样式——小程序 styleIsolation 下插槽节点吃不到组件 wxss。
-- 不用布局组件、手写分栏时：给宿主节点显式 `flex: 1 1 0; height: 0`（页面的 pane 是 flex 列）。
-- ❌ 不要在面板组件里写 `:host { height: … }`——会连带影响标准页（非 flex 容器里的正常用法）；也不要在小程序里指望 slot 内容被 flex 拉伸。
+  <template #list>
+    <view class="lingyun-split-layout-pane">
+      <scroll-view class="lingyun-split-layout-scroll" scroll-y @scroll="onListScroll">
+        <view :style="{ height: `${listTopSpace}px` }" />
+        <!-- 列表行：宽屏才有选中态 -->
+      </scroll-view>
+    </view>
+  </template>
 
-### 2.5 ❌ 改完只看 H5；小程序不重新编译
+  <template #detail-header>
+    <lingyun-split-toolbar
+      title="工单详情"
+      :show-back="cover"
+      :avoid-capsule="cover"
+      :glass-progress="detailGlass"
+      @back="coverOpen = false"
+    />
+  </template>
 
-- 改完必须 `pnpm build:mp-weixin`，微信开发者工具**不会自动重新编译被替换的 dist 目录**；脚本化验证时用 `cli close --project …` + `cli auto --project … --auto-port 9420` 重开项目才会加载新代码。
-- 残留的 dev server / 僵尸进程会一直返回旧代码（H5 端口 5175 被占时先 `netstat -ano | grep :5175` 再 `taskkill`）。**现象诡异先怀疑进程和编译缓存，不要急着改代码。**
+  <template #detail>
+    <scroll-view class="lingyun-split-layout-fill" scroll-y @scroll="onDetailScroll">
+      <view :style="{ height: `${detailTopSpace}px` }" />
+      <foo-panel v-if="selected" :item="selected" />
+    </scroll-view>
+  </template>
+</lingyun-split-layout>
+```
 
-### 2.6 ⚠️ 选中态、暗黑分层与边线语义
+```ts
+const wide = ref(false)
+const cover = ref(false)
+const coverOpen = ref(false)
+const listTopSpace = ref(0)
+const detailTopSpace = ref(0)
 
-- **左栏底色由 `lingyun-split-layout` 统一提供**：窄屏 Primary、宽屏 grouped-secondary（浅色白 / 暗黑 `#1c1c1e`）；页面插槽内容不要再自己设左栏背景。
-- 选中行 = **页面底色**（`--lingyun-bg-grouped-primary`）；未选中列表列 = `grouped-secondary`。暗黑下 `Primary` 和 `Grouped Primary` **都是 #000**，想分层只能靠把列表列用 `grouped-secondary`（#1c1c1e）「抬升」一级。
-- 分栏缝隙给 `transparent`、透出页面底色即可；**不要**再画 `--lingyun-separator` 灰线，也不要按「右侧有没有白色列」切换颜色。
-- 手机模式没有「选中」概念：`selectedKey` 只在宽屏传，窄屏不传。
+function onLayoutChange(value: LingyunSplitLayoutChange): void {
+  wide.value = value.wide
+  cover.value = value.cover
+  if (value.wide) coverOpen.value = false
+  listTopSpace.value = value.listTopSpace
+  detailTopSpace.value = value.detailTopSpace
+}
 
-### 2.7 ⚠️ 底部悬浮栏
+function onRowTap(item: Foo): void {
+  if (wide.value) {
+    selectedId.value = item.id
+    scrollDetailTop()
+    return
+  }
+  if (cover.value) {
+    selectedId.value = item.id
+    coverOpen.value = true
+    scrollDetailTop()
+    return
+  }
+  uni.navigateTo({ url: `/pages/demo/pages/foo-detail/foo-detail-item?id=${encodeURIComponent(item.id)}` })
+}
+```
 
-底部操作胶囊用 `position:absolute; bottom:0` 浮在滚动内容上方（左右 12、底部 8 + 安全区、`lingyun-glass-control`），滚动内容 `padding-bottom: calc(96px + env(safe-area-inset-bottom))` 让最后一块能滚出来；不要做成占据一条底栏的实底条。
+玻璃进度：`Math.min(1, Math.max(0, scrollTop / 56))`，同时调用 `useLingyunAppPageScroll()` 返回的函数上报滚动。
 
-### 2.8 ⚠️ 浮动 toolbar 的占位与玻璃
+## 4. 交互上的坑
 
-- 用 `lingyun-split-layout` 时只需要：把 `lingyun-split-toolbar` 放进 header 插槽并传业务配置（标题 / 搜索 / 分段 / 自定义按钮）、把内容滚动换算成 `glass-progress`（`min(1, top / 56)`）、用 `layout-change` 的 `listTopSpace` / `detailTopSpace` 做顶部占位（不要解构作用域插槽参数：微信小程序里页面重渲染后插槽内组件会丢 props，点行后整栏空白）。头部高度由分栏组件实测，`title-style` / 分段形态 / 12px 顶部补偿都固定在 `lingyun-split-toolbar` 里。
-- 手写分栏时才需要自己放 `:fixed="false"` 的 toolbar、`createSelectorQuery` 量高、`:avoid-capsule="false"`（微信胶囊在别的栏上面）；这些在组件里已经固定处理，页面层不要重复。
+### 4.1 中屏不能 `navigateTo`：左侧导航会跟着滑
 
-## 3. 验证清单
+中屏已经有左侧导航。新开页面时，微信用整页推入动画，新页面自带的那份导航也一起滑进来，关闭时一起滑出。开发者工具里动画很快，不容易看出来。
 
-H5（所有宽度 + 明暗两套主题）：
+- ✅ 中屏设 `detailOpen`，详情只在内容区滑入（`lingyun-split-layout` 内部是绝对定位盖层，320ms）。导航是 `position: fixed` 的兄弟节点，不参与动画。
+- ✅ 判断顺序固定为 **wide → cover → navigateTo**。只判断 `wide` 就会把中屏当手机处理。
+- ✅ 盖层里的详情 toolbar：`show-back` 与 `avoid-capsule` 都跟着 `cover`，返回只做 `coverOpen = false`。
+- ✅ 进入宽屏时清掉 `coverOpen`，否则窗口拉回中屏时盖层会自己弹出来。
 
-- [ ] `document.documentElement.scrollHeight === window.innerHeight`（整页不滚）
-- [ ] 两栏各自的 `scroll-view` 可滚动（clientHeight = 视口高，scrollHeight 更大）
-- [ ] 浮动 toolbar 不随内容滚动，滚动后玻璃出现
-- [ ] 宽度 390 / 768 / 1024 / 1400 / 1920 往返切换后布局不散、占位高度重测
-- [ ] 访问别的页面再回来、访问过的旧页样式不影响本页（关掉重开无差别）
+### 4.2 详情里还有下一级（比如子订单）
 
-微信小程序（开发者工具即可，无需真机）：
+中屏盖层里点下一级，也不要 `navigateTo`，原因同 4.1。在页面里记一个下一级状态（`purchase-order-split` 用 `subKey`）：
 
-- [ ] `wx.pageScrollTo(200)` 后 `page.scrollTop` 仍为 0
-- [ ] 修复前后对比 toolbar 的 offset 不随页面滚动变化
-- [ ] 内层 `scroll-view` 的实际高度 = 视口高度（`createSelectorQuery` 在组件内查询）
-- [ ] 模拟器上状态栏 / 胶囊 / 底部安全区正常，toolbar 固定
+- 点下一级：设 `subKey`，标题换成下一级标题。
+- 返回：先清 `subKey`，回到上一级；`subKey` 为空时才关闭盖层。
 
-脚本化验证（miniprogram-automator 连 `cli auto --auto-port 9420`）可用 `mp.pageScrollTo` + `page.scrollTop()` + `page.$('.lingyun-split-layout-pane').offset()` 快速回归。
+宽屏和手机可以 `navigateTo` 到详情页，它们没有导航跟着滑的问题。
+
+### 4.3 返回一次退了两层
+
+`lingyun-app-page` 的返回钮默认自己 `navigateBack`。如果外层（标准页、页面）也监听 `back` 再返回一次，就退两层。
+
+- ✅ 要自己处理返回时传 `:auto-back="false"`，返回钮只抛 `back`。标准页要把 `autoBack` 透传给内部的 `lingyun-app-page`。
+- ✅ 页面自己的返回：栈里有上一页就 `navigateBack`，没有就 `reLaunch` 或 `redirectTo` 到列表或目录。
+
+### 4.4 小程序宽屏宿主：toolbar 与返回钮
+
+小程序宽屏时，菜单进入的页面会被并进宿主页 `pages/demo/demo` 渲染（`app-page-view-host`）。
+
+- ✅ 分栏页自带 toolbar，进宿主时设 `pageHostState.hideToolbar = true`，卸载时还原，否则顶部出现两条栏。
+- ✅ 宿主内或左侧导航停靠时不显示列表返回钮：`:show-back="!navDocked && !hosted"`。
+- ✅ 只有栈底页会被并入宿主（`ensureLingyunWidePageHost` 检查 `getCurrentPages().length`）。从列表 `navigateTo` 进来的详情页不能被替换，否则丢返回钮和 `?id=` 参数。
+
+### 4.5 固定定位的浮层会盖住中屏盖层
+
+`lingyun-date-switcher` 这类组件在手机上是 `fixed` 贴底，中屏打开盖层后它仍停在最上层，盖住详情。
+
+- ✅ `:fixed="!wide && !coverOpen"`，盖层打开时让它退回普通流。
+- ✅ 弹层（Sheet、Popover、Alert 等）照常 Teleport 或 `root-portal`，见 `.cursor/rules/overlay-portal.mdc`。
+
+### 4.6 选中、回顶与默认选中
+
+- 宽屏默认选中筛选结果第一条；筛选后选中项被过滤掉，换成新的第一条。
+- 选中态只在宽屏显示：`:class="{ active: wide && item.id === selectedId }"`。手机和中屏没有选中概念。
+- 换选中项后右栏回顶、筛选后左栏回顶，用 `scroll-into-view`：先清空锚点，`nextTick` 再设，300ms 后再清空。不清空的话，重复点同一行不会回顶，之后的重渲染还会反复回顶。
+
+### 4.7 列表图片
+
+- ✅ 列表行图片用 `lingyun-list-item` 的 `thumb`，或直接用 `lingyun-image`（有扫光占位和懒加载）。不要写原生 `<image>`：加载中是空白，失败也是空白。
+- ✅ 显式传尺寸和圆角，`lingyun-image` 默认圆角 26 会让缩略图太圆。列表缩略图 42 / 10（有副标题）或 30 / 7；订货单缩略图 52 / 10。
+- ⚠️ 演示图不要用 `picsum.photos`，在部分网络下会超时，看起来就是「图片都不显示」。仓库里用 Unsplash 地址（见 `purchaseOrderDemo.ts`）。小程序真机还要在后台配置 `downloadFile` 合法域名。
+
+## 5. 布局与样式上的坑
+
+### 5.1 不要解构作用域插槽参数
+
+`#list="{ wide, topSpace }"` 在微信小程序上不可靠：页面一重渲染（比如点行改了选中项），插槽里组件的 props 就被清掉，出现列表筛空、日期条错位、整栏空白。`wide`、`cover`、`topSpace` 一律从 `layout-change` 存进页面状态。
+
+### 5.2 插槽内容要用结构工具类（小程序宿主节点没有高度）
+
+小程序里每个自定义组件都会多一层宿主节点，默认高度随内容。面板内部的 `height: 100%` 失效，结果是整页滚动、toolbar 跟着滚走。H5 没有这层节点，所以常见症状是「H5 正常、小程序整页滚」。
+
+- 插槽根容器：`lingyun-split-layout-pane`（绝对铺满 + 纵向 flex）
+- 插槽根节点本身就是 `scroll-view`：`lingyun-split-layout-fill`
+- 容器内的内层 `scroll-view`：`lingyun-split-layout-scroll`（`flex: 1; height: 0`）
+
+工具类在 `styles/setting/_split-layout.scss`，由 `App.vue` 全局注入。不要搬进组件样式：小程序 styleIsolation 下插槽节点吃不到组件的 wxss。也不要在面板里写 `:host { height: … }`，会影响面板在标准页里的正常用法。
+
+### 5.3 内层滚动用 `flex: 1 + height: 0`，不要用百分比
+
+WXSS 里 `scroll-view` 的 `height: 100%` 在 flex 链路上拿不到确定高度，会被内容撑开。手写滚动区时：
+
+```scss
+.xxx-body { flex: 1; min-height: 0; height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.xxx-scroll { flex: 1; min-height: 0; height: 0; }
+```
+
+### 5.4 不要在分栏里嵌整页标准页
+
+`lingyun-app-page` 嵌在另一个 `lingyun-app-page` 里会降级为 embedded：内层滚动失效，H5 导航内边距叠两次，列表钻到导航下面。标准页要拆成「页面壳 + 内容面板」，分栏页只用面板（如 `lingyun-purchase-order-list-panel`），面板通过 `topSpace` 和 `scroll` 事件配合 toolbar。不要给标准页加 `inline` 之类的特例开关。
+
+### 5.5 toolbar 只用 `lingyun-split-toolbar`
+
+两栏头部放 `lingyun-split-toolbar`，页面只传标题、搜索、分段、按钮。不要直接写 `lingyun-toolbars`，也不要设 `title-style` 等展示属性；标题样式、分段形态和 H5 / 微信 PC 的 12px 顶部补偿都固定在组件里。头部高度由分栏组件测量，页面不要自己 `createSelectorQuery`。
+
+### 5.6 页面结构样式不要写在通用 `.page` 上
+
+H5 切换路由不会卸载旧页面的 CSS。在 `.page` 上写 `display: flex` 或 `height: 100vh`，离开后会套到别的页面上（目录页缩成一列、底栏消失）。结构样式挂页面专属类（`.list-page`、`.po-page`），`.page` 上只留可被覆盖的 padding 和背景。排查方法：**访问过 A 之后 B 才错版，就查 A 的样式是不是写在通用类上。**
+
+### 5.7 底色、选中与缝隙
+
+- 左栏底色由 `lingyun-split-layout` 提供：手机 Primary，宽屏 grouped-secondary（浅色白，暗黑 `#1c1c1e`）。插槽内容不要再设背景。
+- 选中行用页面底色 `--lingyun-bg-grouped-primary`，和右栏连成一片。暗黑下 Primary 与 Grouped Primary 都是 `#000`，只能靠左栏的 grouped-secondary 分层。
+- 两栏缝隙透明，不要画 `--lingyun-separator` 灰线。
+
+### 5.8 底部悬浮栏
+
+底部操作胶囊 `position: absolute; bottom: 0` 浮在滚动内容上（左右 12、底部 8 + 安全区、`lingyun-glass-control`），滚动内容底部留出 `calc(96px + env(safe-area-inset-bottom))`。不要做成占一整条的实底栏。
+
+## 6. 调试上的坑
+
+- **现象说不通时，先查进程和缓存，再改代码。** 同时开着多个 `pnpm dev:mp-weixin` 会互相覆盖 `dist`，微信报一个找不到原因的「编译 .wxss 文件错误」。处理：只留一个 H5 和一个小程序进程，删旧产物，清编译缓存（`cleanCompileCache`），必要时关掉项目窗口再打开。
+- **H5 验证完还要看小程序。** 宿主节点高度、作用域插槽、`fixed` 浮层这些问题只在小程序出现。
+- **自动化测试点行之前，先等 `layout-change` 到达。** 页面刚挂载时 `cover` 可能还是 false，这时点行会走 `navigateTo`，看起来像中屏还在跳页。等布局稳定后再测。
+- **中屏动画太快时，量位置，不要只看截图。** 打开和关闭时左侧导航的 `left` 应始终不变，盖层的 `transform` 从 `translateX(100%)` 变到 `0`，页面路由不变。
+
+## 7. 验收清单
+
+H5（明暗两套主题；宽度 390 / 744 / 1024 / 1400 往返切换）：
+
+- [ ] 390：点行进入独立详情页，返回只退一层
+- [ ] 744：点行详情在内容区滑入，左侧导航不动，地址不变；返回滑出后盖层节点被移除
+- [ ] 1024：点行只换右栏内容并回顶，选中行与右栏同色
+- [ ] 整页不滚：`document.documentElement.scrollHeight === window.innerHeight`；两栏各自可滚，toolbar 固定，滚动后出现玻璃
+- [ ] 列表图片有扫光占位，加载后显示；视口外的图片还没请求
+- [ ] 去别的页面再回来，两边样式都没变
+
+微信小程序（开发者工具，窗口宽度同样切三档）：
+
+- [ ] 手机宽度点行，页面栈多一层；中屏点行，页面栈不变（仍在宿主页）
+- [ ] 中屏打开与关闭时左侧导航不动，日期条没有盖住详情
+- [ ] `wx.pageScrollTo(200)` 后 `scrollTop` 仍为 0，内层 `scroll-view` 高度等于视口
+- [ ] 宿主页内只有一条 toolbar；从列表进入的详情页有返回钮
+- [ ] 控制台无 WXSS / WXML 报错，改完已清编译缓存
 
 ## 演示源码
 
-文档不重复贴代码：构建时直接从仓库读取源码展开（点开折叠块即可查看完整代码）。
+文档不重复贴代码，构建时直接从仓库读取源码（点开折叠块查看）。
 
+<!-- demo-source: src/pages/demo/pages/list-detail/list-detail.vue -->
+<!-- demo-source: src/pages/demo/pages/list-detail/list-detail-item.vue -->
 <!-- demo-source: src/pages/demo/pages/purchase-order-split/purchase-order-split.vue -->
 <!-- demo-source: src/pages/demo/pages/purchase-order-split/purchaseOrderDemo.ts -->

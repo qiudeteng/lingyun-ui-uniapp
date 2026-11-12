@@ -1,0 +1,20 @@
+---
+description: 做列表 + 详情（左右分栏）页面前必读 doc/guide/split-pages.md；包含三档宽度行为与踩坑清单
+globs: src/pages/**/*detail*.vue,src/pages/**/*split*.vue,src/uni_modules/lingyun-ui/components/lingyun-split-layout/**/*,src/uni_modules/lingyun-ui/components/lingyun-split-toolbar/**/*
+alwaysApply: false
+---
+
+# 列表 + 详情页面
+
+动手前先读 [`doc/guide/split-pages.md`](../../doc/guide/split-pages.md)，照 `src/pages/demo/pages/list-detail/` 抄结构。
+
+## 硬规则
+
+1. 用 `lingyun-split-layout` + `lingyun-split-toolbar`，不要手写分栏，不要直接写 `lingyun-toolbars`。
+2. 点行按 `wide` → `cover` → `navigateTo` 的顺序处理：宽屏只改选中项，中屏（690–899）设 `detailOpen`，只有手机才 `navigateTo`。中屏跳页会让左侧导航跟着整页滑动。
+3. `wide` / `cover` / `listTopSpace` / `detailTopSpace` 从 `layout-change` 存到页面状态，不要解构作用域插槽参数（小程序会丢 props）。
+4. 插槽内容用 `lingyun-split-layout-pane` / `-fill` / `-scroll` 工具类，内层滚动 `flex: 1; height: 0`，不要用百分比高度。
+5. 详情内容做成组件，主页面和手机详情页共用；分栏里不要嵌整页 `lingyun-app-page`。
+6. 自己处理返回时传 `:auto-back="false"`，避免一次返回退两层。
+7. 列表图片用 `lingyun-image`（或 `lingyun-list-item` 的 `thumb`），显式传尺寸和圆角。
+8. 三档宽度都在 H5 和微信小程序验收，清单见指南 §7。

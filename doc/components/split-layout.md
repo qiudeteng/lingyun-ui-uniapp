@@ -2,7 +2,7 @@
 
 列表 + 详情分栏布局组件。窗口 **≥ `splitAt`（默认 900）** 左右分栏：左栏固定 `listWidth`（默认 375，手机逻辑宽度），右栏占满剩余。**手机（< 690）只渲染左栏**，点行打开独立详情页。**中屏（≥ 690 且 < `splitAt`，左侧导航已出现）** 把 `detailOpen` 设为 true，详情只在内容区滑入滑出，左侧导航不跟着动。
 
-组件内部封好了 [`doc/guide/split-pages.md`](/guide/split-pages.html) 里的坑：app-page（关顶栏、`body-scroll=false`）+ 专属类 flex 行 + 浮动头部 + 0.5px 透明缝隙 + 头部高度测量，业务只写左右两栏自己的内容。
+新做一页前先读 [分栏页面开发指南](/guide/split-pages.html)（要动的文件、三档宽度行为、踩坑清单与验收）。组件内部封好了其中的结构坑：app-page（关顶栏、`body-scroll=false`）+ 专属类 flex 行 + 浮动头部 + 0.5px 透明缝隙 + 头部高度测量，业务只写左右两栏自己的内容。
 
 **两栏的 toolbar 统一用配套组件 [`lingyun-split-toolbar`](#lingyun-split-toolbar)** 放进 `list-header` / `detail-header` 插槽：它固定了标题样式、分段控件、顶部补偿等展示属性，页面只传业务配置。不要直接在插槽里写 `lingyun-toolbars` 或 `title-style` 之类的展示属性——所有分栏页的头部效果由这一份组件保证一致。
 

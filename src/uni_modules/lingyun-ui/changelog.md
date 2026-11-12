@@ -1,4 +1,4 @@
-## 1.0.61（2026-11-12）
+## 1.0.61 (2026-11-12)
 - `lingyun-list-item` 的 `thumb` 改为 `lingyun-image`（lg 42 / 圆角 10，base 30 / 圆角 7），加载走扫光占位，不再用原生 `image`。
 - `lingyun-image`：H5 补上真正的懒加载。`uni-h5` 的 `image` 会忽略 `lazy-load`，组件在进入视口前不挂 `src`（提前 200px）；小程序仍用原生 `lazy-load`（含 `scroll-view`）。`lazy` 默认仍是 `true`。
 - `lingyun-split-layout`：中屏（有左侧导航、未到分栏门槛）点列表不再新开页面。`detailOpen` 为 true 时详情只在内容区滑入滑出，左侧导航留在原位。`layout-change` 增加 `cover`。
