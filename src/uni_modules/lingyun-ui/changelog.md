@@ -1,3 +1,6 @@
+## 1.0.59（2026-11-12）
+- 新增分栏插槽结构工具类（全局样式 `styles/setting/_split-layout.scss`）：`lingyun-split-layout-pane`（插槽根容器绝对铺满 + 纵向 flex）、`lingyun-split-layout-fill`（根节点是 scroll-view 时绝对铺满）、`lingyun-split-layout-scroll`（内层滚动 `flex:1 + height:0`）。列表与详情、分栏布局、订货单列表与详情三个 demo 改用工具类，删掉各自重复的绝对定位 / 高度样板，并同步组件文档与分栏 guide。
+- `lingyun-tabs`：Tab 角标改为上标定位——挂在文字右上角、不占行内排版宽度，选中 pill 内文字保持居中；角标仍使用 `lingyun-badge size="small"`，可随 Tab 一起点击。
 ## 1.0.58（2026-11-12）
 - 新增 `lingyun-copy`：显示文字或图标的复制触发器，点击把 `text` 属性值写入剪贴板；支持 `size` / `variant` / `toast` / `toastText` / `disabled`、默认插槽，抛出 `copy` / `success` / `error` 事件。微信端沿用 `setClipboardData` 的系统「内容已复制」提示，H5 / App 由组件 toast。
 - 新增 `lingyun-save-image`：保存为图片触发器。H5 传入 ref 截取该元素，不传则截取整个页面；克隆 DOM 后内联计算样式、图片与图标字体，经 SVG foreignObject + Canvas 导出 PNG（默认触发下载，`pixelRatio` / `background` / `download` 可配）。小程序没有整页截图能力，需传入 canvas 节点或带 `toTempFilePath()` 的组件 ref，导出后默认保存到相册（`album`）。`save()` 方法返回 `Promise<string>`。

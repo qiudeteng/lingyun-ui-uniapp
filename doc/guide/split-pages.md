@@ -58,22 +58,21 @@ WXSS 里 `scroll-view` 的 `height: 100%` 在 flex 链路上拿不到确定高�
 
 在小程序里，这行会生成一个**宿主节点**，它默认高度随内容。面板内部的 `height: 100%` 全部失效 → 面板随列表内容变高 → **整页滚动、toolbar 不固定**（H5 没有这层节点，所以「H5 正常、小程序滚」多半是它）。
 
-- ✅ 用 `lingyun-split-layout` 时：插槽内容**绝对定位铺满内容容器**（容器有确定高度、是定位参照）：
+- ✅ 用 `lingyun-split-layout` 时：插槽内容直接用组件自带的全局结构工具类（容器有确定高度、是定位参照）：
   ```vue
   <template #list="{ topSpace }">
-    <lingyun-purchase-order-list-panel class="split-panel" :top-space="topSpace" ... />
+    <lingyun-purchase-order-list-panel
+      class="lingyun-split-layout-pane"
+      :top-space="topSpace"
+      ...
+    />
   </template>
   ```
-  ```scss
-  .split-panel {
-    position: absolute;
-    left: 0; top: 0; right: 0; bottom: 0;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-  }
-  ```
+  - 插槽根容器：`lingyun-split-layout-pane`（绝对铺满 + 纵向 flex）
+  - 插槽根节点本身就是 `scroll-view`：`lingyun-split-layout-fill`
+  - 容器内的内层 `scroll-view`：`lingyun-split-layout-scroll`（`flex:1 + height:0`）
+
+  工具类在 `styles/setting/_split-layout.scss`，经 `App.vue` 全局注入；不要写进组件样式——小程序 styleIsolation 下插槽节点吃不到组件 wxss。
 - 不用布局组件、手写分栏时：给宿主节点显式 `flex: 1 1 0; height: 0`（页面的 pane 是 flex 列）。
 - ❌ 不要在面板组件里写 `:host { height: … }`——会连带影响标准页（非 flex 容器里的正常用法）；也不要在小程序里指望 slot 内容被 flex 拉伸。
 
@@ -116,4 +115,4 @@ H5（所有宽度 + 明暗两套主题）：
 - [ ] 内层 `scroll-view` 的实际高度 = 视口高度（`createSelectorQuery` 在组件内查询）
 - [ ] 模拟器上状态栏 / 胶囊 / 底部安全区正常，toolbar 固定
 
-脚本化验证（miniprogram-automator 连 `cli auto --auto-port 9420`）可用 `mp.pageScrollTo` + `page.scrollTop()` + `page.$('.po-panel').offset()` 快速回归。
+脚本化验证（miniprogram-automator 连 `cli auto --auto-port 9420`）可用 `mp.pageScrollTo` + `page.scrollTop()` + `page.$('.lingyun-split-layout-pane').offset()` 快速回归。

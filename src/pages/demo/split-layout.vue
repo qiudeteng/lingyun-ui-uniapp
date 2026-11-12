@@ -1,6 +1,5 @@
 <template>
   <lingyun-split-layout
-    class="split-layout-demo"
     title="分栏布局"
     :split-at="900"
     :list-width="375"
@@ -55,9 +54,9 @@
     </template>
 
     <template #list="{ wide: isWide, topSpace }">
-      <view class="demo-pane">
+      <view class="lingyun-split-layout-pane">
         <scroll-view
-          class="demo-scroll"
+          class="lingyun-split-layout-scroll"
           scroll-y
           :show-scrollbar="false"
           @scroll="onListScroll"
@@ -100,7 +99,7 @@
             </lingyun-empty>
           </view>
 
-          <view class="demo-pane__bottom" />
+          <view class="demo-bottom" />
         </scroll-view>
       </view>
     </template>
@@ -121,7 +120,7 @@
 
     <template #detail="{ topSpace }">
       <scroll-view
-        class="demo-scroll demo-scroll--detail"
+        class="lingyun-split-layout-fill"
         scroll-y
         :show-scrollbar="false"
         @scroll="onDetailScroll"
@@ -309,38 +308,10 @@
 
 <style lang="scss">
   /*
-   * 插槽内容按 split-layout 约定绝对定位铺满内容容器：
-   * 小程序里 slot 内容不参与 flex 拉伸，不这样铺满会塌陷或把整页顶出滚动。
+   * 插槽内容的结构（绝对铺满 / 内层滚动）来自 lingyun-split-layout 的全局工具类：
+   * lingyun-split-layout-pane / -scroll / -fill（见 styles/setting/_split-layout.scss）。
    * 左栏底色由 split-layout 统一提供，这里不要再设背景。
    */
-  .demo-pane {
-    position: absolute;
-    left: 0;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .demo-scroll {
-    flex: 1;
-    min-height: 0;
-    height: 0;
-    box-sizing: border-box;
-  }
-
-  .demo-scroll--detail {
-    position: absolute;
-    left: 0;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    height: auto;
-    min-height: 0;
-  }
 
   .demo-space {
     width: 100%;
@@ -372,7 +343,7 @@
     padding: 24px 16px;
   }
 
-  .demo-pane__bottom {
+  .demo-bottom {
     height: calc(24px + env(safe-area-inset-bottom));
   }
 

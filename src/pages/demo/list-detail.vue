@@ -1,6 +1,5 @@
 <template>
   <lingyun-split-layout
-    class="list-detail-page"
     title="列表与详情"
     :split-at="900"
     :list-width="375"
@@ -34,9 +33,9 @@
     </template>
 
     <template #list="{ wide: isWide, topSpace }">
-      <view class="list-pane-content">
+      <view class="lingyun-split-layout-pane">
         <scroll-view
-          class="list-scroll"
+          class="lingyun-split-layout-scroll"
           scroll-y
           :show-scrollbar="false"
           :scroll-into-view="listAnchor"
@@ -119,7 +118,7 @@
 
     <template #detail="{ topSpace }">
       <scroll-view
-        class="detail-scroll"
+        class="lingyun-split-layout-fill"
         scroll-y
         :show-scrollbar="false"
         :scroll-into-view="detailAnchor"
@@ -403,37 +402,10 @@
   }
 
   /*
-   * 左栏内容：绝对定位铺满 split-layout 的内容容器（小程序 slot 内容不参与 flex 拉伸）。
-   * 左栏底色由 split-layout 统一提供（宽屏 grouped-secondary、窄屏 Primary），这里不要再设背景。
+   * 左栏内容的结构（绝对铺满 / 内层滚动）来自 lingyun-split-layout 的全局工具类：
+   * lingyun-split-layout-pane / -scroll / -fill（见 styles/setting/_split-layout.scss）。
+   * 左栏底色由 split-layout 统一提供，这里不要再设背景。
    */
-  .list-pane-content {
-    position: absolute;
-    left: 0;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  /* 纯列表：全宽平铺，不要悬浮卡片 */
-  .list-scroll {
-    flex: 1;
-    min-height: 0;
-    height: 0;
-    box-sizing: border-box;
-  }
-
-  .detail-scroll {
-    position: absolute;
-    left: 0;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    box-sizing: border-box;
-  }
 
   .list-top-spacer {
     width: 100%;

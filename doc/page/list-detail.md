@@ -20,13 +20,12 @@
 
 ## 使用
 
-左栏的搜索、分段与日期条只作用于列表，不放进全局工具栏——这样右栏详情不会被无关的筛选控件干扰。页面壳用 `:show-toolbar="false"`，宿主页通过 `pageHostState.hideToolbar` 让出 toolbar；`lingyun-toolbars` 宽屏 `safe-area=false`，窄屏 `safe-area=true` 处理状态栏与胶囊：
+左栏的搜索、分段与日期条只作用于列表，不放进全局工具栏——这样右栏详情不会被无关的筛选控件干扰。页面结构用 `lingyun-split-layout`（内部已关掉页面壳 toolbar，并量好浮动头部高度）；插槽内容用组件的结构工具类（`lingyun-split-layout-pane` / `-scroll`），`topSpace` 是头部实测高度：
 
 ```vue
-<lingyun-app-page :show-toolbar="false" :show-tabbar="false" :body-scroll="false">
-  <view class="list-pane">
+<lingyun-split-layout title="列表与详情" :split-at="900" :list-width="375" @wide-change="onWideChange">
+  <template #list-header>
     <lingyun-toolbars
-      class="pane-header"
       title-style="title2LineLeft"
       title="工单"
       :subtitle="`${filtered.length} 条结果`"
@@ -42,14 +41,18 @@
       @segment-change="onStatusSegmentChange"
       @back="onPageBack"
     />
-    <scroll-view scroll-y class="list-scroll">
-      <view class="list-top-spacer" :style="{ height: headerHeight + 'px' }" />
-      <lingyun-list plain>…</lingyun-list>
-      <view class="list-bottom-spacer" />
-    </scroll-view>
-    <lingyun-date-switcher class="list-date" :fixed="false" :safe-area="false" @change="onDateChange" />
-  </view>
-</lingyun-app-page>
+  </template>
+  <template #list="{ topSpace }">
+    <view class="lingyun-split-layout-pane">
+      <scroll-view scroll-y class="lingyun-split-layout-scroll">
+        <view class="list-top-spacer" :style="{ height: topSpace + 'px' }" />
+        <lingyun-list plain>…</lingyun-list>
+        <view class="list-bottom-spacer" />
+      </scroll-view>
+      <lingyun-date-switcher class="list-date" :fixed="false" :safe-area="false" @change="onDateChange" />
+    </view>
+  </template>
+</lingyun-split-layout>
 ```
 
 组件用法见 [列表](../components/list.md)、[顶栏](../components/toolbars.md)、[分段控件](../components/segmented-control.md)、[日期切换器](../components/date-switcher.md)、[时间线](../components/timeline.md)。

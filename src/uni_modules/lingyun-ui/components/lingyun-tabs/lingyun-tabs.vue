@@ -50,13 +50,15 @@
               :size="18"
               :color="index === activeIndex ? 'primary' : 'secondary'"
             />
-            <text class="lingyun-tabs__text">{{ item.text }}</text>
-            <lingyun-badge
-              v-if="hasBadge(item)"
-              class="lingyun-tabs__badge"
-              size="small"
-              :text="String(item.badge)"
-            />
+            <view class="lingyun-tabs__label">
+              <text class="lingyun-tabs__text">{{ item.text }}</text>
+              <lingyun-badge
+                v-if="hasBadge(item)"
+                class="lingyun-tabs__badge"
+                size="small"
+                :text="String(item.badge)"
+              />
+            </view>
           </view>
         </view>
       </scroll-view>
@@ -628,6 +630,13 @@ export default defineComponent({
   white-space: nowrap;
 }
 
+/* 文字与角标的定位参照：角标不参与文字居中，避免选中胶囊里的文字偏移 */
+.lingyun-tabs__label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
 .lingyun-tabs__tab--active .lingyun-tabs__text {
   color: var(--lingyun-primary, #0088ff);
   font-weight: 600;
@@ -637,8 +646,13 @@ export default defineComponent({
   flex-shrink: 0;
 }
 
+/* 角标按上标挂在文字右上角，不占行内排版宽度（Apple 角标语义） */
 .lingyun-tabs__badge {
-  transform: translateY(-2px);
+  position: absolute;
+  top: -7px;
+  left: 100%;
+  margin-left: 2px;
+  z-index: 1;
 }
 
 .lingyun-tabs__indicator {
