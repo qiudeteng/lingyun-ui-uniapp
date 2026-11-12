@@ -32,6 +32,7 @@
       @segment-click="onToolbarSegmentClick"
       @segment-change="onToolbarSegmentChange"
       @trailing-action="onToolbarTrailingAction"
+      @picker-value="onPickerValue"
     >
       <template #trailing-menu="{ button, index, groupIndex, close }">
         <slot
@@ -133,6 +134,7 @@ export default defineComponent({
     'update:searching',
     'update:searchValue',
     'update:segmentValue',
+    'picker-value',
   ],
   data() {
     return {
@@ -175,6 +177,9 @@ export default defineComponent({
     },
     onToolbarTrailingAction(payload: unknown): void {
       this.$emit('trailing-action', payload)
+    },
+    onPickerValue(value: string | number, option: { value: string | number; label: string }): void {
+      this.$emit('picker-value', value, option)
     },
     resolveTopInset(): number {
       // #ifdef H5

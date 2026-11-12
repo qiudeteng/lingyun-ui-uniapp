@@ -141,8 +141,8 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
-  import { setLingyunToolbarPicker } from '@/uni_modules/lingyun-ui'
+  import { onBeforeUnmount, ref } from 'vue'
+  import { lingyunToolbarPicker, setLingyunToolbarPicker } from '@/uni_modules/lingyun-ui'
 
   const actionButtons = [
     { key: 'search', icon: 'search', label: 'Search' },
@@ -158,6 +158,14 @@
   ]
   const groupedAction = ref('—')
   const pickerOn = ref(false)
+  const pickerBeforeDemo = {
+    options: lingyunToolbarPicker.options.slice(),
+    value: lingyunToolbarPicker.value,
+    title: lingyunToolbarPicker.title,
+    placeholder: lingyunToolbarPicker.placeholder,
+    searchable: lingyunToolbarPicker.searchable,
+    searchPlaceholder: lingyunToolbarPicker.searchPlaceholder,
+  }
 
   setLingyunToolbarPicker({
     title: '选择门店',
@@ -169,6 +177,10 @@
       { value: 'bz', label: '八喜冰淇淋蛋糕(北滘店)' },
     ],
     value: 'dg',
+  })
+
+  onBeforeUnmount(() => {
+    setLingyunToolbarPicker(pickerBeforeDemo)
   })
 
   function onGroupedAction(payload: {

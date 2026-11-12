@@ -289,7 +289,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+import { defineComponent, getCurrentInstance, type PropType } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import {
   coerceTriFlag,
   getLingyunNavLayout,
@@ -309,6 +310,8 @@ import { useLingyunThemeSwitchVisible } from '../../utils/themeSwitch'
 import {
   commitLingyunToolbarPicker,
   lingyunToolbarPicker,
+  notifyLingyunToolbarPickerEmpty,
+  syncLingyunToolbarPickerSelection,
 } from '../../utils/toolbarPicker'
 
 export type LingyunToolbarButton = {
@@ -346,7 +349,15 @@ export default defineComponent({
     'update:segmentValue',
     'segment-click',
     'segment-change',
+    'picker-value',
   ],
+  setup() {
+    const instance = getCurrentInstance()
+    onShow(() => {
+      const proxy = instance?.proxy as { syncPickerOnEnter?: () => void } | null
+      proxy?.syncPickerOnEnter?.()
+    })
+  },
   props: {
     placement: {
       type: String,
@@ -482,6 +493,12 @@ export default defineComponent({
       themeMenuAnchor: null as { top: number; left: number; width: number; height: number } | null,
       _onWindowResize: null as ((res?: unknown) => void) | null,
       _themeAnchorTimers: [] as ReturnType<typeof setTimeout>[],
+      pickerAlive: true,
+      _pickerSyncing: false,
+      _pickerEmptyTimer: null as ReturnType<typeof setTimeout> | null,
+      _pickerEmitTimer: null as ReturnType<typeof setTimeout> | null,
+      _pendingPickerValue: null as string | number | null,
+      _pendingPickerOption: null as { value: string | number; label: string } | null,
     }
   },
   /*
@@ -497,6 +514,15 @@ export default defineComponent({
     this.bindResize()
   },
   beforeUnmount() {
+    this.pickerAlive = false
+    if (this._pickerEmptyTimer) {
+      clearTimeout(this._pickerEmptyTimer)
+      this._pickerEmptyTimer = null
+    }
+    if (this._pickerEmitTimer) {
+      clearTimeout(this._pickerEmitTimer)
+      this._pickerEmitTimer = null
+    }
     if (this._searchFocusTimer) {
       clearTimeout(this._searchFocusTimer)
       this._searchFocusTimer = null
@@ -506,6 +532,23 @@ export default defineComponent({
     this.unbindResize()
   },
   watch: {
+    pickerActive: {
+      immediate: true,
+      handler(active: boolean) {
+        if (active) this.syncPickerOnEnter()
+      },
+    },
+    pickerOptions: {
+      deep: true,
+      handler() {
+        if (!this.pickerActive) return
+        this.syncPickerOnEnter()
+      },
+    },
+    pickerCurrent() {
+      if (!this.pickerActive) return
+      this.syncPickerOnEnter()
+    },
     searching: {
       immediate: true,
       handler(val: boolean) {
@@ -777,6 +820,9 @@ export default defineComponent({
       )
       return index < 0 ? 0 : index
     },
+    pickerCurrent(): string | number | null {
+      return lingyunToolbarPicker.value
+    },
     pickerLabel(): string {
       const current = lingyunToolbarPicker.value
       const hit = lingyunToolbarPicker.options.find(
@@ -911,6 +957,34 @@ export default defineComponent({
       }
       // #endif
       this._onWindowResize = null
+    },
+    syncPickerOnEnter() {
+      if (this._pickerSyncing || !this.pickerAlive || !this.pickerActive) return
+      this._pickerSyncing = true
+      const result = syncLingyunToolbarPickerSelection()
+      this._pickerSyncing = false
+      if (!this.pickerAlive || !this.pickerActive) return
+      if (result.empty) {
+        this.schedulePickerEmptyCheck()
+        return
+      }
+      this._pendingPickerValue = result.value
+      this._pendingPickerOption = result.option
+      if (this._pickerEmitTimer) return
+      this._pickerEmitTimer = setTimeout(() => {
+        this._pickerEmitTimer = null
+        if (!this.pickerAlive || !this.pickerActive || this._pendingPickerValue == null) return
+        this.$emit('picker-value', this._pendingPickerValue, this._pendingPickerOption)
+      }, 0)
+    },
+    schedulePickerEmptyCheck() {
+      if (this._pickerEmptyTimer) clearTimeout(this._pickerEmptyTimer)
+      this._pickerEmptyTimer = setTimeout(() => {
+        this._pickerEmptyTimer = null
+        if (!this.pickerAlive || !this.pickerActive) return
+        if (lingyunToolbarPicker.options.length > 0) return
+        notifyLingyunToolbarPickerEmpty()
+      }, 0)
     },
     onToolbarPickerChange(payload: { value?: number | string | Array<number | string> }) {
       const index = Number(payload?.value)

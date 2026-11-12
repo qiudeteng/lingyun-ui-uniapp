@@ -119,13 +119,14 @@ function onLayoutChange(value: LingyunSplitLayoutChange): void {
 
 ## lingyun-split-toolbar
 
-分栏页专用浮动顶栏。内部固定 `title2LineLeft`、无副标题、非 fixed、不显示窗口按钮 / 主题钮、`segments` 固定渲染为分段控件，并统一处理 H5 / 微信 PC 的 12px 顶部补偿（加在 toolbar 玻璃内部，栏顶不会露出滚动内容；手机由 toolbar 自身 `safe-area` 处理）。页面不需要也不能再覆盖这些展示属性。
+分栏页专用浮动顶栏。内部固定 `title2LineLeft`、非 fixed、不显示窗口按钮 / 主题钮、`segments` 固定渲染为分段控件，并统一处理 H5 / 微信 PC 的 12px 顶部补偿（加在 toolbar 玻璃内部，栏顶不会露出滚动内容；手机由 toolbar 自身 `safe-area` 处理）。页面不需要也不能再覆盖这些展示属性。默认没有副标题；某一栏要显示全局选择器时设 `subtitle-picker`，当前项出现在标题下面。左右栏各自开关，打开的栏显示同一个当前项。用法见 [顶栏 · 副标题选择器](/components/toolbars.html#副标题选择器)。
 
 ### 属性
 
 | 属性 | 说明 | 默认 |
 | --- | --- | --- |
 | `title` | 标题 | '' |
+| `subtitlePicker` | 副标题位置显示全局选择器。默认关 | false |
 | `showBack` | 是否显示返回钮 | false |
 | `searchable` | 开启搜索 | false |
 | `searchPlaceholder` | 搜索占位 | 搜索 |
@@ -152,6 +153,7 @@ function onLayoutChange(value: LingyunSplitLayoutChange): void {
 | `search-open` / `search-cancel` / `search-input` / `search` | 搜索相关；`input` / `search` 参数为关键词，`cancel` 为当前关键词 |
 | `segment-click` / `segment-change` | 分段点击 / 切换，参数 `{ value, item }` |
 | `trailing-action` | 自定义按钮点击，参数 `{ key, button, index, groupIndex, buttonIndex, anchor }` |
+| `picker-value` | 本栏打开了 `subtitle-picker` 时，进入页面和改选都会给出当前值。参数为 `value` 和 `{ value, label }` |
 | `update:searching` / `update:searchValue` / `update:segmentValue` | `v-model` 更新 |
 
 ## 演示源码

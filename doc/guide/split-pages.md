@@ -200,6 +200,8 @@ WXSS 里 `scroll-view` 的 `height: 100%` 在 flex 链路上拿不到确定高�
 
 两栏头部放 `lingyun-split-toolbar`，页面只传标题、搜索、分段、按钮。不要直接写 `lingyun-toolbars`，也不要设 `title-style` 等展示属性；标题样式、分段形态和 H5 / 微信 PC 的 12px 顶部补偿都固定在组件里。头部高度由分栏组件测量，页面不要自己 `createSelectorQuery`。
 
+某一栏要在标题下显示全局选择器时，只给那一栏加 `subtitle-picker`（默认关，右栏不需要就不要写）。名单在登录后的用户数据里注入：等名单请求成功再 `setLingyunToolbarPicker`，不要写在启动或登录页。这一栏进入页面时用 `@picker-value` 拿当前值，不要在页面里再传 `onChange`。没开的栏不做空值检查。完整步骤见 [顶栏 · 副标题选择器](/components/toolbars.html#副标题选择器)。
+
 ### 5.6 页面结构样式不要写在通用 `.page` 上
 
 H5 切换路由不会卸载旧页面的 CSS。在 `.page` 上写 `display: flex` 或 `height: 100vh`，离开后会套到别的页面上（目录页缩成一列、底栏消失）。结构样式挂页面专属类（`.list-page`、`.po-page`），`.page` 上只留可被覆盖的 padding 和背景。排查方法：**访问过 A 之后 B 才错版，就查 A 的样式是不是写在通用类上。**

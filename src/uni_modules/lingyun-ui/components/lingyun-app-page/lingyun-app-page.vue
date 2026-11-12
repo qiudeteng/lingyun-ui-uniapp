@@ -93,6 +93,7 @@
       @update:segmentValue="onSegmentUpdate"
       @segment-click="onSegmentClick"
       @segment-change="onSegmentChange"
+      @picker-value="onPickerValue"
     >
       <template #leading>
         <slot name="leading" />
@@ -418,6 +419,7 @@ export default defineComponent({
     'update:segmentValue',
     'segment-click',
     'segment-change',
+    'picker-value',
   ],
   props: {
     title: { type: String, default: '' },
@@ -1574,6 +1576,9 @@ export default defineComponent({
     },
     onSegmentChange(payload: Record<string, unknown>) {
       this.$emit('segment-change', payload)
+    },
+    onPickerValue(value: string | number, option: { value: string | number; label: string }) {
+      this.$emit('picker-value', value, option)
     },
   },
 })

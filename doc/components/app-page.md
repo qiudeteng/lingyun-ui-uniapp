@@ -316,7 +316,8 @@ function onScroll(event: { detail?: { scrollTop?: number } }) {
 | 属性 | 说明 | 默认值 |
 | --- | --- | --- |
 | `title` | 顶栏标题 | '' |
-| `subtitle` | 副标题（标题下方一行） | '' |
+| `subtitle` | 副标题（标题下方一行）。`subtitlePicker` 打开时忽略 | '' |
+| `subtitlePicker` | 副标题位置显示全局选择器。默认关。名单、当前值和页面内监听见 [顶栏 · 副标题选择器](/components/toolbars.html#副标题选择器) | false |
 | `titleStyle` | `title` / `large` / `title2LineLarge` | title |
 | `showToolbar` | 是否显示顶栏；`false` 时不再预留顶栏高度 | true |
 | `showBack` | 返回钮。`auto`：宽屏导航停靠、或窄屏底部 Tab 的一级 Tab 根页时隐藏，其余显示 | auto |
