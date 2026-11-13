@@ -58,6 +58,8 @@ export function bindLingyunContentCoverHost(uid: number, docked: boolean): void 
 export function installLingyunContentCovers(
   modules: Record<string, () => Promise<unknown>>,
 ): void {
+  // 小程序不支持 defineAsyncComponent，动态页面会变成 wx://not-found。盖层只在 H5 / App 注册。
+  // #ifndef MP
   Object.keys(modules).forEach((file) => {
     const normalized = file.replace(/\\/g, '/')
     // 主包 pages/ 与分包 pagesStore、pagesEnterprise 等，路径都要能对上路由
@@ -75,6 +77,7 @@ export function installLingyunContentCovers(
       ),
     )
   })
+  // #endif
 }
 
 export function getLingyunContentCoverView(path: string): Component | null {

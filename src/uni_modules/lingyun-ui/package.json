@@ -1,7 +1,7 @@
 {
   "id": "lingyun-ui",
   "displayName": "凌云UI",
-  "version": "1.0.76",
+  "version": "1.0.77",
   "description": "一套对齐 Apple Liquid Glass 的 uni-app 多端组件库。",
   "keywords": [
     "lingyun-ui",
@@ -83,34 +83,16 @@
         },
         "uni-app-x": {
           "web": {
-            "safari": {
-              "extVersion": "1.0.0",
-              "minVersion": ""
-            },
-            "chrome": {
-              "extVersion": "1.0.0",
-              "minVersion": ""
-            }
+            "safari": "√",
+            "chrome": "√"
           },
           "app": {
-            "android": {
-              "extVersion": "1.0.0",
-              "minVersion": ""
-            },
-            "ios": {
-              "extVersion": "1.0.0",
-              "minVersion": ""
-            },
-            "harmony": {
-              "extVersion": "1.0.0",
-              "minVersion": ""
-            }
+            "android": "√",
+            "ios": "√",
+            "harmony": "√"
           },
           "mp": {
-            "weixin": {
-              "extVersion": "1.0.0",
-              "minVersion": ""
-            }
+            "weixin": "√"
           }
         }
       }
