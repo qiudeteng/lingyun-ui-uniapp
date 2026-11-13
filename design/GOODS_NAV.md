@@ -18,15 +18,14 @@
 | 左侧图标胶囊 | 高 54 | `lingyun-glass-control`，与 Tab 单项同档 |
 | 图标 | 22 | `lingyun-icon` |
 | 入口文案 | 10 / Semibold | Labels - Liquid Glass |
-| 右侧按钮组 | 高 46 | 胶囊，与 Glass Large 按钮同高 |
-| 按钮文案 | 15 / Semibold | 末项白字，其余系统蓝 |
+| 右侧按钮组 | `lingyun-button` large | 末项 `borderedProminent`，其余 `bordered`，间距 8 |
 
 贴底时 `left` 跟随 `--lingyun-page-nav-width`，宽屏不压住左侧导航。底部加上 `safeAreaInsets.bottom`。
 
 ## 2. 分层
 
 - 左侧图标栏是 **控件玻璃**，不是实心白块。
-- 右侧按钮是 **标准材质**（Bordered + Bordered Prominent），和玻璃栏并排，不把按钮再做成一层玻璃（避免 glass-on-glass）。
+- 右侧按钮用 `lingyun-button`（Bordered + Bordered Prominent），各自一颗胶囊，和玻璃栏并排。
 - 角标用 `lingyun-badge`（System Red），不要自绘红点。
 - 禁止 `backgroundColor` 渐变、禁止 `#ff0000` 角标、禁止整条不透明白底。
 
@@ -68,10 +67,10 @@
 | 区域 | 规格 |
 |------|------|
 | 外层 | 悬浮玻璃胶囊：左右 12、底部 8 + 安全区，高 62，圆角 31，`lingyun-glass-control`；禁止实底白条 |
-| 购物车钮 | 48 圆，主色（默认系统蓝）实心，`cart-filled` 24 白；距胶囊左侧和上下各 7（62 - 48 垂直居中），右上角 `lingyun-badge` 数量角标（左侧固定、数字变多向右伸展） |
+| 购物车钮 | `lingyun-button` large、仅图标、`borderedProminent`，`cart-filled` 24 白；右上角 `lingyun-badge` 数量角标（左侧固定、数字变多向右伸展） |
 | 合计 | `¥` 13 / 金额 22 Semibold，主文本色；下方 11/15 次要色显示「另需配送费¥x」或「共 n 件」 |
 | 空车 | 「未选购商品」15 三级色 +「¥xx起送」11 次要色 |
-| 结算钮 | 40 高、最小宽 104、圆角 20、主色实底白字；未达起送价置灰，文案为「¥xx起送」 |
+| 结算钮 | `lingyun-button` medium、`borderedProminent`；未达起送价 `disabled`，文案为「¥xx起送」 |
 | 宽屏 | `fixed` 时左边让开 `--lingyun-page-nav-width`，再加 12 外边距 |
 | 反馈 | 购物车数量增加时，圆钮（含角标）做一次 0.4s 放大回弹，缩回原位；数量减少不触发 |
 
@@ -111,7 +110,7 @@
 |----|------|
 | 结构 | 一张连续玻璃卡：详情在上、购物车栏在下；关闭时就是 62 高的玻璃胶囊，展开后胶囊向上长高 |
 | 尺寸 | 圆角 **31**（始终不变，强调是同一颗胶囊）；`lingyun-glass-surface` + 全端 blur；Light `#fff`@0.72，Dark `#1a1a1a`@0.7 |
-| 详情顶栏 | 高约 48：左上角 36 玻璃圆钮关闭（`closeempty` 20），右侧 `#detail-header` 插槽（标题 / 件数 / 清空） |
+| 详情顶栏 | 高约 48：左上角 `lingyun-button` glass small 关闭（`closeempty` 20），右侧 `#detail-header` 插槽（标题 / 件数 / 清空） |
 | 详情内容 | `#detail` 插槽，位于顶栏下方，内部 `scroll-view`；默认随内容自动撑开，超过上限后内部滚动 |
 | 高度上限 | 默认 = 视口高 − `detailTopGap`（默认 120）− 底部安全区 − 8 − 购物车栏 62，即详情顶部至少距屏幕顶部 120 |
 | 动效 | 详情区域 `height: 0 → 目标高度`（`0.34s cubic-bezier(0.32, 0.72, 0, 1)`），整卡向上增高；购物车栏始终贴底 |

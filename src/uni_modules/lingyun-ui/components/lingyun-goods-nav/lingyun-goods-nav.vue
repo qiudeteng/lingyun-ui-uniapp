@@ -22,17 +22,17 @@
           aria-label="购物车详情"
         >
           <view class="lingyun-goods-nav__detail-head">
-            <view
+            <lingyun-button
               class="lingyun-goods-nav__detail-close"
-              hover-class="lingyun-goods-nav__detail-close--hover"
-              :hover-start-time="20"
-              :hover-stay-time="70"
-              role="button"
+              variant="glass"
+              size="small"
               aria-label="关闭购物车详情"
               @click.stop="closeDetail"
             >
-              <lingyun-icon type="closeempty" :size="20" color="label" />
-            </view>
+              <template #icon>
+                <lingyun-icon type="closeempty" :size="20" color="label" />
+              </template>
+            </lingyun-button>
             <view class="lingyun-goods-nav__detail-head-main">
               <slot name="detail-header" />
             </view>
@@ -52,13 +52,13 @@
           <view
             class="lingyun-goods-nav__cart-icon-wrap"
             :class="{ 'lingyun-goods-nav__cart-icon-wrap--pop': cartPop }"
-            role="button"
-            aria-label="购物车"
             @click="onCartTap"
           >
-            <view class="lingyun-goods-nav__cart-icon">
-              <lingyun-icon type="cart-filled" :size="24" color="#ffffff" />
-            </view>
+            <lingyun-button variant="borderedProminent" size="large" :style="accentButtonStyle" aria-label="购物车">
+              <template #icon>
+                <lingyun-icon type="cart-filled" :size="24" color="#ffffff" />
+              </template>
+            </lingyun-button>
             <view v-if="cartCountValue > 0" class="lingyun-goods-nav__cart-badge">
               <lingyun-badge :text="cartCountValue" :max="99" />
             </view>
@@ -78,17 +78,15 @@
               </text>
             </template>
           </view>
-          <view
+          <lingyun-button
             class="lingyun-goods-nav__checkout"
-            :class="{ 'lingyun-goods-nav__checkout--disabled': !canCheckout }"
-            hover-class="lingyun-goods-nav__checkout--hover"
-            :hover-start-time="20"
-            :hover-stay-time="70"
-            role="button"
+            variant="borderedProminent"
+            size="medium"
+            :text="checkoutLabel"
+            :disabled="!canCheckout"
+            :style="accentButtonStyle"
             @click="onCheckoutTap"
-          >
-            <text class="lingyun-goods-nav__checkout-text">{{ checkoutLabel }}</text>
-          </view>
+          />
         </view>
       </view>
     </template>
@@ -118,18 +116,14 @@
         class="lingyun-goods-nav__actions"
         :class="{ 'lingyun-goods-nav__actions--fill': fill || !options.length }"
       >
-        <view
-          v-for="(item, index) in buttons"
-          :key="item.key"
-          class="lingyun-goods-nav__btn"
-          :class="buttonClass(index)"
-          hover-class="lingyun-goods-nav__btn--hover"
-          :hover-start-time="20"
-          :hover-stay-time="70"
-          role="button"
-          @click="onButton(index, item)"
-        >
-          <text class="lingyun-goods-nav__btn-text">{{ item.text }}</text>
+        <view v-for="(item, index) in buttons" :key="item.key" class="lingyun-goods-nav__action">
+          <lingyun-button
+            :text="item.text"
+            :variant="buttonVariant(index)"
+            size="large"
+            :block="fill || !options.length"
+            @click="onButton(index, item)"
+          />
         </view>
       </view>
     </template>
@@ -185,12 +179,12 @@ const DETAIL_LEAVE_MS = 360
  * `detail` 开启后，点购物车（或调用 openDetail）会让整张购物车卡片向上增高，
  * 详情与购物车栏是同一张玻璃卡；内容由 #detail-header / #detail 插槽注入。
  * 高度随内容自动撑开，并以 detailMaxHeight / detailTopGap 封顶；点卡片外或左上角关闭。
- * 视觉走 Liquid Glass：控件玻璃，按钮用系统蓝，禁止红橙渐变实心条。
+ * 视觉走 Liquid Glass：控件玻璃。操作按钮、结算、购物车圆钮、关闭钮都用 lingyun-button。
  * @see design/GOODS_NAV.md
  *
  * @property {String} variant default / cart
  * @property {Array} options [{ icon, text, info, badge }]（default）
- * @property {Array} buttonGroup [{ text }] 末项为 Bordered Prominent，其余为 Bordered（default）
+ * @property {Array} buttonGroup [{ text }] 末项 borderedProminent，其余 bordered（default）
  * @property {Boolean} fill 按钮组占满剩余宽度（默认 true）
  * @property {Boolean} fixed 贴底悬浮（默认 true）
  * @property {Boolean} safeArea 预留底部安全区（默认 true）
@@ -346,6 +340,10 @@ export default defineComponent({
       ]
         .filter(Boolean)
         .join(' ')
+    },
+    accentButtonStyle(): Record<string, string> {
+      if (!this.accentColor) return {}
+      return { '--lingyun-primary': this.accentColor }
     },
     barStyle() {
       const style: Record<string, string> = {}
@@ -753,9 +751,8 @@ export default defineComponent({
       if (raw == null || typeof raw === 'boolean') return ''
       return raw
     },
-    buttonClass(index: number): string {
-      const last = index === this.buttons.length - 1
-      return last ? 'lingyun-goods-nav__btn--prominent' : 'lingyun-goods-nav__btn--bordered'
+    buttonVariant(index: number): string {
+      return index === this.buttons.length - 1 ? 'borderedProminent' : 'bordered'
     },
     formatPrice(value: unknown): string {
       const number = Number(value)
@@ -873,47 +870,22 @@ export default defineComponent({
   &__actions {
     display: flex;
     flex-direction: row;
-    align-items: stretch;
+    align-items: center;
     flex: 0 1 auto;
-    height: 46px;
+    gap: 8px;
     min-width: 0;
-    overflow: hidden;
-    border-radius: $lingyun-glass-radius-pill;
   }
 
   &__actions--fill {
     flex: 1;
   }
 
-  &__btn {
-    display: flex;
+  &__action {
+    min-width: 0;
+  }
+
+  &__actions--fill &__action {
     flex: 1;
-    align-items: center;
-    justify-content: center;
-    min-width: 88px;
-    padding: 0 16px;
-    box-sizing: border-box;
-  }
-
-  &__btn--bordered {
-    color: var(--lingyun-primary, #{$lingyun-primary});
-    background-color: var(--lingyun-primary-soft, #{rgba($lingyun-primary, 0.14)});
-  }
-
-  &__btn--prominent {
-    color: #ffffff;
-    background-color: var(--lingyun-primary, #{$lingyun-primary});
-  }
-
-  &__btn--hover {
-    opacity: 0.72;
-  }
-
-  &__btn-text {
-    font-size: 15px;
-    font-weight: 600;
-    line-height: 20px;
-    color: inherit;
   }
 }
 
@@ -1023,17 +995,6 @@ export default defineComponent({
 
 .lingyun-goods-nav__detail-close {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  @include lingyun-glass-control;
-}
-
-.lingyun-goods-nav__detail-close--hover {
-  transform: scale(0.92);
 }
 
 .lingyun-goods-nav__detail-head-main {
@@ -1065,15 +1026,12 @@ export default defineComponent({
   align-items: center;
   width: 100%;
   min-height: 62px;
-  /* 左侧和购物车圆钮的上下间距对齐（62 - 48）/ 2 */
-  padding: 0 14px 0 7px;
+  padding: 0 14px 0 6px;
   box-sizing: border-box;
 }
 
 .lingyun-goods-nav__cart-icon-wrap {
   position: relative;
-  width: 48px;
-  height: 48px;
   flex-shrink: 0;
 }
 
@@ -1097,22 +1055,11 @@ export default defineComponent({
   }
 }
 
-.lingyun-goods-nav__cart-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--ly-goods-nav-accent, #{$lingyun-system-blue});
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.18);
-}
-
 .lingyun-goods-nav__cart-badge {
   position: absolute;
   top: -3px;
   /* 左侧固定，数字变多往右撑开，不往左盖住购物车图标和价格 */
-  left: 26px;
+  left: 30px;
 }
 
 .lingyun-goods-nav__cart-info {
@@ -1167,39 +1114,6 @@ export default defineComponent({
 
 .lingyun-goods-nav__checkout {
   flex-shrink: 0;
-  height: 40px;
-  min-width: 104px;
   margin-left: 10px;
-  padding: 0 18px;
-  box-sizing: border-box;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--ly-goods-nav-accent, #{$lingyun-system-blue});
-}
-
-.lingyun-goods-nav__checkout--hover {
-  transform: scale(0.97);
-}
-
-.lingyun-goods-nav__checkout--disabled {
-  background-color: var(--lingyun-fill-tertiary, #{$lingyun-fill-tertiary});
-  pointer-events: none;
-}
-
-.lingyun-goods-nav__checkout-text {
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 20px;
-  color: #ffffff;
-}
-
-.lingyun-goods-nav__checkout--disabled .lingyun-goods-nav__checkout-text {
-  color: var(--lingyun-label-tertiary, #{$lingyun-label-tertiary});
-}
-
-.theme-dark .lingyun-goods-nav__cart-icon {
-  box-shadow: none;
 }
 </style>
