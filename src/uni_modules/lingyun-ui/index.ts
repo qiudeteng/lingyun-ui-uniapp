@@ -25,6 +25,12 @@ export {
   type LingyunUploadAuthorization,
 } from './utils/upload'
 export {
+  closeLingyunContentCover,
+  installLingyunContentCovers,
+  openLingyunContentCover,
+  useLingyunInContentCover,
+} from './utils/contentCover'
+export {
   commitLingyunToolbarPicker,
   lingyunToolbarPicker,
   setLingyunToolbarPicker,

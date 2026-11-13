@@ -1,5 +1,5 @@
 <template>
-  <lingyun-app-page title="隐私政策" :show-nav="false">
+  <lingyun-app-page title="隐私政策">
     <view class="policy">
       <text class="policy__h">一、我们收集的信息</text>
       <text class="policy__p">为提供服务，我们可能收集您的账号、设备及使用记录等信息。</text>

@@ -1,5 +1,5 @@
 <template>
-  <lingyun-app-page title="用户服务协议" :show-nav="false">
+  <lingyun-app-page title="用户服务协议">
     <view class="policy">
       <text class="policy__h">一、协议范围</text>
       <text class="policy__p">欢迎使用本产品，使用前请仔细阅读并充分理解本协议各条款。您使用本产品即表示您同意本协议。</text>

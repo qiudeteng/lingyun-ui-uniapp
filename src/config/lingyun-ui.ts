@@ -2,6 +2,7 @@ import { toRef } from 'vue'
 import {
   configureLingyunPageNav,
   configureLingyunUpload,
+  installLingyunContentCovers,
   setLingyunLayoutOverride,
   setLingyunPageConfig,
   type LingyunDuoPose,
@@ -145,6 +146,7 @@ export function configureLingyunUi(): void {
     useHostedPath: () => toRef(pageHostState, 'path'),
   })
   configureLingyunUpload({ getAuthorization: () => formatToken(getToken()) })
+  installLingyunContentCovers(import.meta.glob('../pages/**/*.vue'))
   setLingyunPageConfig(DEMO_PAGE_CONFIG)
   installLingyunLayoutPreviewBridge()
 }

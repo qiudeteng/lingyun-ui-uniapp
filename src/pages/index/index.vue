@@ -8,6 +8,20 @@
   >
     <app-page-view-host v-if="pageHostState.path" />
     <view v-if="showHome" class="directory">
+      <lingyun-section title="协议" :is-last="homeGroups.length === 0">
+        <lingyun-list>
+          <lingyun-list-item
+            title="用户服务协议"
+            accessory="disclosure"
+            @click="openCover('/pages/login/user-agreement')"
+          />
+          <lingyun-list-item
+            title="隐私政策"
+            accessory="disclosure"
+            @click="openCover('/pages/login/privacy-policy')"
+          />
+        </lingyun-list>
+      </lingyun-section>
       <lingyun-section
         v-for="(section, index) in homeGroups"
         :key="section.key"
@@ -21,7 +35,7 @@
             :title="item.text || ''"
             :note="item.note || ''"
             accessory="disclosure"
-            @click="go(item.url || '')"
+            @click="openCover(item.url || '')"
           />
         </lingyun-list>
       </lingyun-section>
@@ -33,10 +47,9 @@
   import { computed } from 'vue'
   import { onLoad } from '@dcloudio/uni-app'
   import { getLingyunDemoHomeGroups } from '@/config/pageTabs'
-  import { resolveLingyunPageUrl } from '@/router/pageNav'
+  import { openLingyunContentCover } from '@/uni_modules/lingyun-ui'
   import {
     clearLingyunPageHost,
-    openLingyunHostedPage,
     pageHostState,
     setLingyunPageHost,
   } from '@/router/pageHost'
@@ -79,12 +92,9 @@
     if (target) setLingyunPageHost(target)
   })
 
-  function go(url: string): void {
-    if (openLingyunHostedPage(url, url)) return
-    const next = resolveLingyunPageUrl(url)
-    if (!next) return
-    if (openLingyunHostedPage(next, url)) return
-    uni.navigateTo({ url: next })
+  function openCover(url: string): void {
+    if (!url) return
+    openLingyunContentCover(url)
   }
 </script>
 

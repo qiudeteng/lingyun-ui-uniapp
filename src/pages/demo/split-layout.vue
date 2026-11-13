@@ -13,7 +13,7 @@
         search-placeholder="搜索条目 / 说明"
         :trailing-buttons="toolbarButtons"
         trailing-menu-enabled
-        :show-back="!navDocked && !hosted"
+        :show-back="showListBack"
         :avoid-capsule="!wide"
         :glass-progress="listGlass"
         v-model:searching="searching"
@@ -148,7 +148,11 @@
 
 <script setup lang="ts">
   import { computed, onBeforeUnmount, ref, watch } from 'vue'
-  import { isLingyunWideScreen, type LingyunSplitLayoutChange } from '@/uni_modules/lingyun-ui'
+  import {
+    closeLingyunContentCover,
+    useLingyunInContentCover,
+    type LingyunSplitLayoutChange,
+  } from '@/uni_modules/lingyun-ui'
   import { pageHostState } from '@/router/pageHost'
 
   interface DemoItem {
@@ -175,7 +179,17 @@
     }
   })
 
-  const wide = ref(false)
+  function windowWidth(): number {
+    try {
+      const info =
+        typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
+      return Number(info.windowWidth) || 0
+    } catch {
+      return 0
+    }
+  }
+
+  const wide = ref(windowWidth() >= 900)
   const cover = ref(false)
   const coverOpen = ref(false)
   const listTopSpace = ref(0)
@@ -195,9 +209,6 @@
     coverOpen.value = false
   }
 
-  /** 左侧导航停靠时不显示返回 */
-  const navDocked = computed(() => isLingyunWideScreen())
-
   function currentPageRoute(): string {
     try {
       const pages = getCurrentPages()
@@ -214,6 +225,9 @@
       pageHostState.path === 'pages/demo/split-layout' &&
       currentPageRoute() !== 'pages/demo/split-layout',
   )
+  /** 只有列表时显示返回：手机，以及有导航但还没分栏的中屏。宽屏左右分栏不显示。 */
+  const inContentCover = useLingyunInContentCover()
+  const showListBack = computed(() => !wide.value && !hosted.value)
   watch(
     hosted,
     (value) => {
@@ -305,6 +319,10 @@
   }
 
   function onBack(): void {
+    if (inContentCover) {
+      closeLingyunContentCover()
+      return
+    }
     uni.navigateBack({
       fail: () => {
         uni.reLaunch({ url: '/pages/demo/demo' })

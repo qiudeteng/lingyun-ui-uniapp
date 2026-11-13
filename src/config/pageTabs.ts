@@ -423,8 +423,8 @@ export const DEMO_PAGE_CONFIG: Partial<LingyunPageConfig> = {
   layout: { navMode: 'auto' },
   pages: {
     '/pages/login/login': { hideTabbar: true, hideNav: true },
-    '/pages/login/user-agreement': { hideTabbar: true, hideNav: true },
-    '/pages/login/privacy-policy': { hideTabbar: true, hideNav: true },
+    '/pages/login/user-agreement': { hideTabbar: true },
+    '/pages/login/privacy-policy': { hideTabbar: true },
     '/pages/404/404': { hideTabbar: true, hideNav: true },
     '/pages/demo/search-bar': { hideTabbar: true },
     '/pages/demo/goods-nav': { hideTabbar: true },

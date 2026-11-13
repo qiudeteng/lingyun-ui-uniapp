@@ -67,7 +67,7 @@
       :show-close="showCloseEffective"
       :show-grabber="showGrabberEffective"
       :show-trailing="showTrailing"
-      :show-window-controls="navDocked || tabbarVisible ? false : 'auto'"
+      :show-window-controls="inContentCover || navDocked || tabbarVisible ? false : 'auto'"
       :trailing-buttons="trailingButtons"
       :trailing-buttons-hidden="trailingButtonsHidden"
       :trailing-menu-enabled="trailingMenuEnabled"
@@ -280,6 +280,33 @@
 
     <!-- 命令式 Toast/HUD：须在页面树内（mp-weixin 的 App.vue 模板不会盖到页面上） -->
     <lingyun-feedback-host v-if="!embedded" />
+
+    <!-- 导航停靠时的内容区盖层：只盖右侧，不盖左侧导航。 -->
+    <view v-if="showContentCover" class="lingyun-app-page__covers">
+      <view
+        v-for="(layer, index) in coverLayers"
+        :key="layer.key"
+        class="lingyun-app-page__cover"
+        :class="{
+          'lingyun-app-page__cover--in':
+            coverEntered[layer.key] && !(coverLeaving && index === coverLayers.length - 1),
+        }"
+        :style="{ zIndex: index + 1 }"
+      >
+        <content-cover-frame :path="layer.path">
+          <component :is="coverView(layer.path)" v-if="coverView(layer.path)" />
+          <view v-else class="lingyun-app-page__cover-miss">
+            <lingyun-toolbars
+              title="页面未注册"
+              :show-back="true"
+              :fixed="false"
+              :show-window-controls="false"
+              @back="onCoverBack"
+            />
+          </view>
+        </content-cover-frame>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -307,6 +334,17 @@ import {
   readLingyunResizeWidth,
   readLingyunWindowWidth,
 } from '../lingyun-toolbars/getLingyunNavSafeInset'
+import ContentCoverFrame from './content-cover-frame.vue'
+import {
+  bindLingyunContentCoverHost,
+  closeLingyunContentCover,
+  getLingyunContentCoverView,
+  LINGYUN_APP_PAGE_EMBEDDED,
+  LINGYUN_CONTENT_COVER_PATH,
+  LINGYUN_IN_CONTENT_COVER,
+  lingyunContentCover,
+  nextLingyunContentCoverUid,
+} from '../../utils/contentCover'
 import { useLingyunTheme } from '../../utils/theme'
 import { lingyunToolbarPicker } from '../../utils/toolbarPicker'
 import { useLingyunThemeSwitchVisible } from '../../utils/themeSwitch'
@@ -397,10 +435,9 @@ type MpComponentScope = {
   createIntersectionObserver?: (options: object) => MpGlassObserver
 }
 
-const LINGYUN_APP_PAGE_EMBEDDED = Symbol('lingyun-app-page-embedded')
-
 export default defineComponent({
   name: 'LingyunAppPage',
+  components: { ContentCoverFrame },
   emits: [
     'back',
     'close',
@@ -541,12 +578,21 @@ export default defineComponent({
       _stopRouteChange: null as (() => void) | null,
       _onHashChange: null as (() => void) | null,
       _pageEnterTimer: null as ReturnType<typeof setTimeout> | null,
+      /** 须在 data 里分配。导航监听会在 created 之前同步跑，那时再分配就对不上宿主。 */
+      coverUid: nextLingyunContentCoverUid(),
+      coverEntered: {} as Record<number, boolean>,
+      _coverEnterTimer: null as ReturnType<typeof setTimeout> | null,
     }
   },
   setup() {
     const instance = getCurrentInstance()
     const embedded = inject<boolean>(LINGYUN_APP_PAGE_EMBEDDED, false)
     provide(LINGYUN_APP_PAGE_EMBEDDED, true)
+    const inContentCover = inject(LINGYUN_IN_CONTENT_COVER, false)
+    const contentCoverPath = inject(LINGYUN_CONTENT_COVER_PATH, '')
+    /* 只有直接放进盖层的那一层页面读到标记，它内部再嵌的壳不再当成盖层页 */
+    provide(LINGYUN_IN_CONTENT_COVER, false)
+    provide(LINGYUN_CONTENT_COVER_PATH, '')
     const inheritedScrollLocked = inject(LINGYUN_APP_PAGE_SCROLL_LOCKED, null)
     const inheritedNavInset = inject(LINGYUN_APP_PAGE_NAV_INSET, null)
     const inheritedTopInset = inject(LINGYUN_APP_PAGE_TOP_INSET, null)
@@ -584,6 +630,8 @@ export default defineComponent({
     return {
       bindScroll: inject(LINGYUN_APP_PAGE_BIND_SCROLL, null),
       embedded,
+      inContentCover,
+      contentCoverPath,
       inheritedScrollLock,
       inheritedScrollReport,
       navInsetPx,
@@ -618,7 +666,7 @@ export default defineComponent({
       }, 300)
     }
     if (this.embedded) return
-    if (ensureLingyunWidePageHost()) return
+    if (!this.inContentCover && ensureLingyunWidePageHost()) return
     this.syncNavLayout()
     this.syncNavHeaderSlots()
     this.syncH5PageNavHost()
@@ -649,6 +697,10 @@ export default defineComponent({
     if (this._pageEnterTimer) {
       clearTimeout(this._pageEnterTimer)
       this._pageEnterTimer = null
+    }
+    if (this._coverEnterTimer) {
+      clearTimeout(this._coverEnterTimer)
+      this._coverEnterTimer = null
     }
   },
   watch: {
@@ -694,7 +746,7 @@ export default defineComponent({
       this.syncTopInset()
     },
     navDocked() {
-      this.syncH5PageNavHost()
+      this.syncSharedNavChrome()
     },
     pageLayout() {
       this.applyPageLayout()
@@ -721,6 +773,9 @@ export default defineComponent({
       handler() {
         this.syncSharedNavChrome()
       },
+    },
+    coverLayerMark() {
+      this.scheduleCoverEnter()
     },
     usePageScroll(enabled: boolean) {
       this.$nextTick(() => {
@@ -794,6 +849,9 @@ export default defineComponent({
     },
     /** 小程序宽屏右侧内容路径优先，其次导航意图，最后真实路由 */
     effectivePagePath() {
+      if (this.inContentCover && this.contentCoverPath) {
+        return normalizeLingyunPagePath(this.contentCoverPath)
+      }
       const real = normalizeLingyunPagePath(
         this.currentPagePath || readLingyunCurrentPagePath(),
       )
@@ -948,6 +1006,7 @@ export default defineComponent({
     },
     /** 宽屏需要为顶栏让出左侧。H5 的列在 body 上，这里只留宽度。 */
     navDocked() {
+      if (this.inContentCover) return false
       return (
         !this.embedded &&
         this.pageLayout.sidebarVisible &&
@@ -962,7 +1021,7 @@ export default defineComponent({
       return this.pageLayout.inlineNavMenu
     },
     pageNavWidth() {
-      if (this.pageLayout.navSide !== 'left') return 0
+      if (this.inContentCover || this.pageLayout.navSide !== 'left') return 0
       /* PC 三栏：一级 Tab 没有二级菜单时菜单列收起，只让出 84 窄栏 */
       if (this.pageLayout.inlineNavMenu && !lingyunPageNavInlineMenu.value) {
         return this.pageLayout.railWidth - LINGYUN_PAGE_NAV_RAIL_MENU_WIDTH
@@ -1009,9 +1068,26 @@ export default defineComponent({
     },
     /** 页面级滚动仅在本组件负责 body 滚动时才成立 */
     usePageScroll() {
+      if (this.inContentCover) return false
       return this.bodyScroll && this.pageScroll
     },
+    coverLayers() {
+      return lingyunContentCover.layers
+    },
+    coverLeaving() {
+      return lingyunContentCover.leaving
+    },
+    coverLayerMark() {
+      return this.coverLayers.map((layer) => layer.key).join(',')
+    },
+    showContentCover() {
+      if (this.embedded || this.inContentCover || !this.coverLayers.length) return false
+      if (this.coverUid === lingyunContentCover.hostUid) return true
+      /* 监听跑得太早、宿主编号仍是 0 时，由当前停靠导航的这一页来画 */
+      return this.navDocked && !lingyunContentCover.hostUid
+    },
     useInnerScroll() {
+      if (this.inContentCover) return this.bodyScroll
       return this.bodyScroll && !this.pageScroll
     },
     /** 哨兵高 = 满玻璃距离：露出比例即滚动进度 */
@@ -1019,8 +1095,10 @@ export default defineComponent({
       return { height: `${Math.max(1, Number(this.glassDistance) || 56)}px` }
     },
     showBackEffective() {
-      /* 宽屏停靠左侧导航时用侧栏切页，auto 不再显示返回；
+      /* 盖层里必须能返回，用来关掉这一层。
+         宽屏停靠左侧导航时用侧栏切页，auto 不再显示返回；
          一级 Tab 根页也不显示返回；显式 true 仍可开 */
+      if (this.inContentCover) return true
       const auto = !this.navDocked && !(this.tabbarVisible && this.isTabRoot)
       return coerceTriFlag(this.showBack, auto)
     },
@@ -1048,6 +1126,7 @@ export default defineComponent({
           'lingyun-app-page--duo-split': this.isDuoSplit,          'lingyun-app-page--fold-horizontal': this.pageLayout.foldBand === 'horizontal',
           'lingyun-app-page--fold-vertical': this.pageLayout.foldBand === 'vertical',
           'lingyun-app-page--auth-hold': this.authHold,
+          'lingyun-app-page--in-cover': this.inContentCover,
         },
       ]
     },
@@ -1331,9 +1410,17 @@ export default defineComponent({
       releaseLingyunPageNavHeaderSlots(this._navSlotClaim)
     },
     syncH5PageNavHost() {
+      if (this.embedded || this.inContentCover) return
+      if (!this.isCurrentPageShell()) return
       // #ifdef H5
       setLingyunH5PageNavAllowed(this.navDocked)
       // #endif
+    },
+    /** 只有当前可见的页面壳能改共用导航，盖层里的子页和压在栈下的页面都不写。 */
+    isCurrentPageShell() {
+      const current = normalizeLingyunPagePath(readLingyunCurrentPagePath())
+      const mine = normalizeLingyunPagePath(this.currentPagePath || current)
+      return !current || !mine || current === mine
     },
     /**
      * H5 左侧导航只挂一份。show-nav=false 只隐藏它，不把窄栏标记写成关闭。
@@ -1341,8 +1428,10 @@ export default defineComponent({
      * 有导航的页面按当前布局把标记写回去（窄栏或内联菜单列）。
      */
     syncSharedNavChrome() {
-      if (this.embedded) return
+      if (this.embedded || this.inContentCover) return
+      if (!this.isCurrentPageShell()) return
       this.syncH5PageNavHost()
+      bindLingyunContentCoverHost(this.coverUid, this.navDocked)
       if (!this.navDocked) return
       setLingyunPageNavRail(this.pageNavRail)
       setLingyunPageNavInline(this.pageNavInline)
@@ -1496,6 +1585,11 @@ export default defineComponent({
       uni.redirectTo({ url: home })
     },
     onBack() {
+      if (this.inContentCover) {
+        closeLingyunContentCover()
+        this.$emit('back')
+        return
+      }
       this.$emit('back')
       if (!this.autoBack) return
       const pages = getCurrentPages()
@@ -1590,6 +1684,21 @@ export default defineComponent({
     },
     onPickerValue(value: string | number, option: { value: string | number; label: string }) {
       this.$emit('picker-value', value, option)
+    },
+    coverView(path: string) {
+      return getLingyunContentCoverView(path)
+    },
+    onCoverBack() {
+      closeLingyunContentCover()
+    },
+    scheduleCoverEnter() {
+      if (this._coverEnterTimer) clearTimeout(this._coverEnterTimer)
+      this._coverEnterTimer = setTimeout(() => {
+        this._coverEnterTimer = null
+        this.coverLayers.forEach((layer) => {
+          this.coverEntered[layer.key] = true
+        })
+      }, 32)
     },
   },
 })
@@ -1742,6 +1851,46 @@ export default defineComponent({
 
 .lingyun-app-page--auth-hold {
   visibility: hidden;
+}
+
+.lingyun-app-page--in-cover {
+  height: 100%;
+  min-height: 100%;
+}
+
+/* 导航右侧内容区盖层。位移只改 transform，不改玻璃节点的 opacity。 */
+.lingyun-app-page__covers {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: var(--lingyun-page-nav-width, 0px);
+  z-index: 110;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.lingyun-app-page__cover {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: auto;
+  background-color: var(--lingyun-bg-grouped-primary, #{$lingyun-bg-grouped-primary});
+  transform: translateX(100%);
+  transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.lingyun-app-page__cover--in {
+  transform: translateX(0);
+}
+
+.lingyun-app-page__cover-miss {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .lingyun-app-page__nav {
