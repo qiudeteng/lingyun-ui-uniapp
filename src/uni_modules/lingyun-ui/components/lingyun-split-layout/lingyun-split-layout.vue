@@ -13,10 +13,10 @@
       <!-- 左栏 = 独立页面：自己实现列表（含自己的浮动 toolbar） -->
       <view class="ly-split-layout__pane ly-split-layout__pane--list" :style="listPaneStyle">
         <view class="ly-split-layout__header ly-split-layout__header--list">
-          <slot name="list-header" :wide="wide" />
+          <slot name="list-header" />
         </view>
         <view class="ly-split-layout__content">
-          <slot name="list" :wide="wide" :top-space="listHeaderHeight" />
+          <slot name="list" />
         </view>
       </view>
 
@@ -31,10 +31,10 @@
         }"
       >
         <view class="ly-split-layout__header ly-split-layout__header--detail">
-          <slot name="detail-header" :wide="wide" :top-space="detailHeaderHeight" />
+          <slot name="detail-header" />
         </view>
         <view class="ly-split-layout__content">
-          <slot name="detail" :wide="wide" :top-space="detailHeaderHeight" />
+          <slot name="detail" />
         </view>
       </view>
     </view>
@@ -50,8 +50,8 @@
  * 把 detailOpen 设为 true，详情只在内容区滑入滑出，左侧导航留在原位。
  * 左右栏各自的 toolbar 放在 header 插槽里（绝对定位浮在栏顶），布局负责量高并通过
  * layout-change 事件把 wide / 两栏 topSpace 交给页面（面板的 top-space / 自绘占位）。
- * 页面用普通具名插槽，不要解构作用域插槽参数：微信小程序里页面重渲染会清掉作用域插槽内
- * 子组件的 props 缓存，插槽里的组件会退回默认值（列表空白、日期条错位）。
+ * 插槽不要带作用域参数。微信小程序里作用域插槽在首帧和父级更新时会把插槽内组件的
+ * props 清回默认值，顶栏会先空一帧再出现，列表也会闪成空白。
  * 使用约定见 doc/guide/split-pages.md。
  */
 import { defineComponent } from 'vue'
