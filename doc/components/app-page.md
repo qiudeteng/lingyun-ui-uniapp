@@ -264,7 +264,7 @@ setLingyunPageConfig({
 ## 宽屏左侧导航
 
 - 默认 `showNav=true`：宽度 ≥ 690 时停靠左侧；导航内容优先取全局 `tabs`，其次宿主目录（`LINGYUN_PAGE_NAV`）。
-- 页面级覆盖：`navSections` prop 显式指定当前页的分组目录（只影响当前渲染，H5 常驻侧栏请用 `setLingyunPageConfig` / `setLingyunPageNavSections`）；`:show-nav="false"` 或 `pages[path].hideNav` 关闭。
+- 页面级覆盖：`navSections` prop 显式指定当前页的分组目录（只影响当前渲染，H5 常驻侧栏请用 `setLingyunPageConfig` / `setLingyunPageNavSections`）；`:show-nav="false"` 或 `pages[path].hideNav` 只隐藏这一页的导航。H5 侧栏是全站共用的一份，隐藏时不把窄栏标记写成关闭，否则返回后会画出 220 宽的旧目录。回到有导航的页面时，按当前窗口把窄栏标记写回去。
 - 左栏顶部资料：`#nav-avatar` / `#nav-name` / `#nav-subtitle` 插槽，或全局 `setLingyunPageNavProfile({ avatar, name, subtitle })`；不传时显示「凌云UI」和默认介绍。
 - 宽度档位（220 / 84 / 304）、选中胶囊动效、PC 二级菜单规则见 `design/SIDEBARS.md` §4，这里不重复。
 

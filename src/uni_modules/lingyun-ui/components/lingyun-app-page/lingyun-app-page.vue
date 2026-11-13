@@ -575,9 +575,11 @@ export default defineComponent({
     onShow(() => {
       if (embedded) return
       const proxy = (instance && instance.proxy) as
-        | { syncPageChrome?: () => void }
+        | { syncPageChrome?: () => void; syncSharedNavChrome?: () => void }
         | null
       proxy?.syncPageChrome?.()
+      /* 上一页还在栈里，协议页曾把共用窄栏标记关掉时，这里按当前窗口写回去 */
+      proxy?.syncSharedNavChrome?.()
     })
     return {
       bindScroll: inject(LINGYUN_APP_PAGE_BIND_SCROLL, null),
@@ -710,17 +712,14 @@ export default defineComponent({
     },
     pageNavRail: {
       immediate: true,
-      handler(value: boolean) {
-        /* 宽屏宿主的嵌入页也会挂 app-page，但它自己不渲染左侧导航，不能覆盖外层宿主的窄栏状态 */
-        if (this.embedded) return
-        setLingyunPageNavRail(value)
+      handler() {
+        this.syncSharedNavChrome()
       },
     },
     pageNavInline: {
       immediate: true,
-      handler(value: boolean) {
-        if (this.embedded) return
-        setLingyunPageNavInline(value)
+      handler() {
+        this.syncSharedNavChrome()
       },
     },
     usePageScroll(enabled: boolean) {
@@ -1335,6 +1334,18 @@ export default defineComponent({
       // #ifdef H5
       setLingyunH5PageNavAllowed(this.navDocked)
       // #endif
+    },
+    /**
+     * H5 左侧导航只挂一份。show-nav=false 只隐藏它，不把窄栏标记写成关闭。
+     * 标记被写成关闭后，组件会画出 220 宽的旧目录；返回时上一页还在，不会自己再写。
+     * 有导航的页面按当前布局把标记写回去（窄栏或内联菜单列）。
+     */
+    syncSharedNavChrome() {
+      if (this.embedded) return
+      this.syncH5PageNavHost()
+      if (!this.navDocked) return
+      setLingyunPageNavRail(this.pageNavRail)
+      setLingyunPageNavInline(this.pageNavInline)
     },
     bindResize() {
       const onWindowResize = (res?: unknown) => {
