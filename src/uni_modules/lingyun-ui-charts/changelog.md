@@ -1,3 +1,5 @@
+## 1.0.28（2026-11-13）
+- 文字基线不再使用 `normal`。画布只接受 `alphabetic` 等枚举，微信会报 `CanvasTextBaseline`。环心文字和提示框改为 `alphabetic`，旧上下文遇到 `normal` 也会转成它。
 ## 1.0.27（2026-11-06）
 - 环图默认环宽改为按半径 **40%** 自适应（内径 60%、约直径 20%），不再使用固定 30px；大尺寸图表不会变细。
 - 显式 `extra.ring.ringWidth` 固定 px 与 `extra.ring.ringWidthRatio` 比例配置继续可用，比例优先。

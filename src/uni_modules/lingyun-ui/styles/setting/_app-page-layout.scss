@@ -40,9 +40,10 @@
   min-height: 100vh;
 }
 
-/* 换页只淡入内容块，背景和左侧安全区不参与。必须放全局：组件 wxss 禁止 view 标签选择器。 */
-.lingyun-app-page--page-enter .lingyun-app-page__pad > view:first-child > view,
-.lingyun-app-page--page-enter .lingyun-app-page__pad > uni-view:first-child > uni-view {
+/* 换页只淡入内容块，背景和左侧安全区不参与。必须放全局：组件 wxss 禁止 view 标签选择器。
+   分栏的 pane 里含浮动顶栏，整栏淡入会让列表先贴在顶上再跳到顶栏下面，所以排除。 */
+.lingyun-app-page--page-enter .lingyun-app-page__pad > view:first-child > view:not(.ly-split-layout__pane),
+.lingyun-app-page--page-enter .lingyun-app-page__pad > uni-view:first-child > uni-view:not(.ly-split-layout__pane) {
   animation: lingyun-app-page-enter 0.24s ease both;
 }
 

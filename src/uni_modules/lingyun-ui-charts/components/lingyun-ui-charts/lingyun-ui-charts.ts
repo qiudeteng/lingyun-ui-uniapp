@@ -2777,7 +2777,7 @@ function drawRingCenterText(opts, context, center, innerRadius) {
     context.closePath();
   }
   if (context.setTextAlign) context.setTextAlign('left');
-  if (context.setTextBaseline) context.setTextBaseline('normal');
+  if (context.setTextBaseline) context.setTextBaseline('alphabetic');
 }
 
 function drawRingTitle(opts, config, context, center, innerRadius) {
@@ -3535,7 +3535,7 @@ function drawToolTip(textList, offset, opts, config, context, eachSpacing, xAxis
     var startY = offset.y + lineHeight * index + (lineHeight - fontSize)/2 - 1 + boxPadding + fontSize;
     context.beginPath();
     context.setFontSize(fontSize);
-    context.setTextBaseline('normal');
+    context.setTextBaseline('alphabetic');
     context.setFillStyle(toolTipOption.fontColor);
     context.fillText(item.text, startX, startY);
     context.closePath();
@@ -7912,6 +7912,7 @@ var LingyunUiCharts = function LingyunUiCharts(opts) {
       return this.textAlign = e;
     }
     this.context.setTextBaseline = function(e) {
+      if (e === 'normal') e = 'alphabetic';
       return this.textBaseline = e;
     }
     this.context.setShadow = function(offsetX,offsetY,blur,color) {
