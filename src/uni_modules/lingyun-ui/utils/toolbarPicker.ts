@@ -98,6 +98,7 @@ export const lingyunToolbarPicker = reactive({
 
 let onChange: LingyunToolbarPickerConfig['onChange'] | null = null
 let emptyPromptOpen = false
+let settling = false
 
 function matchedOption(value: string | number | null): LingyunToolbarPickerOption | undefined {
   if (value == null || value === '') return undefined
@@ -157,10 +158,47 @@ export function notifyLingyunToolbarPickerEmpty(): void {
   }
 }
 
-/** 写入选项和当前值。不传的字段保持原样，避免换页时把已经准备好的名单清掉。 */
+/**
+ * 名单可以换，已记住的当前项尽量不动。
+ * 它还在新名单里就忽略本次传入的 value（自动登录不能把用户上次选的门店盖掉）。
+ * 不在名单里才改成传入值；传入值也不在名单里就用第一项。名单被清空（退出登录）时才把当前项清掉。
+ */
+function settleSelection(requested: string | number | null | undefined, hasRequest: boolean): void {
+  if (settling) return
+  settling = true
+  try {
+    settleSelectionNow(requested, hasRequest)
+  } finally {
+    settling = false
+  }
+}
+
+function settleSelectionNow(requested: string | number | null | undefined, hasRequest: boolean): void {
+  const options = lingyunToolbarPicker.options
+  if (!options.length) {
+    lingyunToolbarPicker.value = null
+    return
+  }
+  const keep = matchedOption(lingyunToolbarPicker.value)
+  if (keep) {
+    const requestedDiffers =
+      hasRequest && (requested == null || requested === '' || String(requested) !== String(keep.value))
+    if (requestedDiffers) onChange?.(keep.value, keep)
+    return
+  }
+  const requestedHit =
+    hasRequest && requested != null && requested !== ''
+      ? options.find((item) => String(item.value) === String(requested))
+      : undefined
+  const next = requestedHit ?? options[0]
+  lingyunToolbarPicker.value = next.value
+  onChange?.(next.value, next)
+}
+
+/** 写入选项。当前项以本地缓存为准，不随登录被覆盖。不传的字段保持原样。 */
 export function setLingyunToolbarPicker(config: LingyunToolbarPickerConfig): void {
-  if (config.options) lingyunToolbarPicker.options = config.options.slice()
-  if ('value' in config) lingyunToolbarPicker.value = config.value ?? null
+  const hasOptions = !!config.options
+  if (hasOptions) lingyunToolbarPicker.options = config.options!.slice()
   if (config.title != null) lingyunToolbarPicker.title = config.title
   if (config.placeholder != null) lingyunToolbarPicker.placeholder = config.placeholder
   if (config.searchable != null) lingyunToolbarPicker.searchable = !!config.searchable
@@ -168,8 +206,11 @@ export function setLingyunToolbarPicker(config: LingyunToolbarPickerConfig): voi
     lingyunToolbarPicker.searchPlaceholder = config.searchPlaceholder
   }
   if (config.onChange) onChange = config.onChange
+  if (hasOptions || 'value' in config) {
+    settleSelection('value' in config ? config.value ?? null : undefined, 'value' in config)
+  }
   const dirty =
-    !!config.options ||
+    hasOptions ||
     'value' in config ||
     config.title != null ||
     config.placeholder != null ||

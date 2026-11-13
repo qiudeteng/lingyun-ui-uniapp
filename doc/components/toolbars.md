@@ -104,6 +104,7 @@ function publishToolbarPicker(): void {
     placeholder: '请选择',
     searchPlaceholder: '搜索门店',
     options,
+    // 已有缓存时这个 value 不会盖掉上次选中的门店，见下文
     value: storeId.value,
     onChange: (value) => selectStore(value),
   })
@@ -112,7 +113,11 @@ function publishToolbarPicker(): void {
 
 `getUserStoreList` 成功并选好当前门店后调用 `publishToolbarPicker()`。之后用户在顶栏里改选，走 `onChange` → `selectStore`，登录态里的当前门店跟着变。页面如果本来就在看 `storeId`，不必再听选择器。
 
-名单和当前项由组件写入本地存储，键名 `lingyun-toolbar-picker`。`setLingyunToolbarPicker`、`setLingyunToolbarPickerValue` 和用户点「完成」都会更新这份缓存。冷启动时先读出来，顶栏不用等接口就能显示上次的名单；接口成功后再覆盖。宿主不用自己再存一份。缓存里没有 `onChange`，回调仍要在名单请求成功时登记一次。
+名单和当前项由组件写入本地存储，键名 `lingyun-toolbar-picker`。冷启动先读出上次选中的项，重新进入应用仍然选中它。宿主不用自己再存一份。缓存里没有 `onChange`，回调仍要在名单请求成功时登记一次。
+
+当前项不跟着登录走。小程序会自动登录，如果每次登录都把当前项改成接口给的默认门店，用户可能在错误的门店下单。`setLingyunToolbarPicker` 即使带了 `value`，只要缓存里的项还在新名单中，就保持缓存，并在传入值不同时用缓存项再调用一次 `onChange`，把业务侧的当前门店拉回来。只有缓存项已经不在新名单里，才改成本次传入且仍在名单中的值，否则用第一项。用户在选择器里点「完成」，或调用 `setLingyunToolbarPickerValue`，才会主动改选并写入缓存。
+
+退出登录时清空名单，当前项一并清掉。下次登录没有缓存，才会采用当时传入的 `value`。
 
 空值检查只发生在**打开了选择器的那一栏**。没写 `subtitle-picker` 的页面不读这个值，也不会被提示或返回。打开之后：当前值是空或对不上名单时改成第一项并写入缓存，已登记的 `onChange` 会接到这一项；一项都没有时才提示并返回。
 
@@ -142,7 +147,7 @@ setLingyunToolbarPicker({
 })
 ```
 
-不传的字段保持原样。只换名单时 `setLingyunToolbarPicker({ options })`，不要把 `onChange` 再传一遍。注入时 `value` 可以先空着；等某个打开了选择器的页面进来，才会补成第一项。
+不传的字段保持原样。只换名单时 `setLingyunToolbarPicker({ options })`，不要把 `onChange` 再传一遍。不要在自动登录里调用 `setLingyunToolbarPickerValue` 去「同步当前门店」，那会绕过缓存、改掉用户上次的选择。
 
 弹出层标题用 `title`。`searchable` 默认 `true`，关掉后选择器里没有搜索框。
 
@@ -192,7 +197,7 @@ function onPickerValue(value: string | number): void {
 
 | 函数 | 作用 |
 | --- | --- |
-| `setLingyunToolbarPickerValue(value)` | 只改当前项，不换名单、不换 `onChange`。顶栏文字跟着变 |
+| `setLingyunToolbarPickerValue(value)` | 主动改当前项并写入缓存。自动登录不要调用 |
 | `setLingyunToolbarPickerEnabled(false)` | 总开关。关掉后，已经写了 `subtitle-picker` 的顶栏也恢复副标题；名单和当前值还在。默认是开的，但顶栏仍要自己设 `subtitle-picker` 才显示 |
 
 ### 容易用错
