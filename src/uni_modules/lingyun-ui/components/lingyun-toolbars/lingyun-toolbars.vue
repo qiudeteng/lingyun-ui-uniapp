@@ -713,8 +713,12 @@ export default defineComponent({
     titleRightInsetPx(): number {
       const group = this.actionGroupsWidthPx
       if (!group) return this.titleInsetPx
-      /* 绝对定位的 title 以 padding box 为参照，需补上微信胶囊造成的额外右内边距 */
-      const safeExtra = Math.max(0, this.rightInsetPx - this.padXPx)
+      /*
+       * 标题相对栏身绝对定位，栏身已经在根节点 padding 里让开了胶囊。
+       * 居中标题仍补这段差额，避免文字视觉中心偏到胶囊下。
+       * 左对齐标题再加一次会把标题宽挤到只剩几十像素。
+       */
+      const safeExtra = this.isTitleLeft ? 0 : Math.max(0, this.rightInsetPx - this.padXPx)
       return Math.max(this.titleInsetPx, group + this.gapPx + safeExtra)
     },
     largeStyle() {
