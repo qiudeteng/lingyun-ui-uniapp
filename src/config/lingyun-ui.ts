@@ -146,7 +146,10 @@ export function configureLingyunUi(): void {
     useHostedPath: () => toRef(pageHostState, 'path'),
   })
   configureLingyunUpload({ getAuthorization: () => formatToken(getToken()) })
+  // 小程序页面必须静态编译，不能把全部页面收成动态组件
+  // #ifndef MP
   installLingyunContentCovers(import.meta.glob('../pages/**/*.vue'))
+  // #endif
   setLingyunPageConfig(DEMO_PAGE_CONFIG)
   installLingyunLayoutPreviewBridge()
 }

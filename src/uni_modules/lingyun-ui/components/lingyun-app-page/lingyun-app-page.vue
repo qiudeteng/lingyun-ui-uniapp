@@ -294,8 +294,11 @@
         :style="{ zIndex: index + 1 }"
       >
         <content-cover-frame :path="layer.path">
+          <!-- 小程序编译器不支持动态组件，盖层只在 H5 / App 渲染 -->
+          <!-- #ifndef MP -->
           <component :is="coverView(layer.path)" v-if="coverView(layer.path)" />
-          <view v-else class="lingyun-app-page__cover-miss">
+          <!-- #endif -->
+          <view v-if="!coverView(layer.path)" class="lingyun-app-page__cover-miss">
             <lingyun-toolbars
               title="页面未注册"
               :show-back="true"

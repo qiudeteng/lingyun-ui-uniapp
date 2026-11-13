@@ -86,7 +86,13 @@
                 :src="store.logo"
                 mode="aspectFill"
               />
-              <text v-else class="lingyun-order-goods__logo-text">{{ firstChar(store.name) }}</text>
+              <lingyun-icon
+                v-else-if="store.icon"
+                :type="store.icon"
+                :size="26"
+                color="var(--lingyun-label, #000)"
+              />
+              <text v-else class="lingyun-order-goods__logo-text">{{ storeMark() }}</text>
             </view>
             <view class="lingyun-order-goods__store-main">
               <text class="lingyun-order-goods__store-name">{{ store.name }}</text>
@@ -1278,6 +1284,10 @@ export default defineComponent({
     firstChar(value: unknown): string {
       const text = String(value == null ? '' : value).trim()
       return Array.from(text)[0] || '商'
+    },
+    storeMark(): string {
+      const mark = this.store && this.store.mark != null ? String(this.store.mark).trim() : ''
+      return mark || this.firstChar(this.store && this.store.name)
     },
     syncSafeBottom(): void {
       try {

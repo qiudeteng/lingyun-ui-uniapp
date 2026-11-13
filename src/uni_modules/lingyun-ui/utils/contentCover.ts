@@ -4,7 +4,11 @@
  * 页面组件由宿主注册。本文件不导入宿主页面。
  */
 import { defineAsyncComponent, inject, reactive, type Component } from 'vue'
-import { normalizeLingyunPagePath, resolveLingyunPageUrl } from './pageNavAdapter'
+import {
+  normalizeLingyunPagePath,
+  openLingyunHostedPage,
+  resolveLingyunPageUrl,
+} from './pageNavAdapter'
 import { LINGYUN_SCREEN_PAD_MIN } from './screenResolve'
 
 export const LINGYUN_APP_PAGE_EMBEDDED = Symbol('lingyun-app-page-embedded')
@@ -56,7 +60,8 @@ export function installLingyunContentCovers(
 ): void {
   Object.keys(modules).forEach((file) => {
     const normalized = file.replace(/\\/g, '/')
-    const matched = normalized.match(/(?:^|\/)(pages\/.+)\.vue$/)
+    // 主包 pages/ 与分包 pagesStore、pagesEnterprise 等，路径都要能对上路由
+    const matched = normalized.match(/(?:^|\/)((?:pages[A-Za-z]*)\/.+)\.vue$/)
     if (!matched) return
     const loader = modules[file]
     if (!loader) return
@@ -86,6 +91,15 @@ function windowWidth(): number {
   }
 }
 
+/** 小程序不能用动态组件画盖层，导航已停靠时改走页内宿主。 */
+function isMiniProgramCover(): boolean {
+  let miniProgram = false
+  // #ifdef MP
+  miniProgram = true
+  // #endif
+  return miniProgram
+}
+
 function finishClose(): void {
   lingyunContentCover.layers.pop()
   lingyunContentCover.leaving = false
@@ -104,6 +118,11 @@ export function openLingyunContentCover(url: string): void {
     lingyunContentCover.navDocked && windowWidth() >= LINGYUN_SCREEN_PAD_MIN
   if (!docked || !path) {
     if (next) uni.navigateTo({ url: next })
+    return
+  }
+  if (isMiniProgramCover()) {
+    if (openLingyunHostedPage(next, next)) return
+    uni.navigateTo({ url: next })
     return
   }
   if (closeTimer) {

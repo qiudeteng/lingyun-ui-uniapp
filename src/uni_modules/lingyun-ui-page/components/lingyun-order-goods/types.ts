@@ -3,8 +3,12 @@
 export interface LingyunOrderStore {
   /** 店铺名称 */
   name: string
-  /** 店铺 logo；空则用名称首字兜底 */
+  /** 店铺 logo 图片 */
   logo?: string
+  /** 无 logo 时的 lingyun-icon 字形，由使用方传入 */
+  icon?: string
+  /** 无 logo、无 icon 时显示的文字；不传则用名称首字 */
+  mark?: string
   /** 评分，如 4.8 */
   rating?: string | number
   /** 月售文案，如「月售 1000+」 */

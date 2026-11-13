@@ -1,3 +1,5 @@
+## 1.1.11 (2026-11-13)
+- `lingyun-order-goods` 店铺没有 logo 时，可传 `icon` 显示图标，或传 `mark` 显示指定文字。都不传时仍用名称首字。
 ## 1.1.10 (2026-11-12)
 - 订货单列表与详情的商品图改为 `lingyun-image`（缩略图 52、圆角 10；详情商品行 72、圆角 12），加载时走扫光占位，不再用原生 `image`。
 - 修复 `lingyun-purchase-order-list` / `lingyun-purchase-order-detail` 点返回会退两层：`autoBack` 改为透传给 `lingyun-app-page`，页面壳只返回一次。`lingyun-order-goods` 同样新增 `autoBack`。
