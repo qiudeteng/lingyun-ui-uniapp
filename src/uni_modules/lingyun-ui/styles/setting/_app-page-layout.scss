@@ -40,6 +40,21 @@
   min-height: 100vh;
 }
 
+/* 换页只淡入内容块，背景和左侧安全区不参与。必须放全局：组件 wxss 禁止 view 标签选择器。 */
+.lingyun-app-page--page-enter .lingyun-app-page__pad > view:first-child > view,
+.lingyun-app-page--page-enter .lingyun-app-page__pad > uni-view:first-child > uni-view {
+  animation: lingyun-app-page-enter 0.24s ease both;
+}
+
+@keyframes lingyun-app-page-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 // 门店选择器包在 lingyun-picker 里。组件样式隔离打不到选择器根节点，宽度写在全局。
 .lingyun-page-nav__store-picker,
 .lingyun-page-nav__store-picker .lingyun-picker__trigger {

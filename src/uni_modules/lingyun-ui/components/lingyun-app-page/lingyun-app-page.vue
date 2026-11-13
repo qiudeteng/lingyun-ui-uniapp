@@ -1768,24 +1768,7 @@ export default defineComponent({
   pointer-events: none;
 }
 
-/*
- * 换页过渡只淡入内容块：背景色（含左侧安全区）保持稳定，不参与渐变。
- * H5 首子内容块为 uni-view / div；微信为 view。
- * 微信自定义组件节点不参与，避免整页背景跟着闪烁。
- */
-.lingyun-app-page--page-enter .lingyun-app-page__pad > view:first-child > view,
-.lingyun-app-page--page-enter .lingyun-app-page__pad > uni-view:first-child > uni-view {
-  animation: lingyun-app-page-enter 0.24s ease both;
-}
-
-@keyframes lingyun-app-page-enter {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
+/* 换页淡入在 styles/setting/_app-page-layout.scss。组件 wxss 不能写 view 标签选择器。 */
 
 /* Duo 折痕避让带：只提示安全区，不拦截点击 */
 .lingyun-app-page__fold-band {
