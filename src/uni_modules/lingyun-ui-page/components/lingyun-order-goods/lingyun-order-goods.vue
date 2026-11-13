@@ -328,6 +328,26 @@
                         @change="onItemQuantity(item, $event)"
                       />
                       <view
+                        v-else-if="item.multiSpec"
+                        class="lingyun-order-goods__spec-btn"
+                        hover-class="lingyun-order-goods__spec-btn--hover"
+                        :hover-start-time="20"
+                        :hover-stay-time="70"
+                        role="button"
+                        :aria-label="specButtonText"
+                        @click="onPlus(item, category)"
+                      >
+                        <text class="lingyun-order-goods__spec-btn-text">{{ specButtonText }}</text>
+                        <view
+                          v-if="quantityOf(item) > 0"
+                          class="lingyun-order-goods__plus-count"
+                        >
+                          <text class="lingyun-order-goods__plus-count-text">
+                            {{ quantityOf(item) }}
+                          </text>
+                        </view>
+                      </view>
+                      <view
                         v-else-if="isVariantItem(item)"
                         class="lingyun-order-goods__plus"
                         hover-class="lingyun-order-goods__plus--hover"
@@ -1448,8 +1468,8 @@ export default defineComponent({
     },
     /** 有规格 / 属性但没有任何价格时不画价格；普通商品保持原行为 */
     showPrice(item: LingyunOrderGoods): boolean {
-      if (this.isVariantItem(item)) return this.specPriceRange(item).hasPrice
       if (item.multiSpec) return Number(item.price) > 0
+      if (this.isVariantItem(item)) return this.specPriceRange(item).hasPrice
       return true
     },
     /** 单行上限：商品 / 规格 max；无规格商品再受库存限制。库存为规格 / 商品级，组合行按已占用数量扣减 */
@@ -1662,13 +1682,13 @@ export default defineComponent({
     },
     onPlus(item: LingyunOrderGoods, category: LingyunOrderCategory): void {
       if (this.isItemSoldOut(item)) return
-      if (this.isVariantItem(item)) {
-        this.openVariantSheet(item, category.key)
-        return
-      }
       if (item.multiSpec) {
         const payload: LingyunOrderSpecPayload = { item, categoryKey: category.key }
         this.$emit('spec-request', payload)
+        return
+      }
+      if (this.isVariantItem(item)) {
+        this.openVariantSheet(item, category.key)
         return
       }
       this.setQuantity(item, this.quantityOf(item) + this.itemStep(item))
@@ -1846,12 +1866,6 @@ export default defineComponent({
     addFromGoodsDetail(): void {
       const item = this.goodsDetailItem
       if (!item || this.isItemSoldOut(item)) return
-      if (this.isVariantItem(item)) {
-        const categoryKey = this.goodsDetailCategoryKey
-        this.goodsDetailOpen = false
-        this.openVariantSheet(item, categoryKey)
-        return
-      }
       if (item.multiSpec) {
         const payload: LingyunOrderSpecPayload = {
           item,
@@ -1859,6 +1873,12 @@ export default defineComponent({
         }
         this.goodsDetailOpen = false
         this.$emit('spec-request', payload)
+        return
+      }
+      if (this.isVariantItem(item)) {
+        const categoryKey = this.goodsDetailCategoryKey
+        this.goodsDetailOpen = false
+        this.openVariantSheet(item, categoryKey)
         return
       }
       this.setQuantity(item, this.quantityOf(item) + this.itemStep(item))
