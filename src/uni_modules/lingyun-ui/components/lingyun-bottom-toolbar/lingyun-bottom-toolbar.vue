@@ -169,25 +169,13 @@ export default defineComponent({
 <style lang="scss">
 @import '../../styles/variables.scss';
 
-/* 悬浮玻璃胶囊，对齐 lingyun-goods-nav cart：圆角 31，不预设内部排版 */
+/* 材质与 lingyun-tabbars 同一套控件玻璃。不要改成 surface 的 0.72 / 0.7，那是挡字实底。 */
 .lingyun-bottom-toolbar__card {
   box-sizing: border-box;
   width: auto;
-  overflow: hidden;
-  @include lingyun-glass-surface;
+  isolation: isolate;
+  @include lingyun-glass-control;
   border-radius: 31px;
-  background-color: rgba(255, 255, 255, 0.72);
-  backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
-  -webkit-backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
-  box-shadow: var(--lingyun-glass-highlight, #{$lingyun-glass-highlight}),
-    var(--lingyun-glass-shadow-raised, #{$lingyun-glass-shadow-raised});
-}
-
-.lingyun-bottom-toolbar.theme-dark .lingyun-bottom-toolbar__card {
-  border: #{$lingyun-glass-hairline-dark};
-  background-color: #{$lingyun-glass-overlay-bg-dark};
-  backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
-  -webkit-backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
 }
 
 .lingyun-bottom-toolbar--fixed .lingyun-bottom-toolbar__card {
