@@ -9,6 +9,7 @@
 - [平板与电脑](./pc.md)
 - [宽屏目录](./page-nav.md)
 - [顶栏](./toolbars.md)
+- [底部工具栏](./bottom-toolbar.md)
 - [主题切换](./theme-action.md)
 - [底栏](./tabbars.md)
 - [顶部 Tabs](./tabs.md)

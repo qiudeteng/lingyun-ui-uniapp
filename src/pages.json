@@ -141,6 +141,13 @@
 			}
 		},
 		{
+			"path": "pages/demo/bottom-toolbar",
+			"style": {
+				"navigationBarTitleText": "底部工具栏",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/demo/screen",
 			"style": {
 				"navigationBarTitleText": "Screen",

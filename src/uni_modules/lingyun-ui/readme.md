@@ -1,6 +1,6 @@
 # 凌云UI
 
-凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.70**，变更见 [`changelog.md`](./changelog.md)。
+凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.71**，变更见 [`changelog.md`](./changelog.md)。
 
 📖 [使用手册](https://lingyun.xinyicanyin.com/)（组件用法、属性、示例；右侧手机框实时预览）
 
@@ -165,7 +165,7 @@ configureLingyunUpload({ getAuthorization: () => formatToken(getToken()) })
 
 ```
 lingyun-ui/
-├── package.json          # 1.0.70
+├── package.json          # 1.0.71
 ├── readme.md
 ├── changelog.md
 ├── index.ts              # app.use(lingyunUi)
@@ -185,6 +185,7 @@ lingyun-ui/
     ├── lingyun-toolbars/
     ├── lingyun-fab/
     ├── lingyun-goods-nav/
+    ├── lingyun-bottom-toolbar/ # 底部玻璃栏（对齐购物车胶囊定位，内容由插槽自排）
     ├── lingyun-table/    # 小程序滚动同步见 table-sync.wxs；筛选类型与匹配见 table-filter.ts
     ├── lingyun-table-filter/ # 表格列的排序与筛选面板（窄屏 Sheet / 宽屏 Popover），由 lingyun-table 内部打开
     ├── lingyun-table-filter-form/ # 筛选面板的表单内容，由 lingyun-table-filter 使用

@@ -60,6 +60,7 @@ const NAV_META: Record<string, NavMeta> = {
   '/pages/demo/token-field': { title: 'Token Field', icon: 'flag', note: '多选标签输入 · 建议 / 上限' },
   '/pages/demo/amount-text': { title: 'Amount Text', icon: 'wallet', note: '金额显示 · 万 / 亿 / 万亿 · 小数位' },
   '/pages/demo/toolbars': { title: 'Toolbars', icon: 'top', note: '顶栏 · 滚动玻璃' },
+  '/pages/demo/bottom-toolbar': { title: '底部工具栏', icon: 'bottom', note: '玻璃胶囊 · 插槽自排' },
   '/pages/demo/screen': { title: '屏幕信息', icon: 'info', note: '窗口档 · 系统 · 折叠 · 硬件' },
   '/pages/demo/responsive': { title: 'Mobile / PC', icon: 'tune', note: '窄屏与平板、电脑分开展示' },
   '/pages/demo/app-page': { title: 'App Page', icon: 'home', note: '数据驱动页面壳 · Tab / 侧栏自动切换' },
@@ -180,6 +181,7 @@ const COMPONENT_CHILDREN: LingyunPageTabChild[] = [
     navChild('/pages/demo/responsive', '响应式'),
     navChild('/pages/demo/screen', '屏幕信息'),
     navChild('/pages/demo/toolbars', '顶栏'),
+    navChild('/pages/demo/bottom-toolbar', '底部工具栏'),
     navChild('/pages/demo/tabbars', '底栏'),
     navChild('/pages/demo/tabs', '顶部 Tabs'),
     navChild('/pages/demo/search-bar', '搜索栏'),
@@ -426,6 +428,7 @@ export const DEMO_PAGE_CONFIG: Partial<LingyunPageConfig> = {
     '/pages/404/404': { hideTabbar: true, hideNav: true },
     '/pages/demo/search-bar': { hideTabbar: true },
     '/pages/demo/goods-nav': { hideTabbar: true },
+    '/pages/demo/bottom-toolbar': { hideTabbar: true },
     '/pages/demo/tabbars': { hideTabbar: true },
   },
 }

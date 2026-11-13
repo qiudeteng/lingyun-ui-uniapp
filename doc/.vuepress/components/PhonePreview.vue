@@ -7,6 +7,7 @@ const DEMO: Record<string, string> = {
   'app-page': '/pages/demo/demo',
   'page-nav': '/pages/demo/demo',
   toolbars: '/pages/demo/toolbars',
+  'bottom-toolbar': '/pages/demo/bottom-toolbar',
   'theme-action': '/pages/demo/toolbars',
   screen: '/pages/demo/screen',
   tabbars: '/pages/demo/tabbars',

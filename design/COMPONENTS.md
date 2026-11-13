@@ -77,6 +77,7 @@
 | ✅ | `lingyun-sidebar` | 悬浮玻璃侧栏 | [`SIDEBARS.md`](./SIDEBARS.md) |
 | ✅ | `lingyun-fab` | 悬浮按钮 · 展开菜单（对齐 uni-fab） | demo [`fab`](../src/pages/demo/fab.vue) |
 | ✅ | `lingyun-goods-nav` | 商品底栏（对齐 uni-goods-nav） | [`GOODS_NAV.md`](./GOODS_NAV.md) |
+| ✅ | `lingyun-bottom-toolbar` | 底部玻璃栏（对齐购物车胶囊定位，内容由插槽自排） | demo [`bottom-toolbar`](../src/pages/demo/bottom-toolbar.vue) |
 | ✅ | `lingyun-grid` / `lingyun-grid-item` | 宫格（对齐 uni-grid） | [`GRID.md`](./GRID.md) |
 | ✅ | `lingyun-indexed-list` | 索引列表（对齐 uni-indexed-list） | [`INDEXED_LIST.md`](./INDEXED_LIST.md) |
 | ✅ | `lingyun-app-page` | 页面壳（顶栏 + 滚动 + 主题 class；宽屏左侧导航，顶部可带头像 / 名称 / 副标题）。iPad/PC + 全局 tabs 使用 84 通高窄栏；PC（≥1200）再增加 220 内联二级/三级菜单列（合计 304），平板保持 84 + 点击浮层；全局 tabs 支持 `children` 与图片图标 `iconSrc` / `activeIconSrc`；窄屏/Duo 走工作台；Duo 内屏竖屏使用 Duo Toolbar + Duo Tab | [`TOOLBARS.md`](./TOOLBARS.md) · [`SIDEBARS.md`](./SIDEBARS.md) §4 · [`TABBARS.md`](./TABBARS.md) §3.1 |
@@ -157,6 +158,7 @@
 
 | 日期 | 说明 |
 |------|------|
+| 2026-11-13 | 新增 `lingyun-bottom-toolbar`（底部玻璃栏 · 对齐购物车胶囊定位 · 插槽自排）；demo `/pages/demo/bottom-toolbar` |
 | 2026-11-12 | 新增 `lingyun-copy`（复制 · 文字 / 图标触发）与 `lingyun-save-image`（元素 / 整页截图 · canvas 导出）；demo `/pages/demo/copy`、`/pages/demo/save-image` |
 | 2026-11-12 | 新增 `lingyun-split-toolbar`（分栏页统一浮动顶栏）；三个分栏 demo 改用，页面不再写 `title-style`；`lingyun-toolbars` 移除 `onResize` 修复嵌套白屏 |
 | 2026-10-20 | 凌云UI 1.0.31：新增 `formFactor` / `duoPose` 设备形态；iPad/PC + 全局 tabs 改为 84 浮动玻璃窄栏；iPhone Duo 内屏竖屏接入 84 Duo Toolbar + 95 Duo Tab（半折 40 横向折痕安全带）；外屏竖/横与内屏横屏接入右侧 84 全高栏；内屏横屏折叠/半折接入 Split View（456 / 40 / 371 + 右侧 84 返回列） |
