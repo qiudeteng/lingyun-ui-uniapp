@@ -42,6 +42,7 @@ alwaysApply: true
 9. **浮层被 card 裁切**：H5 须 `Teleport`→`body`，mp 须 `root-portal`（`overlay-portal.mdc`）；勿把固定浮层留在 `overflow:hidden` 祖先内。
 10. **原生 picker 跟系统黑**：手动浅色无效 → 自绘 `picker-view` + 上列挂载（见 `lingyun-picker`）。
 11. **图表 canvas 盖住浮层**：原生层压过普通 view；靠 `mp-overlay-gate` + 图表截图/`hidden`，勿只抬浮层 `z-index`（`UI_SPEC` §6.2-H）。
+12. **盖层页面变成 `wx://not-found`**：小程序不能用 `defineAsyncComponent` 注册页面。`installLingyunContentCovers` 里的注册循环必须包在 `#ifndef MP` 里，让编译器把这段删掉。只在运行时 `if` 跳过不够，调用还在编译结果里，页面仍会变成 `wx://not-found`。小程序打开仍走页内宿主或 `navigateTo`；H5 / App 继续用异步组件。模板里的 `<component :is>` 同样必须 `#ifndef MP`。
 
 ## 自检（改样式 / 组件 / 页面时）
 
@@ -51,3 +52,4 @@ alwaysApply: true
 - [ ] 插槽布局类不依赖组件隔离样式
 - [ ] 浮层已 Teleport / root-portal，且自挂 `theme-*`
 - [ ] `pnpm dev:mp-weixin` 可编译；已对 `dist/dev/mp-weixin` 调用 `debug_clear_cache`（`cleanCompileCache`）；微信开发者工具无 WXSS/WXML 报错；**半透明/主题以真机为准**
+- [ ] 内容区盖层未在小程序里调用 `defineAsyncComponent` 或 `<component :is>`（须 `#ifndef MP`，见踩坑 12）

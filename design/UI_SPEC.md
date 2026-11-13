@@ -312,6 +312,15 @@ Liquid Glass 是 **控件与导航功能层** 的材质，不是整页皮肤。
 2. `lingyun-ui-charts` 收到后先截图，再给 canvas 设 `hidden`，用 `<image>` 占位；浮层卸下后恢复 canvas。
 3. 业务若自写 canvas / map / video，浮层打开时需同样隐藏或改截图，不要只靠提高浮层 `z-index`。
 
+#### I. 小程序：`defineAsyncComponent` 注册页面 → `wx://not-found`
+
+内容区盖层在 H5 / App 用 `defineAsyncComponent` 按路由挂已有页面。小程序编译器不支持这种异步组件，注册进去的页面会变成 `wx://not-found`。
+
+- `installLingyunContentCovers` 的注册循环必须写在 `#ifndef MP` 里，编译时整段删除。
+- 只在运行时用 `if` 跳过不够：`defineAsyncComponent(...)` 仍留在小程序编译结果里，页面照样变成 `wx://not-found`。
+- 模板里的 `<component :is>` 同样必须 `#ifndef MP`。
+- 小程序打开页面仍走原来的页内宿主；没登记的再 `navigateTo`。H5 / App 继续注册并盖入内容区。
+
 ---
 
 ## 7. 无障碍

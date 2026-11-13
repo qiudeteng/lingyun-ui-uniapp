@@ -265,7 +265,7 @@ setLingyunPageConfig({
 
 - 默认 `showNav=true`：宽度 ≥ 690 时停靠左侧；导航内容优先取全局 `tabs`，其次宿主目录（`LINGYUN_PAGE_NAV`）。
 - 页面级覆盖：`navSections` prop 显式指定当前页的分组目录（只影响当前渲染，H5 常驻侧栏请用 `setLingyunPageConfig` / `setLingyunPageNavSections`）；`:show-nav="false"` 或 `pages[path].hideNav` 只隐藏这一页的导航。H5 侧栏是全站共用的一份，隐藏时不把窄栏标记写成关闭，否则返回后会画出 220 宽的旧目录。回到有导航的页面时，按当前窗口把窄栏标记写回去。
-- 从当前页再进一个已有页面（协议、店铺这类，不是列表详情分栏）：导航已停靠时不要 `navigateTo`。调用 `openLingyunContentCover(url)`，内容区从右侧滑入，盖住导航右边，不盖住左侧导航；返回只关掉这一层。窗口不到 690、导航未停靠时，同一次调用走 `navigateTo`。宿主启动时用 `installLingyunContentCovers(import.meta.glob('../pages/**/*.vue'))` 注册页面组件。子页不要写 `:show-nav="false"`。这不是 `lingyun-split-layout`。微信等小程序编译器不支持动态组件，同一调用在导航已停靠时改走原来的页内宿主，未登记的页面再 `navigateTo`。
+- 从当前页再进一个已有页面（协议、店铺这类，不是列表详情分栏）：导航已停靠时不要 `navigateTo`。调用 `openLingyunContentCover(url)`，内容区从右侧滑入，盖住导航右边，不盖住左侧导航；返回只关掉这一层。窗口不到 690、导航未停靠时，同一次调用走 `navigateTo`。宿主启动时用 `installLingyunContentCovers(import.meta.glob('../pages/**/*.vue'))` 注册页面组件。子页不要写 `:show-nav="false"`。这不是 `lingyun-split-layout`。微信等小程序编译器不支持动态组件。`installLingyunContentCovers` 里的 `defineAsyncComponent` 必须放在 `#ifndef MP` 中，否则页面会被编成 `wx://not-found`；运行时跳过不够。同一调用在导航已停靠时改走原来的页内宿主，未登记的页面再 `navigateTo`。模板中的 `<component :is>` 同样只留在非小程序。
 - 左栏顶部资料：`#nav-avatar` / `#nav-name` / `#nav-subtitle` 插槽，或全局 `setLingyunPageNavProfile({ avatar, name, subtitle })`；不传时显示「凌云UI」和默认介绍。
 - 宽度档位（220 / 84 / 304）、选中胶囊动效、PC 二级菜单规则见 `design/SIDEBARS.md` §4，这里不重复。
 
