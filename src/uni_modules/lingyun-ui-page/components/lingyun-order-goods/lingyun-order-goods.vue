@@ -125,8 +125,16 @@
         </view>
       </view>
 
+      <!-- 还没有可点的商品：整块下方只留空态，不留分类栏和购物车 -->
+      <view v-if="catalogEmpty" class="lingyun-order-goods__body lingyun-order-goods__body--empty">
+        <slot name="empty">
+          <lingyun-empty variant="plain" :title="emptyText" />
+        </slot>
+      </view>
+
       <!-- 左右布局：分类导航 + 商品列表 -->
       <view
+        v-else
         class="lingyun-order-goods__body"
         :class="{ 'lingyun-order-goods__body--search': searchActive }"
         :style="wideBodyStyle"
@@ -393,6 +401,7 @@
 
       <!-- 悬浮购物车：详情与购物车同一张卡，卡片浮在列表上方 -->
       <lingyun-goods-nav
+        v-if="!catalogEmpty"
         variant="cart"
         detail
         :cart-count="cartCount"
@@ -485,9 +494,11 @@
                 @change="onCartLineQuantity(line, $event)"
               />
             </view>
-            <view v-if="!cartLines.length" class="lingyun-order-goods__cart-empty-state">
-              <text class="lingyun-order-goods__cart-empty-text">{{ emptyCartText }}</text>
-            </view>
+            <lingyun-empty
+              v-if="!cartLines.length"
+              variant="plain"
+              :title="emptyCartText"
+            />
             <view class="lingyun-order-goods__sheet-pad" />
           </view>
         </template>
@@ -1054,6 +1065,12 @@ export default defineComponent({
       return this.visibleCategories.some(
         (category) => (category.goods || []).length > 0,
       )
+    },
+    /** 分类还没到：整块下方只留空态。搜索中、按分类加载中不算空 */
+    catalogEmpty(): boolean {
+      if (this.searchActive) return false
+      if (this.categoryMode && this.categoryLoading) return false
+      return !(this.categories || []).length
     },
     searchKeyword(): string {
       return String(this.searchText || '').trim().toLowerCase()
@@ -2318,6 +2335,11 @@ export default defineComponent({
   overflow: hidden;
 }
 
+.lingyun-order-goods__body--empty {
+  align-items: center;
+  justify-content: center;
+}
+
 /* 搜索视图：隐藏店铺头 / 分类栏，列表占满 */
 .lingyun-order-goods__body--search {
   margin-top: 0;
@@ -2952,17 +2974,6 @@ export default defineComponent({
   font-weight: 600;
   line-height: 20px;
   color: var(--lingyun-label, #{$lingyun-label});
-}
-
-.lingyun-order-goods__cart-empty-state {
-  padding: 48px 0;
-  text-align: center;
-}
-
-.lingyun-order-goods__cart-empty-text {
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--lingyun-label-tertiary, #{$lingyun-label-tertiary});
 }
 
 .lingyun-order-goods__sheet-pad {
