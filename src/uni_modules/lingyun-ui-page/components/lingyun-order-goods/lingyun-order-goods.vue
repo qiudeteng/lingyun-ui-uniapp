@@ -329,7 +329,7 @@
                         :aria-label="hasSpecs(item) ? specButtonText : attributeButtonText"
                         @click="onPlus(item, category)"
                       >
-                        <lingyun-icon type="plus" :size="18" color="#ffffff" />
+                        <lingyun-icon type="plusempty" :size="18" color="#ffffff" />
                         <view
                           v-if="quantityOf(item) > 0"
                           class="lingyun-order-goods__plus-count"
@@ -369,7 +369,7 @@
                         aria-label="加入购物车"
                         @click="onPlus(item, category)"
                       >
-                        <lingyun-icon type="plus" :size="18" color="#ffffff" />
+                        <lingyun-icon type="plusempty" :size="18" color="#ffffff" />
                       </view>
                     </view>
                   </view>

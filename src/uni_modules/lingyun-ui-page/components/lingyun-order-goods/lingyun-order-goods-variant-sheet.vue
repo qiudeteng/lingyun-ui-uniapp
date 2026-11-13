@@ -68,7 +68,7 @@
               :aria-label="`增加${spec.text}`"
               @click="onSpecPlus(spec)"
             >
-              <lingyun-icon type="plus" :size="20" color="#ffffff" />
+              <lingyun-icon type="plusempty" :size="20" color="#ffffff" />
             </view>
           </view>
         </view>
@@ -234,7 +234,7 @@
                     @click.stop="addOption(group, option)"
                   >
                     <lingyun-icon
-                      type="plus"
+                      type="plusempty"
                       :size="14"
                       :color="isGroupFull(group) ? 'secondary' : '#ffffff'"
                     />
@@ -262,7 +262,7 @@
                       @click.stop="addOption(group, option)"
                     >
                       <lingyun-icon
-                        type="plus"
+                        type="plusempty"
                         :size="12"
                         :color="isGroupFull(group) ? 'secondary' : '#ffffff'"
                       />
@@ -326,7 +326,7 @@
                     @click.stop="addOption(group, option)"
                   >
                     <lingyun-icon
-                      type="plus"
+                      type="plusempty"
                       :size="12"
                       :color="isGroupFull(group) ? 'secondary' : '#ffffff'"
                     />
@@ -344,7 +344,7 @@
                 @click.stop="addOption(group, option)"
               >
                 <lingyun-icon
-                  type="plus"
+                  type="plusempty"
                   :size="12"
                   :color="isGroupFull(group) ? 'secondary' : '#ffffff'"
                 />
