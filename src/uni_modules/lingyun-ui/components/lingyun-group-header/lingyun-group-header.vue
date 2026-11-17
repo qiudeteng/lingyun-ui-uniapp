@@ -8,10 +8,10 @@
     ]"
   >
     <view class="lingyun-group-header__title">
-      <slot name="title">
-        <text v-if="title" class="lingyun-group-header__title-text">{{ title }}</text>
-        <slot />
-      </slot>
+      <!-- 标题文字不能放进 slot 兜底：小程序只要父级写了 #title（哪怕 v-if 为假），$slots.title 也是 true，兜底不会渲染 -->
+      <text v-if="title" class="lingyun-group-header__title-text">{{ title }}</text>
+      <slot name="title" />
+      <slot />
     </view>
     <view
       v-if="hasAction"
@@ -21,9 +21,8 @@
       :hover-stay-time="70"
       @click="onAction"
     >
-      <slot name="action">
-        <text class="lingyun-group-header__action-text">{{ action }}</text>
-      </slot>
+      <text v-if="action" class="lingyun-group-header__action-text">{{ action }}</text>
+      <slot name="action" />
     </view>
   </view>
 </template>

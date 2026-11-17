@@ -1337,6 +1337,9 @@ $ly-toolbar-gap: 8px;
   min-width: 0;
   height: 100%;
   padding: 0;
+  border: 0;
+  /* 新版 uni-h5 给 uni-input 写了白底，暗色系统再改成 #3b3b3b，会盖住玻璃栏 */
+  background: transparent;
   font-size: 17px;
   line-height: 22px;
   color: var(--lingyun-label, #{$lingyun-label});

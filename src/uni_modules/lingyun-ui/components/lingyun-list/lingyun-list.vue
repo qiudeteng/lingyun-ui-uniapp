@@ -1,16 +1,42 @@
 <template>
   <view class="lingyun-list" :class="[rootClass, inSectionClass]">
+    <!-- 插槽按实际使用拆开。小程序会把模板里出现过的 #title / #action 记成已传入 -->
     <lingyun-group-header
-      v-if="showHeader"
+      v-if="showPlainHeader"
       :title="header"
       :type="resolvedHeaderType"
       :action="headerAction"
       @action="onAction"
+    />
+    <lingyun-group-header
+      v-else-if="showHeader && headerSlot && !headerActionSlot"
+      :type="resolvedHeaderType"
+      :action="headerAction"
+      @action="onAction"
     >
-      <template v-if="$slots.header" #title>
+      <template #title>
         <slot name="header" />
       </template>
-      <template v-if="$slots['header-action']" #action>
+    </lingyun-group-header>
+    <lingyun-group-header
+      v-else-if="showHeader && !headerSlot && headerActionSlot"
+      :title="header"
+      :type="resolvedHeaderType"
+      @action="onAction"
+    >
+      <template #action>
+        <slot name="header-action" />
+      </template>
+    </lingyun-group-header>
+    <lingyun-group-header
+      v-else-if="showHeader"
+      :type="resolvedHeaderType"
+      @action="onAction"
+    >
+      <template #title>
+        <slot name="header" />
+      </template>
+      <template #action>
         <slot name="header-action" />
       </template>
     </lingyun-group-header>
@@ -118,7 +144,16 @@ export default defineComponent({
   },
   computed: {
     showHeader(): boolean {
-      return !!(this.header || this.$slots.header)
+      return !!(this.header || this.headerSlot)
+    },
+    headerSlot(): boolean {
+      return !!this.$slots.header
+    },
+    headerActionSlot(): boolean {
+      return !!this.$slots['header-action']
+    },
+    showPlainHeader(): boolean {
+      return this.showHeader && !this.headerSlot && !this.headerActionSlot
     },
     showFooter(): boolean {
       return !!(this.footer || this.$slots.footer)
