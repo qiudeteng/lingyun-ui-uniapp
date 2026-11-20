@@ -1,19 +1,21 @@
 <template>
   <lingyun-app-page :show-toolbar="false" :show-back="false" :show-nav="false">
     <view class="lingyun-login">
-      <view class="lingyun-login__hero">
-        <view v-if="logo" class="lingyun-login__logo">
-          <lingyun-image :src="logo" size="md" radius="xl" />
+      <!-- 顶栏关闭后，页面壳会把首子 padding-top 写成 0。安全区写在内层，避免被盖掉。 -->
+      <view class="lingyun-login__body" :style="bodyStyle">
+        <view class="lingyun-login__hero">
+          <view v-if="logo" class="lingyun-login__logo">
+            <lingyun-image :src="logo" size="md" radius="xl" />
+          </view>
+          <text v-if="enterpriseName" class="lingyun-login__title">{{ enterpriseName }}</text>
+          <text class="lingyun-login__hint">{{ hint }}</text>
         </view>
-        <text v-if="enterpriseName" class="lingyun-login__title">{{ enterpriseName }}</text>
-        <text class="lingyun-login__hint">{{ hint }}</text>
-      </view>
 
-      <view v-if="booting" class="lingyun-login__column lingyun-login__boot">
-        <lingyun-activity-indicator size="large" />
-      </view>
+        <view v-if="booting" class="lingyun-login__column lingyun-login__boot">
+          <lingyun-activity-indicator size="large" />
+        </view>
 
-      <view v-else class="lingyun-login__column lingyun-login__form">
+        <view v-else class="lingyun-login__column lingyun-login__form">
         <lingyun-form-group>
           <lingyun-form-item label="账号">
             <lingyun-text-field
@@ -55,7 +57,8 @@
         <view v-if="demoText" class="lingyun-login__demo">
           <lingyun-button variant="bordered" block :text="demoText" @click="emit('demo')" />
         </view>
-        <text v-if="copyright" class="lingyun-login__copyright">{{ copyright }}</text>
+          <text v-if="copyright" class="lingyun-login__copyright">{{ copyright }}</text>
+        </view>
       </view>
     </view>
 
@@ -75,7 +78,9 @@
 </template>
 
 <script setup lang="ts">
+  import { onShow } from '@dcloudio/uni-app'
   import { computed, reactive, ref } from 'vue'
+  import { getLingyunNavLayout } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
 
   withDefaults(
     defineProps<{
@@ -132,6 +137,31 @@
       ],
     },
   }
+
+  /** 窄屏补回被写成 0 的 24，并让出状态栏；微信再让出胶囊行。宽屏仍靠整屏居中。 */
+  const bodyPadTop = ref(0)
+
+  function syncBodyPad(): void {
+    const layout = getLingyunNavLayout()
+    if (layout.regular) {
+      bodyPadTop.value = 0
+      return
+    }
+    let top = layout.statusBarHeight + 24
+    // #ifdef MP-WEIXIN
+    top += layout.barHeight
+    // #endif
+    bodyPadTop.value = top
+  }
+
+  const bodyStyle = computed(() =>
+    bodyPadTop.value > 0 ? { paddingTop: `${bodyPadTop.value}px` } : {},
+  )
+
+  syncBodyPad()
+  onShow(() => {
+    syncBodyPad()
+  })
 
   const agreed = ref(false)
   const policyOpen = ref(false)
@@ -194,6 +224,10 @@
       flex-direction: column;
       justify-content: center;
     }
+  }
+
+  .lingyun-login__body {
+    width: 100%;
   }
 
   .lingyun-login__hero {
