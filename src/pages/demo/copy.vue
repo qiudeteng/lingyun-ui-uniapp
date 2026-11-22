@@ -3,29 +3,74 @@
     <view class="page">
       <view class="hero">
         <text class="hero__title">复制</text>
-        <text class="hero__desc">lingyun-copy · 文字 / 图标触发器 · 点击复制 text 属性值</text>
+        <text class="hero__desc">lingyun-copy · 默认纯图标 · 主题色 · 点击复制 text</text>
       </view>
 
-      <lingyun-section title="文字触发" hint="label">
+      <lingyun-section title="默认纯图标" hint="mode=icon · 内置 SVG · primary">
         <view class="lingyun-section-row copy-row">
-          <lingyun-copy text="LY-20261112-0001" label="复制订单号" @copy="onCopy" />
+          <lingyun-copy text="LY-20261112-0001" @copy="onCopy" />
+          <lingyun-copy text="SH-LINGYUN-88" size="medium" @copy="onCopy" />
+          <lingyun-copy text="Hello Lingyun" size="large" @copy="onCopy" />
+        </view>
+      </lingyun-section>
+
+      <lingyun-section title="纯文本" hint="mode=text">
+        <view class="lingyun-section-row copy-row">
+          <lingyun-copy text="LY-20261112-0001" mode="text" @copy="onCopy" />
           <lingyun-copy
             text="SH-LINGYUN-88"
+            mode="text"
             label="复制门店编号"
-            variant="plain"
+            @copy="onCopy"
+          />
+          <lingyun-copy
+            text="plain-link"
+            mode="text"
+            label="复制链接"
+            color="link"
             @copy="onCopy"
           />
         </view>
       </lingyun-section>
 
-      <lingyun-section title="图标触发" hint="icon">
+      <lingyun-section title="图标 + 文案" hint="label">
+        <view class="lingyun-section-row copy-row">
+          <lingyun-copy text="LY-20261112-0001" label="复制订单号" @copy="onCopy" />
+          <lingyun-copy
+            text="SH-LINGYUN-88"
+            label="复制门店编号"
+            color="link"
+            @copy="onCopy"
+          />
+        </view>
+      </lingyun-section>
+
+      <lingyun-section title="玻璃按钮" hint="variant=glass">
+        <view class="lingyun-section-row copy-row">
+          <lingyun-copy text="glass-small" label="复制" variant="glass" @copy="onCopy" />
+          <lingyun-copy
+            text="glass-medium"
+            label="复制"
+            variant="glass"
+            size="medium"
+            @copy="onCopy"
+          />
+        </view>
+      </lingyun-section>
+
+      <lingyun-section title="自定义图标" hint="icon · lingyun-icon">
         <view class="lingyun-section-row copy-row">
           <lingyun-copy
             text="https://lingyun.example/order/LY-20261112-0001"
             icon="link"
             @copy="onCopy"
           />
-          <lingyun-copy text="Hello Lingyun" icon="chatbubble" label="复制问候" @copy="onCopy" />
+          <lingyun-copy
+            text="Hello Lingyun"
+            icon="chatbubble"
+            label="复制问候"
+            @copy="onCopy"
+          />
         </view>
       </lingyun-section>
 
@@ -37,24 +82,17 @@
           clearable
         />
         <view class="lingyun-section-row copy-row">
-          <lingyun-copy
-            :text="content"
-            label="复制输入内容"
-            @copy="onCopy"
-            @error="onError"
-          />
+          <lingyun-copy :text="content" label="复制输入内容" @copy="onCopy" @error="onError" />
         </view>
       </lingyun-section>
 
-      <lingyun-section title="尺寸 / 形态" hint="size · variant · disabled">
+      <lingyun-section title="颜色 / 禁用" hint="color · disabled">
         <view class="lingyun-section-row copy-row">
-          <lingyun-copy text="small" label="Small" size="small" />
-          <lingyun-copy text="medium" label="Medium" size="medium" />
-          <lingyun-copy text="large" label="Large" size="large" />
-        </view>
-        <view class="lingyun-section-row copy-row">
-          <lingyun-copy text="plain" label="Plain" variant="plain" />
-          <lingyun-copy text="disabled" label="禁用" disabled />
+          <lingyun-copy text="primary" />
+          <lingyun-copy text="success" color="success" />
+          <lingyun-copy text="error" color="error" />
+          <lingyun-copy text="label" color="label" />
+          <lingyun-copy text="disabled" disabled />
         </view>
       </lingyun-section>
 
@@ -67,14 +105,10 @@
         </lingyun-copy>
       </lingyun-section>
 
-      <lingyun-section
-        title="最近一次复制"
-        :hint="lastCopied || '—'"
-        is-last
-      >
+      <lingyun-section title="最近一次复制" :hint="lastCopied || '—'" is-last>
         <text class="copy-hint">
-          copy 事件返回被复制的文本。微信端由系统弹出「内容已复制」，不再叠加组件 toast；
-          H5 / App 由组件提示。
+          copy 事件返回被复制的文本。微信端由系统弹出「内容已复制」，不再叠加组件 toast； H5 / App
+          由组件提示。
         </text>
       </lingyun-section>
     </view>
@@ -97,58 +131,59 @@ function onError(payload: { message?: string }): void {
 </script>
 
 <style lang="scss">
-  .page {
-    box-sizing: border-box;
-    padding-bottom: 40px;
-    min-height: 100%;
-    background: var(--lingyun-bg-grouped-primary, #f2f2f7);
-  }
+.page {
+  box-sizing: border-box;
+  padding-bottom: 40px;
+  min-height: 100%;
+  background: var(--lingyun-bg-grouped-primary, #f2f2f7);
+}
 
-  .hero {
-    padding: 24px 20px 8px;
-  }
+.hero {
+  padding: 24px 20px 8px;
+}
 
-  .hero__title {
-    display: block;
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--lingyun-label, #1c1c1e);
-  }
+.hero__title {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--lingyun-label, #1c1c1e);
+}
 
-  .hero__desc {
-    display: block;
-    margin-top: 6px;
-    font-size: 13px;
-    color: var(--lingyun-label-secondary, #6a6a6a);
-  }
+.hero__desc {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--lingyun-label-secondary, #6a6a6a);
+}
 
-  .copy-row {
-    gap: 12px;
-  }
+.copy-row {
+  gap: 12px;
+  align-items: center;
+}
 
-  .custom-trigger {
-    display: inline-flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 6px;
-    height: 34px;
-    padding: 0 12px;
-    border-radius: 17px;
-    background-color: var(--lingyun-fill-tertiary, rgba(120, 120, 128, 0.12));
-  }
+.custom-trigger {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 17px;
+  background-color: var(--lingyun-fill-tertiary, rgba(120, 120, 128, 0.12));
+}
 
-  .custom-trigger__text {
-    font-size: 15px;
-    font-weight: 590;
-    line-height: 1.2;
-    color: var(--lingyun-link, #0088ff);
-  }
+.custom-trigger__text {
+  font-size: 15px;
+  font-weight: 590;
+  line-height: 1.2;
+  color: var(--lingyun-link, #0088ff);
+}
 
-  .copy-hint {
-    display: block;
-    padding: 0 4px;
-    font-size: 13px;
-    line-height: 20px;
-    color: var(--lingyun-label-secondary, #6a6a6a);
-  }
+.copy-hint {
+  display: block;
+  padding: 0 4px;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--lingyun-label-secondary, #6a6a6a);
+}
 </style>
