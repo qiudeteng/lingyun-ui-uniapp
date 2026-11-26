@@ -31,8 +31,9 @@
   </text>
 </template>
 
-<script lang="ts">
-import { defineComponent, inject, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, inject } from 'vue'
+import { type PropType } from 'vue'
 import { LINGYUN_MARKDOWN_CONTEXT } from './context'
 import type { LingyunMarkdownContext } from './context'
 import type { LingyunMarkdownSpan } from './types'
@@ -45,71 +46,70 @@ const ALIGNS = ['left', 'center', 'right']
  * lingyun-markdown 的行内 span 渲染器（内部组件）。
  * 行内样式在解析阶段拍平成 span，避免小程序嵌套自定义组件丢失继承样式。
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunMarkdownSpans',
-  props: {
-    spans: {
-      type: Array as PropType<LingyunMarkdownSpan[]>,
-      default: () => [],
-    },
-    variant: { type: String, default: 'body' },
-    tone: { type: String, default: 'primary' },
-    align: { type: String, default: 'left' },
-    emphasis: { type: Boolean, default: false },
-    selectable: { type: Boolean, default: false },
-  },
-  setup() {
-    const markdownContext = inject<LingyunMarkdownContext | null>(
-      LINGYUN_MARKDOWN_CONTEXT,
-      null,
-    )
-    return { markdownContext }
-  },
-  computed: {
-    rootClass(): string[] {
-      const variant = VARIANTS.indexOf(this.variant) >= 0 ? this.variant : 'body'
-      const tone = TONES.indexOf(this.tone) >= 0 ? this.tone : 'primary'
-      const align = ALIGNS.indexOf(this.align) >= 0 ? this.align : 'left'
-      return [
-        `md-inline--${variant}`,
-        `md-inline--tone-${tone}`,
-        `md-inline--align-${align}`,
-        this.emphasis ? 'md-inline--emphasis' : '',
-      ]
-    },
-  },
-  methods: {
-    /**
-     * uni-app H5 的 text 会把 `\n`（反斜杠 + n）当换行转义，
-     * 这里在 H5 下把反斜杠加倍，显示时还原为源码里的单个反斜杠。
-     * 小程序 text 不做该转义，保持原样。
-     */
-    displayText(value: string): string {
-      // #ifdef H5
-      return value.replace(/\\/g, '\\\\')
-      // #endif
-      // #ifndef H5
-      return value
-      // #endif
-    },
-    spanClass(span: LingyunMarkdownSpan): Record<string, boolean> {
-      return {
-        'md-bold': !!span.bold,
-        'md-italic': !!span.italic,
-        'md-strike': !!span.strike,
-        'md-code': !!span.code,
-      }
-    },
-    onLink(span: LingyunMarkdownSpan): void {
-      if (!span.href) return
-      this.markdownContext?.openLink({
-        href: span.href,
-        title: span.title,
-        text: span.text,
-      })
-    },
-  },
 })
+
+const props = defineProps({
+  spans: {
+    type: Array as PropType<LingyunMarkdownSpan[]>,
+    default: () => [],
+  },
+  variant: { type: String, default: 'body' },
+  tone: { type: String, default: 'primary' },
+  align: { type: String, default: 'left' },
+  emphasis: { type: Boolean, default: false },
+  selectable: { type: Boolean, default: false },
+})
+
+const markdownContext = inject<LingyunMarkdownContext | null>(
+  LINGYUN_MARKDOWN_CONTEXT,
+  null,
+)
+
+const rootClass = computed((): string[] => {
+  const variant = VARIANTS.indexOf(props.variant) >= 0 ? props.variant : 'body'
+  const tone = TONES.indexOf(props.tone) >= 0 ? props.tone : 'primary'
+  const align = ALIGNS.indexOf(props.align) >= 0 ? props.align : 'left'
+  return [
+    `md-inline--${variant}`,
+    `md-inline--tone-${tone}`,
+    `md-inline--align-${align}`,
+    props.emphasis ? 'md-inline--emphasis' : '',
+  ]
+})
+
+/**
+ * uni-app H5 的 text 会把 `\n`（反斜杠 + n）当换行转义，
+ * 这里在 H5 下把反斜杠加倍，显示时还原为源码里的单个反斜杠。
+ * 小程序 text 不做该转义，保持原样。
+ */
+function displayText(value: string): string {
+  // #ifdef H5
+  return value.replace(/\\/g, '\\\\')
+  // #endif
+  // #ifndef H5
+  return value
+  // #endif
+}
+
+function spanClass(span: LingyunMarkdownSpan): Record<string, boolean> {
+  return {
+    'md-bold': !!span.bold,
+    'md-italic': !!span.italic,
+    'md-strike': !!span.strike,
+    'md-code': !!span.code,
+  }
+}
+
+function onLink(span: LingyunMarkdownSpan): void {
+  if (!span.href) return
+  markdownContext?.openLink({
+    href: span.href,
+    title: span.title,
+    text: span.text,
+  })
+}
 </script>
 
 <style lang="scss" scoped>

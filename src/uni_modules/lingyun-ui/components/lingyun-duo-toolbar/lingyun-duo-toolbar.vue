@@ -49,8 +49,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, useSlots } from 'vue'
+import { type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
 import {
   LINGYUN_DUO_TOP_BAR_HEIGHT,
@@ -64,81 +65,89 @@ import {
  * Leading 48×48，标题 17/22 左对齐，工具组 164×48（3×36，gap 18，左右 10），
  * 状态栏 98×48；rightInset 为状态栏 + 间距 + 右内边距的总宽（默认 134）。
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunDuoToolbar',
-  emits: ['back'],
-  props: {
-    title: { type: String, default: '' },
-    showBack: { type: Boolean, default: false },
-    /** 右上角状态/摄像头保留区总宽，官方为 134（状态 98 + 间距 12 + 右内边距 24） */
-    rightInset: { type: Number, default: LINGYUN_DUO_TOP_RIGHT_RESERVED },
-    /** 页面是否真的提供了工具插槽；小程序 slot 声明也会让 $slots 为真，需显式传 */
-    toolsVisible: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
-    },
-    /** 页面是否提供了自定义 Leading；默认返回钮可见时也显示 */
-    leadingVisible: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
-    },
-    /** 仅一个工具项时收成 48×48 圆钮 */
-    toolsSingle: { type: Boolean, default: false },
-    /** 主题菜单打开期间隐去工具组，避免玻璃胶囊从菜单边缘漏出 */
-    toolsHidden: { type: Boolean, default: false },
-    /** 0 全透明，1 满液态玻璃 */
-    glassProgress: { type: Number, default: 0 },
-  },
-  computed: {
-    showLeading(): boolean {
-      if (this.leadingVisible !== undefined) {
-        return !!this.leadingVisible || this.showBack
-      }
-      return !!(this.$slots.leading || this.showBack)
-    },
-    showTools(): boolean {
-      return this.toolsVisible !== undefined
-        ? !!this.toolsVisible
-        : !!(this.$slots.tools || this.$slots.trailing)
-    },
-    /** 状态栏区域宽度：从 rightInset 里减掉右侧 24 内边距与 12 间距 */
-    statusWidth(): number {
-      return Math.max(0, (Number(this.rightInset) || 0) - 36)
-    },
-    themeRootClass() {
-      try {
-        return useLingyunTheme().rootClass
-      } catch {
-        return 'theme-light'
-      }
-    },
-    rootStyle(): Record<string, string> {
-      return {
-        '--ly-duo-toolbar-height': `${LINGYUN_DUO_TOP_BAR_HEIGHT}px`,
-      }
-    },
-    glassAmount(): number {
-      const n = Number(this.glassProgress)
-      if (Number.isNaN(n)) return 0
-      return Math.min(1, Math.max(0, n))
-    },
-    barStyle(): Record<string, string> {
-      const p = this.glassAmount
-      const blur = (20 * p).toFixed(2)
-      return {
-        '--ly-duo-toolbar-glass': String(p),
-        backdropFilter: p > 0.01 ? `saturate(180%) blur(${blur}px)` : 'none',
-        webkitBackdropFilter:
-          p > 0.01 ? `saturate(180%) blur(${blur}px)` : 'none',
-      }
-    },
-  },
-  methods: {
-    onBack() {
-      this.$emit('back')
-    },
-  },
 })
+
+const props = defineProps({
+  title: { type: String, default: '' },
+  showBack: { type: Boolean, default: false },
+  /** 右上角状态/摄像头保留区总宽，官方为 134（状态 98 + 间距 12 + 右内边距 24） */
+  rightInset: { type: Number, default: 134 },
+  /** 页面是否真的提供了工具插槽；小程序 slot 声明也会让 $slots 为真，需显式传 */
+  toolsVisible: {
+    type: Boolean as PropType<boolean | undefined>,
+    default: undefined,
+  },
+  /** 页面是否提供了自定义 Leading；默认返回钮可见时也显示 */
+  leadingVisible: {
+    type: Boolean as PropType<boolean | undefined>,
+    default: undefined,
+  },
+  /** 仅一个工具项时收成 48×48 圆钮 */
+  toolsSingle: { type: Boolean, default: false },
+  /** 主题菜单打开期间隐去工具组，避免玻璃胶囊从菜单边缘漏出 */
+  toolsHidden: { type: Boolean, default: false },
+  /** 0 全透明，1 满液态玻璃 */
+  glassProgress: { type: Number, default: 0 },
+})
+
+const emit = defineEmits(['back'])
+
+const slots = useSlots()
+
+const showLeading = computed((): boolean => {
+  if (props.leadingVisible !== undefined) {
+    return !!props.leadingVisible || props.showBack
+  }
+  return !!(slots.leading || props.showBack)
+})
+
+const showTools = computed((): boolean => {
+  return props.toolsVisible !== undefined
+    ? !!props.toolsVisible
+    : !!(slots.tools || slots.trailing)
+})
+
+/** 状态栏区域宽度：从 rightInset 里减掉右侧 24 内边距与 12 间距 */
+const statusWidth = computed((): number => {
+  return Math.max(0, (Number(props.rightInset) || 0) - 36)
+})
+
+const themeRootClass = computed((): string => {
+  try {
+    return useLingyunTheme().rootClass
+  } catch {
+    return 'theme-light'
+  }
+})
+
+const rootStyle = computed((): Record<string, string> => {
+  return {
+    '--ly-duo-toolbar-height': `${LINGYUN_DUO_TOP_BAR_HEIGHT}px`,
+  }
+})
+
+const glassAmount = computed((): number => {
+  const n = Number(props.glassProgress)
+  if (Number.isNaN(n)) return 0
+  return Math.min(1, Math.max(0, n))
+})
+
+const barStyle = computed((): Record<string, string> => {
+  const p = glassAmount.value
+  const blur = (20 * p).toFixed(2)
+  return {
+    '--ly-duo-toolbar-glass': String(p),
+    backdropFilter: p > 0.01 ? `saturate(180%) blur(${blur}px)` : 'none',
+    webkitBackdropFilter:
+      p > 0.01 ? `saturate(180%) blur(${blur}px)` : 'none',
+  }
+})
+
+function onBack(): void {
+  emit('back')
+}
 </script>
 
 <style lang="scss">

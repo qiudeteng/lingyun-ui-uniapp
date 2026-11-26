@@ -21,9 +21,8 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-
+<script setup lang="ts">
+import { computed, useSlots } from 'vue'
 /**
  * lingyun-button
  * @description 对齐 Apple iOS 27 UI Kit Buttons（Sketch）+ HIG + Liquid Glass
@@ -42,115 +41,123 @@ import { defineComponent } from 'vue'
  * @property {Boolean} loading
  * @event {Function} click
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunButton',
-  options: {
-    // 去掉宿主，父级 flex 才能居中到按钮本身（否则小程序胶囊贴在宿主左侧）
-    virtualHost: true,
+  // 去掉宿主，父级 flex 才能居中到按钮本身（否则小程序胶囊贴在宿主左侧）
+  virtualHost: true,
+})
+
+const props = defineProps({
+  /** Sketch「Style」；不用原生属性名 style，避免与 CSS style 冲突 */
+  variant: {
+    type: String,
+    default: 'glass',
   },
-  emits: ['click'],
-  props: {
-    /** Sketch「Style」；不用原生属性名 style，避免与 CSS style 冲突 */
-    variant: {
-      type: String,
-      default: 'glass',
-    },
-    size: {
-      type: String,
-      default: 'large',
-    },
-    role: {
-      type: String,
-      default: 'normal',
-    },
-    text: {
-      type: String,
-      default: '',
-    },
-    icon: {
-      type: String,
-      default: '',
-    },
-    block: {
-      type: Boolean,
-      default: false,
-    },
-    disabled: {
-      type: Boolean,
-      default: false,
-    },
-    loading: {
-      type: Boolean,
-      default: false,
-    },
+  size: {
+    type: String,
+    default: 'large',
   },
-  computed: {
-    isDisabled() {
-      return this.disabled || this.loading
-    },
-    showIcon() {
-      return !!(this.icon || this.$slots.icon)
-    },
-    showLabel() {
-      if (this.text) return true
-      const slot = this.$slots.default
-      if (!slot) return false
-      try {
-        const nodes = slot()
-        return Array.isArray(nodes) && nodes.length > 0
-      } catch {
-        return false
-      }
-    },
-    isIconOnly() {
-      return this.showIcon && !this.showLabel
-    },
-    resolvedVariant(): string {
-      const map: Record<string, string> = {
-        borderedProminent: 'bordered-prominent',
-        'bordered-prominent': 'bordered-prominent',
-        filled: 'bordered-prominent',
-        bordered: 'bordered',
-        gray: 'bordered',
-        tinted: 'bordered',
-        borderless: 'borderless',
-        plain: 'borderless',
-        glass: 'glass',
-      }
-      return map[this.variant] || 'glass'
-    },
-    resolvedSize() {
-      const allowed = ['large', 'medium', 'small', 'mini']
-      return allowed.includes(this.size) ? this.size : 'large'
-    },
-    resolvedRole() {
-      const allowed = ['normal', 'destructive', 'cancel', 'success', 'warning']
-      return allowed.includes(this.role) ? this.role : 'normal'
-    },
-    rootClass() {
-      return [
-        `lingyun-button--${this.resolvedVariant}`,
-        `lingyun-button--${this.resolvedSize}`,
-        `lingyun-button--role-${this.resolvedRole}`,
-        this.isIconOnly ? 'lingyun-button--icon-only' : '',
-        this.block ? 'lingyun-button--block' : '',
-        this.isDisabled ? 'lingyun-button--disabled' : '',
-        this.loading ? 'lingyun-button--loading' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    hoverClass() {
-      return this.isDisabled ? '' : 'lingyun-button--hover'
-    },
+  role: {
+    type: String,
+    default: 'normal',
   },
-  methods: {
-    onClick(e: TouchEvent) {
-      if (this.isDisabled) return
-      this.$emit('click', e)
-    },
+  text: {
+    type: String,
+    default: '',
+  },
+  icon: {
+    type: String,
+    default: '',
+  },
+  block: {
+    type: Boolean,
+    default: false,
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+  loading: {
+    type: Boolean,
+    default: false,
   },
 })
+
+const emit = defineEmits(['click'])
+
+const slots = useSlots()
+
+const isDisabled = computed((): boolean => {
+  return props.disabled || props.loading
+})
+
+const showIcon = computed((): boolean => {
+  return !!(props.icon || slots.icon)
+})
+
+const showLabel = computed((): boolean => {
+  if (props.text) return true
+  const slot = slots.default
+  if (!slot) return false
+  try {
+    const nodes = slot()
+    return Array.isArray(nodes) && nodes.length > 0
+  } catch {
+    return false
+  }
+})
+
+const isIconOnly = computed((): boolean => {
+  return showIcon.value && !showLabel.value
+})
+
+const resolvedVariant = computed((): string => {
+  const map: Record<string, string> = {
+    borderedProminent: 'bordered-prominent',
+    'bordered-prominent': 'bordered-prominent',
+    filled: 'bordered-prominent',
+    bordered: 'bordered',
+    gray: 'bordered',
+    tinted: 'bordered',
+    borderless: 'borderless',
+    plain: 'borderless',
+    glass: 'glass',
+  }
+  return map[props.variant] || 'glass'
+})
+
+const resolvedSize = computed((): string => {
+  const allowed = ['large', 'medium', 'small', 'mini']
+  return allowed.includes(props.size) ? props.size : 'large'
+})
+
+const resolvedRole = computed((): string => {
+  const allowed = ['normal', 'destructive', 'cancel', 'success', 'warning']
+  return allowed.includes(props.role) ? props.role : 'normal'
+})
+
+const rootClass = computed((): string => {
+  return [
+    `lingyun-button--${resolvedVariant.value}`,
+    `lingyun-button--${resolvedSize.value}`,
+    `lingyun-button--role-${resolvedRole.value}`,
+    isIconOnly.value ? 'lingyun-button--icon-only' : '',
+    props.block ? 'lingyun-button--block' : '',
+    isDisabled.value ? 'lingyun-button--disabled' : '',
+    props.loading ? 'lingyun-button--loading' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const hoverClass = computed((): string => {
+  return isDisabled.value ? '' : 'lingyun-button--hover'
+})
+
+function onClick(e: Event): void {
+  if (isDisabled.value) return
+  emit('click', e)
+}
 </script>
 
 <style lang="scss" scoped>

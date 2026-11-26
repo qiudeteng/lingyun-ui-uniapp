@@ -95,16 +95,51 @@ export type LingyunNavLayout = {
 }
 
 function readWindow(): { statusBarHeight: number; windowWidth: number } {
+  let statusBarHeight = 0
+  let windowWidth = 0
+
+  /* 优先用 getWindowInfo（小程序端即 wx.getWindowInfo，未被废弃） */
   try {
-    const win =
-      typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
-    return {
-      statusBarHeight: Number(win.statusBarHeight) || 0,
-      windowWidth: Number(win.windowWidth) || 0,
+    if (typeof uni.getWindowInfo === 'function') {
+      const win = uni.getWindowInfo() as {
+        statusBarHeight?: number
+        windowWidth?: number
+        safeAreaInsets?: { top?: number }
+      }
+      statusBarHeight =
+        Number(win.statusBarHeight) ||
+        Number(win.safeAreaInsets && win.safeAreaInsets.top) ||
+        0
+      windowWidth = Number(win.windowWidth) || 0
     }
   } catch {
-    return { statusBarHeight: 0, windowWidth: 0 }
+    /* ignore */
   }
+
+  /*
+   * 个别运行时（小程序兼容层、App 启动早期）getWindowInfo 不返回 statusBarHeight，
+   * 此时才退回 getSystemInfoSync，避免触发已废弃 API 警告。
+   */
+  if (statusBarHeight <= 0 || windowWidth <= 0) {
+    try {
+      const sys = uni.getSystemInfoSync() as {
+        statusBarHeight?: number
+        windowWidth?: number
+        safeAreaInsets?: { top?: number }
+      }
+      if (statusBarHeight <= 0) {
+        statusBarHeight =
+          Number(sys.statusBarHeight) ||
+          Number(sys.safeAreaInsets && sys.safeAreaInsets.top) ||
+          0
+      }
+      if (windowWidth <= 0) windowWidth = Number(sys.windowWidth) || 0
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return { statusBarHeight, windowWidth }
 }
 
 /** 当前窗口宽度（读不到时为 0），供页面壳布局解析用 */

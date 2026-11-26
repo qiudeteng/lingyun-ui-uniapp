@@ -4,25 +4,20 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { computed } from 'vue'
 import { isLingyunWideScreen } from '../../utils/screen'
 
 /**
  * lingyun-mobile
  * 窄屏显示（窗口宽度小于 690）。平板和电脑档不渲染。
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunMobile',
-  options: {
-    virtualHost: true,
-  },
-  computed: {
-    visible(): boolean {
-      return !isLingyunWideScreen()
-    },
-  },
+  virtualHost: true,
 })
+
+const visible = computed((): boolean => !isLingyunWideScreen())
 </script>
 
 <style lang="scss">

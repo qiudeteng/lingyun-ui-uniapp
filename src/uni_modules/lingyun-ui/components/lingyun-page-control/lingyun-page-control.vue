@@ -10,39 +10,38 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-
+<script setup lang="ts">
+import { computed } from 'vue'
 /**
  * lingyun-page-control
  * @see design/PAGE_CONTROLS.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunPageControl',
-  emits: ['update:modelValue', 'update:current', 'change'],
-  props: {
-    modelValue: { type: Number, default: undefined },
-    current: { type: Number, default: undefined },
-    count: { type: Number, default: 3 },
-  },
-  computed: {
-    currentIndex() {
-      const v =
-        this.modelValue !== undefined && this.modelValue !== null
-          ? Number(this.modelValue)
-          : Number(this.current || 0)
-      const max = Math.max(0, Number(this.count) - 1)
-      return Math.min(Math.max(0, v), max)
-    },
-  },
-  methods: {
-    onDot(index: number) {
-      this.$emit('update:modelValue', index)
-      this.$emit('update:current', index)
-      this.$emit('change', index)
-    },
-  },
 })
+
+const props = defineProps({
+  modelValue: { type: Number, default: undefined },
+  current: { type: Number, default: undefined },
+  count: { type: Number, default: 3 },
+})
+
+const emit = defineEmits(['update:modelValue', 'update:current', 'change'])
+
+const currentIndex = computed((): number => {
+  const v =
+    props.modelValue !== undefined && props.modelValue !== null
+      ? Number(props.modelValue)
+      : Number(props.current || 0)
+  const max = Math.max(0, Number(props.count) - 1)
+  return Math.min(Math.max(0, v), max)
+})
+
+function onDot(index: number): void {
+  emit('update:modelValue', index)
+  emit('update:current', index)
+  emit('change', index)
+}
 </script>
 
 <style lang="scss">

@@ -288,8 +288,11 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, getCurrentInstance, type PropType } from 'vue'
+
+<script setup lang="ts">
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
+import type { PropType } from 'vue'
+import type { LingyunToolbarButton, LingyunToolbarButtonGroups } from './types'
 import { onShow } from '@dcloudio/uni-app'
 import {
   coerceTriFlag,
@@ -314,16 +317,6 @@ import {
   syncLingyunToolbarPickerSelection,
 } from '../../utils/toolbarPicker'
 
-export type LingyunToolbarButton = {
-  key: string
-  icon?: string
-  label?: string
-  disabled?: boolean
-}
-
-/** 一维数组为一组；二维数组按子数组拆成多个独立玻璃胶囊 */
-export type LingyunToolbarButtonGroups = LingyunToolbarButton[] | LingyunToolbarButton[][]
-
 /**
  * lingyun-toolbars
  * @description 对齐 Sketch Toolbars。窄屏 iPhone；宽屏（≥690，含折叠屏展开）iPad；Mac 桌面加窗口按钮
@@ -333,812 +326,863 @@ export type LingyunToolbarButtonGroups = LingyunToolbarButton[] | LingyunToolbar
  * @property {Number} glassProgress 0~1：栏身玻璃强度（0 全透明，1 满液态玻璃）
  * 暗黑：根挂 theme-*，圆钮用浅银霜半透明（勿走 Alert 高 alpha）
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunToolbars',
-  emits: [
-    'back',
-    'close',
-    'trailing',
-    'trailing-action',
-    'update:searching',
-    'update:searchValue',
-    'search-open',
-    'search-cancel',
-    'search-input',
-    'search',
-    'update:segmentValue',
-    'segment-click',
-    'segment-change',
-    'picker-value',
-  ],
-  setup() {
-    const instance = getCurrentInstance()
-    onShow(() => {
-      const proxy = instance?.proxy as { syncPickerOnEnter?: () => void } | null
-      proxy?.syncPickerOnEnter?.()
-    })
+})
+
+const slots = useSlots()
+const instance = getCurrentInstance()
+
+const props = defineProps({
+  placement: {
+    type: String,
+    default: 'standard',
   },
-  props: {
-    placement: {
-      type: String,
-      default: 'standard',
-    },
-    titleStyle: {
-      type: String,
-      default: 'title',
-    },
-    title: {
-      type: String,
-      default: '',
-    },
-    subtitle: {
-      type: String,
-      default: '',
-    },
-    /**
-     * 副标题位置是否显示全局选择器。默认不显示。
-     * 需要的顶栏设为 true；写了 subtitle 也会被忽略。
-     */
-    subtitlePicker: {
-      type: Boolean,
-      default: false,
-    },
-    showBack: {
-      default: 'auto',
-    },
-    showClose: {
-      default: 'auto',
-    },
-    showGrabber: {
-      default: 'auto',
-    },
-    showTrailing: {
-      type: Boolean,
-      default: true,
-    },
-    /** 右侧自定义按钮组；一维为一组，二维按组渲染多个玻璃胶囊，点击发 trailing-action */
-    trailingButtons: {
-      type: Array as PropType<LingyunToolbarButtonGroups>,
-      default: () => [],
-    },
-    /** 外部菜单打开期间隐藏自定义按钮组，避免按钮从浮层边缘露出 */
-    trailingButtonsHidden: { type: Boolean, default: false },
-    /** 显式启用 #trailing-menu 浮层；小程序插槽检测不可靠，不开启会在点击按钮时弹出空菜单 */
-    trailingMenuEnabled: { type: Boolean, default: false },
-    /** 页面级主题钮开关：auto 跟随全局；false 只隐藏当前 toolbar，不改进程全局状态 */
-    showThemeSwitch: {
-      type: [Boolean, String] as PropType<boolean | string>,
-      default: 'auto',
-    },
-    /** 开启顶部搜索：右侧多一个独立搜索按钮，点击进入搜索模式 */
-    searchable: { type: Boolean, default: false },
-    /** 额外顶部留白（进玻璃内部）：H5 / 微信 PC 分栏页由 lingyun-split-toolbar 传入 */
-    topInset: { type: Number, default: 0 },
-    /** 搜索模式；输入框替换左侧内容，原搜索按钮变为取消 */
-    searching: { type: Boolean, default: false },
-    searchValue: { type: String, default: '' },
-    searchPlaceholder: { type: String, default: '搜索' },
-    /** 顶栏下方数据驱动控件；数据为空时不占高度 */
-    segments: {
-      type: Array as PropType<
-        Array<{
-          key: string
-          text?: string
-          icon?: string
-          badge?: string | number
-          disabled?: boolean
-        }>
-      >,
-      default: () => [],
-    },
-    segmentValue: { type: [String, Number] as PropType<string | number>, default: '' },
-    /** 同一份 segments 数据渲染成哪种控件：分段控件 / 顶部 Tabs */
-    segmentControl: {
-      type: String as PropType<'segmented' | 'tabs'>,
-      default: 'segmented',
-    },
-    /** auto：Mac 宽屏显示交通灯。停靠左侧导航时由 app-page 关掉。 */
-    showWindowControls: {
-      default: 'auto',
-    },
-    fixed: {
-      type: Boolean,
-      default: false,
-    },
-    safeArea: {
-      type: Boolean,
-      default: true,
-    },
-    /**
-     * 右侧微信胶囊避让。默认 true；
-     * 分栏里不是整宽的 pane toolbar 设为 false，只保留状态栏占位。
-     */
-    avoidCapsule: {
-      type: Boolean,
-      default: true,
-    },
-    glassProgress: {
-      type: Number,
-      default: 0,
-    },
+  titleStyle: {
+    type: String,
+    default: 'title',
   },
-  data() {
-    return {
-      statusBarPx: 0,
-      barHeightPx: LINGYUN_TOOLBAR_BAR_DESIGN_PX,
-      rightInsetPx: 0,
-      /** 从状态栏挪到内容行 padding-bottom 的 px；宽屏不用 */
-      barBottomExtraPx: 0,
-      padXPx: LINGYUN_TOOLBAR_PAD_X_PX,
-      padTopPx: LINGYUN_TOOLBAR_BAR_PAD_TOP_PX,
-      padBottomPx: LINGYUN_TOOLBAR_BAR_PAD_BOTTOM_PX,
-      gapPx: LINGYUN_TOOLBAR_GAP_PX,
-      regular: false,
-      windowControls: false,
-      largeExtraPx: LINGYUN_TOOLBAR_LARGE_EXTRA_PX,
-      title2LineLargeExtraPx: LINGYUN_TOOLBAR_2LINE_LARGE_EXTRA_PX,
-      /** 搜索滑入结束后再聚焦，避免小程序过渡期间键盘反复触发布局抖动 */
-      searchFocusReady: false,
-      _searchFocusTimer: null as ReturnType<typeof setTimeout> | null,
-      trailingMenuOpen: false,
-      trailingMenuMounted: false,
-      themeMenuMounted: false,
-      trailingMenuAnchor: null as
-        | { top: number; left: number; width: number; height: number }
-        | null,
-      trailingMenuButton: null as LingyunToolbarButton | null,
-      trailingMenuIndex: -1,
-      trailingMenuGroupIndex: -1,
-      trailingMenuButtonIndex: -1,
-      themeMenuAnchor: null as { top: number; left: number; width: number; height: number } | null,
-      _onWindowResize: null as ((res?: unknown) => void) | null,
-      _themeAnchorTimers: [] as ReturnType<typeof setTimeout>[],
-      pickerAlive: true,
-      _pickerSyncing: false,
-      _pickerEmptyTimer: null as ReturnType<typeof setTimeout> | null,
-      _pickerEmitTimer: null as ReturnType<typeof setTimeout> | null,
-      _pendingPickerValue: null as string | number | null,
-      _pendingPickerOption: null as { value: string | number; label: string } | null,
-    }
+  title: {
+    type: String,
+    default: '',
   },
-  /*
-   * 窗口尺寸变化统一走 mounted 里的 bindResize（uni.onWindowResize + H5 resize）。
-   * 不再注册 uni-app 的 onResize：在分栏等嵌套组件里注册会中断渲染（小程序白屏）。
+  subtitle: {
+    type: String,
+    default: '',
+  },
+  /**
+   * 副标题位置是否显示全局选择器。默认不显示。
+   * 需要的顶栏设为 true；写了 subtitle 也会被忽略。
    */
-  created() {
-    this.syncNavLayout()
+  subtitlePicker: {
+    type: Boolean,
+    default: false,
   },
-  mounted() {
-    this.syncNavLayout()
-    this.scheduleThemeAnchorMeasure()
-    this.bindResize()
+  showBack: {
+    default: 'auto',
   },
-  beforeUnmount() {
-    this.pickerAlive = false
-    if (this._pickerEmptyTimer) {
-      clearTimeout(this._pickerEmptyTimer)
-      this._pickerEmptyTimer = null
+  showClose: {
+    default: 'auto',
+  },
+  showGrabber: {
+    default: 'auto',
+  },
+  showTrailing: {
+    type: Boolean,
+    default: true,
+  },
+  /** 右侧自定义按钮组；一维为一组，二维按组渲染多个玻璃胶囊，点击发 trailing-action */
+  trailingButtons: {
+    type: Array as PropType<LingyunToolbarButtonGroups>,
+    default: () => [],
+  },
+  /** 外部菜单打开期间隐藏自定义按钮组，避免按钮从浮层边缘露出 */
+  trailingButtonsHidden: { type: Boolean, default: false },
+  /** 显式启用 #trailing-menu 浮层；小程序插槽检测不可靠，不开启会在点击按钮时弹出空菜单 */
+  trailingMenuEnabled: { type: Boolean, default: false },
+  /** 页面级主题钮开关：auto 跟随全局；false 只隐藏当前 toolbar，不改进程全局状态 */
+  showThemeSwitch: {
+    type: [Boolean, String] as PropType<boolean | string>,
+    default: 'auto',
+  },
+  /** 开启顶部搜索：右侧多一个独立搜索按钮，点击进入搜索模式 */
+  searchable: { type: Boolean, default: false },
+  /** 额外顶部留白（进玻璃内部）：H5 / 微信 PC 分栏页由 lingyun-split-toolbar 传入 */
+  topInset: { type: Number, default: 0 },
+  /** 搜索模式；输入框替换左侧内容，原搜索按钮变为取消 */
+  searching: { type: Boolean, default: false },
+  searchValue: { type: String, default: '' },
+  searchPlaceholder: { type: String, default: '搜索' },
+  /** 顶栏下方数据驱动控件；数据为空时不占高度 */
+  segments: {
+    type: Array as PropType<
+      Array<{
+        key: string
+        text?: string
+        icon?: string
+        badge?: string | number
+        disabled?: boolean
+      }>
+    >,
+    default: () => [],
+  },
+  segmentValue: { type: [String, Number] as PropType<string | number>, default: '' },
+  /** 同一份 segments 数据渲染成哪种控件：分段控件 / 顶部 Tabs */
+  segmentControl: {
+    type: String as PropType<'segmented' | 'tabs'>,
+    default: 'segmented',
+  },
+  /** auto：Mac 宽屏显示交通灯。停靠左侧导航时由 app-page 关掉。 */
+  showWindowControls: {
+    default: 'auto',
+  },
+  fixed: {
+    type: Boolean,
+    default: false,
+  },
+  safeArea: {
+    type: Boolean,
+    default: true,
+  },
+  /**
+   * 右侧微信胶囊避让。默认 true；
+   * 分栏里不是整宽的 pane toolbar 设为 false，只保留状态栏占位。
+   */
+  avoidCapsule: {
+    type: Boolean,
+    default: true,
+  },
+  glassProgress: {
+    type: Number,
+    default: 0,
+  },
+})
+
+const emit = defineEmits([
+  'back',
+  'close',
+  'trailing',
+  'trailing-action',
+  'update:searching',
+  'update:searchValue',
+  'search-open',
+  'search-cancel',
+  'search-input',
+  'search',
+  'update:segmentValue',
+  'segment-click',
+  'segment-change',
+  'picker-value',
+])
+
+const statusBarPx = ref(0)
+const barHeightPx = ref(LINGYUN_TOOLBAR_BAR_DESIGN_PX)
+const rightInsetPx = ref(0)
+/** 从状态栏挪到内容行 padding-bottom 的 px；宽屏不用 */
+const barBottomExtraPx = ref(0)
+const padXPx = ref(LINGYUN_TOOLBAR_PAD_X_PX)
+const padTopPx = ref(LINGYUN_TOOLBAR_BAR_PAD_TOP_PX)
+const padBottomPx = ref(LINGYUN_TOOLBAR_BAR_PAD_BOTTOM_PX)
+const gapPx = ref(LINGYUN_TOOLBAR_GAP_PX)
+const regular = ref(false)
+const windowControls = ref(false)
+const largeExtraPx = ref(LINGYUN_TOOLBAR_LARGE_EXTRA_PX)
+const title2LineLargeExtraPx = ref(LINGYUN_TOOLBAR_2LINE_LARGE_EXTRA_PX)
+/** 搜索滑入结束后再聚焦，避免小程序过渡期间键盘反复触发布局抖动 */
+const searchFocusReady = ref(false)
+const _searchFocusTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const trailingMenuOpen = ref(false)
+const trailingMenuMounted = ref(false)
+const themeMenuMounted = ref(false)
+const trailingMenuAnchor = ref<
+  { top: number; left: number; width: number; height: number } | null
+>(null)
+const trailingMenuButton = ref<LingyunToolbarButton | null>(null)
+const trailingMenuIndex = ref(-1)
+const trailingMenuGroupIndex = ref(-1)
+const trailingMenuButtonIndex = ref(-1)
+const themeMenuAnchor = ref<{ top: number; left: number; width: number; height: number } | null>(null)
+const _onWindowResize = ref<((res?: unknown) => void) | null>(null)
+const _themeAnchorTimers = ref<ReturnType<typeof setTimeout>[]>([])
+const pickerAlive = ref(true)
+const _pickerSyncing = ref(false)
+const _pickerEmptyTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _pickerEmitTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _pendingPickerValue = ref<string | number | null>(null)
+const _pendingPickerOption = ref<{ value: string | number; label: string } | null>(null)
+
+const themeSwitchEnabled = computed((): boolean => {
+  /* 只挂页面级固定顶栏，demo 里的嵌套预览不重复出现主题钮 */
+  if (!props.fixed) return false
+  if (props.showThemeSwitch === false) return false
+  if (props.showThemeSwitch === true) return true
+  return useLingyunThemeSwitchVisible().value
+})
+/** 归一化按钮组：一维当作一组，二维按子数组拆组；空组过滤 */
+const buttonGroups = computed((): LingyunToolbarButton[][] => {
+  const raw = props.trailingButtons as unknown
+  if (!Array.isArray(raw) || !raw.length) return []
+  if (Array.isArray(raw[0])) {
+    return (raw as LingyunToolbarButton[][]).filter(
+      (group) => Array.isArray(group) && group.length > 0,
+    )
+  }
+  return [raw as LingyunToolbarButton[]]
+})
+/** 实际渲染组：没有数据按钮但开启了主题钮时，仍需一个只放主题钮的胶囊 */
+const renderedGroups = computed((): LingyunToolbarButton[][] => {
+  if (buttonGroups.value.length) return buttonGroups.value
+  return themeSwitchEnabled.value ? [[]] : []
+})
+const hasTrailingMenu = computed((): boolean => {
+  /* 小程序里 $slots 检测不可靠：即使页面没传 slot 也可能为 true，必须显式开启 */
+  return props.trailingMenuEnabled && !!slots['trailing-menu']
+})
+const searchGroupId = computed((): string => {
+  return 'ly-toolbar-search-group'
+})
+/** 胶囊下才额外留 8；H5/无胶囊直接贴内容区右边距，与普通按钮组一致 */
+const rightActionGapPx = computed((): number => {
+  return props.safeArea && rightInsetPx.value > padXPx.value ? gapPx.value : 0
+})
+const placementKey = computed(() => {
+  return props.placement === 'sheet' ? 'sheet' : 'standard'
+})
+const styleKey = computed(() => {
+  const allowed: string[] = [
+    'title',
+    'compactLarge',
+    'large',
+    'title2Line',
+    'title2LineLarge',
+    'title2LineLeft',
+  ]
+  return allowed.includes(props.titleStyle) ? props.titleStyle : 'title'
+})
+const isSheet = computed(() => {
+  return placementKey.value === 'sheet'
+})
+const isLarge = computed(() => {
+  return styleKey.value === 'large' || styleKey.value === 'title2LineLarge'
+})
+const isTwoLine = computed(() => {
+  return (
+    styleKey.value === 'title2Line' ||
+    styleKey.value === 'title2LineLarge' ||
+    styleKey.value === 'title2LineLeft'
+  )
+})
+const isTitleLeft = computed(() => {
+  return styleKey.value === 'title2LineLeft'
+})
+const showGrabberEffective = computed(() => {
+  return coerceTriFlag(props.showGrabber, isSheet.value)
+})
+const showBackEffective = computed(() => {
+  return coerceTriFlag(props.showBack, !isSheet.value)
+})
+const showCloseEffective = computed(() => {
+  return coerceTriFlag(props.showClose, isSheet.value)
+})
+const statusStyle = computed(() => {
+  /*
+   * JS 实测高度优先；个别运行时（小程序兼容层）读不到时退回 uni-app
+   * 注入的 --status-bar-height，避免顶栏压住系统状态栏。
+   */
+  if (statusBarPx.value > 0) {
+    return {
+      height: `${statusBarPx.value}px`,
     }
-    if (this._pickerEmitTimer) {
-      clearTimeout(this._pickerEmitTimer)
-      this._pickerEmitTimer = null
+  }
+  return {
+    height: 'var(--status-bar-height, 0px)',
+  }
+})
+const barStyle = computed(() => {
+  const padTop = padTopPx.value
+  const padBottom = padBottomPx.value + barBottomExtraPx.value
+  return {
+    height: `${barHeightPx.value}px`,
+    minHeight: `${barHeightPx.value}px`,
+    paddingTop: `${padTop}px`,
+    paddingBottom: `${padBottom}px`,
+    '--ly-toolbar-pad-top': `${padTop}px`,
+    '--ly-toolbar-pad-bottom': `${padBottom}px`,
+  }
+})
+/** 左侧是否有返回 / 关闭 / 交通灯 / 自定义 leading，决定标题要不要让出 44 钮位 */
+const hasLeadingContent = computed((): boolean => {
+  return !!(
+    showBackEffective.value ||
+    showCloseEffective.value ||
+    windowControls.value ||
+    slots.leading
+  )
+})
+/** 标题层左右让出较宽的一侧，文字仍按栏身几何中心排 */
+const titleInsetPx = computed(() => {
+  /* 左对齐两行标题且没有前导内容时，标题直接贴内容边缘，不再预留 44 钮位 */
+  if (isTitleLeft.value && !hasLeadingContent.value) return 0
+  const action = 44
+  let leading = action
+  if (windowControls.value) leading += LINGYUN_TOOLBAR_WINDOW_CONTROLS_W_PX + gapPx.value
+  return Math.max(leading, action) + gapPx.value
+})
+/** 单组实际占宽（单个 44，多个 36n + 18(n-1) + 20） */
+const actionGroupsWidthPx = computed((): number => {
+  const groups = renderedGroups.value
+  let width = 0
+  groups.forEach((group, groupIndex) => {
+    const count = group.length + (themeSwitchEnabled.value && groupIndex === 0 ? 1 : 0)
+    if (!count) return
+    width += count === 1 ? 44 : 36 * count + 18 * (count - 1) + 20
+  })
+  let groupCount = groups.length
+  if (props.searchable && !props.searching) {
+    width += 44
+    groupCount += 1
+  }
+  if (groupCount > 1) width += gapPx.value * (groupCount - 1)
+  return width
+})
+/** 标题右侧要让出右侧按钮组，避免小程序里视觉中心偏右 */
+const titleRightInsetPx = computed((): number => {
+  const group = actionGroupsWidthPx.value
+  if (!group) return titleInsetPx.value
+  /*
+   * 标题相对栏身绝对定位，栏身已经在根节点 padding 里让开了胶囊。
+   * 居中标题仍补这段差额，避免文字视觉中心偏到胶囊下。
+   * 左对齐标题再加一次会把标题宽挤到只剩几十像素。
+   */
+  const safeExtra = isTitleLeft.value ? 0 : Math.max(0, rightInsetPx.value - padXPx.value)
+  return Math.max(titleInsetPx.value, group + gapPx.value + safeExtra)
+})
+const largeStyle = computed(() => {
+  const extra =
+    styleKey.value === 'title2LineLarge' ? title2LineLargeExtraPx.value : largeExtraPx.value
+  return {
+    minHeight: `${extra}px`,
+  }
+})
+const segmentsStyle = computed(() => {
+  /* 胶囊在状态栏行；分段 / Tabs 行在下方，不需要为胶囊让出右侧安全区，铺满整行 */
+  const extra = props.safeArea ? Math.max(0, rightInsetPx.value - padXPx.value) : 0
+  if (!extra) return {}
+  return {
+    width: `calc(100% + ${extra}px)`,
+    marginRight: `-${extra}px`,
+  }
+})
+const segmentTabItems = computed(() => {
+  return (props.segments || [])
+    .map((item, index) => ({
+      key: String(item.key ?? index),
+      text: String(item.text ?? item.key ?? ''),
+      icon: item.icon,
+      badge: item.badge,
+      disabled: item.disabled === true,
+    }))
+    .filter((item) => !!item.text)
+})
+const searchLayerStyle = computed(() => {
+  /* 只覆盖搜索按钮左侧区域；搜索/关闭按钮位置固定，不参与动画 */
+  const actionWidth = props.searchable
+    ? 44 + gapPx.value + rightActionGapPx.value
+    : 0
+  /* 和右侧 44 高按钮组同一条内容带：顶到 bar 的 padding-top，窄屏 / 宽屏都能对齐 */
+  return {
+    left: '0px',
+    right: `${actionWidth}px`,
+    top: `${padTopPx.value}px`,
+  }
+})
+/** 内容区最小高度（不含状态栏） */
+const contentMinHeightPx = computed(() => {
+  let h = barHeightPx.value
+  if (showGrabberEffective.value) h += 16
+  if (!props.searching && isLarge.value) {
+    h +=
+      styleKey.value === 'title2LineLarge' ? title2LineLargeExtraPx.value : largeExtraPx.value
+  }
+  return h + Math.max(0, Number(props.topInset) || 0)
+})
+const rootStyle = computed((): Record<string, string> => {
+  const style: Record<string, string> = {
+    minHeight: `${contentMinHeightPx.value}px`,
+  }
+  if (props.topInset > 0) {
+    style.paddingTop = `${props.topInset}px`
+  }
+  /*
+   * 微信右侧避让胶囊：root paddingRight = rightInset。
+   * 标题/Grabber 若按「内容区」绝对居中会偏左；用 --ly-toolbar-center-shift
+   * 校正到屏宽几何中心：(rightInset - padX) / 2。
+   */
+  let centerShift = 0
+  const padX = padXPx.value
+  style.paddingLeft = `${padX}px`
+  style.paddingRight = `${padX}px`
+  if (props.safeArea && rightInsetPx.value > padX) {
+    style.paddingRight = `${rightInsetPx.value}px`
+    centerShift = (rightInsetPx.value - padX) / 2
+  }
+  style['--ly-toolbar-center-shift'] = `${centerShift}px`
+  style['--ly-toolbar-gap'] = `${gapPx.value}px`
+  style['--ly-toolbar-title-inset'] = `${titleInsetPx.value}px`
+  style['--ly-toolbar-title-inset-right'] = `${titleRightInsetPx.value}px`
+  return style
+})
+const showInlineTitle = computed(() => {
+  return !isLarge.value
+})
+/** 只有显式打开的顶栏才显示。全局总开关关掉时也不显示。 */
+const pickerActive = computed((): boolean => {
+  const flag = props.subtitlePicker as unknown
+  if (flag !== true && flag !== 'true') return false
+  return lingyunToolbarPicker.enabled
+})
+const pickerOptions = computed(() => {
+  return lingyunToolbarPicker.options
+})
+const pickerTitle = computed((): string => {
+  return lingyunToolbarPicker.title
+})
+const pickerSearchable = computed((): boolean => {
+  return lingyunToolbarPicker.searchable
+})
+const pickerSearchPlaceholder = computed((): string => {
+  return lingyunToolbarPicker.searchPlaceholder
+})
+const pickerIndex = computed((): number => {
+  const current = lingyunToolbarPicker.value
+  const index = lingyunToolbarPicker.options.findIndex(
+    (item) => current != null && String(item.value) === String(current),
+  )
+  return index < 0 ? 0 : index
+})
+const pickerCurrent = computed((): string | number | null => {
+  return lingyunToolbarPicker.value
+})
+const pickerLabel = computed((): string => {
+  const current = lingyunToolbarPicker.value
+  const hit = lingyunToolbarPicker.options.find(
+    (item) => current != null && String(item.value) === String(current),
+  )
+  return hit?.label || lingyunToolbarPicker.placeholder
+})
+const showInlineSubtitle = computed(() => {
+  return showInlineTitle.value && isTwoLine.value && !!props.subtitle && !pickerActive.value
+})
+const showLargeTitle = computed(() => {
+  return isLarge.value
+})
+const showLargeSubtitle = computed(() => {
+  return isLarge.value && isTwoLine.value && !!props.subtitle && !pickerActive.value
+})
+const titleWrapClass = computed(() => {
+  return {
+    'lingyun-toolbars__title-wrap--left': isTitleLeft.value,
+    'lingyun-toolbars__title-wrap--two': isTwoLine.value || (pickerActive.value && !isLarge.value),
+  }
+})
+const glassAmount = computed(() => {
+  const n = Number(props.glassProgress)
+  if (Number.isNaN(n)) return 0
+  return Math.min(1, Math.max(0, n))
+})
+const themeClass = computed(() => {
+  try {
+    return useLingyunTheme().rootClass || 'theme-light'
+  } catch (e) {
+    return 'theme-light'
+  }
+})
+const chromeStyle = computed(() => {
+  const p = glassAmount.value
+  const blur = (20 * p).toFixed(2)
+  return {
+    '--ly-toolbar-glass': String(p),
+    backdropFilter: p > 0.01 ? `saturate(180%) blur(${blur}px)` : 'none',
+    webkitBackdropFilter: p > 0.01 ? `saturate(180%) blur(${blur}px)` : 'none',
+  }
+})
+const rootClass = computed(() => {
+  return [
+    `lingyun-toolbars--${placementKey.value}`,
+    `lingyun-toolbars--${styleKey.value}`,
+    themeClass.value,
+    {
+      'lingyun-toolbars--fixed': props.fixed,
+      'lingyun-toolbars--safe': props.safeArea,
+      'lingyun-toolbars--grabber': showGrabberEffective.value,
+      'lingyun-toolbars--glassed': glassAmount.value > 0.02,
+      'lingyun-toolbars--regular': regular.value,
+    },
+  ]
+})
+
+function syncNavLayout(windowWidth?: number): void {
+  const width = Number(windowWidth)
+  const layout = getLingyunNavLayout(
+    LINGYUN_TOOLBAR_BAR_DESIGN_PX,
+    Number.isFinite(width) && width > 0 ? width : undefined,
+  )
+  let status = props.safeArea ? layout.statusBarHeight : 0
+  let bar = layout.barHeight
+  let bottomExtra = 0
+  regular.value = layout.regular
+  windowControls.value = coerceTriFlag(props.showWindowControls, layout.windowControls)
+  padXPx.value = layout.padX
+  padTopPx.value = layout.padTop
+  padBottomPx.value = layout.padBottom
+  gapPx.value = layout.gap
+  largeExtraPx.value = layout.largeExtra
+  title2LineLargeExtraPx.value = layout.title2LineLargeExtra
+  // 窄屏：状态栏少 5，挪到返回钮所在行的下边距；总高度不变。iPad / Mac 按稿不再挪。
+  if (!layout.regular && status > LINGYUN_STATUS_TO_BAR_BOTTOM_PX) {
+    bottomExtra = LINGYUN_STATUS_TO_BAR_BOTTOM_PX
+    status -= bottomExtra
+    bar += bottomExtra
+  }
+  statusBarPx.value = status
+  barHeightPx.value = bar
+  barBottomExtraPx.value = bottomExtra
+  rightInsetPx.value = props.safeArea && props.avoidCapsule ? layout.rightInset : 0
+  nextTick(() => measureThemeMenuAnchor())
+}
+
+/** 主题钮菜单和按钮组一起隐藏，按第一组右上角定位 */
+function measureThemeMenuAnchor(): void {
+  if (!themeSwitchEnabled.value) {
+    themeMenuAnchor.value = null
+    return
+  }
+  resolveElementAnchor(trailingGroupId(0), (anchor) => {
+    themeMenuAnchor.value = anchor
+  })
+}
+
+function scheduleThemeAnchorMeasure(): void {
+  _themeAnchorTimers.value.forEach((timer) => clearTimeout(timer))
+  _themeAnchorTimers.value = [120, 320, 700].map((delay) =>
+    setTimeout(() => measureThemeMenuAnchor(), delay),
+  )
+}
+
+function bindResize(): void {
+  const onWindowResize = (res?: unknown) => {
+    syncNavLayout(readLingyunResizeWidth(res))
+  }
+  _onWindowResize.value = onWindowResize
+  try {
+    if (typeof uni.onWindowResize === 'function') uni.onWindowResize(onWindowResize)
+  } catch {
+    /* 端不支持 */
+  }
+  // H5 拖窗口不一定走 uni.onWindowResize
+  // #ifdef H5
+  if (typeof window !== 'undefined') window.addEventListener('resize', onWindowResize)
+  // #endif
+}
+
+function unbindResize(): void {
+  const onWindowResize = _onWindowResize.value
+  try {
+    if (onWindowResize && typeof uni.offWindowResize === 'function') {
+      uni.offWindowResize(onWindowResize)
     }
-    if (this._searchFocusTimer) {
-      clearTimeout(this._searchFocusTimer)
-      this._searchFocusTimer = null
+  } catch {
+    /* 端不支持 */
+  }
+  // #ifdef H5
+  if (typeof window !== 'undefined' && onWindowResize) {
+    window.removeEventListener('resize', onWindowResize)
+  }
+  // #endif
+  _onWindowResize.value = null
+}
+
+function syncPickerOnEnter(): void {
+  if (_pickerSyncing.value || !pickerAlive.value || !pickerActive.value) return
+  _pickerSyncing.value = true
+  const result = syncLingyunToolbarPickerSelection()
+  _pickerSyncing.value = false
+  if (!pickerAlive.value || !pickerActive.value) return
+  if (result.empty) {
+    schedulePickerEmptyCheck()
+    return
+  }
+  _pendingPickerValue.value = result.value
+  _pendingPickerOption.value = result.option
+  if (_pickerEmitTimer.value) return
+  _pickerEmitTimer.value = setTimeout(() => {
+    _pickerEmitTimer.value = null
+    if (!pickerAlive.value || !pickerActive.value || _pendingPickerValue.value == null) return
+    emit('picker-value', _pendingPickerValue.value, _pendingPickerOption.value)
+  }, 0)
+}
+
+function schedulePickerEmptyCheck(): void {
+  if (_pickerEmptyTimer.value) clearTimeout(_pickerEmptyTimer.value)
+  _pickerEmptyTimer.value = setTimeout(() => {
+    _pickerEmptyTimer.value = null
+    if (!pickerAlive.value || !pickerActive.value) return
+    if (lingyunToolbarPicker.options.length > 0) return
+    notifyLingyunToolbarPickerEmpty()
+  }, 0)
+}
+
+function onToolbarPickerChange(payload: { value?: number | string | Array<number | string> }): void {
+  const index = Number(payload?.value)
+  if (!Number.isFinite(index) || index < 0) return
+  commitLingyunToolbarPicker(index)
+}
+
+function onBack(): void {
+  emit('back')
+}
+
+function onClose(): void {
+  emit('close')
+}
+
+function onTrailing(): void {
+  emit('trailing')
+}
+
+function onSearchOpen(): void {
+  emit('update:searching', true)
+  emit('search-open')
+}
+
+function onSearchAction(): void {
+  if (props.searching) onSearchCancel()
+  else onSearchOpen()
+}
+
+function onSearchCancel(): void {
+  emit('update:searching', false)
+  emit('search-cancel', props.searchValue)
+}
+
+function onSearchInput(event?: unknown): void {
+  const detail = (event as { detail?: { value?: string | number } } | undefined)?.detail
+  const value = detail?.value != null ? String(detail.value) : ''
+  emit('update:searchValue', value)
+  emit('search-input', value)
+}
+
+function onSearchConfirm(event?: unknown): void {
+  const detail = (event as { detail?: { value?: string | number } } | undefined)?.detail
+  const value = detail?.value != null ? String(detail.value) : props.searchValue
+  emit('update:searchValue', value)
+  emit('search', value)
+}
+
+function onSearchClear(): void {
+  emit('update:searchValue', '')
+  emit('search-input', '')
+}
+
+function onSegmentUpdate(value: string | number): void {
+  emit('update:segmentValue', value)
+}
+
+function onSegmentChange(item: { key?: string | number } | null): void {
+  const value = item && item.key != null ? item.key : props.segmentValue
+  emit('segment-click', { value, item })
+  emit('segment-change', { value, item })
+}
+
+function onTabsChange(payload: {
+  key?: string | number
+  item?: Record<string, unknown> | null
+}): void {
+  const value =
+    payload && payload.key != null ? payload.key : props.segmentValue
+  const item = (payload && payload.item) || null
+  emit('segment-click', { value, item })
+  emit('segment-change', { value, item })
+}
+
+function trailingButtonId(groupIndex: number, buttonIndex: number): string {
+  return `ly-toolbar-action-${groupIndex}-${buttonIndex}`
+}
+
+function trailingGroupId(groupIndex: number): string {
+  return `ly-toolbar-group-${groupIndex}`
+}
+
+/** 跨组扁平序号，兼容原有 index 语义 */
+function flatButtonIndex(groupIndex: number, buttonIndex: number): number {
+  let index = buttonIndex
+  for (let i = 0; i < groupIndex; i += 1) {
+    index += buttonGroups.value[i] ? buttonGroups.value[i].length : 0
+  }
+  return index
+}
+
+function resolveElementAnchor(
+  id: string,
+  done: (anchor: { top: number; left: number; width: number; height: number } | null) => void,
+): void {
+  let settled = false
+  const finish = (rect: { top?: number; left?: number; width?: number; height?: number } | null) => {
+    if (settled) return
+    settled = true
+    done(
+      rect && rect.top != null && rect.left != null
+        ? {
+            top: rect.top,
+            left: rect.left,
+            width: rect.width || 0,
+            height: rect.height || 0,
+          }
+        : null,
+    )
+  }
+  // #ifdef H5
+  if (typeof document !== 'undefined') {
+    const el = document.getElementById(id)
+    if (el) {
+      finish(el.getBoundingClientRect())
+      return
     }
-    this._themeAnchorTimers.forEach((timer) => clearTimeout(timer))
-    this._themeAnchorTimers = []
-    this.unbindResize()
+  }
+  // #endif
+  setTimeout(() => finish(null), 320)
+  uni
+    .createSelectorQuery()
+    .in(instance?.proxy as never)
+    .select(`#${id}`)
+    .boundingClientRect()
+    .exec((res) => {
+      finish((res && res[0]) || null)
+    })
+}
+
+function onTrailingButton(button: LingyunToolbarButton, groupIndex: number, buttonIndex: number): void {
+  if (button.disabled) return
+  const index = flatButtonIndex(groupIndex, buttonIndex)
+  const groupId = trailingGroupId(groupIndex)
+  /* 点击后整个按钮组隐藏，菜单按组右上角对齐，而不是按单个按钮 */
+  resolveElementAnchor(groupId, (anchor) => {
+    emit('trailing-action', {
+      key: button.key,
+      button,
+      index,
+      groupIndex,
+      buttonIndex,
+      anchor,
+    })
+    if (!hasTrailingMenu.value || !anchor) return
+    trailingMenuButton.value = button
+    trailingMenuIndex.value = index
+    trailingMenuGroupIndex.value = groupIndex
+    trailingMenuButtonIndex.value = buttonIndex
+    trailingMenuAnchor.value = anchor
+    trailingMenuMounted.value = true
+    trailingMenuOpen.value = true
+  })
+}
+
+function closeTrailingMenu(): void {
+  trailingMenuOpen.value = false
+}
+
+function onTrailingMenuClosed(): void {
+  trailingMenuMounted.value = false
+}
+
+function onThemeMenuOpen(): void {
+  themeMenuMounted.value = true
+}
+
+function onThemeMenuClosed(): void {
+  themeMenuMounted.value = false
+}
+
+watch(
+  () => pickerActive.value,
+  (active: boolean) => {
+    if (active) syncPickerOnEnter()
   },
-  watch: {
-    pickerActive: {
-      immediate: true,
-      handler(active: boolean) {
-        if (active) this.syncPickerOnEnter()
-      },
-    },
-    pickerOptions: {
-      deep: true,
-      handler() {
-        if (!this.pickerActive) return
-        this.syncPickerOnEnter()
-      },
-    },
-    pickerCurrent() {
-      if (!this.pickerActive) return
-      this.syncPickerOnEnter()
-    },
-    searching: {
-      immediate: true,
-      handler(val: boolean) {
-        if (this._searchFocusTimer) {
-          clearTimeout(this._searchFocusTimer)
-          this._searchFocusTimer = null
-        }
-        this.searchFocusReady = false
-        if (!val) return
-        this._searchFocusTimer = setTimeout(() => {
-          this._searchFocusTimer = null
-          this.searchFocusReady = true
-        }, 360)
-      },
-    },
-    safeArea() {
-      this.syncNavLayout()
-    },
-    avoidCapsule() {
-      this.syncNavLayout()
-    },
-    showWindowControls() {
-      this.syncNavLayout()
-    },
-    themeSwitchEnabled() {
-      this.$nextTick(() => this.measureThemeMenuAnchor())
-    },
-    trailingButtons: {
-      deep: true,
-      handler() {
-        this.$nextTick(() => this.measureThemeMenuAnchor())
-      },
-    },
+  { immediate: true },
+)
+
+watch(
+  pickerOptions,
+  () => {
+    if (!pickerActive.value) return
+    syncPickerOnEnter()
   },
-  computed: {
-    themeSwitchEnabled(): boolean {
-      /* 只挂页面级固定顶栏，demo 里的嵌套预览不重复出现主题钮 */
-      if (!this.fixed) return false
-      if (this.showThemeSwitch === false) return false
-      if (this.showThemeSwitch === true) return true
-      return useLingyunThemeSwitchVisible().value
-    },
-    /** 归一化按钮组：一维当作一组，二维按子数组拆组；空组过滤 */
-    buttonGroups(): LingyunToolbarButton[][] {
-      const raw = this.trailingButtons as unknown
-      if (!Array.isArray(raw) || !raw.length) return []
-      if (Array.isArray(raw[0])) {
-        return (raw as LingyunToolbarButton[][]).filter(
-          (group) => Array.isArray(group) && group.length > 0,
-        )
-      }
-      return [raw as LingyunToolbarButton[]]
-    },
-    /** 实际渲染组：没有数据按钮但开启了主题钮时，仍需一个只放主题钮的胶囊 */
-    renderedGroups(): LingyunToolbarButton[][] {
-      if (this.buttonGroups.length) return this.buttonGroups
-      return this.themeSwitchEnabled ? [[]] : []
-    },
-    hasTrailingMenu(): boolean {
-      /* 小程序里 $slots 检测不可靠：即使页面没传 slot 也可能为 true，必须显式开启 */
-      return this.trailingMenuEnabled && !!this.$slots['trailing-menu']
-    },
-    searchGroupId(): string {
-      return 'ly-toolbar-search-group'
-    },
-    /** 胶囊下才额外留 8；H5/无胶囊直接贴内容区右边距，与普通按钮组一致 */
-    rightActionGapPx(): number {
-      return this.safeArea && this.rightInsetPx > this.padXPx ? this.gapPx : 0
-    },
-    placementKey() {
-      return this.placement === 'sheet' ? 'sheet' : 'standard'
-    },
-    styleKey() {
-      const allowed: string[] = [
-        'title',
-        'compactLarge',
-        'large',
-        'title2Line',
-        'title2LineLarge',
-        'title2LineLeft',
-      ]
-      return allowed.includes(this.titleStyle) ? this.titleStyle : 'title'
-    },
-    isSheet() {
-      return this.placementKey === 'sheet'
-    },
-    isLarge() {
-      return this.styleKey === 'large' || this.styleKey === 'title2LineLarge'
-    },
-    isTwoLine() {
-      return (
-        this.styleKey === 'title2Line' ||
-        this.styleKey === 'title2LineLarge' ||
-        this.styleKey === 'title2LineLeft'
-      )
-    },
-    isTitleLeft() {
-      return this.styleKey === 'title2LineLeft'
-    },
-    showGrabberEffective() {
-      return coerceTriFlag(this.showGrabber, this.isSheet)
-    },
-    showBackEffective() {
-      return coerceTriFlag(this.showBack, !this.isSheet)
-    },
-    showCloseEffective() {
-      return coerceTriFlag(this.showClose, this.isSheet)
-    },
-    statusStyle() {
-      return {
-        height: `${this.statusBarPx}px`,
-      }
-    },
-    barStyle() {
-      const padTop = this.padTopPx
-      const padBottom = this.padBottomPx + this.barBottomExtraPx
-      return {
-        height: `${this.barHeightPx}px`,
-        minHeight: `${this.barHeightPx}px`,
-        paddingTop: `${padTop}px`,
-        paddingBottom: `${padBottom}px`,
-        '--ly-toolbar-pad-top': `${padTop}px`,
-        '--ly-toolbar-pad-bottom': `${padBottom}px`,
-      }
-    },
-    /** 左侧是否有返回 / 关闭 / 交通灯 / 自定义 leading，决定标题要不要让出 44 钮位 */
-    hasLeadingContent(): boolean {
-      return !!(
-        this.showBackEffective ||
-        this.showCloseEffective ||
-        this.windowControls ||
-        this.$slots.leading
-      )
-    },
-    /** 标题层左右让出较宽的一侧，文字仍按栏身几何中心排 */
-    titleInsetPx() {
-      /* 左对齐两行标题且没有前导内容时，标题直接贴内容边缘，不再预留 44 钮位 */
-      if (this.isTitleLeft && !this.hasLeadingContent) return 0
-      const action = 44
-      let leading = action
-      if (this.windowControls) leading += LINGYUN_TOOLBAR_WINDOW_CONTROLS_W_PX + this.gapPx
-      return Math.max(leading, action) + this.gapPx
-    },
-    /** 单组实际占宽（单个 44，多个 36n + 18(n-1) + 20） */
-    actionGroupsWidthPx(): number {
-      const groups = this.renderedGroups
-      let width = 0
-      groups.forEach((group, groupIndex) => {
-        const count = group.length + (this.themeSwitchEnabled && groupIndex === 0 ? 1 : 0)
-        if (!count) return
-        width += count === 1 ? 44 : 36 * count + 18 * (count - 1) + 20
-      })
-      let groupCount = groups.length
-      if (this.searchable && !this.searching) {
-        width += 44
-        groupCount += 1
-      }
-      if (groupCount > 1) width += this.gapPx * (groupCount - 1)
-      return width
-    },
-    /** 标题右侧要让出右侧按钮组，避免小程序里视觉中心偏右 */
-    titleRightInsetPx(): number {
-      const group = this.actionGroupsWidthPx
-      if (!group) return this.titleInsetPx
-      /*
-       * 标题相对栏身绝对定位，栏身已经在根节点 padding 里让开了胶囊。
-       * 居中标题仍补这段差额，避免文字视觉中心偏到胶囊下。
-       * 左对齐标题再加一次会把标题宽挤到只剩几十像素。
-       */
-      const safeExtra = this.isTitleLeft ? 0 : Math.max(0, this.rightInsetPx - this.padXPx)
-      return Math.max(this.titleInsetPx, group + this.gapPx + safeExtra)
-    },
-    largeStyle() {
-      const extra =
-        this.styleKey === 'title2LineLarge' ? this.title2LineLargeExtraPx : this.largeExtraPx
-      return {
-        minHeight: `${extra}px`,
-      }
-    },
-    segmentsStyle() {
-      /* 胶囊在状态栏行；分段 / Tabs 行在下方，不需要为胶囊让出右侧安全区，铺满整行 */
-      const extra = this.safeArea ? Math.max(0, this.rightInsetPx - this.padXPx) : 0
-      if (!extra) return {}
-      return {
-        width: `calc(100% + ${extra}px)`,
-        marginRight: `-${extra}px`,
-      }
-    },
-    segmentTabItems() {
-      return (this.segments || [])
-        .map((item, index) => ({
-          key: String(item.key ?? index),
-          text: String(item.text ?? item.key ?? ''),
-          icon: item.icon,
-          badge: item.badge,
-          disabled: item.disabled === true,
-        }))
-        .filter((item) => !!item.text)
-    },
-    searchLayerStyle() {
-      /* 只覆盖搜索按钮左侧区域；搜索/关闭按钮位置固定，不参与动画 */
-      const actionWidth = this.searchable
-        ? 44 + this.gapPx + this.rightActionGapPx
-        : 0
-      /* 和右侧 44 高按钮组同一条内容带：顶到 bar 的 padding-top，窄屏 / 宽屏都能对齐 */
-      return {
-        left: '0px',
-        right: `${actionWidth}px`,
-        top: `${this.padTopPx}px`,
-      }
-    },
-    /** 内容区最小高度（不含状态栏） */
-    contentMinHeightPx() {
-      let h = this.barHeightPx
-      if (this.showGrabberEffective) h += 16
-      if (!this.searching && this.isLarge) {
-        h +=
-          this.styleKey === 'title2LineLarge' ? this.title2LineLargeExtraPx : this.largeExtraPx
-      }
-      return h + Math.max(0, Number(this.topInset) || 0)
-    },
-    rootStyle(): Record<string, string> {
-      const style: Record<string, string> = {
-        minHeight: `${this.contentMinHeightPx}px`,
-      }
-      if (this.topInset > 0) {
-        style.paddingTop = `${this.topInset}px`
-      }
-      /*
-       * 微信右侧避让胶囊：root paddingRight = rightInset。
-       * 标题/Grabber 若按「内容区」绝对居中会偏左；用 --ly-toolbar-center-shift
-       * 校正到屏宽几何中心：(rightInset - padX) / 2。
-       */
-      let centerShift = 0
-      const padX = this.padXPx
-      style.paddingLeft = `${padX}px`
-      style.paddingRight = `${padX}px`
-      if (this.safeArea && this.rightInsetPx > padX) {
-        style.paddingRight = `${this.rightInsetPx}px`
-        centerShift = (this.rightInsetPx - padX) / 2
-      }
-      style['--ly-toolbar-center-shift'] = `${centerShift}px`
-      style['--ly-toolbar-gap'] = `${this.gapPx}px`
-      style['--ly-toolbar-title-inset'] = `${this.titleInsetPx}px`
-      style['--ly-toolbar-title-inset-right'] = `${this.titleRightInsetPx}px`
-      return style
-    },
-    showInlineTitle() {
-      return !this.isLarge
-    },
-    /** 只有显式打开的顶栏才显示。全局总开关关掉时也不显示。 */
-    pickerActive(): boolean {
-      const flag = this.subtitlePicker as unknown
-      if (flag !== true && flag !== 'true') return false
-      return lingyunToolbarPicker.enabled
-    },
-    pickerOptions() {
-      return lingyunToolbarPicker.options
-    },
-    pickerTitle(): string {
-      return lingyunToolbarPicker.title
-    },
-    pickerSearchable(): boolean {
-      return lingyunToolbarPicker.searchable
-    },
-    pickerSearchPlaceholder(): string {
-      return lingyunToolbarPicker.searchPlaceholder
-    },
-    pickerIndex(): number {
-      const current = lingyunToolbarPicker.value
-      const index = lingyunToolbarPicker.options.findIndex(
-        (item) => current != null && String(item.value) === String(current),
-      )
-      return index < 0 ? 0 : index
-    },
-    pickerCurrent(): string | number | null {
-      return lingyunToolbarPicker.value
-    },
-    pickerLabel(): string {
-      const current = lingyunToolbarPicker.value
-      const hit = lingyunToolbarPicker.options.find(
-        (item) => current != null && String(item.value) === String(current),
-      )
-      return hit?.label || lingyunToolbarPicker.placeholder
-    },
-    showInlineSubtitle() {
-      return this.showInlineTitle && this.isTwoLine && !!this.subtitle && !this.pickerActive
-    },
-    showLargeTitle() {
-      return this.isLarge
-    },
-    showLargeSubtitle() {
-      return this.isLarge && this.isTwoLine && !!this.subtitle && !this.pickerActive
-    },
-    titleWrapClass() {
-      return {
-        'lingyun-toolbars__title-wrap--left': this.isTitleLeft,
-        'lingyun-toolbars__title-wrap--two': this.isTwoLine || (this.pickerActive && !this.isLarge),
-      }
-    },
-    glassAmount() {
-      const n = Number(this.glassProgress)
-      if (Number.isNaN(n)) return 0
-      return Math.min(1, Math.max(0, n))
-    },
-    themeClass() {
-      try {
-        return useLingyunTheme().rootClass || 'theme-light'
-      } catch (e) {
-        return 'theme-light'
-      }
-    },
-    chromeStyle() {
-      const p = this.glassAmount
-      const blur = (20 * p).toFixed(2)
-      return {
-        '--ly-toolbar-glass': String(p),
-        backdropFilter: p > 0.01 ? `saturate(180%) blur(${blur}px)` : 'none',
-        webkitBackdropFilter: p > 0.01 ? `saturate(180%) blur(${blur}px)` : 'none',
-      }
-    },
-    rootClass() {
-      return [
-        `lingyun-toolbars--${this.placementKey}`,
-        `lingyun-toolbars--${this.styleKey}`,
-        this.themeClass,
-        {
-          'lingyun-toolbars--fixed': this.fixed,
-          'lingyun-toolbars--safe': this.safeArea,
-          'lingyun-toolbars--grabber': this.showGrabberEffective,
-          'lingyun-toolbars--glassed': this.glassAmount > 0.02,
-          'lingyun-toolbars--regular': this.regular,
-        },
-      ]
-    },
+  { deep: true },
+)
+
+watch(pickerCurrent, () => {
+  if (!pickerActive.value) return
+  syncPickerOnEnter()
+})
+
+watch(
+  () => props.searching,
+  (val: boolean) => {
+    if (_searchFocusTimer.value) {
+      clearTimeout(_searchFocusTimer.value)
+      _searchFocusTimer.value = null
+    }
+    searchFocusReady.value = false
+    if (!val) return
+    _searchFocusTimer.value = setTimeout(() => {
+      _searchFocusTimer.value = null
+      searchFocusReady.value = true
+    }, 360)
   },
-  methods: {
-    syncNavLayout(windowWidth?: number) {
-      const width = Number(windowWidth)
-      const layout = getLingyunNavLayout(
-        LINGYUN_TOOLBAR_BAR_DESIGN_PX,
-        Number.isFinite(width) && width > 0 ? width : undefined,
-      )
-      let status = this.safeArea ? layout.statusBarHeight : 0
-      let bar = layout.barHeight
-      let bottomExtra = 0
-      this.regular = layout.regular
-      this.windowControls = coerceTriFlag(this.showWindowControls, layout.windowControls)
-      this.padXPx = layout.padX
-      this.padTopPx = layout.padTop
-      this.padBottomPx = layout.padBottom
-      this.gapPx = layout.gap
-      this.largeExtraPx = layout.largeExtra
-      this.title2LineLargeExtraPx = layout.title2LineLargeExtra
-      // 窄屏：状态栏少 5，挪到返回钮所在行的下边距；总高度不变。iPad / Mac 按稿不再挪。
-      if (!layout.regular && status > LINGYUN_STATUS_TO_BAR_BOTTOM_PX) {
-        bottomExtra = LINGYUN_STATUS_TO_BAR_BOTTOM_PX
-        status -= bottomExtra
-        bar += bottomExtra
-      }
-      this.statusBarPx = status
-      this.barHeightPx = bar
-      this.barBottomExtraPx = bottomExtra
-      this.rightInsetPx = this.safeArea && this.avoidCapsule ? layout.rightInset : 0
-      this.$nextTick(() => this.measureThemeMenuAnchor())
-    },
-    /** 主题钮菜单和按钮组一起隐藏，按第一组右上角定位 */
-    measureThemeMenuAnchor() {
-      if (!this.themeSwitchEnabled) {
-        this.themeMenuAnchor = null
-        return
-      }
-      this.resolveElementAnchor(this.trailingGroupId(0), (anchor) => {
-        this.themeMenuAnchor = anchor
-      })
-    },
-    scheduleThemeAnchorMeasure() {
-      this._themeAnchorTimers.forEach((timer) => clearTimeout(timer))
-      this._themeAnchorTimers = [120, 320, 700].map((delay) =>
-        setTimeout(() => this.measureThemeMenuAnchor(), delay),
-      )
-    },
-    bindResize() {
-      const onWindowResize = (res?: unknown) => {
-        this.syncNavLayout(readLingyunResizeWidth(res))
-      }
-      this._onWindowResize = onWindowResize
-      try {
-        if (typeof uni.onWindowResize === 'function') uni.onWindowResize(onWindowResize)
-      } catch {
-        /* 端不支持 */
-      }
-      // H5 拖窗口不一定走 uni.onWindowResize
-      // #ifdef H5
-      if (typeof window !== 'undefined') window.addEventListener('resize', onWindowResize)
-      // #endif
-    },
-    unbindResize() {
-      const onWindowResize = this._onWindowResize
-      try {
-        if (onWindowResize && typeof uni.offWindowResize === 'function') {
-          uni.offWindowResize(onWindowResize)
-        }
-      } catch {
-        /* 端不支持 */
-      }
-      // #ifdef H5
-      if (typeof window !== 'undefined' && onWindowResize) {
-        window.removeEventListener('resize', onWindowResize)
-      }
-      // #endif
-      this._onWindowResize = null
-    },
-    syncPickerOnEnter() {
-      if (this._pickerSyncing || !this.pickerAlive || !this.pickerActive) return
-      this._pickerSyncing = true
-      const result = syncLingyunToolbarPickerSelection()
-      this._pickerSyncing = false
-      if (!this.pickerAlive || !this.pickerActive) return
-      if (result.empty) {
-        this.schedulePickerEmptyCheck()
-        return
-      }
-      this._pendingPickerValue = result.value
-      this._pendingPickerOption = result.option
-      if (this._pickerEmitTimer) return
-      this._pickerEmitTimer = setTimeout(() => {
-        this._pickerEmitTimer = null
-        if (!this.pickerAlive || !this.pickerActive || this._pendingPickerValue == null) return
-        this.$emit('picker-value', this._pendingPickerValue, this._pendingPickerOption)
-      }, 0)
-    },
-    schedulePickerEmptyCheck() {
-      if (this._pickerEmptyTimer) clearTimeout(this._pickerEmptyTimer)
-      this._pickerEmptyTimer = setTimeout(() => {
-        this._pickerEmptyTimer = null
-        if (!this.pickerAlive || !this.pickerActive) return
-        if (lingyunToolbarPicker.options.length > 0) return
-        notifyLingyunToolbarPickerEmpty()
-      }, 0)
-    },
-    onToolbarPickerChange(payload: { value?: number | string | Array<number | string> }) {
-      const index = Number(payload?.value)
-      if (!Number.isFinite(index) || index < 0) return
-      commitLingyunToolbarPicker(index)
-    },
-    onBack() {
-      this.$emit('back')
-    },
-    onClose() {
-      this.$emit('close')
-    },
-    onTrailing() {
-      this.$emit('trailing')
-    },
-    onSearchOpen() {
-      this.$emit('update:searching', true)
-      this.$emit('search-open')
-    },
-    onSearchAction() {
-      if (this.searching) this.onSearchCancel()
-      else this.onSearchOpen()
-    },
-    onSearchCancel() {
-      this.$emit('update:searching', false)
-      this.$emit('search-cancel', this.searchValue)
-    },
-    onSearchInput(event?: unknown) {
-      const detail = (event as { detail?: { value?: string | number } } | undefined)?.detail
-      const value = detail?.value != null ? String(detail.value) : ''
-      this.$emit('update:searchValue', value)
-      this.$emit('search-input', value)
-    },
-    onSearchConfirm(event?: unknown) {
-      const detail = (event as { detail?: { value?: string | number } } | undefined)?.detail
-      const value = detail?.value != null ? String(detail.value) : this.searchValue
-      this.$emit('update:searchValue', value)
-      this.$emit('search', value)
-    },
-    onSearchClear() {
-      this.$emit('update:searchValue', '')
-      this.$emit('search-input', '')
-    },
-    onSegmentUpdate(value: string | number) {
-      this.$emit('update:segmentValue', value)
-    },
-    onSegmentChange(item: { key?: string | number } | null) {
-      const value = item && item.key != null ? item.key : this.segmentValue
-      this.$emit('segment-click', { value, item })
-      this.$emit('segment-change', { value, item })
-    },
-    onTabsChange(payload: {
-      key?: string | number
-      item?: Record<string, unknown> | null
-    }) {
-      const value =
-        payload && payload.key != null ? payload.key : this.segmentValue
-      const item = (payload && payload.item) || null
-      this.$emit('segment-click', { value, item })
-      this.$emit('segment-change', { value, item })
-    },
-    trailingButtonId(groupIndex: number, buttonIndex: number): string {
-      return `ly-toolbar-action-${groupIndex}-${buttonIndex}`
-    },
-    trailingGroupId(groupIndex: number): string {
-      return `ly-toolbar-group-${groupIndex}`
-    },
-    /** 跨组扁平序号，兼容原有 index 语义 */
-    flatButtonIndex(groupIndex: number, buttonIndex: number): number {
-      let index = buttonIndex
-      for (let i = 0; i < groupIndex; i += 1) {
-        index += this.buttonGroups[i] ? this.buttonGroups[i].length : 0
-      }
-      return index
-    },
-    resolveElementAnchor(
-      id: string,
-      done: (anchor: { top: number; left: number; width: number; height: number } | null) => void,
-    ) {
-      let settled = false
-      const finish = (rect: { top?: number; left?: number; width?: number; height?: number } | null) => {
-        if (settled) return
-        settled = true
-        done(
-          rect && rect.top != null && rect.left != null
-            ? {
-                top: rect.top,
-                left: rect.left,
-                width: rect.width || 0,
-                height: rect.height || 0,
-              }
-            : null,
-        )
-      }
-      // #ifdef H5
-      if (typeof document !== 'undefined') {
-        const el = document.getElementById(id)
-        if (el) {
-          finish(el.getBoundingClientRect())
-          return
-        }
-      }
-      // #endif
-      setTimeout(() => finish(null), 320)
-      uni
-        .createSelectorQuery()
-        .in(this)
-        .select(`#${id}`)
-        .boundingClientRect()
-        .exec((res) => {
-          finish((res && res[0]) || null)
-        })
-    },
-    onTrailingButton(button: LingyunToolbarButton, groupIndex: number, buttonIndex: number) {
-      if (button.disabled) return
-      const index = this.flatButtonIndex(groupIndex, buttonIndex)
-      const groupId = this.trailingGroupId(groupIndex)
-      /* 点击后整个按钮组隐藏，菜单按组右上角对齐，而不是按单个按钮 */
-      this.resolveElementAnchor(groupId, (anchor) => {
-        this.$emit('trailing-action', {
-          key: button.key,
-          button,
-          index,
-          groupIndex,
-          buttonIndex,
-          anchor,
-        })
-        if (!this.hasTrailingMenu || !anchor) return
-        this.trailingMenuButton = button
-        this.trailingMenuIndex = index
-        this.trailingMenuGroupIndex = groupIndex
-        this.trailingMenuButtonIndex = buttonIndex
-        this.trailingMenuAnchor = anchor
-        this.trailingMenuMounted = true
-        this.trailingMenuOpen = true
-      })
-    },
-    closeTrailingMenu() {
-      this.trailingMenuOpen = false
-    },
-    onTrailingMenuClosed() {
-      this.trailingMenuMounted = false
-    },
-    onThemeMenuOpen() {
-      this.themeMenuMounted = true
-    },
-    onThemeMenuClosed() {
-      this.themeMenuMounted = false
-    },
+  { immediate: true },
+)
+
+watch(
+  () => props.safeArea,
+  () => {
+    syncNavLayout()
   },
+)
+
+watch(
+  () => props.avoidCapsule,
+  () => {
+    syncNavLayout()
+  },
+)
+
+watch(
+  () => props.showWindowControls,
+  () => {
+    syncNavLayout()
+  },
+)
+
+watch(themeSwitchEnabled, () => nextTick(() => measureThemeMenuAnchor()))
+
+watch(
+  () => props.trailingButtons,
+  () => nextTick(() => measureThemeMenuAnchor()),
+  { deep: true },
+)
+
+/*
+ * 窗口尺寸变化统一走 mounted 里的 bindResize（uni.onWindowResize + H5 resize）。
+ * 不再注册 uni-app 的 onResize：在分栏等嵌套组件里注册会中断渲染（小程序白屏）。
+ */
+syncNavLayout()
+
+onMounted(() => {
+  syncNavLayout()
+  scheduleThemeAnchorMeasure()
+  bindResize()
+})
+
+onBeforeUnmount(() => {
+  pickerAlive.value = false
+  if (_pickerEmptyTimer.value) {
+    clearTimeout(_pickerEmptyTimer.value)
+    _pickerEmptyTimer.value = null
+  }
+  if (_pickerEmitTimer.value) {
+    clearTimeout(_pickerEmitTimer.value)
+    _pickerEmitTimer.value = null
+  }
+  if (_searchFocusTimer.value) {
+    clearTimeout(_searchFocusTimer.value)
+    _searchFocusTimer.value = null
+  }
+  _themeAnchorTimers.value.forEach((timer) => clearTimeout(timer))
+  _themeAnchorTimers.value = []
+  unbindResize()
+})
+
+onShow(() => {
+  syncPickerOnEnter()
 })
 </script>
 

@@ -1107,10 +1107,11 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, h, nextTick, onBeforeUnmount, ref, useSlots, watch } from 'vue'
+import { inject, type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
-import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
+import { syncLingyunMpOverlayHold } from '../../utils/mp-overlay-gate'
 import {
   LINGYUN_APP_PAGE_SCROLL_LOCK,
   type LingyunAppPageScrollLock,
@@ -1137,6 +1138,10 @@ import {
   type PickerMark,
   type Ymd,
 } from './picker-date'
+
+type PickerColumnItem = { label: string; value: number }
+type PickerChangeEvent = { detail?: { value?: Array<number | string> } }
+type PickerValue = string | number | string[]
 
 /**
  * lingyun-picker
@@ -1169,1594 +1174,1731 @@ const YEAR_PAGE_SIZE = 12
 /** 天视图固定 6 行 × 7 列：月份切换时面板高度不跳 */
 const CAL_CELLS = 42
 
-type PickerColumnItem = { label: string; value: number }
-type PickerChangeEvent = { detail?: { value?: Array<number | string> } }
-type PickerValue = string | number | string[]
-
-export default defineComponent({
+defineOptions({
   name: 'LingyunPicker',
-  mixins: [mpOverlayHoldMixin],
-  components: { LingyunPickerCalDay },
-  emits: ['update:modelValue', 'update:value', 'change', 'cancel'],
-  inject: {
-    appPageScrollLock: {
-      from: LINGYUN_APP_PAGE_SCROLL_LOCK,
-      default: null as LingyunAppPageScrollLock | null,
-    },
-    lingyunFormItem: { default: null as object | null },
-  },
-  props: {
-    modelValue: {
-      type: [String, Number, Array] as PropType<PickerValue | undefined>,
-      default: undefined,
-    },
-    value: {
-      type: [String, Number, Array] as PropType<PickerValue | undefined>,
-      default: undefined,
-    },
-    mode: { type: String, default: 'selector' },
-    range: { type: Array as PropType<unknown[]>, default: () => [] },
-    rangeKey: { type: String, default: '' },
-    title: { type: String, default: '' },
-    placeholder: { type: String, default: '请选择' },
-    disabled: { type: Boolean, default: false },
-    start: { type: String, default: '' },
-    end: { type: String, default: '' },
-    fields: { type: String, default: 'day' },
-    /** auto | calendar | wheels */
-    pickerStyle: { type: String, default: 'auto' },
-    hour12: { type: Boolean, default: false },
-    minuteInterval: { type: [Number, String] as PropType<number | string>, default: 1 },
-    /** 日历日格底部农历 */
-    lunar: { type: Boolean, default: false },
-    /**
-     * 日历标记：
-     * { date: 'YYYY-MM-DD', badge?: string, dot?: true|'red'|'orange'|'green' }
-     * badge：右上角小字；dot：底部圆点（true/默认=红）
-     */
-    marks: { type: Array as PropType<PickerMark[]>, default: () => [] },
-    /**
-     * week 模式周起始：0=周日（默认，对齐表头日一二…）… 6=周六
-     */
-    weekStartsOn: { type: [Number, String] as PropType<number | string>, default: 0 },
-    cancelText: { type: String, default: '取消' },
-    confirmText: { type: String, default: '完成' },
-    /** selector 滚轮下方搜索框。默认关闭 */
-    showSearch: { type: Boolean, default: false },
-    /**
-     * 微信小程序滚轮经过选项时的轻震动反馈。
-     * 自定义 scroll-view 滚轮拿不到原生 picker-view 的系统选择音，用轻震动近似。
-     */
-    haptic: { type: Boolean, default: true },
-    searchPlaceholder: { type: String, default: '搜索' },
-    zIndex: { type: [Number, String] as PropType<number | string>, default: 1200 },
-    variant: { type: String, default: 'auto' },
-  },
-  data() {
-    return {
-      sheetMounted: false,
-      phase: '' as '' | 'enter' | 'open' | 'leave',
-      leaveTimer: null as ReturnType<typeof setTimeout> | null,
-      enterTimer: null as ReturnType<typeof setTimeout> | null,
-      draftIndexes: [0] as number[],
-      draftY: 0,
-      draftM: 1,
-      draftD: 1,
-      draftH: 0,
-      draftMi: 0,
-      /** daterange / week 草稿起止（ymd 对象） */
-      draftRangeStart: null as Ymd | null,
-      draftRangeEnd: null as Ymd | null,
-      viewY: 0,
-      viewM: 1,
-      viewYear: 0,
-      viewDecadeStart: 0,
-      calMode: 'day' as 'day' | 'month' | 'year',
-      timeEditing: false,
-      timeDraftIndexes: [0, 0] as number[],
-      safeBottom: 0,
-      windowWidth: 375,
-      searchQuery: '',
-      keyboardHeight: 0,
-      _onKeyboardHeight: null as ((res: { height?: number }) => void) | null,
-      _onVisualViewport: null as (() => void) | null,
-      dragStartY: 0,
-      dragDy: 0,
-      dragging: false,
-      calStartX: 0,
-      calStartY: 0,
-      calDx: 0,
-      calDy: 0,
-      calTracking: false,
-      calSwiped: false,
-      calOutCells: null as (CalCell | null)[] | null,
-      calOutYear: null as number | null,
-      calOutDecade: null as number | null,
-      calSlideDir: 0,
-      calSlidePhase: 'idle' as 'idle' | 'prepare' | 'animating',
-      calAnimTimer: null as ReturnType<typeof setTimeout> | null,
-      _appScrollLocked: false,
-      _scrollLocked: false,
-      _prevBodyOverflow: '',
-      _prevBodyOverscroll: '',
-      _prevHtmlOverscroll: '',
-      mpWheelTops: [] as number[],
-      mpTimeWheelTops: [] as number[],
-      _mpWheelUser: false,
-      _mpSnapApplying: false,
-      _mpSnapMap: {} as Record<string, ReturnType<typeof setTimeout>>,
-      /** 每列上一次经过的选项，用来只在跨行时触发反馈 */
-      _mpLastIndex: {} as Record<string, number>,
-      _mpLastFeedbackAt: 0,
-    }
-  },
-  computed: {
-    modeKey() {
-      if (
-        this.mode === 'date' ||
-        this.mode === 'time' ||
-        this.mode === 'datetime' ||
-        this.mode === 'daterange' ||
-        this.mode === 'week'
-      ) {
-        return this.mode
-      }
-      return 'selector'
-    },
-    isDateRange() {
-      return this.modeKey === 'daterange'
-    },
-    isWeek() {
-      return this.modeKey === 'week'
-    },
-    /** 区间高亮（daterange 两点选 / week 整周） */
-    isRangeSelect() {
-      return this.isDateRange || this.isWeek
-    },
-    weekStartIndex() {
-      const n = Number(this.weekStartsOn)
-      if (Number.isNaN(n)) return 0
-      return ((n % 7) + 7) % 7
-    },
-    current() {
-      if (this.modelValue !== undefined && this.modelValue !== null) return this.modelValue
-      return this.value
-    },
-    resolvedVariant() {
-      const v = this.variant
-      if (v === 'field' || v === 'cell') return v
-      return this.lingyunFormItem ? 'cell' : 'field'
-    },
-    isCell() {
-      return this.resolvedVariant === 'cell'
-    },
-    hasTrigger(): boolean {
-      return !!this.$slots.trigger
-    },
-    showTriggerTitle() {
-      if (this.isCell) return false
-      return !!this.title
-    },
-    useCalendar() {
-      if (this.pickerStyle === 'wheels') return false
-      const calModes =
-        this.modeKey === 'date' ||
-        this.modeKey === 'datetime' ||
-        this.modeKey === 'daterange' ||
-        this.modeKey === 'week'
-      if (this.pickerStyle === 'calendar') return calModes
-      return calModes
-    },
-    useCompactTrigger() {
-      return (
-        this.modeKey === 'date' ||
-        this.modeKey === 'time' ||
-        this.modeKey === 'datetime' ||
-        this.modeKey === 'daterange' ||
-        this.modeKey === 'week'
-      )
-    },
-    fieldsKey() {
-      if (this.modeKey !== 'date') return 'day'
-      if (this.fields === 'year' || this.fields === 'month') return this.fields
-      return 'day'
-    },
-    rangeHintText() {
-      if (!this.isRangeSelect) return ''
-      const s = this.draftRangeStart
-      const e = this.draftRangeEnd
-      if (this.isWeek) {
-        if (!s || !e) return '请选择一周'
-        return `${ymdKey(s.y, s.m, s.d)} → ${ymdKey(e.y, e.m, e.d)}`
-      }
-      if (!s) return '请选择开始日期'
-      if (!e) return `开始 ${ymdKey(s.y, s.m, s.d)} · 请选择结束日期`
-      return `${ymdKey(s.y, s.m, s.d)} → ${ymdKey(e.y, e.m, e.d)}`
-    },
-    marksMap(): Record<string, PickerMark> {
-      const map: Record<string, PickerMark> = Object.create(null)
-      const list = Array.isArray(this.marks) ? this.marks : []
-      for (let i = 0; i < list.length; i += 1) {
-        const item = list[i]
-        if (!item || item.date == null || item.date === '') continue
-        const key = String(item.date).slice(0, 10)
-        map[key] = item
-      }
-      return map
-    },
-    calExtraClass() {
-      const hasMarks = Array.isArray(this.marks) && this.marks.length > 0
-      return {
-        'lingyun-picker-cal--sub': !!this.lunar || hasMarks,
-        'lingyun-picker-cal--range': this.isRangeSelect,
-      }
-    },
-    minuteStep() {
-      const n = Number(this.minuteInterval) || 1
-      const allowed = [1, 5, 10, 15, 30]
-      return allowed.includes(n) ? n : 1
-    },
-    rootClass() {
-      return [
-        this.isCell ? 'lingyun-picker--cell' : 'lingyun-picker--field',
-        this.disabled ? 'lingyun-picker--disabled' : '',
-      ].filter(Boolean)
-    },
-    rowClass() {
-      return {
-        'lingyun-picker__row--disabled': this.disabled,
-        'lingyun-picker__row--cell': this.isCell,
-      }
-    },
-    valueClass() {
-      return {
-        'lingyun-picker__value--placeholder': !this.displayText,
-        'lingyun-picker__value--capsule': this.useCompactTrigger && !!this.displayText,
-      }
-    },
-    isDark() {
-      try {
-        return (useLingyunTheme().resolved || 'light') === 'dark'
-      } catch {
-        return false
-      }
-    },
-    themeClass() {
-      try {
-        return useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        return 'theme-light'
-      }
-    },
-    reduceMotion() {
-      try {
-        if (typeof window !== 'undefined' && window.matchMedia) {
-          return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        }
-      } catch {
-        /* ignore */
-      }
-      return false
-    },
-    sheetClass() {
-      return [
-        this.themeClass,
-        this.phase ? `lingyun-picker-sheet--${this.phase}` : '',
-        this.reduceMotion ? 'lingyun-picker-sheet--reduce-motion' : '',
-        this.dragging ? 'lingyun-picker-sheet--dragging' : '',
-        this.useCalendar ? 'lingyun-picker-sheet--calendar' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    sheetRootStyle() {
-      return { zIndex: Number(this.zIndex) || 1200 }
-    },
-    /** 宽屏（iPad / 桌面 H5）不铺满：按面板宽上限水平居中 */
-    sideInsetPx() {
-      const w = Math.max(320, Number(this.windowWidth) || 375)
-      return Math.max(INSET_MEDIUM, Math.round((w - PANEL_MAX_WIDTH) / 2))
-    },
-    panelBottom() {
-      if (this.showSelectorSearch && this.keyboardHeight > 0) return this.keyboardHeight
-      return INSET_MEDIUM
-    },
-    showSelectorSearch() {
-      return this.showSearch && this.modeKey === 'selector'
-    },
-    panelStyle(): Record<string, string> {
-      const style: Record<string, string> = {
-        left: `${this.sideInsetPx}px`,
-        right: `${this.sideInsetPx}px`,
-        bottom: `${this.panelBottom}px`,
-        borderRadius: `${RADIUS}px`,
-        paddingBottom: `${Number(this.safeBottom) || 0}px`,
-      }
-      if (this.dragging) {
-        style.transform = `translate3d(0, ${this.dragDy}px, 0)`
-        style.transition = 'none'
-      }
-      return style
-    },
-    indicatorStyle() {
-      // 原生选中条透明，改由连续半圆胶囊绘制；边线用 class 清伪元素
-      return `height: ${ITEM_H}px; background: transparent; border: 0 solid transparent; border-top: none; border-bottom: none;`
-    },
-    indicatorClass() {
-      return 'lingyun-picker-sheet__indicator'
-    },
-    indicatorPillStyle() {
-      const bg = this.isDark ? 'rgba(120, 120, 128, 0.24)' : 'rgba(120, 120, 128, 0.12)'
-      const r = ITEM_H / 2
-      return {
-        height: `${ITEM_H}px`,
-        marginTop: `${-r}px`,
-        borderRadius: `${r}px`,
-        background: bg,
-      }
-    },
-    maskClass() {
-      return this.isDark ? 'lingyun-picker-sheet__mask--dark' : 'lingyun-picker-sheet__mask--light'
-    },
-    timeWheelColumns(): PickerColumnItem[][] {
-      return [this.timeHourColumn, this.timeMinuteColumn]
-    },
-    dateBounds(): { start: Ymd; end: Ymd } {
-      const now = new Date()
-      const defStart = `${now.getFullYear() - 80}-01-01`
-      const defEnd = `${now.getFullYear() + 20}-12-31`
-      const s = parseYmd(this.start) || parseYmd(defStart)
-      const e = parseYmd(this.end) || parseYmd(defEnd)
-      return {
-        start: s || { y: now.getFullYear() - 80, m: 1, d: 1 },
-        end: e || { y: now.getFullYear() + 20, m: 12, d: 31 },
-      }
-    },
-    years() {
-      const { start, end } = this.dateBounds
-      const list: PickerColumnItem[] = []
-      for (let y = start.y; y <= end.y; y += 1) {
-        list.push({ label: `${y}年`, value: y })
-      }
-      return list
-    },
-    /** 表头须与格子起始日一致，否则整周高亮会跨两行 */
-    weekLabels() {
-      const start = this.weekStartIndex
-      if (!start) return WEEK_LABELS
-      return WEEK_LABELS.slice(start).concat(WEEK_LABELS.slice(0, start))
-    },
-    monthItems() {
-      return MONTH_ITEMS
-    },
-    calendarTitle() {
-      const m = MONTH_CN[(this.viewM || 1) - 1] || String(this.viewM)
-      return `${this.viewY}年${m}月`
-    },
-    calendarCells() {
-      return this.buildMonthCells(this.viewY, this.viewM)
-    },
-    calTrackClass() {
-      return {
-        'lingyun-picker-cal__track--dual': !!this.calOutCells,
-        'lingyun-picker-cal__track--animating': this.calSlidePhase === 'animating',
-      }
-    },
-    calTrackStyle() {
-      return this.slideTrackStyle(!!this.calOutCells)
-    },
-    yearTrackClass() {
-      return {
-        'lingyun-picker-cal__track--dual': this.calOutYear != null,
-        'lingyun-picker-cal__track--animating': this.calSlidePhase === 'animating',
-      }
-    },
-    yearTrackStyle() {
-      return this.slideTrackStyle(this.calOutYear != null)
-    },
-    decadeTrackClass() {
-      return {
-        'lingyun-picker-cal__track--dual': this.calOutDecade != null,
-        'lingyun-picker-cal__track--animating': this.calSlidePhase === 'animating',
-      }
-    },
-    decadeTrackStyle() {
-      return this.slideTrackStyle(this.calOutDecade != null)
-    },
-    yearPageItems() {
-      return this.buildYearPage(this.viewDecadeStart)
-    },
-    yearPageTitle() {
-      const { end } = this.dateBounds
-      const list = this.yearPageItems.filter((yr) => yr <= end.y)
-      if (!list.length) return ''
-      const first = list[0]
-      const last = list[list.length - 1]
-      return first === last ? `${first}年` : `${first}–${last}`
-    },
-    canPrevMonth() {
-      const { start } = this.dateBounds
-      if (this.viewY > start.y) return true
-      if (this.viewY === start.y && this.viewM > start.m) return true
-      return false
-    },
-    canNextMonth() {
-      const { end } = this.dateBounds
-      if (this.viewY < end.y) return true
-      if (this.viewY === end.y && this.viewM < end.m) return true
-      return false
-    },
-    canPrevYear() {
-      return this.viewYear > this.dateBounds.start.y
-    },
-    canNextYear() {
-      return this.viewYear < this.dateBounds.end.y
-    },
-    canPrevDecade() {
-      return this.viewDecadeStart > this.dateBounds.start.y
-    },
-    canNextDecade() {
-      return this.viewDecadeStart + YEAR_PAGE_SIZE <= this.dateBounds.end.y
-    },
-    draftIsPm() {
-      return this.draftH >= 12
-    },
-    draftTimeLabel() {
-      if (this.hour12) {
-        const { h12, isPm } = formatHour12(this.draftH)
-        return `${h12}:${pad2(this.draftMi)} ${isPm ? 'PM' : 'AM'}`
-      }
-      return `${pad2(this.draftH)}:${pad2(this.draftMi)}`
-    },
-    timeHourColumn(): PickerColumnItem[] {
-      const hours: PickerColumnItem[] = []
-      if (this.hour12) {
-        for (let h = 1; h <= 12; h += 1) hours.push({ label: String(h), value: h })
-      } else {
-        for (let h = 0; h < 24; h += 1) hours.push({ label: pad2(h), value: h })
-      }
-      return hours
-    },
-    timeMinuteColumn(): PickerColumnItem[] {
-      const minutes: PickerColumnItem[] = []
-      const step = this.minuteStep
-      for (let m = 0; m < 60; m += step) {
-        minutes.push({ label: pad2(m), value: m })
-      }
-      return minutes
-    },
-    columns() {
-      if (this.modeKey === 'selector') {
-        const list = Array.isArray(this.range) ? this.range : []
-        let items = list.map((item, index) => {
-          let label = ''
-          if (item != null && typeof item === 'object' && this.rangeKey) {
-            label = String((item as Record<string, unknown>)[this.rangeKey] ?? '')
-          } else {
-            label = item == null ? '' : String(item)
-          }
-          return { label, value: index }
-        })
-        const query = this.showSelectorSearch ? String(this.searchQuery || '').trim().toLowerCase() : ''
-        if (query) {
-          items = items.filter((item) => item.label.toLowerCase().includes(query))
-        }
-        if (!items.length) return [[{ label: '无匹配', value: -1 }]]
-        return [items]
-      }
-      if (this.modeKey === 'time') {
-        return [this.timeHourColumn, this.timeMinuteColumn]
-      }
-      const fields = this.fields === 'year' || this.fields === 'month' ? this.fields : 'day'
-      const yi = this.draftIndexes[0] || 0
-      const year = (this.years[yi] && this.years[yi].value) || this.dateBounds.start.y
-      const cols = [this.years]
-      if (fields === 'year') return cols
-
-      const { start, end } = this.dateBounds
-      let monthFrom = 1
-      let monthTo = 12
-      if (year === start.y) monthFrom = start.m
-      if (year === end.y) monthTo = end.m
-      const months: PickerColumnItem[] = []
-      for (let m = monthFrom; m <= monthTo; m += 1) {
-        months.push({ label: `${m}月`, value: m })
-      }
-      cols.push(months)
-      if (fields === 'month') return cols
-
-      const mi = Math.min(this.draftIndexes[1] || 0, months.length - 1)
-      const month = (months[mi] && months[mi].value) || monthFrom
-      let dayFrom = 1
-      let dayTo = daysInMonth(year, month)
-      if (year === start.y && month === start.m) dayFrom = start.d
-      if (year === end.y && month === end.m) dayTo = Math.min(dayTo, end.d)
-      const days: PickerColumnItem[] = []
-      for (let d = dayFrom; d <= dayTo; d += 1) {
-        days.push({ label: `${d}日`, value: d })
-      }
-      cols.push(days)
-      return cols
-    },
-    displayText() {
-      if (this.modeKey === 'selector') {
-        const idx = Number(this.current)
-        if (Number.isNaN(idx) || idx < 0 || !this.range || !this.range.length) return ''
-        const item = this.range[idx]
-        if (item == null) return ''
-        if (typeof item === 'object' && this.rangeKey) {
-          return String((item as Record<string, unknown>)[this.rangeKey] ?? '')
-        }
-        return String(item)
-      }
-      if (this.modeKey === 'time' && this.current != null && this.current !== '') {
-        const hm = parseHm(this.current)
-        if (!hm) return String(this.current)
-        if (this.hour12) {
-          const { h12, isPm } = formatHour12(hm.h)
-          return `${h12}:${pad2(hm.mi)} ${isPm ? 'PM' : 'AM'}`
-        }
-        return `${pad2(hm.h)}:${pad2(hm.mi)}`
-      }
-      if (this.modeKey === 'datetime' && this.current != null && this.current !== '') {
-        const p = parseYmdHm(this.current)
-        if (!p) return String(this.current)
-        const datePart = `${p.y}-${pad2(p.m)}-${pad2(p.d)}`
-        if (this.hour12) {
-          const { h12, isPm } = formatHour12(p.h)
-          return `${datePart} ${h12}:${pad2(p.mi)} ${isPm ? 'PM' : 'AM'}`
-        }
-        return `${datePart} ${pad2(p.h)}:${pad2(p.mi)}`
-      }
-      if (this.modeKey === 'date' && this.current != null && this.current !== '') {
-        if (this.fieldsKey === 'year') {
-          const p = parseYOnly(this.current) || parseYmd(this.current) || parseYm(this.current)
-          return p ? `${p.y}年` : String(this.current)
-        }
-        if (this.fieldsKey === 'month') {
-          const p = parseYm(this.current) || parseYmd(this.current)
-          return p ? `${p.y}年${p.m}月` : String(this.current)
-        }
-        return String(this.current)
-      }
-      if (this.modeKey === 'daterange' || this.modeKey === 'week') {
-        const parsed = parseDateRange(this.current)
-        if (!parsed) return ''
-        const a = ymdKey(parsed.start.y, parsed.start.m, parsed.start.d)
-        const b = ymdKey(parsed.end.y, parsed.end.m, parsed.end.d)
-        return a === b ? a : `${a} → ${b}`
-      }
-      return this.current != null && this.current !== '' ? String(this.current) : ''
-    },
-    todayYmd() {
-      const n = new Date()
-      return { y: n.getFullYear(), m: n.getMonth() + 1, d: n.getDate() }
-    },
-  },
-  beforeUnmount() {
-    this.clearTimers()
-    this.unbindSearchKeyboard()
-    this.unlockPageScroll()
-  },
-  methods: {
-    clearTimers() {
-      if (this.leaveTimer) {
-        clearTimeout(this.leaveTimer)
-        this.leaveTimer = null
-      }
-      if (this.enterTimer) {
-        clearTimeout(this.enterTimer)
-        this.enterTimer = null
-      }
-      if (this.calAnimTimer) {
-        clearTimeout(this.calAnimTimer)
-        this.calAnimTimer = null
-      }
-      const snaps = this._mpSnapMap || {}
-      Object.keys(snaps).forEach((key) => {
-        const timer = snaps[key]
-        if (timer) clearTimeout(timer)
-      })
-      this._mpSnapMap = {}
-    },
-    /**
-     * 天视图格子：`{ y, m, d, out }`，共 42 格。
-     * 1 号之前与月末之后用**相邻月真实日期**补齐（`out: true`，灰色不可点），
-     * 否则周高亮条会在月首 / 月尾断开。
-     */
-    buildMonthCells(y: number, m: number): (CalCell | null)[] {
-      if (!y || !m) return Array(CAL_CELLS).fill(null)
-      const firstDow = new Date(y, m - 1, 1).getDay()
-      const lead = (((firstDow - this.weekStartIndex) % 7) + 7) % 7
-      const cells: CalCell[] = []
-      if (lead > 0) {
-        const prev = shiftMonthYm(y, m, -1)
-        const prevDim = daysInMonth(prev.y, prev.m)
-        for (let i = lead; i > 0; i -= 1) {
-          cells.push({ y: prev.y, m: prev.m, d: prevDim - i + 1, out: true })
-        }
-      }
-      const dim = daysInMonth(y, m)
-      for (let d = 1; d <= dim; d += 1) cells.push({ y, m, d, out: false })
-      const next = shiftMonthYm(y, m, 1)
-      let tail = 1
-      while (cells.length < CAL_CELLS) {
-        cells.push({ y: next.y, m: next.m, d: tail, out: true })
-        tail += 1
-      }
-      return cells
-    },
-    resetCalSlide() {
-      if (this.calAnimTimer) {
-        clearTimeout(this.calAnimTimer)
-        this.calAnimTimer = null
-      }
-      this.calOutCells = null
-      this.calOutYear = null
-      this.calOutDecade = null
-      this.calSlideDir = 0
-      this.calSlidePhase = 'idle'
-      this.calSwiped = false
-      this.calTracking = false
-      this.calMode = 'day'
-    },
-    slideTrackStyle(hasOut: boolean): Record<string, string> {
-      if (!hasOut || !this.calSlideDir) return {}
-      const next = this.calSlideDir > 0
-      if (this.calSlidePhase === 'prepare') {
-        return {
-          transform: next ? 'translate3d(0, 0, 0)' : 'translate3d(-50%, 0, 0)',
-          transition: 'none',
-        }
-      }
-      if (this.calSlidePhase === 'animating') {
-        return {
-          transform: next ? 'translate3d(-50%, 0, 0)' : 'translate3d(0, 0, 0)',
-          transition: `transform ${CAL_SLIDE_MS}ms cubic-bezier(0.32, 0.72, 0, 1)`,
-        }
-      }
-      return {}
-    },
-    runCalSlide(afterPrepare?: () => void) {
-      this.calSlidePhase = 'prepare'
-      if (typeof afterPrepare === 'function') afterPrepare()
-      this.$nextTick(() => {
-        const kick = () => {
-          this.calSlidePhase = 'animating'
-          if (this.calAnimTimer) clearTimeout(this.calAnimTimer)
-          this.calAnimTimer = setTimeout(() => {
-            this.calOutCells = null
-            this.calOutYear = null
-            this.calOutDecade = null
-            this.calSlideDir = 0
-            this.calSlidePhase = 'idle'
-            this.calAnimTimer = null
-          }, CAL_SLIDE_MS)
-        }
-        if (typeof requestAnimationFrame === 'function') {
-          requestAnimationFrame(() => {
-            requestAnimationFrame(kick)
-          })
-        } else {
-          setTimeout(kick, 16)
-        }
-      })
-    },
-    buildYearPage(pageStart: number): number[] {
-      const { start } = this.dateBounds
-      const from = Math.max(start.y, Number(pageStart) || start.y)
-      const list: number[] = []
-      for (let i = 0; i < YEAR_PAGE_SIZE; i += 1) {
-        list.push(from + i)
-      }
-      return list
-    },
-    decadeStartForYear(year: number): number {
-      const { start, end } = this.dateBounds
-      const y = Math.min(end.y, Math.max(start.y, Number(year) || start.y))
-      const offset = y - start.y
-      return start.y + Math.floor(offset / YEAR_PAGE_SIZE) * YEAR_PAGE_SIZE
-    },
-    yearPageItemsAt(pageStart: number): number[] {
-      return this.buildYearPage(pageStart)
-    },
-    syncSafe() {
-      try {
-        const info =
-          typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
-        const inset = info && info.safeAreaInsets
-        this.safeBottom = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
-        this.windowWidth = Number(info && info.windowWidth) || 375
-      } catch {
-        this.safeBottom = 0
-        this.windowWidth = 375
-      }
-    },
-    snapMinute(mi: number): number {
-      const step = this.minuteStep
-      const snapped = Math.round(mi / step) * step
-      return Math.min(60 - step, Math.max(0, snapped))
-    },
-    indexesFromValue() {
-      if (this.modeKey === 'selector') {
-        const idx = Number(this.current)
-        const max = Math.max(0, (this.range && this.range.length ? this.range.length : 1) - 1)
-        if (Number.isNaN(idx) || idx < 0) return [0]
-        return [Math.min(idx, max)]
-      }
-      if (this.modeKey === 'time') {
-        const hm = parseHm(this.current) || { h: 0, mi: 0 }
-        const mi = this.snapMinute(hm.mi)
-        if (this.hour12) {
-          const { h12 } = formatHour12(hm.h)
-          const hi = Math.max(0, this.timeHourColumn.findIndex((x) => x.value === h12))
-          const mii = Math.max(0, this.timeMinuteColumn.findIndex((x) => x.value === mi))
-          return [hi, mii]
-        }
-        return [
-          Math.min(23, Math.max(0, hm.h)),
-          Math.max(0, this.timeMinuteColumn.findIndex((x) => x.value === mi)),
-        ]
-      }
-      const { start, end } = this.dateBounds
-      const now = new Date()
-      const today = { y: now.getFullYear(), m: now.getMonth() + 1, d: now.getDate() }
-      const ymd = this.clampYmdToBounds(parseYmd(this.current) || today)
-      const yi = Math.max(0, this.years.findIndex((x) => x.value === ymd.y))
-      const fields = this.fields === 'year' || this.fields === 'month' ? this.fields : 'day'
-      if (fields === 'year') return [yi]
-
-      let monthFrom = 1
-      let monthTo = 12
-      if (ymd.y === start.y) monthFrom = start.m
-      if (ymd.y === end.y) monthTo = end.m
-      const mi = Math.max(0, Math.min(monthTo - monthFrom, ymd.m - monthFrom))
-      if (fields === 'month') return [yi, mi]
-
-      let dayFrom = 1
-      let dayTo = daysInMonth(ymd.y, ymd.m)
-      if (ymd.y === start.y && ymd.m === start.m) dayFrom = start.d
-      if (ymd.y === end.y && ymd.m === end.m) dayTo = Math.min(dayTo, end.d)
-      const di = Math.max(0, Math.min(dayTo - dayFrom, ymd.d - dayFrom))
-      return [yi, mi, di]
-    },
-    clampYmdToBounds(ymd: Ymd): Ymd {
-      const { start, end } = this.dateBounds
-      let y = Number(ymd.y) || start.y
-      let m = Number(ymd.m) || 1
-      let d = Number(ymd.d) || 1
-      if (compareYmd({ y, m, d }, start) < 0) return { ...start }
-      if (compareYmd({ y, m, d }, end) > 0) return { ...end }
-      const dim = daysInMonth(y, m)
-      if (d > dim) d = dim
-      return { y, m, d }
-    },
-    syncCalendarDraftFromValue() {
-      const now = new Date()
-      const fallback = {
-        y: now.getFullYear(),
-        m: now.getMonth() + 1,
-        d: now.getDate(),
-        h: now.getHours(),
-        mi: this.snapMinute(now.getMinutes()),
-      }
-      let parsed: (Ymd & { h?: number; mi?: number }) | null = null
-      if (this.modeKey === 'datetime') parsed = parseYmdHm(this.current)
-      else if (this.modeKey === 'daterange' || this.modeKey === 'week') {
-        const range = parseDateRange(this.current)
-        if (range) {
-          if (this.modeKey === 'week') {
-            const week = weekBoundsForDay(
-              range.start.y,
-              range.start.m,
-              range.start.d,
-              this.weekStartIndex,
-            )
-            this.draftRangeStart = { ...week.start }
-            this.draftRangeEnd = { ...week.end }
-            parsed = { ...week.start, h: 0, mi: 0 }
-          } else {
-            this.draftRangeStart = { ...range.start }
-            this.draftRangeEnd = { ...range.end }
-            parsed = { ...range.start, h: 0, mi: 0 }
-          }
-        } else {
-          this.draftRangeStart = null
-          this.draftRangeEnd = null
-        }
-      } else if (this.modeKey === 'date') {
-        if (this.fieldsKey === 'year') {
-          parsed = parseYOnly(this.current) || parseYmd(this.current) || parseYm(this.current)
-        } else if (this.fieldsKey === 'month') {
-          parsed = parseYm(this.current) || parseYmd(this.current)
-        } else {
-          parsed = parseYmd(this.current)
-        }
-        if (parsed) parsed = { ...parsed, h: 0, mi: 0 }
-      }
-      const base = parsed || fallback
-      const clamped = this.clampYmdToBounds(base)
-      const src = {
-        ...clamped,
-        h: Math.min(23, Math.max(0, base.h != null ? base.h : fallback.h)),
-        mi: this.snapMinute(base.mi != null ? base.mi : fallback.mi),
-      }
-      this.draftY = src.y
-      this.draftM = src.m || 1
-      this.draftD = src.d || 1
-      this.draftH = src.h
-      this.draftMi = src.mi
-      this.viewY = this.draftY
-      this.viewM = this.draftM
-      this.viewYear = this.draftY
-      this.viewDecadeStart = this.decadeStartForYear(this.draftY)
-      if (this.modeKey === 'daterange' || this.modeKey === 'week') this.calMode = 'day'
-      else if (this.fieldsKey === 'year') this.calMode = 'year'
-      else if (this.fieldsKey === 'month') this.calMode = 'month'
-      else this.calMode = 'day'
-      this.syncTimeDraftIndexes()
-    },
-    syncTimeDraftIndexes() {
-      const mi = this.snapMinute(this.draftMi)
-      this.draftMi = mi
-      if (this.hour12) {
-        const { h12 } = formatHour12(this.draftH)
-        const hi = Math.max(0, this.timeHourColumn.findIndex((x) => x.value === h12))
-        const mii = Math.max(0, this.timeMinuteColumn.findIndex((x) => x.value === mi))
-        this.timeDraftIndexes = [hi, mii]
-      } else {
-        this.timeDraftIndexes = [
-          Math.min(23, Math.max(0, this.draftH)),
-          Math.max(0, this.timeMinuteColumn.findIndex((x) => x.value === mi)),
-        ]
-      }
-      if (!this._mpWheelUser) this.applyMpTimeWheelTops(this.timeDraftIndexes)
-    },
-    valueFromIndexes(indexes: number[]): PickerValue {
-      const cols = this.columns
-      if (this.modeKey === 'selector') {
-        const col = cols[0] || []
-        const item = col[indexes[0] || 0]
-        return item ? item.value : 0
-      }
-      if (this.modeKey === 'time') {
-        const hItem = cols[0][indexes[0] || 0]
-        const mItem = cols[1][indexes[1] || 0]
-        let h = (hItem && hItem.value) || 0
-        const mi = (mItem && mItem.value) || 0
-        if (this.hour12) {
-          h = toH24(h, this.draftIsPm)
-        }
-        return `${pad2(h)}:${pad2(mi)}`
-      }
-      const fields = this.fields === 'year' || this.fields === 'month' ? this.fields : 'day'
-      const y = (cols[0][indexes[0] || 0] && cols[0][indexes[0] || 0].value) || this.dateBounds.start.y
-      if (fields === 'year') return `${y}`
-      const m = (cols[1][indexes[1] || 0] && cols[1][indexes[1] || 0].value) || 1
-      if (fields === 'month') return `${y}-${pad2(m)}`
-      const d = (cols[2][indexes[2] || 0] && cols[2][indexes[2] || 0].value) || 1
-      return `${y}-${pad2(m)}-${pad2(d)}`
-    },
-    valueFromCalendar(): PickerValue {
-      if (this.isRangeSelect) {
-        const s = this.draftRangeStart
-        if (!s) {
-          if (this.isWeek) {
-            const today = this.clampYmdToBounds(this.todayYmd)
-            const week = weekBoundsForDay(today.y, today.m, today.d, this.weekStartIndex)
-            return [ymdKey(week.start.y, week.start.m, week.start.d), ymdKey(week.end.y, week.end.m, week.end.d)]
-          }
-          const today = this.clampYmdToBounds(this.todayYmd)
-          const key = ymdKey(today.y, today.m, today.d)
-          return [key, key]
-        }
-        const e = this.draftRangeEnd || s
-        return [ymdKey(s.y, s.m, s.d), ymdKey(e.y, e.m, e.d)]
-      }
-      if (this.fieldsKey === 'year') return `${this.draftY}`
-      if (this.fieldsKey === 'month') return `${this.draftY}-${pad2(this.draftM)}`
-      const date = ymdKey(this.draftY, this.draftM, this.draftD)
-      if (this.modeKey === 'date') return date
-      return `${date} ${pad2(this.draftH)}:${pad2(this.draftMi)}`
-    },
-    confirmCalendarValue() {
-      const next = this.valueFromCalendar()
-      this.$emit('update:modelValue', next)
-      this.$emit('update:value', next)
-      this.$emit('change', { value: next })
-      this.closeSheet()
-    },
-    clampDraftToColumns() {
-      const cols = this.columns
-      const next = cols.map((col, i) => {
-        const max = Math.max(0, col.length - 1)
-        const cur = Number(this.draftIndexes[i]) || 0
-        return Math.min(max, Math.max(0, cur))
-      })
-      const changed =
-        next.some((v, i) => v !== (this.draftIndexes[i] || 0)) || next.length !== this.draftIndexes.length
-      if (changed) {
-        this.draftIndexes = next
-        if (!this._mpWheelUser) this.applyMpWheelTops(next)
-      }
-    },
-    isDayDisabledAt(day: number, y: number, m: number): boolean {
-      if (!day) return true
-      const cur = { y, m, d: day }
-      const { start, end } = this.dateBounds
-      return compareYmd(cur, start) < 0 || compareYmd(cur, end) > 0
-    },
-    /** @param {{ y: number, m: number, d: number, out: boolean } | null} cell */
-    cellClass(cell: CalCell | null) {
-      if (!cell) return { 'lingyun-picker-cal__cell--empty': true }
-      const { y, m, d } = cell
-      const today = d === this.todayYmd.d && y === this.todayYmd.y && m === this.todayYmd.m
-      // 相邻月补位格：不可点，但仍参与周 / 区间高亮，条带才不断开
-      const disabled = cell.out || this.isDayDisabledAt(d, y, m)
-      if (this.isRangeSelect) {
-        const cur = { y, m, d }
-        const s = this.draftRangeStart
-        const e = this.draftRangeEnd
-        const isStart = s && sameYmd(cur, s)
-        const isEnd = e && sameYmd(cur, e)
-        let inMiddle = false
-        if (s && e && !sameYmd(s, e)) {
-          inMiddle = compareYmd(cur, s) > 0 && compareYmd(cur, e) < 0
-        }
-        const selected = !!(isStart || isEnd)
-        return {
-          'lingyun-picker-cal__cell--selected': selected,
-          'lingyun-picker-cal__cell--today': today && !selected,
-          'lingyun-picker-cal__cell--disabled': disabled,
-          'lingyun-picker-cal__cell--outside': !!cell.out,
-          'lingyun-picker-cal__cell--range-start': !!isStart,
-          'lingyun-picker-cal__cell--range-end': !!isEnd,
-          'lingyun-picker-cal__cell--in-range': inMiddle || (isStart && e && !sameYmd(s, e)) || (isEnd && s && !sameYmd(s, e)),
-        }
-      }
-      const selected = d === this.draftD && y === this.draftY && m === this.draftM
-      return {
-        'lingyun-picker-cal__cell--selected': selected,
-        'lingyun-picker-cal__cell--today': today && !selected,
-        'lingyun-picker-cal__cell--disabled': disabled,
-        'lingyun-picker-cal__cell--outside': !!cell.out,
-      }
-    },
-    dayRangeFlags(day: number, y: number, m: number) {
-      if (!this.isRangeSelect || !day) {
-        return { selected: false, rangeStart: false, rangeEnd: false, inRange: false }
-      }
-      const cur = { y, m, d: day }
-      const s = this.draftRangeStart
-      const e = this.draftRangeEnd
-      const rangeStart = !!(s && sameYmd(cur, s))
-      const rangeEnd = !!(e && sameYmd(cur, e))
-      let inRange = false
-      if (s && e && !sameYmd(s, e)) {
-        inRange = compareYmd(cur, s) > 0 && compareYmd(cur, e) < 0
-      }
-      return {
-        selected: rangeStart || rangeEnd,
-        rangeStart,
-        rangeEnd,
-        inRange,
-      }
-    },
-    /** @param {{ y: number, m: number, d: number, out: boolean } | null} cell */
-    dayDecor(cell: CalCell | null) {
-      if (!cell) {
-        return {
-          day: '',
-          badgeText: '',
-          lunar: '',
-          dotTone: '',
-          selected: false,
-          today: false,
-          disabled: false,
-          outside: false,
-          compact: false,
-          selectTone: 'label',
-        }
-      }
-      const { y, m, d: day } = cell
-      const mark = this.marksMap[ymdKey(y, m, day)] || null
-      let badgeText = ''
-      if (mark) {
-        if (typeof mark.badge === 'string' && mark.badge.trim()) {
-          badgeText = mark.badge.trim()
-        } else if (typeof mark.badgeText === 'string' && mark.badgeText.trim()) {
-          badgeText = mark.badgeText.trim()
-        }
-      }
-      let lunar = ''
-      if (this.lunar) {
-        lunar = lunarDayText(y, m, day)
-      }
-      let dotTone = ''
-      if (mark && mark.dot !== false && mark.dot != null) {
-        const raw = mark.dot === true ? 'red' : String(mark.dot).toLowerCase()
-        if (raw === 'red' || raw === 'default' || raw === '1') dotTone = 'red'
-        else if (raw === 'orange' || raw === 'warning') dotTone = 'orange'
-        else if (raw === 'green' || raw === 'success') dotTone = 'green'
-      }
-      const flags = this.dayRangeFlags(day, y, m)
-      const selected = this.isRangeSelect
-        ? flags.selected
-        : day === this.draftD && y === this.draftY && m === this.draftM
-      const today =
-        day === this.todayYmd.d && y === this.todayYmd.y && m === this.todayYmd.m
-      const hasMarks = Array.isArray(this.marks) && this.marks.length > 0
-      const compact = !!this.lunar || hasMarks
-      return {
-        day,
-        badgeText,
-        lunar,
-        dotTone,
-        selected,
-        today,
-        disabled: this.isDayDisabledAt(day, y, m),
-        outside: !!cell.out,
-        compact,
-        selectTone: compact || this.isRangeSelect ? 'red' : 'label',
-      }
-    },
-    /** @param {{ y: number, m: number, d: number, out: boolean } | null} cell */
-    onSelectDay(cell: CalCell | null) {
-      if (this.calSwiped || this.calSlidePhase !== 'idle') {
-        this.calSwiped = false
-        return
-      }
-      // 补位格只做视觉衔接，不可选（要跨月请先翻月）
-      if (!cell || cell.out) return
-      const day = cell.d
-      if (this.isDayDisabledAt(day, cell.y, cell.m)) return
-      if (this.isWeek) {
-        const week = weekBoundsForDay(cell.y, cell.m, day, this.weekStartIndex)
-        this.draftRangeStart = { ...week.start }
-        this.draftRangeEnd = { ...week.end }
-        this.draftY = cell.y
-        this.draftM = cell.m
-        this.draftD = day
-        return
-      }
-      if (this.isDateRange) {
-        const clicked = { y: cell.y, m: cell.m, d: day }
-        const s = this.draftRangeStart
-        const e = this.draftRangeEnd
-        if (!s || (s && e)) {
-          this.draftRangeStart = clicked
-          this.draftRangeEnd = null
-        } else if (compareYmd(clicked, s) < 0) {
-          this.draftRangeEnd = { ...s }
-          this.draftRangeStart = clicked
-        } else {
-          this.draftRangeEnd = clicked
-        }
-        this.draftY = clicked.y
-        this.draftM = clicked.m
-        this.draftD = clicked.d
-        return
-      }
-      this.draftY = cell.y
-      this.draftM = cell.m
-      this.draftD = day
-    },
-    shiftMonth(delta: number) {
-      if (this.calMode !== 'day') return
-      if (this.calSlidePhase !== 'idle') return
-      if (delta < 0 && !this.canPrevMonth) return
-      if (delta > 0 && !this.canNextMonth) return
-      let y = this.viewY
-      let m = this.viewM + delta
-      if (m < 1) {
-        m = 12
-        y -= 1
-      } else if (m > 12) {
-        m = 1
-        y += 1
-      }
-      if (this.reduceMotion) {
-        this.viewY = y
-        this.viewM = m
-        return
-      }
-      this.calOutCells = this.buildMonthCells(this.viewY, this.viewM)
-      this.calOutYear = null
-      this.calOutDecade = null
-      this.calSlideDir = delta
-      this.runCalSlide(() => {
-        this.viewY = y
-        this.viewM = m
-      })
-    },
-    openMonthView() {
-      if (this.fieldsKey === 'year') return
-      if (this.calSlidePhase !== 'idle') return
-      this.resetCalSlideKeepMode()
-      this.viewYear = this.viewY
-      this.calMode = 'month'
-    },
-    openYearView() {
-      if (this.calSlidePhase !== 'idle') return
-      this.resetCalSlideKeepMode()
-      this.viewDecadeStart = this.decadeStartForYear(this.viewYear)
-      this.calMode = 'year'
-    },
-    resetCalSlideKeepMode() {
-      if (this.calAnimTimer) {
-        clearTimeout(this.calAnimTimer)
-        this.calAnimTimer = null
-      }
-      this.calOutCells = null
-      this.calOutYear = null
-      this.calOutDecade = null
-      this.calSlideDir = 0
-      this.calSlidePhase = 'idle'
-      this.calSwiped = false
-      this.calTracking = false
-    },
-    shiftYear(delta: number) {
-      if (this.calMode !== 'month') return
-      if (this.calSlidePhase !== 'idle') return
-      if (delta < 0 && !this.canPrevYear) return
-      if (delta > 0 && !this.canNextYear) return
-      const next = this.viewYear + delta
-      if (this.reduceMotion) {
-        this.viewYear = next
-        return
-      }
-      this.calOutYear = this.viewYear
-      this.calOutCells = null
-      this.calOutDecade = null
-      this.calSlideDir = delta
-      this.runCalSlide(() => {
-        this.viewYear = next
-      })
-    },
-    shiftDecade(delta: number) {
-      if (this.calMode !== 'year') return
-      if (this.calSlidePhase !== 'idle') return
-      if (delta < 0 && !this.canPrevDecade) return
-      if (delta > 0 && !this.canNextDecade) return
-      const { start, end } = this.dateBounds
-      let next = this.viewDecadeStart + delta * YEAR_PAGE_SIZE
-      if (next < start.y) next = start.y
-      if (next > end.y) next = this.decadeStartForYear(end.y)
-      if (next === this.viewDecadeStart) return
-      if (this.reduceMotion) {
-        this.viewDecadeStart = next
-        return
-      }
-      this.calOutDecade = this.viewDecadeStart
-      this.calOutCells = null
-      this.calOutYear = null
-      this.calSlideDir = delta
-      this.runCalSlide(() => {
-        this.viewDecadeStart = next
-      })
-    },
-    monthLabel(m: number): string {
-      return MONTH_SHORT[(m || 1) - 1] || `${m}月`
-    },
-    isMonthDisabled(m: number, y: number): boolean {
-      const { start, end } = this.dateBounds
-      if (y < start.y || y > end.y) return true
-      if (y === start.y && m < start.m) return true
-      if (y === end.y && m > end.m) return true
-      return false
-    },
-    monthCellClass(m: number, y: number) {
-      // 仅高亮「已选日期」所在年月；浏览其它年份时不跟着手动 viewM
-      const selected = y === this.draftY && m === this.draftM
-      return {
-        'lingyun-picker-cal__month-cell--selected': selected,
-        'lingyun-picker-cal__month-cell--disabled': this.isMonthDisabled(m, y),
-      }
-    },
-    isYearDisabled(yr: number): boolean {
-      const { start, end } = this.dateBounds
-      return yr < start.y || yr > end.y
-    },
-    yearCellClass(yr: number) {
-      return {
-        'lingyun-picker-cal__month-cell--selected': yr === this.draftY,
-        'lingyun-picker-cal__month-cell--disabled': this.isYearDisabled(yr),
-      }
-    },
-    onSelectMonth(m: number) {
-      if (this.calSwiped || this.calSlidePhase !== 'idle') {
-        this.calSwiped = false
-        return
-      }
-      if (this.isMonthDisabled(m, this.viewYear)) return
-      this.viewY = this.viewYear
-      this.viewM = m
-      this.draftY = this.viewYear
-      this.draftM = m
-      const dim = daysInMonth(this.viewY, this.viewM)
-      if (this.draftD > dim) this.draftD = dim
-      if (this.fieldsKey === 'month') {
-        this.confirmCalendarValue()
-        return
-      }
-      this.calMode = 'day'
-      this.resetCalSlideKeepMode()
-    },
-    onSelectYear(yr: number) {
-      if (this.calSwiped || this.calSlidePhase !== 'idle') {
-        this.calSwiped = false
-        return
-      }
-      if (this.isYearDisabled(yr)) return
-      this.viewYear = yr
-      this.draftY = yr
-      this.viewDecadeStart = this.decadeStartForYear(yr)
-      if (this.fieldsKey === 'year') {
-        this.confirmCalendarValue()
-        return
-      }
-      this.calMode = 'month'
-      this.resetCalSlideKeepMode()
-    },
-    onCalTouchStart(e: TouchEvent) {
-      const t = e.touches && e.touches[0]
-      if (!t) return
-      this.calStartX = t.clientX
-      this.calStartY = t.clientY
-      this.calDx = 0
-      this.calDy = 0
-      this.calTracking = true
-      this.calSwiped = false
-    },
-    onCalTouchMove(e: TouchEvent) {
-      if (!this.calTracking) return
-      const t = e.touches && e.touches[0]
-      if (!t) return
-      this.calDx = t.clientX - this.calStartX
-      this.calDy = t.clientY - this.calStartY
-    },
-    onCalTouchEnd() {
-      if (!this.calTracking) return
-      const dx = this.calDx
-      const dy = this.calDy
-      this.calTracking = false
-      this.calDx = 0
-      this.calDy = 0
-      if (Math.abs(dx) < CAL_SWIPE_DX) return
-      if (Math.abs(dx) < Math.abs(dy) * CAL_SWIPE_RATIO) return
-      this.calSwiped = true
-      const delta = dx < 0 ? 1 : -1
-      if (this.calMode === 'year') this.shiftDecade(delta)
-      else if (this.calMode === 'month') this.shiftYear(delta)
-      else this.shiftMonth(delta)
-    },
-    toggleTimeEditing() {
-      this.timeEditing = !this.timeEditing
-      if (this.timeEditing) this.syncTimeDraftIndexes()
-    },
-    setAmPm(isPm: boolean) {
-      const { h12 } = formatHour12(this.draftH)
-      this.draftH = toH24(h12, isPm)
-      this.syncTimeDraftIndexes()
-    },
-    onTimePickChange(e: PickerChangeEvent) {
-      const raw = (e && e.detail && e.detail.value) || []
-      this.timeDraftIndexes = raw.map((n) => Number(n) || 0)
-      const hItem = this.timeHourColumn[this.timeDraftIndexes[0] || 0]
-      const mItem = this.timeMinuteColumn[this.timeDraftIndexes[1] || 0]
-      let h = (hItem && hItem.value) || 0
-      if (this.hour12) h = toH24(h, this.draftIsPm)
-      this.draftH = h
-      this.draftMi = (mItem && mItem.value) || 0
-    },
-    open() {
-      if (this.disabled) return
-      this.searchQuery = ''
-      this.timeEditing = false
-      this.resetCalSlide()
-      if (this.useCalendar) {
-        this.syncCalendarDraftFromValue()
-      } else {
-        if (this.modeKey === 'time') {
-          const hm = parseHm(this.current) || { h: 0, mi: 0 }
-          this.draftH = hm.h
-          this.draftMi = this.snapMinute(hm.mi)
-        }
-        this.draftIndexes = this.indexesFromValue()
-        this.applyMpWheelTops(this.draftIndexes)
-        this.$nextTick(() => this.clampDraftToColumns())
-      }
-      this.syncSafe()
-      this.bindSearchKeyboard()
-      this.lockPageScroll()
-      this.openAnim()
-    },
-    openAnim() {
-      this.clearTimers()
-      this.sheetMounted = true
-      this.dragDy = 0
-      this.dragging = false
-      this.phase = 'enter'
-      this.$nextTick(() => {
-        const kick = () => {
-          this.enterTimer = setTimeout(
-            () => {
-              this.phase = 'open'
-              this.enterTimer = null
-            },
-            this.reduceMotion ? 16 : ENTER_KICK_MS,
-          )
-        }
-        if (typeof requestAnimationFrame === 'function') {
-          requestAnimationFrame(() => {
-            requestAnimationFrame(kick)
-          })
-        } else {
-          kick()
-        }
-      })
-    },
-    closeSheet(after?: () => void) {
-      this.clearTimers()
-      if (!this.sheetMounted) {
-        this.unbindSearchKeyboard()
-        this.unlockPageScroll()
-        if (typeof after === 'function') after()
-        return
-      }
-      this.phase = 'leave'
-      this.leaveTimer = setTimeout(
-        () => {
-          this.sheetMounted = false
-          this.phase = ''
-          this.dragDy = 0
-          this.dragging = false
-          this.timeEditing = false
-          this.resetCalSlide()
-          this.unbindSearchKeyboard()
-          this.unlockPageScroll()
-          this.leaveTimer = null
-          if (typeof after === 'function') after()
-        },
-        this.reduceMotion ? 16 : LEAVE_MS,
-      )
-    },
-    onPanelTouchMove() {
-      /* stop 已在模板 */
-    },
-    onChromeTouchStart(e: TouchEvent) {
-      const t = e.touches && e.touches[0]
-      if (!t) return
-      this.dragStartY = t.clientY
-      this.dragDy = 0
-      this.dragging = true
-    },
-    onChromeTouchMove(e: TouchEvent) {
-      if (!this.dragging) return
-      const t = e.touches && e.touches[0]
-      if (!t) return
-      const dy = t.clientY - this.dragStartY
-      this.dragDy = dy > 0 ? dy : 0
-    },
-    onChromeTouchEnd() {
-      if (!this.dragging) return
-      const dy = this.dragDy
-      this.dragging = false
-      this.dragDy = 0
-      if (dy >= DISMISS_DY) {
-        this.onCancel()
-      }
-    },
-    onSearchQuery(value: unknown) {
-      const col = (this.columns[0] || []) as PickerColumnItem[]
-      const current = col[this.draftIndexes[0] || 0]
-      const keep = current && current.value >= 0 ? current.value : Number(this.current)
-      this.searchQuery = value == null ? '' : String(value)
-      const next = (this.columns[0] || []) as PickerColumnItem[]
-      const found = next.findIndex((item) => item.value === keep)
-      this.draftIndexes = [found >= 0 ? found : 0]
-      this.applyMpWheelTops(this.draftIndexes)
-    },
-    bindSearchKeyboard() {
-      if (!this.showSelectorSearch) return
-      if (typeof uni !== 'undefined' && typeof uni.onKeyboardHeightChange === 'function') {
-        const onKeyboardHeight = (res: { height?: number }) => {
-          this.keyboardHeight = Math.max(0, Number(res && res.height) || 0)
-        }
-        this._onKeyboardHeight = onKeyboardHeight
-        uni.onKeyboardHeightChange(onKeyboardHeight)
-      }
-      // #ifdef H5
-      const viewport = typeof window === 'undefined' ? null : window.visualViewport
-      if (viewport) {
-        const onVisualViewport = () => {
-          const vv = window.visualViewport
-          if (!vv) return
-          const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
-          this.keyboardHeight = covered > 80 ? covered : 0
-        }
-        this._onVisualViewport = onVisualViewport
-        viewport.addEventListener('resize', onVisualViewport)
-        viewport.addEventListener('scroll', onVisualViewport)
-      }
-      // #endif
-    },
-    unbindSearchKeyboard() {
-      const onKeyboardHeight = this._onKeyboardHeight
-      if (onKeyboardHeight && typeof uni !== 'undefined' && typeof uni.offKeyboardHeightChange === 'function') {
-        uni.offKeyboardHeightChange(onKeyboardHeight)
-      }
-      this._onKeyboardHeight = null
-      // #ifdef H5
-      const onVisualViewport = this._onVisualViewport
-      const viewport = typeof window === 'undefined' ? null : window.visualViewport
-      if (onVisualViewport && viewport) {
-        viewport.removeEventListener('resize', onVisualViewport)
-        viewport.removeEventListener('scroll', onVisualViewport)
-      }
-      this._onVisualViewport = null
-      // #endif
-      this.keyboardHeight = 0
-    },
-    onPickChange(e: PickerChangeEvent) {
-      const raw = (e && e.detail && e.detail.value) || []
-      this.draftIndexes = raw.map((n) => Number(n) || 0)
-      if (this.modeKey === 'time' && this.hour12) {
-        const hItem = this.timeHourColumn[this.draftIndexes[0] || 0]
-        const mItem = this.timeMinuteColumn[this.draftIndexes[1] || 0]
-        const h12 = (hItem && hItem.value) || 12
-        this.draftH = toH24(h12, this.draftIsPm)
-        this.draftMi = (mItem && mItem.value) || 0
-      }
-      this.$nextTick(() => this.clampDraftToColumns())
-    },
-    onCancel() {
-      this.$emit('cancel')
-      this.closeSheet()
-    },
-    onConfirm() {
-      if (this.showSelectorSearch) {
-        const col = (this.columns[0] || []) as PickerColumnItem[]
-        const item = col[this.draftIndexes[0] || 0]
-        if (!item || item.value < 0) return
-      }
-      let next: PickerValue
-      if (this.useCalendar) {
-        next = this.valueFromCalendar()
-      } else {
-        this.clampDraftToColumns()
-        next = this.valueFromIndexes(this.draftIndexes)
-      }
-      this.$emit('update:modelValue', next)
-      this.$emit('update:value', next)
-      this.$emit('change', { value: next })
-      this.closeSheet()
-    },
-    applyMpWheelTops(indexes?: number[]) {
-      const src = indexes || this.draftIndexes
-      this.mpWheelTops = src.map((idx) => Math.max(0, Number(idx) || 0) * ITEM_H)
-      src.forEach((idx, colIndex) => {
-        this._mpLastIndex[`main:${colIndex}`] = Math.max(0, Number(idx) || 0)
-      })
-    },
-    applyMpTimeWheelTops(indexes?: number[]) {
-      const src = indexes || this.timeDraftIndexes
-      this.mpTimeWheelTops = src.map((idx) => Math.max(0, Number(idx) || 0) * ITEM_H)
-      src.forEach((idx, colIndex) => {
-        this._mpLastIndex[`time:${colIndex}`] = Math.max(0, Number(idx) || 0)
-      })
-    },
-    onMpWheelScroll(event: unknown, colIndex: number) {
-      this.onMpColumnScroll(event, colIndex, 'main')
-    },
-    onMpTimeWheelScroll(event: unknown, colIndex: number) {
-      this.onMpColumnScroll(event, colIndex, 'time')
-    },
-    onMpColumnScroll(event: unknown, colIndex: number, which: 'main' | 'time') {
-      if (this._mpSnapApplying) return
-      const detail = (event as { detail?: { scrollTop?: number } } | null)?.detail
-      const top = Number(detail && detail.scrollTop) || 0
-      const cols = which === 'time' ? this.timeWheelColumns : this.columns
-      const col = cols[colIndex] || []
-      const max = Math.max(0, col.length - 1)
-      const idx = Math.min(max, Math.max(0, Math.round(top / ITEM_H)))
-      this._mpWheelUser = true
-      const key = `${which}:${colIndex}`
-      const lastIndex = this._mpLastIndex[key]
-      if (lastIndex !== idx) {
-        this._mpLastIndex[key] = idx
-        if (lastIndex !== undefined) this.playMpWheelFeedback()
-      }
-      if (which === 'time') {
-        const next = this.timeDraftIndexes.slice()
-        next[colIndex] = idx
-        this.onTimePickChange({ detail: { value: next } })
-      } else {
-        const next = this.draftIndexes.slice()
-        next[colIndex] = idx
-        this.onPickChange({ detail: { value: next } })
-      }
-      this.scheduleMpSnap(which, colIndex, top)
-    },
-    playMpWheelFeedback() {
-      if (!this.haptic) return
-      // #ifdef MP-WEIXIN
-      const now = Date.now()
-      if (now - this._mpLastFeedbackAt < 60) return
-      this._mpLastFeedbackAt = now
-      try {
-        uni.vibrateShort({ type: 'light' })
-      } catch {
-        /* 部分基础库 / 设备不支持震动 */
-      }
-      // #endif
-    },
-    scheduleMpSnap(which: 'main' | 'time', colIndex: number, top: number) {      const key = `${which}:${colIndex}`
-      const prev = this._mpSnapMap[key]
-      if (prev) clearTimeout(prev)
-      this._mpSnapMap[key] = setTimeout(() => {
-        delete this._mpSnapMap[key]
-        this._mpWheelUser = false
-        const snapped = Math.round(Math.max(0, top) / ITEM_H) * ITEM_H
-        if (Math.abs(top - snapped) < 0.5) return
-        const tops = (which === 'time' ? this.mpTimeWheelTops : this.mpWheelTops).slice()
-        const cur = tops[colIndex]
-        tops[colIndex] = snapped === cur ? snapped + 0.01 : snapped
-        this._mpSnapApplying = true
-        if (which === 'time') this.mpTimeWheelTops = tops
-        else this.mpWheelTops = tops
-        this.$nextTick(() => {
-          this._mpSnapApplying = false
-        })
-      }, 80)
-    },
-    lockPageScroll() {
-      try {
-        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
-        if (lockApi && typeof lockApi.lock === 'function' && !this._appScrollLocked) {
-          lockApi.lock()
-          this._appScrollLocked = true
-        }
-      } catch {
-        /* ignore */
-      }
-      // #ifdef H5
-      if (typeof document === 'undefined') return
-      if (this._scrollLocked) return
-      const body = document.body
-      const html = document.documentElement
-      this._prevBodyOverflow = body.style.overflow
-      this._prevBodyOverscroll = body.style.overscrollBehavior
-      this._prevHtmlOverscroll = html.style.overscrollBehavior
-      body.style.overflow = 'hidden'
-      body.style.overscrollBehavior = 'none'
-      html.style.overscrollBehavior = 'none'
-      this._scrollLocked = true
-      // #endif
-    },
-    unlockPageScroll() {
-      try {
-        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
-        if (this._appScrollLocked && lockApi && typeof lockApi.unlock === 'function') {
-          lockApi.unlock()
-        }
-        this._appScrollLocked = false
-      } catch {
-        this._appScrollLocked = false
-      }
-      // #ifdef H5
-      if (typeof document === 'undefined') return
-      if (!this._scrollLocked) return
-      const body = document.body
-      const html = document.documentElement
-      body.style.overflow = this._prevBodyOverflow || ''
-      body.style.overscrollBehavior = this._prevBodyOverscroll || ''
-      html.style.overscrollBehavior = this._prevHtmlOverscroll || ''
-      this._scrollLocked = false
-      // #endif
-    },
-  },
 })
+
+const props = defineProps({
+  modelValue: {
+    type: [String, Number, Array] as PropType<PickerValue | undefined>,
+    default: undefined,
+  },
+  value: {
+    type: [String, Number, Array] as PropType<PickerValue | undefined>,
+    default: undefined,
+  },
+  mode: { type: String, default: 'selector' },
+  range: { type: Array as PropType<unknown[]>, default: () => [] },
+  rangeKey: { type: String, default: '' },
+  title: { type: String, default: '' },
+  placeholder: { type: String, default: '请选择' },
+  disabled: { type: Boolean, default: false },
+  start: { type: String, default: '' },
+  end: { type: String, default: '' },
+  fields: { type: String, default: 'day' },
+  /** auto | calendar | wheels */
+  pickerStyle: { type: String, default: 'auto' },
+  hour12: { type: Boolean, default: false },
+  minuteInterval: { type: [Number, String] as PropType<number | string>, default: 1 },
+  /** 日历日格底部农历 */
+  lunar: { type: Boolean, default: false },
+  /**
+   * 日历标记：
+   * { date: 'YYYY-MM-DD', badge?: string, dot?: true|'red'|'orange'|'green' }
+   * badge：右上角小字；dot：底部圆点（true/默认=红）
+   */
+  marks: { type: Array as PropType<PickerMark[]>, default: () => [] },
+  /**
+   * week 模式周起始：0=周日（默认，对齐表头日一二…）… 6=周六
+   */
+  weekStartsOn: { type: [Number, String] as PropType<number | string>, default: 0 },
+  cancelText: { type: String, default: '取消' },
+  confirmText: { type: String, default: '完成' },
+  /** selector 滚轮下方搜索框。默认关闭 */
+  showSearch: { type: Boolean, default: false },
+  /**
+   * 微信小程序滚轮经过选项时的轻震动反馈。
+   * 自定义 scroll-view 滚轮拿不到原生 picker-view 的系统选择音，用轻震动近似。
+   */
+  haptic: { type: Boolean, default: true },
+  searchPlaceholder: { type: String, default: '搜索' },
+  zIndex: { type: [Number, String] as PropType<number | string>, default: 1200 },
+  variant: { type: String, default: 'auto' },
+})
+
+const emit = defineEmits(['update:modelValue', 'update:value', 'change', 'cancel'])
+
+const appPageScrollLock = inject(LINGYUN_APP_PAGE_SCROLL_LOCK, null) as LingyunAppPageScrollLock | null
+const lingyunFormItem = inject('lingyunFormItem', null) as object | null
+const slots = useSlots()
+
+const sheetMounted = ref(false)
+const phase = ref<'' | 'enter' | 'open' | 'leave'>('')
+const leaveTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const enterTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const draftIndexes = ref<number[]>([0])
+const draftY = ref(0)
+const draftM = ref(1)
+const draftD = ref(1)
+const draftH = ref(0)
+const draftMi = ref(0)
+/** daterange / week 草稿起止（ymd 对象） */
+const draftRangeStart = ref<Ymd | null>(null)
+const draftRangeEnd = ref<Ymd | null>(null)
+const viewY = ref(0)
+const viewM = ref(1)
+const viewYear = ref(0)
+const viewDecadeStart = ref(0)
+const calMode = ref<'day' | 'month' | 'year'>('day')
+const timeEditing = ref(false)
+const timeDraftIndexes = ref<number[]>([0, 0])
+const safeBottom = ref(0)
+const windowWidth = ref(375)
+const searchQuery = ref('')
+const keyboardHeight = ref(0)
+const _onKeyboardHeight = ref<((res: { height?: number }) => void) | null>(null)
+const _onVisualViewport = ref<(() => void) | null>(null)
+const dragStartY = ref(0)
+const dragDy = ref(0)
+const dragging = ref(false)
+const calStartX = ref(0)
+const calStartY = ref(0)
+const calDx = ref(0)
+const calDy = ref(0)
+const calTracking = ref(false)
+const calSwiped = ref(false)
+const calOutCells = ref<(CalCell | null)[] | null>(null)
+const calOutYear = ref<number | null>(null)
+const calOutDecade = ref<number | null>(null)
+const calSlideDir = ref(0)
+const calSlidePhase = ref<'idle' | 'prepare' | 'animating'>('idle')
+const calAnimTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _appScrollLocked = ref(false)
+const _scrollLocked = ref(false)
+const _prevBodyOverflow = ref('')
+const _prevBodyOverscroll = ref('')
+const _prevHtmlOverscroll = ref('')
+const mpWheelTops = ref<number[]>([])
+const mpTimeWheelTops = ref<number[]>([])
+const _mpWheelUser = ref(false)
+const _mpSnapApplying = ref(false)
+const _mpSnapMap = ref<Record<string, ReturnType<typeof setTimeout>>>({})
+/** 每列上一次经过的选项，用来只在跨行时触发反馈 */
+const _mpLastIndex = ref<Record<string, number>>({})
+const _mpLastFeedbackAt = ref(0)
+const _lingyunMpOverlayHold = ref(false)
+
+const weekStartIndex = computed((): number => {
+  const n = Number(props.weekStartsOn)
+  if (Number.isNaN(n)) return 0
+  return ((n % 7) + 7) % 7
+})
+
+const dateBounds = computed((): { start: Ymd; end: Ymd } => {
+  const now = new Date()
+  const defStart = `${now.getFullYear() - 80}-01-01`
+  const defEnd = `${now.getFullYear() + 20}-12-31`
+  const s = parseYmd(props.start) || parseYmd(defStart)
+  const e = parseYmd(props.end) || parseYmd(defEnd)
+  return {
+    start: s || { y: now.getFullYear() - 80, m: 1, d: 1 },
+    end: e || { y: now.getFullYear() + 20, m: 12, d: 31 },
+  }
+})
+
+function clearTimers(): void {
+  if (leaveTimer.value) {
+    clearTimeout(leaveTimer.value)
+    leaveTimer.value = null
+  }
+  if (enterTimer.value) {
+    clearTimeout(enterTimer.value)
+    enterTimer.value = null
+  }
+  if (calAnimTimer.value) {
+    clearTimeout(calAnimTimer.value)
+    calAnimTimer.value = null
+  }
+  const snaps = _mpSnapMap.value || {}
+  Object.keys(snaps).forEach((key) => {
+    const timer = snaps[key]
+    if (timer) clearTimeout(timer)
+  })
+  _mpSnapMap.value = {}
+}
+
+function resetCalSlide(): void {
+  if (calAnimTimer.value) {
+    clearTimeout(calAnimTimer.value)
+    calAnimTimer.value = null
+  }
+  calOutCells.value = null
+  calOutYear.value = null
+  calOutDecade.value = null
+  calSlideDir.value = 0
+  calSlidePhase.value = 'idle'
+  calSwiped.value = false
+  calTracking.value = false
+  calMode.value = 'day'
+}
+
+function resetCalSlideKeepMode(): void {
+  if (calAnimTimer.value) {
+    clearTimeout(calAnimTimer.value)
+    calAnimTimer.value = null
+  }
+  calOutCells.value = null
+  calOutYear.value = null
+  calOutDecade.value = null
+  calSlideDir.value = 0
+  calSlidePhase.value = 'idle'
+  calSwiped.value = false
+  calTracking.value = false
+}
+
+/**
+ * 天视图格子：`{ y, m, d, out }`，共 42 格。
+ * 1 号之前与月末之后用**相邻月真实日期**补齐（`out: true`，灰色不可点），
+ * 否则周高亮条会在月首 / 月尾断开。
+ */
+function buildMonthCells(y: number, m: number): (CalCell | null)[] {
+  if (!y || !m) return Array(CAL_CELLS).fill(null)
+  const firstDow = new Date(y, m - 1, 1).getDay()
+  const lead = (((firstDow - weekStartIndex.value) % 7) + 7) % 7
+  const cells: CalCell[] = []
+  if (lead > 0) {
+    const prev = shiftMonthYm(y, m, -1)
+    const prevDim = daysInMonth(prev.y, prev.m)
+    for (let i = lead; i > 0; i -= 1) {
+      cells.push({ y: prev.y, m: prev.m, d: prevDim - i + 1, out: true })
+    }
+  }
+  const dim = daysInMonth(y, m)
+  for (let d = 1; d <= dim; d += 1) cells.push({ y, m, d, out: false })
+  const next = shiftMonthYm(y, m, 1)
+  let tail = 1
+  while (cells.length < CAL_CELLS) {
+    cells.push({ y: next.y, m: next.m, d: tail, out: true })
+    tail += 1
+  }
+  return cells
+}
+
+function slideTrackStyle(hasOut: boolean): Record<string, string> {
+  if (!hasOut || !calSlideDir.value) return {}
+  const next = calSlideDir.value > 0
+  if (calSlidePhase.value === 'prepare') {
+    return {
+      transform: next ? 'translate3d(0, 0, 0)' : 'translate3d(-50%, 0, 0)',
+      transition: 'none',
+    }
+  }
+  if (calSlidePhase.value === 'animating') {
+    return {
+      transform: next ? 'translate3d(-50%, 0, 0)' : 'translate3d(0, 0, 0)',
+      transition: `transform ${CAL_SLIDE_MS}ms cubic-bezier(0.32, 0.72, 0, 1)`,
+    }
+  }
+  return {}
+}
+
+function runCalSlide(afterPrepare?: () => void): void {
+  calSlidePhase.value = 'prepare'
+  if (typeof afterPrepare === 'function') afterPrepare()
+  nextTick(() => {
+    const kick = () => {
+      calSlidePhase.value = 'animating'
+      if (calAnimTimer.value) clearTimeout(calAnimTimer.value)
+      calAnimTimer.value = setTimeout(() => {
+        calOutCells.value = null
+        calOutYear.value = null
+        calOutDecade.value = null
+        calSlideDir.value = 0
+        calSlidePhase.value = 'idle'
+        calAnimTimer.value = null
+      }, CAL_SLIDE_MS)
+    }
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(kick)
+      })
+    } else {
+      setTimeout(kick, 16)
+    }
+  })
+}
+
+function buildYearPage(pageStart: number): number[] {
+  const { start } = dateBounds.value
+  const from = Math.max(start.y, Number(pageStart) || start.y)
+  const list: number[] = []
+  for (let i = 0; i < YEAR_PAGE_SIZE; i += 1) {
+    list.push(from + i)
+  }
+  return list
+}
+
+function decadeStartForYear(year: number): number {
+  const { start, end } = dateBounds.value
+  const y = Math.min(end.y, Math.max(start.y, Number(year) || start.y))
+  const offset = y - start.y
+  return start.y + Math.floor(offset / YEAR_PAGE_SIZE) * YEAR_PAGE_SIZE
+}
+
+function yearPageItemsAt(pageStart: number): number[] {
+  return buildYearPage(pageStart)
+}
+
+const modeKey = computed((): string => {
+  if (
+    props.mode === 'date' ||
+    props.mode === 'time' ||
+    props.mode === 'datetime' ||
+    props.mode === 'daterange' ||
+    props.mode === 'week'
+  ) {
+    return props.mode
+  }
+  return 'selector'
+})
+
+const isDateRange = computed((): boolean => modeKey.value === 'daterange')
+
+const isWeek = computed((): boolean => modeKey.value === 'week')
+
+/** 区间高亮（daterange 两点选 / week 整周） */
+const isRangeSelect = computed((): boolean => isDateRange.value || isWeek.value)
+
+const current = computed((): PickerValue | undefined => {
+  if (props.modelValue !== undefined && props.modelValue !== null) return props.modelValue
+  return props.value
+})
+
+const resolvedVariant = computed((): string => {
+  const v = props.variant
+  if (v === 'field' || v === 'cell') return v
+  return lingyunFormItem ? 'cell' : 'field'
+})
+
+const isCell = computed((): boolean => resolvedVariant.value === 'cell')
+
+const hasTrigger = computed((): boolean => !!slots.trigger)
+
+const showTriggerTitle = computed((): boolean => {
+  if (isCell.value) return false
+  return !!props.title
+})
+
+const useCalendar = computed((): boolean => {
+  if (props.pickerStyle === 'wheels') return false
+  const calModes =
+    modeKey.value === 'date' ||
+    modeKey.value === 'datetime' ||
+    modeKey.value === 'daterange' ||
+    modeKey.value === 'week'
+  if (props.pickerStyle === 'calendar') return calModes
+  return calModes
+})
+
+const useCompactTrigger = computed((): boolean => {
+  return (
+    modeKey.value === 'date' ||
+    modeKey.value === 'time' ||
+    modeKey.value === 'datetime' ||
+    modeKey.value === 'daterange' ||
+    modeKey.value === 'week'
+  )
+})
+
+const fieldsKey = computed((): string => {
+  if (modeKey.value !== 'date') return 'day'
+  if (props.fields === 'year' || props.fields === 'month') return props.fields
+  return 'day'
+})
+
+const displayText = computed((): string => {
+  if (modeKey.value === 'selector') {
+    const idx = Number(current.value)
+    if (Number.isNaN(idx) || idx < 0 || !props.range || !props.range.length) return ''
+    const item = props.range[idx]
+    if (item == null) return ''
+    if (typeof item === 'object' && props.rangeKey) {
+      return String((item as Record<string, unknown>)[props.rangeKey] ?? '')
+    }
+    return String(item)
+  }
+  if (modeKey.value === 'time' && current.value != null && current.value !== '') {
+    const hm = parseHm(current.value)
+    if (!hm) return String(current.value)
+    if (props.hour12) {
+      const { h12, isPm } = formatHour12(hm.h)
+      return `${h12}:${pad2(hm.mi)} ${isPm ? 'PM' : 'AM'}`
+    }
+    return `${pad2(hm.h)}:${pad2(hm.mi)}`
+  }
+  if (modeKey.value === 'datetime' && current.value != null && current.value !== '') {
+    const p = parseYmdHm(current.value)
+    if (!p) return String(current.value)
+    const datePart = `${p.y}-${pad2(p.m)}-${pad2(p.d)}`
+    if (props.hour12) {
+      const { h12, isPm } = formatHour12(p.h)
+      return `${datePart} ${h12}:${pad2(p.mi)} ${isPm ? 'PM' : 'AM'}`
+    }
+    return `${datePart} ${pad2(p.h)}:${pad2(p.mi)}`
+  }
+  if (modeKey.value === 'date' && current.value != null && current.value !== '') {
+    if (fieldsKey.value === 'year') {
+      const p = parseYOnly(current.value) || parseYmd(current.value) || parseYm(current.value)
+      return p ? `${p.y}年` : String(current.value)
+    }
+    if (fieldsKey.value === 'month') {
+      const p = parseYm(current.value) || parseYmd(current.value)
+      return p ? `${p.y}年${p.m}月` : String(current.value)
+    }
+    return String(current.value)
+  }
+  if (modeKey.value === 'daterange' || modeKey.value === 'week') {
+    const parsed = parseDateRange(current.value)
+    if (!parsed) return ''
+    const a = ymdKey(parsed.start.y, parsed.start.m, parsed.start.d)
+    const b = ymdKey(parsed.end.y, parsed.end.m, parsed.end.d)
+    return a === b ? a : `${a} → ${b}`
+  }
+  return current.value != null && current.value !== '' ? String(current.value) : ''
+})
+
+const rangeHintText = computed((): string => {
+  if (!isRangeSelect.value) return ''
+  const s = draftRangeStart.value
+  const e = draftRangeEnd.value
+  if (isWeek.value) {
+    if (!s || !e) return '请选择一周'
+    return `${ymdKey(s.y, s.m, s.d)} → ${ymdKey(e.y, e.m, e.d)}`
+  }
+  if (!s) return '请选择开始日期'
+  if (!e) return `开始 ${ymdKey(s.y, s.m, s.d)} · 请选择结束日期`
+  return `${ymdKey(s.y, s.m, s.d)} → ${ymdKey(e.y, e.m, e.d)}`
+})
+
+const marksMap = computed((): Record<string, PickerMark> => {
+  const map: Record<string, PickerMark> = Object.create(null)
+  const list = Array.isArray(props.marks) ? props.marks : []
+  for (let i = 0; i < list.length; i += 1) {
+    const item = list[i]
+    if (!item || item.date == null || item.date === '') continue
+    const key = String(item.date).slice(0, 10)
+    map[key] = item
+  }
+  return map
+})
+
+const calExtraClass = computed((): Record<string, boolean> => {
+  const hasMarks = Array.isArray(props.marks) && props.marks.length > 0
+  return {
+    'lingyun-picker-cal--sub': !!props.lunar || hasMarks,
+    'lingyun-picker-cal--range': isRangeSelect.value,
+  }
+})
+
+const minuteStep = computed((): number => {
+  const n = Number(props.minuteInterval) || 1
+  const allowed = [1, 5, 10, 15, 30]
+  return allowed.includes(n) ? n : 1
+})
+
+const rootClass = computed((): string[] => {
+  return [
+    isCell.value ? 'lingyun-picker--cell' : 'lingyun-picker--field',
+    props.disabled ? 'lingyun-picker--disabled' : '',
+  ].filter(Boolean)
+})
+
+const rowClass = computed((): Record<string, boolean> => {
+  return {
+    'lingyun-picker__row--disabled': props.disabled,
+    'lingyun-picker__row--cell': isCell.value,
+  }
+})
+
+const valueClass = computed((): Record<string, boolean> => {
+  return {
+    'lingyun-picker__value--placeholder': !displayText.value,
+    'lingyun-picker__value--capsule': useCompactTrigger.value && !!displayText.value,
+  }
+})
+
+const isDark = computed((): boolean => {
+  try {
+    return (useLingyunTheme().resolved || 'light') === 'dark'
+  } catch {
+    return false
+  }
+})
+
+const themeClass = computed((): string => {
+  try {
+    return useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    return 'theme-light'
+  }
+})
+
+const reduceMotion = computed((): boolean => {
+  try {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    }
+  } catch {
+    /* ignore */
+  }
+  return false
+})
+
+const sheetClass = computed((): string => {
+  return [
+    themeClass.value,
+    phase.value ? `lingyun-picker-sheet--${phase.value}` : '',
+    reduceMotion.value ? 'lingyun-picker-sheet--reduce-motion' : '',
+    dragging.value ? 'lingyun-picker-sheet--dragging' : '',
+    useCalendar.value ? 'lingyun-picker-sheet--calendar' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const sheetRootStyle = computed((): Record<string, number> => {
+  return { zIndex: Number(props.zIndex) || 1200 }
+})
+
+/** 宽屏（iPad / 桌面 H5）不铺满：按面板宽上限水平居中 */
+const sideInsetPx = computed((): number => {
+  const w = Math.max(320, Number(windowWidth.value) || 375)
+  return Math.max(INSET_MEDIUM, Math.round((w - PANEL_MAX_WIDTH) / 2))
+})
+
+const showSelectorSearch = computed((): boolean => {
+  return props.showSearch && modeKey.value === 'selector'
+})
+
+const panelBottom = computed((): number => {
+  if (showSelectorSearch.value && keyboardHeight.value > 0) return keyboardHeight.value
+  return INSET_MEDIUM
+})
+
+const panelStyle = computed((): Record<string, string> => {
+  const style: Record<string, string> = {
+    left: `${sideInsetPx.value}px`,
+    right: `${sideInsetPx.value}px`,
+    bottom: `${panelBottom.value}px`,
+    borderRadius: `${RADIUS}px`,
+    paddingBottom: `${Number(safeBottom.value) || 0}px`,
+  }
+  if (dragging.value) {
+    style.transform = `translate3d(0, ${dragDy.value}px, 0)`
+    style.transition = 'none'
+  }
+  return style
+})
+
+const indicatorStyle = computed((): string => {
+  // 原生选中条透明，改由连续半圆胶囊绘制；边线用 class 清伪元素
+  return `height: ${ITEM_H}px; background: transparent; border: 0 solid transparent; border-top: none; border-bottom: none;`
+})
+
+const indicatorClass = computed((): string => {
+  return 'lingyun-picker-sheet__indicator'
+})
+
+const indicatorPillStyle = computed((): Record<string, string | number> => {
+  const bg = isDark.value ? 'rgba(120, 120, 128, 0.24)' : 'rgba(120, 120, 128, 0.12)'
+  const r = ITEM_H / 2
+  return {
+    height: `${ITEM_H}px`,
+    marginTop: `${-r}px`,
+    borderRadius: `${r}px`,
+    background: bg,
+  }
+})
+
+const maskClass = computed((): string => {
+  return isDark.value ? 'lingyun-picker-sheet__mask--dark' : 'lingyun-picker-sheet__mask--light'
+})
+
+const timeHourColumn = computed((): PickerColumnItem[] => {
+  const hours: PickerColumnItem[] = []
+  if (props.hour12) {
+    for (let h = 1; h <= 12; h += 1) hours.push({ label: String(h), value: h })
+  } else {
+    for (let h = 0; h < 24; h += 1) hours.push({ label: pad2(h), value: h })
+  }
+  return hours
+})
+
+const timeMinuteColumn = computed((): PickerColumnItem[] => {
+  const minutes: PickerColumnItem[] = []
+  const step = minuteStep.value
+  for (let m = 0; m < 60; m += step) {
+    minutes.push({ label: pad2(m), value: m })
+  }
+  return minutes
+})
+
+const timeWheelColumns = computed((): PickerColumnItem[][] => {
+  return [timeHourColumn.value, timeMinuteColumn.value]
+})
+
+const years = computed((): PickerColumnItem[] => {
+  const { start, end } = dateBounds.value
+  const list: PickerColumnItem[] = []
+  for (let y = start.y; y <= end.y; y += 1) {
+    list.push({ label: `${y}年`, value: y })
+  }
+  return list
+})
+
+const columns = computed((): PickerColumnItem[][] => {
+  if (modeKey.value === 'selector') {
+    const list = Array.isArray(props.range) ? props.range : []
+    let items = list.map((item, index) => {
+      let label = ''
+      if (item != null && typeof item === 'object' && props.rangeKey) {
+        label = String((item as Record<string, unknown>)[props.rangeKey] ?? '')
+      } else {
+        label = item == null ? '' : String(item)
+      }
+      return { label, value: index }
+    })
+    const query = showSelectorSearch.value ? String(searchQuery.value || '').trim().toLowerCase() : ''
+    if (query) {
+      items = items.filter((item) => item.label.toLowerCase().includes(query))
+    }
+    if (!items.length) return [[{ label: '无匹配', value: -1 }]]
+    return [items]
+  }
+  if (modeKey.value === 'time') {
+    return [timeHourColumn.value, timeMinuteColumn.value]
+  }
+  const fields = props.fields === 'year' || props.fields === 'month' ? props.fields : 'day'
+  const yi = draftIndexes.value[0] || 0
+  const year = (years.value[yi] && years.value[yi].value) || dateBounds.value.start.y
+  const cols = [years.value]
+  if (fields === 'year') return cols
+
+  const { start, end } = dateBounds.value
+  let monthFrom = 1
+  let monthTo = 12
+  if (year === start.y) monthFrom = start.m
+  if (year === end.y) monthTo = end.m
+  const months: PickerColumnItem[] = []
+  for (let m = monthFrom; m <= monthTo; m += 1) {
+    months.push({ label: `${m}月`, value: m })
+  }
+  cols.push(months)
+  if (fields === 'month') return cols
+
+  const mi = Math.min(draftIndexes.value[1] || 0, months.length - 1)
+  const month = (months[mi] && months[mi].value) || monthFrom
+  let dayFrom = 1
+  let dayTo = daysInMonth(year, month)
+  if (year === start.y && month === start.m) dayFrom = start.d
+  if (year === end.y && month === end.m) dayTo = Math.min(dayTo, end.d)
+  const days: PickerColumnItem[] = []
+  for (let d = dayFrom; d <= dayTo; d += 1) {
+    days.push({ label: `${d}日`, value: d })
+  }
+  cols.push(days)
+  return cols
+})
+
+/** 表头须与格子起始日一致，否则整周高亮会跨两行 */
+const weekLabels = computed((): string[] => {
+  const start = weekStartIndex.value
+  if (!start) return WEEK_LABELS
+  return WEEK_LABELS.slice(start).concat(WEEK_LABELS.slice(0, start))
+})
+
+const monthItems = computed((): number[] => {
+  return MONTH_ITEMS
+})
+
+const calendarTitle = computed((): string => {
+  const m = MONTH_CN[(viewM.value || 1) - 1] || String(viewM.value)
+  return `${viewY.value}年${m}月`
+})
+
+const calendarCells = computed((): (CalCell | null)[] => {
+  return buildMonthCells(viewY.value, viewM.value)
+})
+
+const calTrackClass = computed((): Record<string, boolean> => {
+  return {
+    'lingyun-picker-cal__track--dual': !!calOutCells.value,
+    'lingyun-picker-cal__track--animating': calSlidePhase.value === 'animating',
+  }
+})
+
+const calTrackStyle = computed((): Record<string, string> => {
+  return slideTrackStyle(!!calOutCells.value)
+})
+
+const yearTrackClass = computed((): Record<string, boolean> => {
+  return {
+    'lingyun-picker-cal__track--dual': calOutYear.value != null,
+    'lingyun-picker-cal__track--animating': calSlidePhase.value === 'animating',
+  }
+})
+
+const yearTrackStyle = computed((): Record<string, string> => {
+  return slideTrackStyle(calOutYear.value != null)
+})
+
+const decadeTrackClass = computed((): Record<string, boolean> => {
+  return {
+    'lingyun-picker-cal__track--dual': calOutDecade.value != null,
+    'lingyun-picker-cal__track--animating': calSlidePhase.value === 'animating',
+  }
+})
+
+const decadeTrackStyle = computed((): Record<string, string> => {
+  return slideTrackStyle(calOutDecade.value != null)
+})
+
+const yearPageItems = computed((): number[] => {
+  return buildYearPage(viewDecadeStart.value)
+})
+
+const yearPageTitle = computed((): string => {
+  const { end } = dateBounds.value
+  const list = yearPageItems.value.filter((yr) => yr <= end.y)
+  if (!list.length) return ''
+  const first = list[0]
+  const last = list[list.length - 1]
+  return first === last ? `${first}年` : `${first}–${last}`
+})
+
+const canPrevMonth = computed((): boolean => {
+  const { start } = dateBounds.value
+  if (viewY.value > start.y) return true
+  if (viewY.value === start.y && viewM.value > start.m) return true
+  return false
+})
+
+const canNextMonth = computed((): boolean => {
+  const { end } = dateBounds.value
+  if (viewY.value < end.y) return true
+  if (viewY.value === end.y && viewM.value < end.m) return true
+  return false
+})
+
+const canPrevYear = computed((): boolean => {
+  return viewYear.value > dateBounds.value.start.y
+})
+
+const canNextYear = computed((): boolean => {
+  return viewYear.value < dateBounds.value.end.y
+})
+
+const canPrevDecade = computed((): boolean => {
+  return viewDecadeStart.value > dateBounds.value.start.y
+})
+
+const canNextDecade = computed((): boolean => {
+  return viewDecadeStart.value + YEAR_PAGE_SIZE <= dateBounds.value.end.y
+})
+
+const draftIsPm = computed((): boolean => {
+  return draftH.value >= 12
+})
+
+const draftTimeLabel = computed((): string => {
+  if (props.hour12) {
+    const { h12, isPm } = formatHour12(draftH.value)
+    return `${h12}:${pad2(draftMi.value)} ${isPm ? 'PM' : 'AM'}`
+  }
+  return `${pad2(draftH.value)}:${pad2(draftMi.value)}`
+})
+
+const todayYmd = computed((): Ymd => {
+  const n = new Date()
+  return { y: n.getFullYear(), m: n.getMonth() + 1, d: n.getDate() }
+})
+
+function syncSafe(): void {
+  try {
+    const info =
+      typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
+    const inset = info && info.safeAreaInsets
+    safeBottom.value = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
+    windowWidth.value = Number(info && info.windowWidth) || 375
+  } catch {
+    safeBottom.value = 0
+    windowWidth.value = 375
+  }
+}
+
+function snapMinute(mi: number): number {
+  const step = minuteStep.value
+  const snapped = Math.round(mi / step) * step
+  return Math.min(60 - step, Math.max(0, snapped))
+}
+
+function clampYmdToBounds(ymd: Ymd): Ymd {
+  const { start, end } = dateBounds.value
+  let y = Number(ymd.y) || start.y
+  let m = Number(ymd.m) || 1
+  let d = Number(ymd.d) || 1
+  if (compareYmd({ y, m, d }, start) < 0) return { ...start }
+  if (compareYmd({ y, m, d }, end) > 0) return { ...end }
+  const dim = daysInMonth(y, m)
+  if (d > dim) d = dim
+  return { y, m, d }
+}
+
+function bindSearchKeyboard(): void {
+  if (!showSelectorSearch.value) return
+  if (typeof uni !== 'undefined' && typeof uni.onKeyboardHeightChange === 'function') {
+    const onKeyboardHeight = (res: { height?: number }) => {
+      keyboardHeight.value = Math.max(0, Number(res && res.height) || 0)
+    }
+    _onKeyboardHeight.value = onKeyboardHeight
+    uni.onKeyboardHeightChange(onKeyboardHeight)
+  }
+  // #ifdef H5
+  const viewport = typeof window === 'undefined' ? null : window.visualViewport
+  if (viewport) {
+    const onVisualViewport = () => {
+      const vv = window.visualViewport
+      if (!vv) return
+      const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+      keyboardHeight.value = covered > 80 ? covered : 0
+    }
+    _onVisualViewport.value = onVisualViewport
+    viewport.addEventListener('resize', onVisualViewport)
+    viewport.addEventListener('scroll', onVisualViewport)
+  }
+  // #endif
+}
+
+function unbindSearchKeyboard(): void {
+  const onKeyboardHeight = _onKeyboardHeight.value
+  if (onKeyboardHeight && typeof uni !== 'undefined' && typeof uni.offKeyboardHeightChange === 'function') {
+    uni.offKeyboardHeightChange(onKeyboardHeight)
+  }
+  _onKeyboardHeight.value = null
+  // #ifdef H5
+  const onVisualViewport = _onVisualViewport.value
+  const viewport = typeof window === 'undefined' ? null : window.visualViewport
+  if (onVisualViewport && viewport) {
+    viewport.removeEventListener('resize', onVisualViewport)
+    viewport.removeEventListener('scroll', onVisualViewport)
+  }
+  _onVisualViewport.value = null
+  // #endif
+  keyboardHeight.value = 0
+}
+
+function lockPageScroll(): void {
+  try {
+    const lockApi = appPageScrollLock as LingyunAppPageScrollLock | null
+    if (lockApi && typeof lockApi.lock === 'function' && !_appScrollLocked.value) {
+      lockApi.lock()
+      _appScrollLocked.value = true
+    }
+  } catch {
+    /* ignore */
+  }
+  // #ifdef H5
+  if (typeof document === 'undefined') return
+  if (_scrollLocked.value) return
+  const body = document.body
+  const html = document.documentElement
+  _prevBodyOverflow.value = body.style.overflow
+  _prevBodyOverscroll.value = body.style.overscrollBehavior
+  _prevHtmlOverscroll.value = html.style.overscrollBehavior
+  body.style.overflow = 'hidden'
+  body.style.overscrollBehavior = 'none'
+  html.style.overscrollBehavior = 'none'
+  _scrollLocked.value = true
+  // #endif
+}
+
+function unlockPageScroll(): void {
+  try {
+    const lockApi = appPageScrollLock as LingyunAppPageScrollLock | null
+    if (_appScrollLocked.value && lockApi && typeof lockApi.unlock === 'function') {
+      lockApi.unlock()
+    }
+    _appScrollLocked.value = false
+  } catch {
+    _appScrollLocked.value = false
+  }
+  // #ifdef H5
+  if (typeof document === 'undefined') return
+  if (!_scrollLocked.value) return
+  const body = document.body
+  const html = document.documentElement
+  body.style.overflow = _prevBodyOverflow.value || ''
+  body.style.overscrollBehavior = _prevBodyOverscroll.value || ''
+  html.style.overscrollBehavior = _prevHtmlOverscroll.value || ''
+  _scrollLocked.value = false
+  // #endif
+}
+
+function closeSheet(after?: () => void): void {
+  clearTimers()
+  if (!sheetMounted.value) {
+    unbindSearchKeyboard()
+    unlockPageScroll()
+    if (typeof after === 'function') after()
+    return
+  }
+  phase.value = 'leave'
+  leaveTimer.value = setTimeout(
+    () => {
+      sheetMounted.value = false
+      phase.value = ''
+      dragDy.value = 0
+      dragging.value = false
+      timeEditing.value = false
+      resetCalSlide()
+      unbindSearchKeyboard()
+      unlockPageScroll()
+      leaveTimer.value = null
+      if (typeof after === 'function') after()
+    },
+    reduceMotion.value ? 16 : LEAVE_MS,
+  )
+}
+
+function onCancel(): void {
+  emit('cancel')
+  closeSheet()
+}
+
+function applyMpWheelTops(indexes?: number[]): void {
+  const src = indexes || draftIndexes.value
+  mpWheelTops.value = src.map((idx) => Math.max(0, Number(idx) || 0) * ITEM_H)
+  src.forEach((idx, colIndex) => {
+    _mpLastIndex.value[`main:${colIndex}`] = Math.max(0, Number(idx) || 0)
+  })
+}
+
+function applyMpTimeWheelTops(indexes?: number[]): void {
+  const src = indexes || timeDraftIndexes.value
+  mpTimeWheelTops.value = src.map((idx) => Math.max(0, Number(idx) || 0) * ITEM_H)
+  src.forEach((idx, colIndex) => {
+    _mpLastIndex.value[`time:${colIndex}`] = Math.max(0, Number(idx) || 0)
+  })
+}
+
+function syncTimeDraftIndexes(): void {
+  const mi = snapMinute(draftMi.value)
+  draftMi.value = mi
+  if (props.hour12) {
+    const { h12 } = formatHour12(draftH.value)
+    const hi = Math.max(0, timeHourColumn.value.findIndex((x) => x.value === h12))
+    const mii = Math.max(0, timeMinuteColumn.value.findIndex((x) => x.value === mi))
+    timeDraftIndexes.value = [hi, mii]
+  } else {
+    timeDraftIndexes.value = [
+      Math.min(23, Math.max(0, draftH.value)),
+      Math.max(0, timeMinuteColumn.value.findIndex((x) => x.value === mi)),
+    ]
+  }
+  if (!_mpWheelUser.value) applyMpTimeWheelTops(timeDraftIndexes.value)
+}
+
+function syncCalendarDraftFromValue(): void {
+  const now = new Date()
+  const fallback = {
+    y: now.getFullYear(),
+    m: now.getMonth() + 1,
+    d: now.getDate(),
+    h: now.getHours(),
+    mi: snapMinute(now.getMinutes()),
+  }
+  let parsed: (Ymd & { h?: number; mi?: number }) | null = null
+  if (modeKey.value === 'datetime') parsed = parseYmdHm(current.value)
+  else if (modeKey.value === 'daterange' || modeKey.value === 'week') {
+    const range = parseDateRange(current.value)
+    if (range) {
+      if (modeKey.value === 'week') {
+        const week = weekBoundsForDay(
+          range.start.y,
+          range.start.m,
+          range.start.d,
+          weekStartIndex.value,
+        )
+        draftRangeStart.value = { ...week.start }
+        draftRangeEnd.value = { ...week.end }
+        parsed = { ...week.start, h: 0, mi: 0 }
+      } else {
+        draftRangeStart.value = { ...range.start }
+        draftRangeEnd.value = { ...range.end }
+        parsed = { ...range.start, h: 0, mi: 0 }
+      }
+    } else {
+      draftRangeStart.value = null
+      draftRangeEnd.value = null
+    }
+  } else if (modeKey.value === 'date') {
+    if (fieldsKey.value === 'year') {
+      parsed = parseYOnly(current.value) || parseYmd(current.value) || parseYm(current.value)
+    } else if (fieldsKey.value === 'month') {
+      parsed = parseYm(current.value) || parseYmd(current.value)
+    } else {
+      parsed = parseYmd(current.value)
+    }
+    if (parsed) parsed = { ...parsed, h: 0, mi: 0 }
+  }
+  const base = parsed || fallback
+  const clamped = clampYmdToBounds(base)
+  const src = {
+    ...clamped,
+    h: Math.min(23, Math.max(0, base.h != null ? base.h : fallback.h)),
+    mi: snapMinute(base.mi != null ? base.mi : fallback.mi),
+  }
+  draftY.value = src.y
+  draftM.value = src.m || 1
+  draftD.value = src.d || 1
+  draftH.value = src.h
+  draftMi.value = src.mi
+  viewY.value = draftY.value
+  viewM.value = draftM.value
+  viewYear.value = draftY.value
+  viewDecadeStart.value = decadeStartForYear(draftY.value)
+  if (modeKey.value === 'daterange' || modeKey.value === 'week') calMode.value = 'day'
+  else if (fieldsKey.value === 'year') calMode.value = 'year'
+  else if (fieldsKey.value === 'month') calMode.value = 'month'
+  else calMode.value = 'day'
+  syncTimeDraftIndexes()
+}
+
+function indexesFromValue(): number[] {
+  if (modeKey.value === 'selector') {
+    const idx = Number(current.value)
+    const max = Math.max(0, (props.range && props.range.length ? props.range.length : 1) - 1)
+    if (Number.isNaN(idx) || idx < 0) return [0]
+    return [Math.min(idx, max)]
+  }
+  if (modeKey.value === 'time') {
+    const hm = parseHm(current.value) || { h: 0, mi: 0 }
+    const mi = snapMinute(hm.mi)
+    if (props.hour12) {
+      const { h12 } = formatHour12(hm.h)
+      const hi = Math.max(0, timeHourColumn.value.findIndex((x) => x.value === h12))
+      const mii = Math.max(0, timeMinuteColumn.value.findIndex((x) => x.value === mi))
+      return [hi, mii]
+    }
+    return [
+      Math.min(23, Math.max(0, hm.h)),
+      Math.max(0, timeMinuteColumn.value.findIndex((x) => x.value === mi)),
+    ]
+  }
+  const { start, end } = dateBounds.value
+  const now = new Date()
+  const today = { y: now.getFullYear(), m: now.getMonth() + 1, d: now.getDate() }
+  const ymd = clampYmdToBounds(parseYmd(current.value) || today)
+  const yi = Math.max(0, years.value.findIndex((x) => x.value === ymd.y))
+  const fields = props.fields === 'year' || props.fields === 'month' ? props.fields : 'day'
+  if (fields === 'year') return [yi]
+
+  let monthFrom = 1
+  let monthTo = 12
+  if (ymd.y === start.y) monthFrom = start.m
+  if (ymd.y === end.y) monthTo = end.m
+  const mi = Math.max(0, Math.min(monthTo - monthFrom, ymd.m - monthFrom))
+  if (fields === 'month') return [yi, mi]
+
+  let dayFrom = 1
+  let dayTo = daysInMonth(ymd.y, ymd.m)
+  if (ymd.y === start.y && ymd.m === start.m) dayFrom = start.d
+  if (ymd.y === end.y && ymd.m === end.m) dayTo = Math.min(dayTo, end.d)
+  const di = Math.max(0, Math.min(dayTo - dayFrom, ymd.d - dayFrom))
+  return [yi, mi, di]
+}
+
+function valueFromIndexes(indexes: number[]): PickerValue {
+  const cols = columns.value
+  if (modeKey.value === 'selector') {
+    const col = cols[0] || []
+    const item = col[indexes[0] || 0]
+    return item ? item.value : 0
+  }
+  if (modeKey.value === 'time') {
+    const hItem = cols[0][indexes[0] || 0]
+    const mItem = cols[1][indexes[1] || 0]
+    let h = (hItem && hItem.value) || 0
+    const mi = (mItem && mItem.value) || 0
+    if (props.hour12) {
+      h = toH24(h, draftIsPm.value)
+    }
+    return `${pad2(h)}:${pad2(mi)}`
+  }
+  const fields = props.fields === 'year' || props.fields === 'month' ? props.fields : 'day'
+  const y = (cols[0][indexes[0] || 0] && cols[0][indexes[0] || 0].value) || dateBounds.value.start.y
+  if (fields === 'year') return `${y}`
+  const m = (cols[1][indexes[1] || 0] && cols[1][indexes[1] || 0].value) || 1
+  if (fields === 'month') return `${y}-${pad2(m)}`
+  const d = (cols[2][indexes[2] || 0] && cols[2][indexes[2] || 0].value) || 1
+  return `${y}-${pad2(m)}-${pad2(d)}`
+}
+
+function valueFromCalendar(): PickerValue {
+  if (isRangeSelect.value) {
+    const s = draftRangeStart.value
+    if (!s) {
+      if (isWeek.value) {
+        const today = clampYmdToBounds(todayYmd.value)
+        const week = weekBoundsForDay(today.y, today.m, today.d, weekStartIndex.value)
+        return [ymdKey(week.start.y, week.start.m, week.start.d), ymdKey(week.end.y, week.end.m, week.end.d)]
+      }
+      const today = clampYmdToBounds(todayYmd.value)
+      const key = ymdKey(today.y, today.m, today.d)
+      return [key, key]
+    }
+    const e = draftRangeEnd.value || s
+    return [ymdKey(s.y, s.m, s.d), ymdKey(e.y, e.m, e.d)]
+  }
+  if (fieldsKey.value === 'year') return `${draftY.value}`
+  if (fieldsKey.value === 'month') return `${draftY.value}-${pad2(draftM.value)}`
+  const date = ymdKey(draftY.value, draftM.value, draftD.value)
+  if (modeKey.value === 'date') return date
+  return `${date} ${pad2(draftH.value)}:${pad2(draftMi.value)}`
+}
+
+function confirmCalendarValue(): void {
+  const next = valueFromCalendar()
+  emit('update:modelValue', next)
+  emit('update:value', next)
+  emit('change', { value: next })
+  closeSheet()
+}
+
+function clampDraftToColumns(): void {
+  const cols = columns.value
+  const next = cols.map((col, i) => {
+    const max = Math.max(0, col.length - 1)
+    const cur = Number(draftIndexes.value[i]) || 0
+    return Math.min(max, Math.max(0, cur))
+  })
+  const changed =
+    next.some((v, i) => v !== (draftIndexes.value[i] || 0)) || next.length !== draftIndexes.value.length
+  if (changed) {
+    draftIndexes.value = next
+    if (!_mpWheelUser.value) applyMpWheelTops(next)
+  }
+}
+
+function onConfirm(): void {
+  if (showSelectorSearch.value) {
+    const col = (columns.value[0] || []) as PickerColumnItem[]
+    const item = col[draftIndexes.value[0] || 0]
+    if (!item || item.value < 0) return
+  }
+  let next: PickerValue
+  if (useCalendar.value) {
+    next = valueFromCalendar()
+  } else {
+    clampDraftToColumns()
+    next = valueFromIndexes(draftIndexes.value)
+  }
+  emit('update:modelValue', next)
+  emit('update:value', next)
+  emit('change', { value: next })
+  closeSheet()
+}
+
+function isDayDisabledAt(day: number, y: number, m: number): boolean {
+  if (!day) return true
+  const cur = { y, m, d: day }
+  const { start, end } = dateBounds.value
+  return compareYmd(cur, start) < 0 || compareYmd(cur, end) > 0
+}
+
+/** @param {{ y: number, m: number, d: number, out: boolean } | null} cell */
+function cellClass(cell: CalCell | null): Record<string, boolean> {
+  if (!cell) return { 'lingyun-picker-cal__cell--empty': true }
+  const { y, m, d } = cell
+  const today = d === todayYmd.value.d && y === todayYmd.value.y && m === todayYmd.value.m
+  // 相邻月补位格：不可点，但仍参与周 / 区间高亮，条带才不断开
+  const disabled = cell.out || isDayDisabledAt(d, y, m)
+  if (isRangeSelect.value) {
+    const cur = { y, m, d }
+    const s = draftRangeStart.value
+    const e = draftRangeEnd.value
+    const isStart = s && sameYmd(cur, s)
+    const isEnd = e && sameYmd(cur, e)
+    let inMiddle = false
+    if (s && e && !sameYmd(s, e)) {
+      inMiddle = compareYmd(cur, s) > 0 && compareYmd(cur, e) < 0
+    }
+    const selected = !!(isStart || isEnd)
+    return {
+      'lingyun-picker-cal__cell--selected': selected,
+      'lingyun-picker-cal__cell--today': today && !selected,
+      'lingyun-picker-cal__cell--disabled': disabled,
+      'lingyun-picker-cal__cell--outside': !!cell.out,
+      'lingyun-picker-cal__cell--range-start': !!isStart,
+      'lingyun-picker-cal__cell--range-end': !!isEnd,
+      'lingyun-picker-cal__cell--in-range': !!(inMiddle || (isStart && e && !sameYmd(s, e)) || (isEnd && s && !sameYmd(s, e))),
+    }
+  }
+  const selected = d === draftD.value && y === draftY.value && m === draftM.value
+  return {
+    'lingyun-picker-cal__cell--selected': selected,
+    'lingyun-picker-cal__cell--today': today && !selected,
+    'lingyun-picker-cal__cell--disabled': disabled,
+    'lingyun-picker-cal__cell--outside': !!cell.out,
+  }
+}
+
+function dayRangeFlags(day: number, y: number, m: number): {
+  selected: boolean
+  rangeStart: boolean
+  rangeEnd: boolean
+  inRange: boolean
+} {
+  if (!isRangeSelect.value || !day) {
+    return { selected: false, rangeStart: false, rangeEnd: false, inRange: false }
+  }
+  const cur = { y, m, d: day }
+  const s = draftRangeStart.value
+  const e = draftRangeEnd.value
+  const rangeStart = !!(s && sameYmd(cur, s))
+  const rangeEnd = !!(e && sameYmd(cur, e))
+  let inRange = false
+  if (s && e && !sameYmd(s, e)) {
+    inRange = compareYmd(cur, s) > 0 && compareYmd(cur, e) < 0
+  }
+  return {
+    selected: rangeStart || rangeEnd,
+    rangeStart,
+    rangeEnd,
+    inRange,
+  }
+}
+
+/** @param {{ y: number, m: number, d: number, out: boolean } | null} cell */
+function dayDecor(cell: CalCell | null): {
+  day: string | number
+  badgeText: string
+  lunar: string
+  dotTone: string
+  selected: boolean
+  today: boolean
+  disabled: boolean
+  outside: boolean
+  compact: boolean
+  selectTone: string
+} {
+  if (!cell) {
+    return {
+      day: '',
+      badgeText: '',
+      lunar: '',
+      dotTone: '',
+      selected: false,
+      today: false,
+      disabled: false,
+      outside: false,
+      compact: false,
+      selectTone: 'label',
+    }
+  }
+  const { y, m, d: day } = cell
+  const mark = marksMap.value[ymdKey(y, m, day)] || null
+  let badgeText = ''
+  if (mark) {
+    if (typeof mark.badge === 'string' && mark.badge.trim()) {
+      badgeText = mark.badge.trim()
+    } else if (typeof mark.badgeText === 'string' && mark.badgeText.trim()) {
+      badgeText = mark.badgeText.trim()
+    }
+  }
+  let lunar = ''
+  if (props.lunar) {
+    lunar = lunarDayText(y, m, day)
+  }
+  let dotTone = ''
+  if (mark && mark.dot !== false && mark.dot != null) {
+    const raw = mark.dot === true ? 'red' : String(mark.dot).toLowerCase()
+    if (raw === 'red' || raw === 'default' || raw === '1') dotTone = 'red'
+    else if (raw === 'orange' || raw === 'warning') dotTone = 'orange'
+    else if (raw === 'green' || raw === 'success') dotTone = 'green'
+  }
+  const flags = dayRangeFlags(day, y, m)
+  const selected = isRangeSelect.value
+    ? flags.selected
+    : day === draftD.value && y === draftY.value && m === draftM.value
+  const today =
+    day === todayYmd.value.d && y === todayYmd.value.y && m === todayYmd.value.m
+  const hasMarks = Array.isArray(props.marks) && props.marks.length > 0
+  const compact = !!props.lunar || hasMarks
+  return {
+    day,
+    badgeText,
+    lunar,
+    dotTone,
+    selected,
+    today,
+    disabled: isDayDisabledAt(day, y, m),
+    outside: !!cell.out,
+    compact,
+    selectTone: compact || isRangeSelect.value ? 'red' : 'label',
+  }
+}
+
+/** @param {{ y: number, m: number, d: number, out: boolean } | null} cell */
+function onSelectDay(cell: CalCell | null): void {
+  if (calSwiped.value || calSlidePhase.value !== 'idle') {
+    calSwiped.value = false
+    return
+  }
+  // 补位格只做视觉衔接，不可选（要跨月请先翻月）
+  if (!cell || cell.out) return
+  const day = cell.d
+  if (isDayDisabledAt(day, cell.y, cell.m)) return
+  if (isWeek.value) {
+    const week = weekBoundsForDay(cell.y, cell.m, day, weekStartIndex.value)
+    draftRangeStart.value = { ...week.start }
+    draftRangeEnd.value = { ...week.end }
+    draftY.value = cell.y
+    draftM.value = cell.m
+    draftD.value = day
+    return
+  }
+  if (isDateRange.value) {
+    const clicked = { y: cell.y, m: cell.m, d: day }
+    const s = draftRangeStart.value
+    const e = draftRangeEnd.value
+    if (!s || (s && e)) {
+      draftRangeStart.value = clicked
+      draftRangeEnd.value = null
+    } else if (compareYmd(clicked, s) < 0) {
+      draftRangeEnd.value = { ...s }
+      draftRangeStart.value = clicked
+    } else {
+      draftRangeEnd.value = clicked
+    }
+    draftY.value = clicked.y
+    draftM.value = clicked.m
+    draftD.value = clicked.d
+    return
+  }
+  draftY.value = cell.y
+  draftM.value = cell.m
+  draftD.value = day
+}
+
+function monthLabel(m: number): string {
+  return MONTH_SHORT[(m || 1) - 1] || `${m}月`
+}
+
+function isMonthDisabled(m: number, y: number): boolean {
+  const { start, end } = dateBounds.value
+  if (y < start.y || y > end.y) return true
+  if (y === start.y && m < start.m) return true
+  if (y === end.y && m > end.m) return true
+  return false
+}
+
+function monthCellClass(m: number, y: number): Record<string, boolean> {
+  // 仅高亮「已选日期」所在年月；浏览其它年份时不跟着手动 viewM
+  const selected = y === draftY.value && m === draftM.value
+  return {
+    'lingyun-picker-cal__month-cell--selected': selected,
+    'lingyun-picker-cal__month-cell--disabled': isMonthDisabled(m, y),
+  }
+}
+
+function isYearDisabled(yr: number): boolean {
+  const { start, end } = dateBounds.value
+  return yr < start.y || yr > end.y
+}
+
+function yearCellClass(yr: number): Record<string, boolean> {
+  return {
+    'lingyun-picker-cal__month-cell--selected': yr === draftY.value,
+    'lingyun-picker-cal__month-cell--disabled': isYearDisabled(yr),
+  }
+}
+
+function openMonthView(): void {
+  if (fieldsKey.value === 'year') return
+  if (calSlidePhase.value !== 'idle') return
+  resetCalSlideKeepMode()
+  viewYear.value = viewY.value
+  calMode.value = 'month'
+}
+
+function openYearView(): void {
+  if (calSlidePhase.value !== 'idle') return
+  resetCalSlideKeepMode()
+  viewDecadeStart.value = decadeStartForYear(viewYear.value)
+  calMode.value = 'year'
+}
+
+function shiftMonth(delta: number): void {
+  if (calMode.value !== 'day') return
+  if (calSlidePhase.value !== 'idle') return
+  if (delta < 0 && !canPrevMonth.value) return
+  if (delta > 0 && !canNextMonth.value) return
+  let y = viewY.value
+  let m = viewM.value + delta
+  if (m < 1) {
+    m = 12
+    y -= 1
+  } else if (m > 12) {
+    m = 1
+    y += 1
+  }
+  if (reduceMotion.value) {
+    viewY.value = y
+    viewM.value = m
+    return
+  }
+  calOutCells.value = buildMonthCells(viewY.value, viewM.value)
+  calOutYear.value = null
+  calOutDecade.value = null
+  calSlideDir.value = delta
+  runCalSlide(() => {
+    viewY.value = y
+    viewM.value = m
+  })
+}
+
+function shiftYear(delta: number): void {
+  if (calMode.value !== 'month') return
+  if (calSlidePhase.value !== 'idle') return
+  if (delta < 0 && !canPrevYear.value) return
+  if (delta > 0 && !canNextYear.value) return
+  const next = viewYear.value + delta
+  if (reduceMotion.value) {
+    viewYear.value = next
+    return
+  }
+  calOutYear.value = viewYear.value
+  calOutCells.value = null
+  calOutDecade.value = null
+  calSlideDir.value = delta
+  runCalSlide(() => {
+    viewYear.value = next
+  })
+}
+
+function shiftDecade(delta: number): void {
+  if (calMode.value !== 'year') return
+  if (calSlidePhase.value !== 'idle') return
+  if (delta < 0 && !canPrevDecade.value) return
+  if (delta > 0 && !canNextDecade.value) return
+  const { start, end } = dateBounds.value
+  let next = viewDecadeStart.value + delta * YEAR_PAGE_SIZE
+  if (next < start.y) next = start.y
+  if (next > end.y) next = decadeStartForYear(end.y)
+  if (next === viewDecadeStart.value) return
+  if (reduceMotion.value) {
+    viewDecadeStart.value = next
+    return
+  }
+  calOutDecade.value = viewDecadeStart.value
+  calOutCells.value = null
+  calOutYear.value = null
+  calSlideDir.value = delta
+  runCalSlide(() => {
+    viewDecadeStart.value = next
+  })
+}
+
+function onSelectMonth(m: number): void {
+  if (calSwiped.value || calSlidePhase.value !== 'idle') {
+    calSwiped.value = false
+    return
+  }
+  if (isMonthDisabled(m, viewYear.value)) return
+  viewY.value = viewYear.value
+  viewM.value = m
+  draftY.value = viewYear.value
+  draftM.value = m
+  const dim = daysInMonth(viewY.value, viewM.value)
+  if (draftD.value > dim) draftD.value = dim
+  if (fieldsKey.value === 'month') {
+    confirmCalendarValue()
+    return
+  }
+  calMode.value = 'day'
+  resetCalSlideKeepMode()
+}
+
+function onSelectYear(yr: number): void {
+  if (calSwiped.value || calSlidePhase.value !== 'idle') {
+    calSwiped.value = false
+    return
+  }
+  if (isYearDisabled(yr)) return
+  viewYear.value = yr
+  draftY.value = yr
+  viewDecadeStart.value = decadeStartForYear(yr)
+  if (fieldsKey.value === 'year') {
+    confirmCalendarValue()
+    return
+  }
+  calMode.value = 'month'
+  resetCalSlideKeepMode()
+}
+
+function onCalTouchStart(e: TouchEvent): void {
+  const t = e.touches && e.touches[0]
+  if (!t) return
+  calStartX.value = t.clientX
+  calStartY.value = t.clientY
+  calDx.value = 0
+  calDy.value = 0
+  calTracking.value = true
+  calSwiped.value = false
+}
+
+function onCalTouchMove(e: TouchEvent): void {
+  if (!calTracking.value) return
+  const t = e.touches && e.touches[0]
+  if (!t) return
+  calDx.value = t.clientX - calStartX.value
+  calDy.value = t.clientY - calStartY.value
+}
+
+function onCalTouchEnd(): void {
+  if (!calTracking.value) return
+  const dx = calDx.value
+  const dy = calDy.value
+  calTracking.value = false
+  calDx.value = 0
+  calDy.value = 0
+  if (Math.abs(dx) < CAL_SWIPE_DX) return
+  if (Math.abs(dx) < Math.abs(dy) * CAL_SWIPE_RATIO) return
+  calSwiped.value = true
+  const delta = dx < 0 ? 1 : -1
+  if (calMode.value === 'year') shiftDecade(delta)
+  else if (calMode.value === 'month') shiftYear(delta)
+  else shiftMonth(delta)
+}
+
+function toggleTimeEditing(): void {
+  timeEditing.value = !timeEditing.value
+  if (timeEditing.value) syncTimeDraftIndexes()
+}
+
+function setAmPm(isPm: boolean): void {
+  const { h12 } = formatHour12(draftH.value)
+  draftH.value = toH24(h12, isPm)
+  syncTimeDraftIndexes()
+}
+
+function onTimePickChange(e: PickerChangeEvent): void {
+  const raw = (e && e.detail && e.detail.value) || []
+  timeDraftIndexes.value = raw.map((n) => Number(n) || 0)
+  const hItem = timeHourColumn.value[timeDraftIndexes.value[0] || 0]
+  const mItem = timeMinuteColumn.value[timeDraftIndexes.value[1] || 0]
+  let h = (hItem && hItem.value) || 0
+  if (props.hour12) h = toH24(h, draftIsPm.value)
+  draftH.value = h
+  draftMi.value = (mItem && mItem.value) || 0
+}
+
+function onPickChange(e: PickerChangeEvent): void {
+  const raw = (e && e.detail && e.detail.value) || []
+  draftIndexes.value = raw.map((n) => Number(n) || 0)
+  if (modeKey.value === 'time' && props.hour12) {
+    const hItem = timeHourColumn.value[draftIndexes.value[0] || 0]
+    const mItem = timeMinuteColumn.value[draftIndexes.value[1] || 0]
+    const h12 = (hItem && hItem.value) || 12
+    draftH.value = toH24(h12, draftIsPm.value)
+    draftMi.value = (mItem && mItem.value) || 0
+  }
+  nextTick(() => clampDraftToColumns())
+}
+
+function openAnim(): void {
+  clearTimers()
+  sheetMounted.value = true
+  dragDy.value = 0
+  dragging.value = false
+  phase.value = 'enter'
+  nextTick(() => {
+    const kick = () => {
+      enterTimer.value = setTimeout(
+        () => {
+          phase.value = 'open'
+          enterTimer.value = null
+        },
+        reduceMotion.value ? 16 : ENTER_KICK_MS,
+      )
+    }
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(kick)
+      })
+    } else {
+      kick()
+    }
+  })
+}
+
+function open(): void {
+  if (props.disabled) return
+  searchQuery.value = ''
+  timeEditing.value = false
+  resetCalSlide()
+  if (useCalendar.value) {
+    syncCalendarDraftFromValue()
+  } else {
+    if (modeKey.value === 'time') {
+      const hm = parseHm(current.value) || { h: 0, mi: 0 }
+      draftH.value = hm.h
+      draftMi.value = snapMinute(hm.mi)
+    }
+    draftIndexes.value = indexesFromValue()
+    applyMpWheelTops(draftIndexes.value)
+    nextTick(() => clampDraftToColumns())
+  }
+  syncSafe()
+  bindSearchKeyboard()
+  lockPageScroll()
+  openAnim()
+}
+
+function onPanelTouchMove(): void {
+  /* stop 已在模板 */
+}
+
+function onChromeTouchStart(e: TouchEvent): void {
+  const t = e.touches && e.touches[0]
+  if (!t) return
+  dragStartY.value = t.clientY
+  dragDy.value = 0
+  dragging.value = true
+}
+
+function onChromeTouchMove(e: TouchEvent): void {
+  if (!dragging.value) return
+  const t = e.touches && e.touches[0]
+  if (!t) return
+  const dy = t.clientY - dragStartY.value
+  dragDy.value = dy > 0 ? dy : 0
+}
+
+function onChromeTouchEnd(): void {
+  if (!dragging.value) return
+  const dy = dragDy.value
+  dragging.value = false
+  dragDy.value = 0
+  if (dy >= DISMISS_DY) {
+    onCancel()
+  }
+}
+
+function onSearchQuery(value: unknown): void {
+  const col = (columns.value[0] || []) as PickerColumnItem[]
+  const currentItem = col[draftIndexes.value[0] || 0]
+  const keep = currentItem && currentItem.value >= 0 ? currentItem.value : Number(current.value)
+  searchQuery.value = value == null ? '' : String(value)
+  const next = (columns.value[0] || []) as PickerColumnItem[]
+  const found = next.findIndex((item) => item.value === keep)
+  draftIndexes.value = [found >= 0 ? found : 0]
+  applyMpWheelTops(draftIndexes.value)
+}
+
+function playMpWheelFeedback(): void {
+  if (!props.haptic) return
+  // #ifdef MP-WEIXIN
+  const now = Date.now()
+  if (now - _mpLastFeedbackAt.value < 60) return
+  _mpLastFeedbackAt.value = now
+  try {
+    uni.vibrateShort({ type: 'light' })
+  } catch {
+    /* 部分基础库 / 设备不支持震动 */
+  }
+  // #endif
+}
+
+function scheduleMpSnap(which: 'main' | 'time', colIndex: number, top: number): void {
+  const key = `${which}:${colIndex}`
+  const prev = _mpSnapMap.value[key]
+  if (prev) clearTimeout(prev)
+  _mpSnapMap.value[key] = setTimeout(() => {
+    delete _mpSnapMap.value[key]
+    _mpWheelUser.value = false
+    const snapped = Math.round(Math.max(0, top) / ITEM_H) * ITEM_H
+    if (Math.abs(top - snapped) < 0.5) return
+    const tops = (which === 'time' ? mpTimeWheelTops.value : mpWheelTops.value).slice()
+    const cur = tops[colIndex]
+    tops[colIndex] = snapped === cur ? snapped + 0.01 : snapped
+    _mpSnapApplying.value = true
+    if (which === 'time') mpTimeWheelTops.value = tops
+    else mpWheelTops.value = tops
+    nextTick(() => {
+      _mpSnapApplying.value = false
+    })
+  }, 80)
+}
+
+function onMpColumnScroll(event: unknown, colIndex: number, which: 'main' | 'time'): void {
+  if (_mpSnapApplying.value) return
+  const detail = (event as { detail?: { scrollTop?: number } } | null)?.detail
+  const top = Number(detail && detail.scrollTop) || 0
+  const cols = which === 'time' ? timeWheelColumns.value : columns.value
+  const col = cols[colIndex] || []
+  const max = Math.max(0, col.length - 1)
+  const idx = Math.min(max, Math.max(0, Math.round(top / ITEM_H)))
+  _mpWheelUser.value = true
+  const key = `${which}:${colIndex}`
+  const lastIndex = _mpLastIndex.value[key]
+  if (lastIndex !== idx) {
+    _mpLastIndex.value[key] = idx
+    if (lastIndex !== undefined) playMpWheelFeedback()
+  }
+  if (which === 'time') {
+    const next = timeDraftIndexes.value.slice()
+    next[colIndex] = idx
+    onTimePickChange({ detail: { value: next } })
+  } else {
+    const next = draftIndexes.value.slice()
+    next[colIndex] = idx
+    onPickChange({ detail: { value: next } })
+  }
+  scheduleMpSnap(which, colIndex, top)
+}
+
+function onMpWheelScroll(event: unknown, colIndex: number): void {
+  onMpColumnScroll(event, colIndex, 'main')
+}
+
+function onMpTimeWheelScroll(event: unknown, colIndex: number): void {
+  onMpColumnScroll(event, colIndex, 'time')
+}
+
+watch(
+  phase,
+  (value: string) => {
+    _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+      !!_lingyunMpOverlayHold.value,
+      !!value,
+    )
+  },
+  { immediate: true },
+)
+
+onBeforeUnmount(() => {
+  _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+    !!_lingyunMpOverlayHold.value,
+    false,
+  )
+  clearTimers()
+  unbindSearchKeyboard()
+  unlockPageScroll()
+})
+
+defineExpose({ open, closeSheet, onCancel, onConfirm })
 </script>
 
 <style lang="scss">

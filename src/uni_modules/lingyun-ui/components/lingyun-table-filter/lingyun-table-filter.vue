@@ -77,8 +77,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+import { type PropType } from 'vue'
 import {
   isWideFilterLayout,
   type LingyunTableFilterAnchor,
@@ -100,99 +101,96 @@ const POP_BODY_MIN = 200
  * 宽屏为带箭头指向 anchor 的 Popover（底部取消 / 确定）。内容见 lingyun-table-filter-form。
  * @see design/TABLES.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunTableFilter',
-  emits: ['update:show', 'confirm'],
-  props: {
-    show: { type: Boolean, default: false },
-    title: { type: String, default: '' },
-    /** 为空时只显示排序 */
-    type: { type: String as PropType<LingyunTableFilterType | ''>, default: '' },
-    options: { type: Array as PropType<LingyunTableFilterOption[]>, default: () => [] },
-    values: { type: Array as PropType<string[]>, default: () => [] },
-    condition: { type: Object as PropType<LingyunTableFilterCondition | null>, default: null },
-    sortable: { type: Boolean, default: false },
-    sortOrder: { type: String as PropType<'asc' | 'desc' | ''>, default: '' },
-    /** 选项多于这个数时显示搜索 */
-    searchThreshold: { type: Number, default: 8 },
-    /** 宽屏 Popover 箭头指向的矩形（视口坐标）。窄屏不用 */
-    anchor: { type: Object as PropType<LingyunTableFilterAnchor | null>, default: null },
-  },
-  data() {
-    return {
-      wide: false,
-      valid: true,
-      submitSeq: 0,
-      windowWidth: 375,
-      windowHeight: 667,
+})
+
+const props = defineProps({
+  show: { type: Boolean, default: false },
+  title: { type: String, default: '' },
+  /** 为空时只显示排序 */
+  type: { type: String as PropType<LingyunTableFilterType | ''>, default: '' },
+  options: { type: Array as PropType<LingyunTableFilterOption[]>, default: () => [] },
+  values: { type: Array as PropType<string[]>, default: () => [] },
+  condition: { type: Object as PropType<LingyunTableFilterCondition | null>, default: null },
+  sortable: { type: Boolean, default: false },
+  sortOrder: { type: String as PropType<'asc' | 'desc' | ''>, default: '' },
+  /** 选项多于这个数时显示搜索 */
+  searchThreshold: { type: Number, default: 8 },
+  /** 宽屏 Popover 箭头指向的矩形（视口坐标）。窄屏不用 */
+  anchor: { type: Object as PropType<LingyunTableFilterAnchor | null>, default: null },
+})
+
+const emit = defineEmits(['update:show', 'confirm'])
+
+const wide = ref(false)
+const valid = ref(true)
+const submitSeq = ref(0)
+const windowWidth = ref(375)
+const windowHeight = ref(667)
+
+/** 同一帧里关了又开另一列时 show 不变，按列和外部值一起判断要不要重置草稿 */
+const openKey = computed((): string => {
+  if (!props.show) return ''
+  const cond = props.condition
+  const condKey = cond ? `${cond.op}:${cond.value}:${cond.value2 || ''}` : ''
+  return [props.type, props.title, props.sortOrder, (props.values || []).join(','), condKey].join('|')
+})
+const detent = computed((): string => {
+  return props.type === 'select' && props.options.length > props.searchThreshold ? 'large' : 'medium'
+})
+/** 箭头贴在面板靠图标的一端：图标在左半屏，面板向右展开；在右半屏，向左展开 */
+const arrowAlign = computed((): string => {
+  const a = props.anchor
+  if (!a) return 'middle'
+  return a.left + a.width / 2 > windowWidth.value / 2 ? 'trailing' : 'leading'
+})
+const popWidth = computed((): number => {
+  return POP_WIDTH
+})
+const popBodyMax = computed((): number => {
+  return Math.max(POP_BODY_MIN, Math.min(POP_BODY_MAX, windowHeight.value - POP_CHROME - 120))
+})
+const popEstimateHeight = computed((): number => {
+  return popBodyMax.value + POP_CHROME
+})
+const popBodyStyle = computed((): Record<string, string> => {
+  return { maxHeight: `${popBodyMax.value}px` }
+})
+
+function onShowChange(open: boolean): void {
+  emit('update:show', open)
+}
+function onValid(ok: boolean): void {
+  valid.value = ok
+}
+function submit(): void {
+  if (!valid.value) return
+  submitSeq.value += 1
+}
+function close(): void {
+  emit('update:show', false)
+}
+function onConfirm(result: LingyunTableFilterResult): void {
+  emit('confirm', result)
+  emit('update:show', false)
+}
+
+watch(
+  openKey,
+  (key: string) => {
+    if (!key) return
+    wide.value = isWideFilterLayout()
+    try {
+      const info = uni.getWindowInfo()
+      windowWidth.value = info.windowWidth || 375
+      windowHeight.value = info.windowHeight || 667
+    } catch {
+      /* 用默认高度 */
     }
   },
-  computed: {
-    /** 同一帧里关了又开另一列时 show 不变，按列和外部值一起判断要不要重置草稿 */
-    openKey(): string {
-      if (!this.show) return ''
-      const cond = this.condition
-      const condKey = cond ? `${cond.op}:${cond.value}:${cond.value2 || ''}` : ''
-      return [this.type, this.title, this.sortOrder, (this.values || []).join(','), condKey].join('|')
-    },
-    detent(): string {
-      return this.type === 'select' && this.options.length > this.searchThreshold ? 'large' : 'medium'
-    },
-    /** 箭头贴在面板靠图标的一端：图标在左半屏，面板向右展开；在右半屏，向左展开 */
-    arrowAlign(): string {
-      const a = this.anchor
-      if (!a) return 'middle'
-      return a.left + a.width / 2 > this.windowWidth / 2 ? 'trailing' : 'leading'
-    },
-    popWidth(): number {
-      return POP_WIDTH
-    },
-    popBodyMax(): number {
-      return Math.max(POP_BODY_MIN, Math.min(POP_BODY_MAX, this.windowHeight - POP_CHROME - 120))
-    },
-    popEstimateHeight(): number {
-      return this.popBodyMax + POP_CHROME
-    },
-    popBodyStyle(): Record<string, string> {
-      return { maxHeight: `${this.popBodyMax}px` }
-    },
-  },
-  watch: {
-    openKey: {
-      immediate: true,
-      handler(key: string) {
-        if (!key) return
-        this.wide = isWideFilterLayout()
-        try {
-          const info = uni.getWindowInfo()
-          this.windowWidth = info.windowWidth || 375
-          this.windowHeight = info.windowHeight || 667
-        } catch {
-          /* 用默认高度 */
-        }
-      },
-    },
-  },
-  methods: {
-    onShowChange(open: boolean) {
-      this.$emit('update:show', open)
-    },
-    onValid(ok: boolean) {
-      this.valid = ok
-    },
-    submit() {
-      if (!this.valid) return
-      this.submitSeq += 1
-    },
-    close() {
-      this.$emit('update:show', false)
-    },
-    onConfirm(result: LingyunTableFilterResult) {
-      this.$emit('confirm', result)
-      this.$emit('update:show', false)
-    },
-  },
-})
+  { immediate: true },
+)
 </script>
 
 <style lang="scss">

@@ -8,29 +8,28 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-
+<script setup lang="ts">
+import { computed } from 'vue'
 /**
  * 菜单点到未注册页面时的 404。嵌在当前页里，避免小程序整页重开。
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunPageMiss',
-  props: {
-    from: { type: String, default: '' },
-  },
-  emits: ['home'],
-  computed: {
-    description() {
-      return this.from ? `当前应用没有这个页面\n${this.from}` : '当前应用没有这个页面'
-    },
-  },
-  methods: {
-    onHome() {
-      this.$emit('home')
-    },
-  },
 })
+
+const props = defineProps({
+  from: { type: String, default: '' },
+})
+
+const emit = defineEmits(['home'])
+
+const description = computed((): string => {
+  return props.from ? `当前应用没有这个页面\n${props.from}` : '当前应用没有这个页面'
+})
+
+function onHome(): void {
+  emit('home')
+}
 </script>
 
 <style lang="scss">

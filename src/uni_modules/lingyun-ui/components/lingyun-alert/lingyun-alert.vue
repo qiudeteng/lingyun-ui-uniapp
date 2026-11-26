@@ -63,10 +63,11 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, useSlots, watch } from 'vue'
+import { type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
-import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
+import { syncLingyunMpOverlayHold } from '../../utils/mp-overlay-gate'
 
 /**
  * lingyun-alert
@@ -135,626 +136,680 @@ type AlertFieldEvent = {
 
 type KeyboardHeightHandler = (result: UniNamespace.OnKeyboardHeightChangeResult) => void
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunAlert',
-  mixins: [mpOverlayHoldMixin],
-  emits: [
-    'update:show',
-    'update:modelValue',
-    'action',
-    'close',
-    'update:inputs',
-    'input',
-  ],
-  props: {
-    show: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
-    },
-    modelValue: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
-    },
-    title: {
-      type: String,
-      default: '',
-    },
-    message: {
-      type: String,
-      default: '',
-    },
-    actions: {
-      type: Array as PropType<AlertAction[]>,
-      default: () => [],
-    },
-    layout: {
-      type: String,
-      default: 'auto',
-    },
-    inputs: {
-      type: Array as PropType<AlertInputField[]>,
-      default: () => [],
-    },
-    maskClosable: {
-      type: Boolean,
-      default: false,
-    },
-    closeOnAction: {
-      type: Boolean,
-      default: true,
-    },
-    autoFocus: {
-      type: Boolean,
-      default: true,
-    },
-    zIndex: {
-      type: [Number, String] as PropType<number | string>,
-      default: 1000,
-    },
+})
+
+const props = defineProps({
+  show: {
+    type: Boolean as PropType<boolean | undefined>,
+    default: undefined,
   },
-  data() {
-    return {
-      fieldValues: [] as string[],
-      mounted: false,
-      /** enter | open | leave */
-      phase: '' as '' | 'enter' | 'open' | 'leave',
-      leaveTimer: null as ReturnType<typeof setTimeout> | null,
-      enterTimer: null as ReturnType<typeof setTimeout> | null,
-      /** 打开后允许自动聚焦；等输入框挂载稳定再置位 */
-      focusReady: false,
-      focusTimer: null as ReturnType<typeof setTimeout> | null,
-      /** 拒绝点遮罩关闭时的轻抖 */
-      rejectNudge: false,
-      nudgeTimer: null as ReturnType<typeof setTimeout> | null,
-      _blurKbTimer: null as ReturnType<typeof setTimeout> | null,
-      _visualViewportTimer: null as ReturnType<typeof setTimeout> | null,
-      _kbHeightTimer: null as ReturnType<typeof setTimeout> | null,
-      _closeKbTimer: null as ReturnType<typeof setTimeout> | null,
-      _pendingClose: false,
-      /** 退场期间冻结键盘上推量，避免面板先跳回中间再淡出 */
-      _closeLiftPx: null as number | null,
-      _onKeyboardHeight: null as KeyboardHeightHandler | null,
-      _onVisualViewport: null as (() => void) | null,
-      /** 键盘高度（含输入框时上推面板） */
-      keyboardHeight: 0,
-      /** 面板实测高度，用于贴键盘定位 */
-      panelHeightPx: 0,
-    }
+  modelValue: {
+    type: Boolean as PropType<boolean | undefined>,
+    default: undefined,
   },
-  computed: {
-    visible() {
-      if (this.show !== undefined && this.show !== null) return !!this.show
-      if (this.modelValue !== undefined && this.modelValue !== null) return !!this.modelValue
-      return false
-    },
-    showHeader() {
-      return !!(this.title || this.message || this.$slots.header)
-    },
-    normalizedInputs(): AlertInputField[] {
-      const list = Array.isArray(this.inputs) ? this.inputs.slice(0, 2) : []
-      return list.filter((field): field is AlertInputField => !!field)
-    },
-    hasInputs() {
-      return this.normalizedInputs.length > 0
-    },
-    resolvedActions(): AlertAction[] {
-      return (this.actions || []).filter((action): action is AlertAction => !!(action && action.text))
-    },
-    resolvedLayout() {
-      if (this.layout === 'row' || this.layout === 'stack') return this.layout
-      return this.resolvedActions.length >= 3 ? 'stack' : 'row'
-    },
-    actionsClass() {
-      return this.resolvedLayout === 'stack'
-        ? 'lingyun-alert__actions--stack'
-        : 'lingyun-alert__actions--row'
-    },
-    reduceMotion() {
-      try {
-        if (typeof window !== 'undefined' && window.matchMedia) {
-          return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        }
-      } catch (e) {
-        /* ignore */
-      }
-      return false
-    },
-    rootClass() {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* pinia 未就绪 */
-      }
-      return [
-        themeClass,
-        `lingyun-alert--${this.resolvedLayout}`,
-        this.hasInputs ? 'lingyun-alert--with-inputs' : '',
-        this.phase ? `lingyun-alert--${this.phase}` : '',
-        this.reduceMotion ? 'lingyun-alert--reduce-motion' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    rootStyle() {
-      return {
-        zIndex: Number(this.zIndex) || 1000,
-      }
-    },
-    panelClass() {
-      return {
-        'lingyun-alert__panel--nudge': this.rejectNudge && !this.reduceMotion,
-      }
-    },
-    /** 键盘弹起时上移量：面板底边贴在键盘上方（小间距），避免旧算法 kb*0.58 抬得过高留白过大 */
-    keyboardLiftPx() {
-      if (this._closeLiftPx != null) return this._closeLiftPx
-      const kb = Math.max(0, Number(this.keyboardHeight) || 0)
-      if (kb < 40) return 0
-      let winH = 667
-      try {
-        const info =
-          typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
-        winH = Number(info && info.windowHeight) || winH
-      } catch {
-        /* ignore */
-      }
-      const gap = 16
-      const pad = 24
-      const panelH = Math.max(120, Number(this.panelHeightPx) || this.estimatePanelHeight())
-      const centerY = winH / 2
-      /* 无 lift 时底边 ≈ centerY + panelH/2；目标底边 = 键盘顶 - gap */
-      let lift = centerY + panelH / 2 - (winH - kb - gap)
-      const maxLift = Math.max(0, centerY - panelH / 2 - pad)
-      if (lift < 0) lift = 0
-      if (lift > maxLift) lift = maxLift
-      return Math.round(lift)
-    },
-    liftStyle() {
-      /*
-       * scale 放 lift，勿放 panel：同元素 opacity/scale 会搞坏小程序 backdrop-filter。
-       * 键盘上推用布局（margin-bottom）而不是 transform：小程序原生输入文字层
-       * 不会跟着祖先 transform 同步移动，之前的「文字滞后」就是两者不同步。
-       */
-      const y = this.keyboardLiftPx
-      let scale = 1
-      if (!this.reduceMotion) {
-        /* 输入弹窗不做缩放入场，但退场时可以正常缩：此时键盘已收起、输入已失焦 */
-        if (this.phase === 'enter' && !this.hasInputs) scale = 1.16
-        else if (this.phase === 'leave') scale = 0.92
-      }
-      const transform = scale !== 1 ? `scale(${scale})` : 'none'
-      /* flex 垂直居中：margin-bottom = 2y 让面板中心上移 y */
-      const marginBottom = y > 0 ? `${Math.round(y * 2)}px` : '0px'
-      const leaving = this.phase === 'leave'
-      return {
-        transform,
-        marginBottom,
-        /*
-         * 布局位移不做补间：过渡期间原生输入文字层会和 WXSS 外壳不同步，
-         * 出现文字闪烁/上移。键盘本身有系统动画，这里一次布局到位。
-         */
-        transition: this.reduceMotion
-          ? 'none'
-          : leaving
-            ? 'transform 0.24s cubic-bezier(0.4, 0, 1, 1)'
-            : 'transform 0.42s cubic-bezier(0.32, 0.72, 0, 1)',
-      }
-    },
+  title: {
+    type: String,
+    default: '',
   },
-  watch: {
-    inputs: {
-      immediate: true,
-      deep: true,
-      handler(list: AlertInputField[]) {
-        const next = (Array.isArray(list) ? list.slice(0, 2) : []).map((field) =>
-          field && field.value != null ? String(field.value) : '',
-        )
-        this.fieldValues = next
-      },
-    },
-    visible: {
-      immediate: true,
-      handler(val: boolean) {
-        if (val) {
-          if (this.hasInputs) {
-            this.fieldValues = this.normalizedInputs.map((f) =>
-              f && f.value != null ? String(f.value) : '',
-            )
-          }
-          this.openAnim()
-          if (this.hasInputs) {
-            this.bindKeyboardHeight()
-            /* #ifdef H5 */
-            this.bindVisualViewport()
-            /* #endif */
-          }
-        } else {
-          this.beginClose()
-        }
-      },
-    },
+  message: {
+    type: String,
+    default: '',
   },
-  beforeUnmount() {
-    this.clearTimers()
-    this.resetKeyboardLift()
+  actions: {
+    type: Array as PropType<AlertAction[]>,
+    default: () => [],
   },
-  // #ifndef VUE3
-  beforeDestroy() {
-    this.clearTimers()
-    this.resetKeyboardLift()
+  layout: {
+    type: String,
+    default: 'auto',
   },
-  // #endif
-  methods: {
-    clearTimers() {
-      if (this.leaveTimer) {
-        clearTimeout(this.leaveTimer)
-        this.leaveTimer = null
-      }
-      if (this.enterTimer) {
-        clearTimeout(this.enterTimer)
-        this.enterTimer = null
-      }
-      if (this.focusTimer) {
-        clearTimeout(this.focusTimer)
-        this.focusTimer = null
-      }
-      if (this._kbHeightTimer) {
-        clearTimeout(this._kbHeightTimer)
-        this._kbHeightTimer = null
-      }
-      this.focusReady = false
-      if (this.nudgeTimer) {
-        clearTimeout(this.nudgeTimer)
-        this.nudgeTimer = null
-      }
-      this.rejectNudge = false
-    },
-    setKeyboardHeight(height: unknown) {
-      const next = Math.max(0, Number(height) || 0)
-      if (next === this.keyboardHeight) return
-      this.keyboardHeight = next
-      if (next > 0) this.measurePanelHeight()
-      if (next === 0 && this._pendingClose) this.finishPendingClose()
-    },
-    resetKeyboardLift() {
-      clearTimeout(this._blurKbTimer ?? undefined)
-      this._blurKbTimer = null
-      clearTimeout(this._kbHeightTimer ?? undefined)
-      this._kbHeightTimer = null
-      clearTimeout(this._closeKbTimer ?? undefined)
-      this._closeKbTimer = null
-      this._pendingClose = false
-      this._closeLiftPx = null
-      this.setKeyboardHeight(0)
-      this.panelHeightPx = 0
-      this.unbindKeyboardHeight()
-      /* #ifdef H5 */
-      this.unbindVisualViewport()
-      /* #endif */
-    },
-    estimatePanelHeight() {
-      let h = 28
-      if (this.title) h += 22
-      if (this.message) h += 44
-      if (this.title || this.message) h += 42
-      h += this.normalizedInputs.reduce((sum, field) => {
-        if (field.multiline === true || field.type === 'textarea') {
-          const rows = Math.max(1, Number(field.rows) || 3)
-          return sum + Math.max(66, 28 + 22 * rows) + 12
-        }
-        return sum + 64
-      }, 0)
-      if (this.resolvedActions.length) {
-        h += this.resolvedLayout === 'stack'
-          ? this.resolvedActions.length * 48 + 12
-          : 48
-      }
-      return h
-    },
-    measurePanelHeight() {
-      if (!this.hasInputs || !this.mounted) return
-      this.$nextTick(() => {
-        try {
-          const q = uni.createSelectorQuery().in(this)
-          q.select('.lingyun-alert__panel')
-            .boundingClientRect((rect) => {
-              const node = rect && !Array.isArray(rect) ? rect : null
-              const h = node && node.height ? Number(node.height) : 0
-              if (h > 40 && h !== this.panelHeightPx) this.panelHeightPx = h
-            })
-            .exec()
-        } catch {
-          /* ignore */
-        }
-      })
-    },
-    onInputFocus() {
-      if (!this.hasInputs) return
-      /* 第一格 blur 后马上点第二格时，别让旧的清零定时器把键盘高度打回 0 */
-      clearTimeout(this._blurKbTimer ?? undefined)
-      this._blurKbTimer = null
-      clearTimeout(this._kbHeightTimer ?? undefined)
-      this._kbHeightTimer = null
-      this.bindKeyboardHeight()
-      this.measurePanelHeight()
-      /* #ifdef H5 */
-      this.bindVisualViewport()
-      /* #endif */
-    },
-    onInputBlur() {
-      clearTimeout(this._kbHeightTimer ?? undefined)
-      this._kbHeightTimer = null
-      /* 延迟清零：切到下一输入框时避免闪回中间 */
-      clearTimeout(this._blurKbTimer ?? undefined)
-      this._blurKbTimer = setTimeout(() => {
-        this.setKeyboardHeight(0)
-        this._blurKbTimer = null
-      }, 80)
-    },
-    queueKeyboardHeight(height: unknown) {
-      const next = Math.max(0, Number(height) || 0)
-      clearTimeout(this._kbHeightTimer ?? undefined)
-      if (next <= 0) {
-        this._kbHeightTimer = null
-        this.setKeyboardHeight(0)
-        return
-      }
-      this._kbHeightTimer = setTimeout(() => {
-        this._kbHeightTimer = null
-        this.setKeyboardHeight(next)
-      }, MP_KEYBOARD_SETTLE_MS)
-    },
-    onInputKeyboardHeight(event: AlertFieldEvent) {
-      const height = event && event.detail ? event.detail.height : 0
-      clearTimeout(this._blurKbTimer ?? undefined)
-      let deferred = false
-      // #ifdef MP-WEIXIN
-      deferred = true
-      // #endif
-      if (deferred) this.queueKeyboardHeight(height)
-      else this.setKeyboardHeight(height)
-    },
-    bindKeyboardHeight() {
-      if (this._onKeyboardHeight) return
-      if (typeof uni === 'undefined' || typeof uni.onKeyboardHeightChange !== 'function') return
-      this._onKeyboardHeight = (res: UniNamespace.OnKeyboardHeightChangeResult) => {
-        this.queueKeyboardHeight(res && res.height)
-      }
-      uni.onKeyboardHeightChange(this._onKeyboardHeight)
-    },
-    unbindKeyboardHeight() {
-      if (!this._onKeyboardHeight) return
-      if (typeof uni !== 'undefined' && typeof uni.offKeyboardHeightChange === 'function') {
-        const offKeyboard = uni.offKeyboardHeightChange as (callback?: KeyboardHeightHandler) => void
-        offKeyboard(this._onKeyboardHeight)
-      }
-      this._onKeyboardHeight = null
-    },
-    /* #ifdef H5 */
-    bindVisualViewport() {
-      if (this._onVisualViewport) return
-      if (typeof window === 'undefined' || !window.visualViewport) return
-      this._onVisualViewport = () => {
-        clearTimeout(this._visualViewportTimer ?? undefined)
-        this._visualViewportTimer = setTimeout(() => {
-          this._visualViewportTimer = null
-          const vv = window.visualViewport
-          if (!vv) return
-          const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
-          this.setKeyboardHeight(covered > 80 ? covered : 0)
-        }, VISUAL_VIEWPORT_DEBOUNCE_MS)
-      }
-      window.visualViewport.addEventListener('resize', this._onVisualViewport)
-      window.visualViewport.addEventListener('scroll', this._onVisualViewport)
-    },
-    unbindVisualViewport() {
-      clearTimeout(this._visualViewportTimer ?? undefined)
-      this._visualViewportTimer = null
-      if (!this._onVisualViewport || typeof window === 'undefined' || !window.visualViewport) {
-        this._onVisualViewport = null
-        return
-      }
-      window.visualViewport.removeEventListener('resize', this._onVisualViewport)
-      window.visualViewport.removeEventListener('scroll', this._onVisualViewport)
-      this._onVisualViewport = null
-    },
-    /* #endif */
-    openAnim() {
-      this.clearTimers()
-      this._pendingClose = false
-      this._closeLiftPx = null
-      clearTimeout(this._closeKbTimer ?? undefined)
-      this._closeKbTimer = null
-      this.mounted = true
-      this.phase = 'enter'
-      /*
-       * 输入弹窗不做缩放入场；聚焦延后到输入框挂载稳定之后。
-       * 小程序 textarea 在首帧/动画期间翻转 focus 容易闪一下失焦。
-       */
-      if (this.hasInputs && this.autoFocus) {
-        this.focusTimer = setTimeout(() => {
-          this.focusReady = true
-          this.focusTimer = null
-        }, this.reduceMotion ? 0 : INPUT_FOCUS_DELAY_MS)
-      }
-      this.$nextTick(() => {
-        this.enterTimer = setTimeout(() => {
-          this.phase = 'open'
-          this.enterTimer = null
-          if (this.hasInputs) this.measurePanelHeight()
-        }, this.reduceMotion ? 0 : 20)
-      })
-    },
-    /**
-     * 关闭入口：键盘开着时先收键盘，等它落下去再播正常的 alert 退场。
-     * 直接播退场会让面板在键盘收起过程中突然消失，出现闪烁。
-     */
-    beginClose() {
-      if (!this.mounted) {
-        this.phase = ''
-        this.resetKeyboardLift()
-        return
-      }
-      const keyboardEngaged = this.hasInputs && this.keyboardHeight > 0
-      if (!keyboardEngaged) {
-        this._closeLiftPx = null
-        this.closeAnim()
-        return
-      }
-      /* 冻结当前上推量：键盘收起后按这个位置退场，不再跳回中间 */
-      clearTimeout(this._kbHeightTimer ?? undefined)
-      this._kbHeightTimer = null
-      this._closeLiftPx = this.keyboardLiftPx
-      this._pendingClose = true
-      clearTimeout(this._closeKbTimer ?? undefined)
-      this._closeKbTimer = setTimeout(() => {
-        this._closeKbTimer = null
-        this.finishPendingClose()
-      }, CLOSE_KB_TIMEOUT_MS)
-      try {
-        if (typeof uni !== 'undefined' && typeof uni.hideKeyboard === 'function') {
-          uni.hideKeyboard()
-        }
-      } catch {
-        /* 端不支持时等兜底超时 */
-      }
-    },
-    finishPendingClose() {
-      if (!this._pendingClose) return
-      this._pendingClose = false
-      clearTimeout(this._closeKbTimer ?? undefined)
-      this._closeKbTimer = null
-      this.closeAnim()
-    },
-    closeAnim() {
-      if (!this.mounted) {
-        this.phase = ''
-        this.resetKeyboardLift()
-        return
-      }
-      this._pendingClose = false
-      clearTimeout(this._closeKbTimer ?? undefined)
-      this._closeKbTimer = null
-      if (this._closeLiftPx == null && this.keyboardHeight > 0) {
-        this._closeLiftPx = this.keyboardLiftPx
-      }
-      this.clearTimers()
-      this.phase = 'leave'
-      const wait = this.reduceMotion ? 0 : LEAVE_MS
-      this.leaveTimer = setTimeout(() => {
-        this.mounted = false
-        this.phase = ''
-        this.leaveTimer = null
-        /* 退场期间保持键盘上推量，动画结束后再清，避免中途跳回 */
-        this.resetKeyboardLift()
-      }, wait)
-    },
-    actionClass(action: AlertAction) {
-      const role = this.resolveRole(action)
-      const primary = this.isPrimary(action)
-      return [
-        `lingyun-alert__action--${role}`,
-        primary ? 'lingyun-alert__action--primary' : 'lingyun-alert__action--secondary',
-      ].join(' ')
-    },
-    resolveRole(action: AlertAction | null | undefined) {
-      const role = action && action.role
-      if (role === 'destructive' || role === 'cancel' || role === 'primary' || role === 'secondary') {
-        return role === 'primary' ? 'normal' : role
-      }
-      return 'normal'
-    },
-    isPrimary(action: AlertAction | null | undefined) {
-      if (!action) return false
-      if (action.primary === true) return true
-      if (action.primary === false) return false
-      if (action.role === 'primary') return true
-      if (action.role === 'cancel' || action.role === 'secondary') return false
-      const list = this.resolvedActions
-      if (!list.length) return false
-      if (this.resolvedLayout === 'stack') return list[0] === action
-      return list[list.length - 1] === action
-    },
-    onFieldValue(index: number, value: unknown) {
-      const next = this.fieldValues.slice()
-      next[index] = value == null ? '' : String(value)
-      this.fieldValues = next
-      this.$emit('input', { index, value: next[index], values: next.slice() })
-      this.$emit('update:inputs', this.buildInputsPayload(next))
-      const autoGrow = this.normalizedInputs.some(
-        (field) =>
-          (field.multiline === true || field.type === 'textarea') &&
-          field.autoHeight === true,
-      )
-      if (autoGrow) this.measurePanelHeight()
-    },
-    buildInputsPayload(values: string[]) {
-      return this.normalizedInputs.map((field, i) => ({
-        ...field,
-        value: values[i] != null ? values[i] : '',
-      }))
-    },
-    close() {
-      this.$emit('update:show', false)
-      this.$emit('update:modelValue', false)
-      this.$emit('close')
-    },
-    /**
-     * 系统 UIAlertController 点 dimming 是静默忽略；
-     * 此处用水平轻抖 + 短震动，表达「须点按钮关闭」（同密码错误抖动语汇）。
-     */
-    onOverlayClick() {
-      if (this.maskClosable) {
-        this.close()
-        return
-      }
-      if (this.phase !== 'open') return
-      this.playRejectNudge()
-    },
-    playRejectNudge() {
-      try {
-        const vibrateOptions: UniNamespace.VibrateShortOptions & { type: 'medium' } = {
-          type: 'medium',
-        }
-        uni.vibrateShort(vibrateOptions)
-      } catch {
-        try {
-          uni.vibrateShort({})
-        } catch {
-          /* 部分端无震动 */
-        }
-      }
-      if (this.reduceMotion) return
-      this.rejectNudge = false
-      this.$nextTick(() => {
-        this.rejectNudge = true
-        if (this.nudgeTimer) clearTimeout(this.nudgeTimer)
-        this.nudgeTimer = setTimeout(() => {
-          this.rejectNudge = false
-          this.nudgeTimer = null
-        }, NUDGE_MS)
-      })
-    },
-    onAction(action: AlertAction | null | undefined, index: number) {
-      if (!action || action.disabled) return
-      if (this.phase === 'leave') return
-      const payload = {
-        action,
-        index,
-        values: this.fieldValues.slice(),
-        inputs: this.buildInputsPayload(this.fieldValues),
-      }
-      this.$emit('action', payload)
-      if (typeof action.onClick === 'function') {
-        action.onClick(payload)
-      }
-      if (this.closeOnAction !== false && action.close !== false) {
-        this.close()
-      }
-    },
+  inputs: {
+    type: Array as PropType<AlertInputField[]>,
+    default: () => [],
+  },
+  maskClosable: {
+    type: Boolean,
+    default: false,
+  },
+  closeOnAction: {
+    type: Boolean,
+    default: true,
+  },
+  autoFocus: {
+    type: Boolean,
+    default: true,
+  },
+  zIndex: {
+    type: [Number, String] as PropType<number | string>,
+    default: 1000,
   },
 })
+
+const emit = defineEmits([
+  'update:show',
+  'update:modelValue',
+  'action',
+  'close',
+  'update:inputs',
+  'input',
+])
+
+const slots = useSlots()
+const instance = getCurrentInstance()
+
+const fieldValues = ref<string[]>([])
+const mounted = ref(false)
+/** enter | open | leave */
+const phase = ref<'' | 'enter' | 'open' | 'leave'>('')
+const leaveTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const enterTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+/** 打开后允许自动聚焦；等输入框挂载稳定再置位 */
+const focusReady = ref(false)
+const focusTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+/** 拒绝点遮罩关闭时的轻抖 */
+const rejectNudge = ref(false)
+const nudgeTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _blurKbTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _visualViewportTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _kbHeightTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _closeKbTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _pendingClose = ref(false)
+/** 退场期间冻结键盘上推量，避免面板先跳回中间再淡出 */
+const _closeLiftPx = ref<number | null>(null)
+const _onKeyboardHeight = ref<KeyboardHeightHandler | null>(null)
+const _onVisualViewport = ref<(() => void) | null>(null)
+/** 键盘高度（含输入框时上推面板） */
+const keyboardHeight = ref(0)
+/** 面板实测高度，用于贴键盘定位 */
+const panelHeightPx = ref(0)
+const _lingyunMpOverlayHold = ref(false)
+
+const visible = computed((): boolean => {
+  if (props.show !== undefined && props.show !== null) return !!props.show
+  if (props.modelValue !== undefined && props.modelValue !== null) return !!props.modelValue
+  return false
+})
+
+const showHeader = computed((): boolean => !!(props.title || props.message || slots.header))
+
+const normalizedInputs = computed((): AlertInputField[] => {
+  const list = Array.isArray(props.inputs) ? props.inputs.slice(0, 2) : []
+  return list.filter((field): field is AlertInputField => !!field)
+})
+
+const hasInputs = computed((): boolean => normalizedInputs.value.length > 0)
+
+const resolvedActions = computed((): AlertAction[] => {
+  return (props.actions || []).filter((action): action is AlertAction => !!(action && action.text))
+})
+
+const resolvedLayout = computed((): string => {
+  if (props.layout === 'row' || props.layout === 'stack') return props.layout
+  return resolvedActions.value.length >= 3 ? 'stack' : 'row'
+})
+
+const actionsClass = computed((): string => {
+  return resolvedLayout.value === 'stack'
+    ? 'lingyun-alert__actions--stack'
+    : 'lingyun-alert__actions--row'
+})
+
+const reduceMotion = computed((): boolean => {
+  try {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    }
+  } catch (e) {
+    /* ignore */
+  }
+  return false
+})
+
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* pinia 未就绪 */
+  }
+  return [
+    themeClass,
+    `lingyun-alert--${resolvedLayout.value}`,
+    hasInputs.value ? 'lingyun-alert--with-inputs' : '',
+    phase.value ? `lingyun-alert--${phase.value}` : '',
+    reduceMotion.value ? 'lingyun-alert--reduce-motion' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const rootStyle = computed((): Record<string, number> => {
+  return {
+    zIndex: Number(props.zIndex) || 1000,
+  }
+})
+
+const panelClass = computed((): Record<string, boolean> => {
+  return {
+    'lingyun-alert__panel--nudge': rejectNudge.value && !reduceMotion.value,
+  }
+})
+
+function estimatePanelHeight(): number {
+  let h = 28
+  if (props.title) h += 22
+  if (props.message) h += 44
+  if (props.title || props.message) h += 42
+  h += normalizedInputs.value.reduce((sum, field) => {
+    if (field.multiline === true || field.type === 'textarea') {
+      const rows = Math.max(1, Number(field.rows) || 3)
+      return sum + Math.max(66, 28 + 22 * rows) + 12
+    }
+    return sum + 64
+  }, 0)
+  if (resolvedActions.value.length) {
+    h += resolvedLayout.value === 'stack'
+      ? resolvedActions.value.length * 48 + 12
+      : 48
+  }
+  return h
+}
+
+/** 键盘弹起时上移量：面板底边贴在键盘上方（小间距），避免旧算法 kb*0.58 抬得过高留白过大 */
+const keyboardLiftPx = computed((): number => {
+  if (_closeLiftPx.value != null) return _closeLiftPx.value
+  const kb = Math.max(0, Number(keyboardHeight.value) || 0)
+  if (kb < 40) return 0
+  let winH = 667
+  try {
+    const info =
+      typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
+    winH = Number(info && info.windowHeight) || winH
+  } catch {
+    /* ignore */
+  }
+  const gap = 16
+  const pad = 24
+  const panelH = Math.max(120, Number(panelHeightPx.value) || estimatePanelHeight())
+  const centerY = winH / 2
+  /* 无 lift 时底边 ≈ centerY + panelH/2；目标底边 = 键盘顶 - gap */
+  let lift = centerY + panelH / 2 - (winH - kb - gap)
+  const maxLift = Math.max(0, centerY - panelH / 2 - pad)
+  if (lift < 0) lift = 0
+  if (lift > maxLift) lift = maxLift
+  return Math.round(lift)
+})
+
+const liftStyle = computed((): Record<string, string> => {
+  /*
+   * scale 放 lift，勿放 panel：同元素 opacity/scale 会搞坏小程序 backdrop-filter。
+   * 键盘上推用布局（margin-bottom）而不是 transform：小程序原生输入文字层
+   * 不会跟着祖先 transform 同步移动，之前的「文字滞后」就是两者不同步。
+   */
+  const y = keyboardLiftPx.value
+  let scale = 1
+  if (!reduceMotion.value) {
+    /* 输入弹窗不做缩放入场，但退场时可以正常缩：此时键盘已收起、输入已失焦 */
+    if (phase.value === 'enter' && !hasInputs.value) scale = 1.16
+    else if (phase.value === 'leave') scale = 0.92
+  }
+  const transform = scale !== 1 ? `scale(${scale})` : 'none'
+  /* flex 垂直居中：margin-bottom = 2y 让面板中心上移 y */
+  const marginBottom = y > 0 ? `${Math.round(y * 2)}px` : '0px'
+  const leaving = phase.value === 'leave'
+  return {
+    transform,
+    marginBottom,
+    /*
+     * 布局位移不做补间：过渡期间原生输入文字层会和 WXSS 外壳不同步，
+     * 出现文字闪烁/上移。键盘本身有系统动画，这里一次布局到位。
+     */
+    transition: reduceMotion.value
+      ? 'none'
+      : leaving
+        ? 'transform 0.24s cubic-bezier(0.4, 0, 1, 1)'
+        : 'transform 0.42s cubic-bezier(0.32, 0.72, 0, 1)',
+  }
+})
+
+function clearTimers(): void {
+  if (leaveTimer.value) {
+    clearTimeout(leaveTimer.value)
+    leaveTimer.value = null
+  }
+  if (enterTimer.value) {
+    clearTimeout(enterTimer.value)
+    enterTimer.value = null
+  }
+  if (focusTimer.value) {
+    clearTimeout(focusTimer.value)
+    focusTimer.value = null
+  }
+  if (_kbHeightTimer.value) {
+    clearTimeout(_kbHeightTimer.value)
+    _kbHeightTimer.value = null
+  }
+  focusReady.value = false
+  if (nudgeTimer.value) {
+    clearTimeout(nudgeTimer.value)
+    nudgeTimer.value = null
+  }
+  rejectNudge.value = false
+}
+
+function setKeyboardHeight(height: unknown): void {
+  const next = Math.max(0, Number(height) || 0)
+  if (next === keyboardHeight.value) return
+  keyboardHeight.value = next
+  if (next > 0) measurePanelHeight()
+  if (next === 0 && _pendingClose.value) finishPendingClose()
+}
+
+function resetKeyboardLift(): void {
+  clearTimeout(_blurKbTimer.value ?? undefined)
+  _blurKbTimer.value = null
+  clearTimeout(_kbHeightTimer.value ?? undefined)
+  _kbHeightTimer.value = null
+  clearTimeout(_closeKbTimer.value ?? undefined)
+  _closeKbTimer.value = null
+  _pendingClose.value = false
+  _closeLiftPx.value = null
+  setKeyboardHeight(0)
+  panelHeightPx.value = 0
+  unbindKeyboardHeight()
+  /* #ifdef H5 */
+  unbindVisualViewport()
+  /* #endif */
+}
+
+function measurePanelHeight(): void {
+  if (!hasInputs.value || !mounted.value) return
+  nextTick(() => {
+    try {
+      const q = uni.createSelectorQuery().in(instance?.proxy as never)
+      q.select('.lingyun-alert__panel')
+        .boundingClientRect((rect) => {
+          const node = rect && !Array.isArray(rect) ? rect : null
+          const h = node && node.height ? Number(node.height) : 0
+          if (h > 40 && h !== panelHeightPx.value) panelHeightPx.value = h
+        })
+        .exec()
+    } catch {
+      /* ignore */
+    }
+  })
+}
+
+function onInputFocus(): void {
+  if (!hasInputs.value) return
+  /* 第一格 blur 后马上点第二格时，别让旧的清零定时器把键盘高度打回 0 */
+  clearTimeout(_blurKbTimer.value ?? undefined)
+  _blurKbTimer.value = null
+  clearTimeout(_kbHeightTimer.value ?? undefined)
+  _kbHeightTimer.value = null
+  bindKeyboardHeight()
+  measurePanelHeight()
+  /* #ifdef H5 */
+  bindVisualViewport()
+  /* #endif */
+}
+
+function onInputBlur(): void {
+  clearTimeout(_kbHeightTimer.value ?? undefined)
+  _kbHeightTimer.value = null
+  /* 延迟清零：切到下一输入框时避免闪回中间 */
+  clearTimeout(_blurKbTimer.value ?? undefined)
+  _blurKbTimer.value = setTimeout(() => {
+    setKeyboardHeight(0)
+    _blurKbTimer.value = null
+  }, 80)
+}
+
+function queueKeyboardHeight(height: unknown): void {
+  const next = Math.max(0, Number(height) || 0)
+  clearTimeout(_kbHeightTimer.value ?? undefined)
+  if (next <= 0) {
+    _kbHeightTimer.value = null
+    setKeyboardHeight(0)
+    return
+  }
+  _kbHeightTimer.value = setTimeout(() => {
+    _kbHeightTimer.value = null
+    setKeyboardHeight(next)
+  }, MP_KEYBOARD_SETTLE_MS)
+}
+
+function onInputKeyboardHeight(event: AlertFieldEvent): void {
+  const height = event && event.detail ? event.detail.height : 0
+  clearTimeout(_blurKbTimer.value ?? undefined)
+  let deferred = false
+  // #ifdef MP-WEIXIN
+  deferred = true
+  // #endif
+  if (deferred) queueKeyboardHeight(height)
+  else setKeyboardHeight(height)
+}
+
+function bindKeyboardHeight(): void {
+  if (_onKeyboardHeight.value) return
+  if (typeof uni === 'undefined' || typeof uni.onKeyboardHeightChange !== 'function') return
+  const handler: KeyboardHeightHandler = (res: UniNamespace.OnKeyboardHeightChangeResult) => {
+    queueKeyboardHeight(res && res.height)
+  }
+  _onKeyboardHeight.value = handler
+  uni.onKeyboardHeightChange(handler)
+}
+
+function unbindKeyboardHeight(): void {
+  const handler = _onKeyboardHeight.value
+  if (!handler) return
+  if (typeof uni !== 'undefined' && typeof uni.offKeyboardHeightChange === 'function') {
+    const offKeyboard = uni.offKeyboardHeightChange as (callback?: KeyboardHeightHandler) => void
+    offKeyboard(handler)
+  }
+  _onKeyboardHeight.value = null
+}
+
+/* #ifdef H5 */
+function bindVisualViewport(): void {
+  if (_onVisualViewport.value) return
+  if (typeof window === 'undefined' || !window.visualViewport) return
+  const handler = () => {
+    clearTimeout(_visualViewportTimer.value ?? undefined)
+    _visualViewportTimer.value = setTimeout(() => {
+      _visualViewportTimer.value = null
+      const vv = window.visualViewport
+      if (!vv) return
+      const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+      setKeyboardHeight(covered > 80 ? covered : 0)
+    }, VISUAL_VIEWPORT_DEBOUNCE_MS)
+  }
+  _onVisualViewport.value = handler
+  window.visualViewport.addEventListener('resize', handler)
+  window.visualViewport.addEventListener('scroll', handler)
+}
+
+function unbindVisualViewport(): void {
+  clearTimeout(_visualViewportTimer.value ?? undefined)
+  _visualViewportTimer.value = null
+  if (!_onVisualViewport.value || typeof window === 'undefined' || !window.visualViewport) {
+    _onVisualViewport.value = null
+    return
+  }
+  const handler = _onVisualViewport.value
+  window.visualViewport.removeEventListener('resize', handler)
+  window.visualViewport.removeEventListener('scroll', handler)
+  _onVisualViewport.value = null
+}
+/* #endif */
+
+function openAnim(): void {
+  clearTimers()
+  _pendingClose.value = false
+  _closeLiftPx.value = null
+  clearTimeout(_closeKbTimer.value ?? undefined)
+  _closeKbTimer.value = null
+  mounted.value = true
+  phase.value = 'enter'
+  /*
+   * 输入弹窗不做缩放入场；聚焦延后到输入框挂载稳定之后。
+   * 小程序 textarea 在首帧/动画期间翻转 focus 容易闪一下失焦。
+   */
+  if (hasInputs.value && props.autoFocus) {
+    focusTimer.value = setTimeout(() => {
+      focusReady.value = true
+      focusTimer.value = null
+    }, reduceMotion.value ? 0 : INPUT_FOCUS_DELAY_MS)
+  }
+  nextTick(() => {
+    enterTimer.value = setTimeout(() => {
+      phase.value = 'open'
+      enterTimer.value = null
+      if (hasInputs.value) measurePanelHeight()
+    }, reduceMotion.value ? 0 : 20)
+  })
+}
+
+/**
+ * 关闭入口：键盘开着时先收键盘，等它落下去再播正常的 alert 退场。
+ * 直接播退场会让面板在键盘收起过程中突然消失，出现闪烁。
+ */
+function beginClose(): void {
+  if (!mounted.value) {
+    phase.value = ''
+    resetKeyboardLift()
+    return
+  }
+  const keyboardEngaged = hasInputs.value && keyboardHeight.value > 0
+  if (!keyboardEngaged) {
+    _closeLiftPx.value = null
+    closeAnim()
+    return
+  }
+  /* 冻结当前上推量：键盘收起后按这个位置退场，不再跳回中间 */
+  clearTimeout(_kbHeightTimer.value ?? undefined)
+  _kbHeightTimer.value = null
+  _closeLiftPx.value = keyboardLiftPx.value
+  _pendingClose.value = true
+  clearTimeout(_closeKbTimer.value ?? undefined)
+  _closeKbTimer.value = setTimeout(() => {
+    _closeKbTimer.value = null
+    finishPendingClose()
+  }, CLOSE_KB_TIMEOUT_MS)
+  try {
+    if (typeof uni !== 'undefined' && typeof uni.hideKeyboard === 'function') {
+      uni.hideKeyboard()
+    }
+  } catch {
+    /* 端不支持时等兜底超时 */
+  }
+}
+
+function finishPendingClose(): void {
+  if (!_pendingClose.value) return
+  _pendingClose.value = false
+  clearTimeout(_closeKbTimer.value ?? undefined)
+  _closeKbTimer.value = null
+  closeAnim()
+}
+
+function closeAnim(): void {
+  if (!mounted.value) {
+    phase.value = ''
+    resetKeyboardLift()
+    return
+  }
+  _pendingClose.value = false
+  clearTimeout(_closeKbTimer.value ?? undefined)
+  _closeKbTimer.value = null
+  if (_closeLiftPx.value == null && keyboardHeight.value > 0) {
+    _closeLiftPx.value = keyboardLiftPx.value
+  }
+  clearTimers()
+  phase.value = 'leave'
+  const wait = reduceMotion.value ? 0 : LEAVE_MS
+  leaveTimer.value = setTimeout(() => {
+    mounted.value = false
+    phase.value = ''
+    leaveTimer.value = null
+    /* 退场期间保持键盘上推量，动画结束后再清，避免中途跳回 */
+    resetKeyboardLift()
+  }, wait)
+}
+
+function actionClass(action: AlertAction): string {
+  const role = resolveRole(action)
+  const primary = isPrimary(action)
+  return [
+    `lingyun-alert__action--${role}`,
+    primary ? 'lingyun-alert__action--primary' : 'lingyun-alert__action--secondary',
+  ].join(' ')
+}
+
+function resolveRole(action: AlertAction | null | undefined): string {
+  const role = action && action.role
+  if (role === 'destructive' || role === 'cancel' || role === 'primary' || role === 'secondary') {
+    return role === 'primary' ? 'normal' : role
+  }
+  return 'normal'
+}
+
+function isPrimary(action: AlertAction | null | undefined): boolean {
+  if (!action) return false
+  if (action.primary === true) return true
+  if (action.primary === false) return false
+  if (action.role === 'primary') return true
+  if (action.role === 'cancel' || action.role === 'secondary') return false
+  const list = resolvedActions.value
+  if (!list.length) return false
+  if (resolvedLayout.value === 'stack') return list[0] === action
+  return list[list.length - 1] === action
+}
+
+function onFieldValue(index: number, value: unknown): void {
+  const next = fieldValues.value.slice()
+  next[index] = value == null ? '' : String(value)
+  fieldValues.value = next
+  emit('input', { index, value: next[index], values: next.slice() })
+  emit('update:inputs', buildInputsPayload(next))
+  const autoGrow = normalizedInputs.value.some(
+    (field) =>
+      (field.multiline === true || field.type === 'textarea') &&
+      field.autoHeight === true,
+  )
+  if (autoGrow) measurePanelHeight()
+}
+
+function buildInputsPayload(values: string[]) {
+  return normalizedInputs.value.map((field, i) => ({
+    ...field,
+    value: values[i] != null ? values[i] : '',
+  }))
+}
+
+function close(): void {
+  emit('update:show', false)
+  emit('update:modelValue', false)
+  emit('close')
+}
+
+/**
+ * 系统 UIAlertController 点 dimming 是静默忽略；
+ * 此处用水平轻抖 + 短震动，表达「须点按钮关闭」（同密码错误抖动语汇）。
+ */
+function onOverlayClick(): void {
+  if (props.maskClosable) {
+    close()
+    return
+  }
+  if (phase.value !== 'open') return
+  playRejectNudge()
+}
+
+function playRejectNudge(): void {
+  try {
+    const vibrateOptions: UniNamespace.VibrateShortOptions & { type: 'medium' } = {
+      type: 'medium',
+    }
+    uni.vibrateShort(vibrateOptions)
+  } catch {
+    try {
+      uni.vibrateShort({})
+    } catch {
+      /* 部分端无震动 */
+    }
+  }
+  if (reduceMotion.value) return
+  rejectNudge.value = false
+  nextTick(() => {
+    rejectNudge.value = true
+    if (nudgeTimer.value) clearTimeout(nudgeTimer.value)
+    nudgeTimer.value = setTimeout(() => {
+      rejectNudge.value = false
+      nudgeTimer.value = null
+    }, NUDGE_MS)
+  })
+}
+
+function onAction(action: AlertAction | null | undefined, index: number): void {
+  if (!action || action.disabled) return
+  if (phase.value === 'leave') return
+  const payload = {
+    action,
+    index,
+    values: fieldValues.value.slice(),
+    inputs: buildInputsPayload(fieldValues.value),
+  }
+  emit('action', payload)
+  if (typeof action.onClick === 'function') {
+    action.onClick(payload)
+  }
+  if (props.closeOnAction !== false && action.close !== false) {
+    close()
+  }
+}
+
+watch(
+  () => props.inputs,
+  (list: AlertInputField[]) => {
+    const next = (Array.isArray(list) ? list.slice(0, 2) : []).map((field) =>
+      field && field.value != null ? String(field.value) : '',
+    )
+    fieldValues.value = next
+  },
+  { immediate: true, deep: true },
+)
+
+watch(
+  visible,
+  (val: boolean) => {
+    if (val) {
+      if (hasInputs.value) {
+        fieldValues.value = normalizedInputs.value.map((f) =>
+          f && f.value != null ? String(f.value) : '',
+        )
+      }
+      openAnim()
+      if (hasInputs.value) {
+        bindKeyboardHeight()
+        /* #ifdef H5 */
+        bindVisualViewport()
+        /* #endif */
+      }
+    } else {
+      beginClose()
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  phase,
+  (value: string) => {
+    _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+      !!_lingyunMpOverlayHold.value,
+      !!value,
+    )
+  },
+  { immediate: true },
+)
+
+onBeforeUnmount(() => {
+  _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+    !!_lingyunMpOverlayHold.value,
+    false,
+  )
+  clearTimers()
+  resetKeyboardLift()
+})
+// #ifndef VUE3
+onBeforeUnmount(() => {
+  clearTimers()
+  resetKeyboardLift()
+})
+// #endif
 </script>
 
 <style lang="scss" scoped>

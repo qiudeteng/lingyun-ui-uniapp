@@ -75,6 +75,7 @@
         </view>
 
         <view
+          v-if="showStore"
           class="lingyun-order-goods__store"
           :class="{ 'lingyun-order-goods__store--attached': bannerHeight > 0 }"
         >
@@ -298,7 +299,7 @@
                     >{{ detail }}</text>
                   </view>
                   <view class="lingyun-order-goods__bottom">
-                    <view v-if="showPrice(item)" class="lingyun-order-goods__price">
+                    <view v-if="showAmount && showPrice(item)" class="lingyun-order-goods__price">
                       <text class="lingyun-order-goods__currency">{{ currency }}</text>
                       <text class="lingyun-order-goods__amount">{{ priceAmountText(item) }}</text>
                       <text v-if="item.priceUnit" class="lingyun-order-goods__price-unit">
@@ -426,6 +427,7 @@
         detail
         :cart-count="cartCount"
         :total="cartTotal"
+        :show-amount="showAmount"
         :min-price="minPrice"
         :delivery-fee="deliveryFee"
         :currency="currency"
@@ -496,7 +498,7 @@
                     class="lingyun-order-goods__cart-line-option"
                   >{{ option }}</text>
                 </view>
-                <view class="lingyun-order-goods__cart-line-price">
+                <view v-if="showAmount" class="lingyun-order-goods__cart-line-price">
                   <text class="lingyun-order-goods__currency">{{ currency }}</text>
                   <text class="lingyun-order-goods__cart-line-amount">
                     {{ formatPrice(linePrice(line)) }}
@@ -591,7 +593,7 @@
           <view class="lingyun-order-goods__goods-detail-info">
             <view class="lingyun-order-goods__goods-detail-price-row">
               <view
-                v-if="showPrice(goodsDetailItem)"
+                v-if="showAmount && showPrice(goodsDetailItem)"
                 class="lingyun-order-goods__goods-detail-price"
               >
                 <text class="lingyun-order-goods__goods-detail-currency">{{ currency }}</text>
@@ -607,7 +609,10 @@
                   class="lingyun-order-goods__goods-detail-original"
                 >{{ currency }}{{ formatPrice(goodsDetailItem.originalPrice) }}</text>
               </view>
-              <text v-else class="lingyun-order-goods__goods-detail-price-spec">
+              <text
+                v-else-if="!showPrice(goodsDetailItem)"
+                class="lingyun-order-goods__goods-detail-price-spec"
+              >
                 {{ specButtonText }}
               </text>
               <text
@@ -697,6 +702,7 @@
         :cart="cartMap"
         :currency="currency"
         :price-decimals="priceDecimals"
+        :show-amount="showAmount"
         :max-count="maxCount"
         :quantity-unit="quantityUnit"
         :accent-color="accentColor"
@@ -719,8 +725,9 @@
   </lingyun-app-page>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { type PropType } from 'vue'
 import { useLingyunAppPageScroll } from '../../../lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 import { useLingyunTheme } from '../../../lingyun-ui/utils/theme'
 import LingyunOrderGoodsVariantSheet from './lingyun-order-goods-variant-sheet.vue'
@@ -774,6 +781,8 @@ function sanitizeKey(value: unknown): string {
  * @property {Object} modelValue 购物车 { [lineKey]: quantity }；无规格商品行 key 即商品 key，组合行 key 由组件生成
  * @property {String} banner 店铺 Banner 图；用 #banner 插槽可完全自定义
  * @property {Number} bannerHeight Banner 高度，0 时不显示
+ * @property {Boolean} showStore 显示顶部店铺卡片（logo / 名称 / 评分 / 公告）；默认 true。隐藏后 Banner 与返回钮不受影响
+ * @property {Boolean} showAmount 显示金额（商品价 / 详情价 / 规格价 / 购物车金额与合计）；默认 true。隐藏后数量、步进与结算按钮保留
  * @property {Boolean} showBack 显示 Banner 左上角返回钮（默认 true，点击抛 back）
  * @property {Boolean} showNav 透传给 lingyun-app-page；默认 true，宽屏保留应用导航列
  * @property {Boolean} showToolbar 透传给 lingyun-app-page；默认 false
@@ -824,1305 +833,1417 @@ function sanitizeKey(value: unknown): string {
  * @event checkout 可结算时点结算 { cart, lines, count, totalPrice, deliveryFee }
  * @event back 点 Banner 返回钮
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunOrderGoods',
-  components: { LingyunOrderGoodsVariantSheet },
-  emits: [
-    'update:modelValue',
-    'change',
-    'category-change',
-    'goods-click',
-    'spec-request',
-    'cart-clear',
-    'checkout',
-    'search',
-    'back',
-  ],
-  setup() {
-    const reportScroll = useLingyunAppPageScroll()
-    return { reportScroll }
+})
+
+const props = defineProps({
+  store: {
+    type: Object as PropType<LingyunOrderStore>,
+    required: true,
   },
-  props: {
-    store: {
-      type: Object as PropType<LingyunOrderStore>,
-      required: true,
-    },
-    categories: {
-      type: Array as PropType<LingyunOrderCategory[]>,
-      default: () => [],
-    },
-    modelValue: {
-      type: Object as PropType<LingyunOrderCart>,
-      default: () => ({}),
-    },
-    banner: { type: String, default: '' },
-    bannerHeight: { type: Number, default: 140 },
-    showBack: { type: [Boolean, String], default: 'auto' },
-    /** 顶栏返回钮默认返回上一页；false 时只抛 back，由页面处理 */
-    autoBack: { type: Boolean, default: true },
-    showNav: { type: Boolean, default: true },
-    showToolbar: { type: Boolean, default: false },
-    /** 工具栏是否自动给页面加顶部安全区；false 时页面内容顶到顶部（Banner 垫在工具栏下） */
-    autoTopInset: { type: Boolean, default: true },
-    /** 顶部工具栏自定义按钮组，透传 lingyun-app-page 的 trailingButtons（与主题钮同一组） */
-    toolbarButtons: {
-      type: Array as PropType<LingyunOrderToolbarButtonGroups>,
-      default: () => [],
-    },
-    /** 工具栏按钮点击弹出 #toolbar-menu 浮层；小程序需显式开启 */
-    toolbarMenuEnabled: { type: Boolean, default: false },
-    title: { type: String, default: '' },
-    minPrice: { type: Number, default: 0 },
-    deliveryFee: { type: Number, default: 0 },
-    currency: { type: String, default: '¥' },
-    maxCount: { type: Number, default: 99 },
-    checkoutText: { type: String, default: '去结算' },
-    cartTitle: { type: String, default: '已选商品' },
-    clearText: { type: String, default: '清空' },
-    emptyText: { type: String, default: '暂无商品' },
-    emptyCartText: { type: String, default: '未选购商品' },
-    soldOutText: { type: String, default: '商品已售罄' },
-    specButtonText: { type: String, default: '选规格' },
-    /** 数量单位，如「件」；商品上的 quantityUnit 优先 */
-    quantityUnit: { type: String, default: '' },
-    /** 价格小数位；-1 去掉多余的 0，2 固定两位 */
-    priceDecimals: { type: Number, default: -1 },
-    accentColor: { type: String, default: '' },
-    safeArea: { type: Boolean, default: true },
-    /** 按分类加载：右侧只渲染当前分类，关闭滚动联动；点击分类抛 category-change 由宿主取数 */
-    loadByCategory: { type: Boolean, default: false },
-    /** 按分类加载时宿主正在取当前分类数据，显示加载态 */
-    categoryLoading: { type: Boolean, default: false },
-    loadingText: { type: String, default: '加载中…' },
-    /** 全量模式下按分类分段渲染：先渲染前 N 个分类，滚到底部再追加，点击分类自动展开到目标 */
-    windowed: { type: Boolean, default: false },
-    /** windowed 每次追加的分类数 */
-    windowSize: { type: Number, default: 2 },
-    /** 渲染模式：auto 按商品总数自动选择；all / windowed / category 显式指定 */
-    renderMode: { type: String, default: 'auto' },
-    /** auto：商品数大于该值时启用分段加载 */
-    windowedThreshold: { type: Number, default: 100 },
-    /** auto：商品数大于该值时启用按分类加载 */
-    categoryThreshold: { type: Number, default: 500 },
-    /** 商品总数；宿主按分类懒加载、categories 里不是全量商品时传入，auto 判断更准确 */
-    totalGoodsCount: { type: Number, default: 0 },
-    /** 顶部工具栏显示搜索入口（需 showToolbar=true）；搜索时显示内置搜索视图 */
-    searchable: { type: Boolean, default: true },
-    /** 搜索未输入关键字时的提示 */
-    searchHintText: { type: String, default: '输入商品名称 / 规格搜索' },
-    /** 搜索无结果文案 */
-    searchEmptyText: { type: String, default: '没有找到相关商品' },
-    /** 点商品图 / 名称打开内置商品详情 Sheet；false 时只抛 goods-click */
-    goodsDetail: { type: Boolean, default: true },
-    /** 商品详情 Sheet 标题（宽屏显示；移动端头图模式隐藏） */
-    goodsDetailTitle: { type: String, default: '商品详情' },
-    /** 商品详情 Sheet 加购按钮文案 */
-    addToCartText: { type: String, default: '加入购物车' },
-    /** 只有属性、没有规格的商品，详情底部按钮文案 */
-    attributeButtonText: { type: String, default: '选属性' },
+  categories: {
+    type: Array as PropType<LingyunOrderCategory[]>,
+    default: () => [],
   },
-  data() {
-    return {
-      uid: `og${Math.random().toString(36).slice(2, 8)}`,
-      activeKey: '',
-      railIntoId: '',
-      listIntoId: '',
-      listScrollTop: 0,
-      sectionTops: [] as number[],
-      offsetsReady: false,
-      spyLockedUntil: 0,
-      railIndicatorTop: 0,
-      railIndicatorHeight: 0,
-      railIndicatorVisible: false,
-      railIndicatorReady: false,
-      railPulseKey: '',
-      renderUntil: 0,
-      /** 已选商品快照：分类数据按需加载后，切换分类仍能保留其它分类的已选商品 */
-      cartSnapshots: {} as Record<
-        string,
-        { item: LingyunOrderGoods; categoryKey: string }
-      >,
-      _pulseTimer: null as ReturnType<typeof setTimeout> | null,
-      _measureTimer: null as ReturnType<typeof setTimeout> | null,
-      _spyTimers: [] as ReturnType<typeof setTimeout>[],
-      /** 页面底部安全区；购物车悬浮在列表上方，列表尾部要留出让位高度 */
-      safeBottom: 0,
-      /** 视口宽度；商品详情宽屏左右布局与移动端头图模式切换 */
-      windowWidth: 375,
-      _onWindowResize: null as (() => void) | null,
-      /** 宽屏卡片布局下商品列表的列数（按列表实际宽度测量，1–4） */
-      listColumns: 1,
-      _columnsTimer: null as ReturnType<typeof setTimeout> | null,
-      /** 商品详情 Sheet */
-      goodsDetailOpen: false,
-      goodsDetailItem: null as LingyunOrderGoods | null,
-      goodsDetailCategoryKey: '',
-      /** 商品详情当前大图下标 */
-      goodsDetailImageIndex: 0,
-      /** 工具栏搜索 */
-      searchActive: false,
-      searchText: '',
-      /** 商品详情缩略图横向滚动容器 / 目标 id */
-      detailThumbUid: `ogd${Math.random().toString(36).slice(2, 8)}`,
-      detailThumbInto: '',
-      /** 购物车详情展开时锁住列表 / 分类栏滚动，避免背景跟着滑动 */
-      cartDetailOpen: false,
-      /** 规格 / 属性选择 Sheet（页面专用子组件） */
-      variantOpen: false,
-      variantItem: null as LingyunOrderGoods | null,
-      variantCategoryKey: '',
-    }
+  modelValue: {
+    type: Object as PropType<LingyunOrderCart>,
+    default: () => ({}),
   },
-  computed: {
-    rootClass(): Record<string, boolean> {
-      const multi = this.wideLayout && this.listColumns > 1
-      return {
-        'lingyun-order-goods--no-banner': this.bannerHeight <= 0,
-        'lingyun-order-goods--wide': this.wideLayout,
-        'lingyun-order-goods--multi': multi,
-        'lingyun-order-goods--cols-2': multi && this.listColumns === 2,
-        'lingyun-order-goods--cols-3': multi && this.listColumns === 3,
-        'lingyun-order-goods--cols-4': multi && this.listColumns >= 4,
-      }
-    },
-    rootStyle(): Record<string, string> {
-      return {
-        '--ly-og-accent': this.accentColor || FALLBACK_ACCENT,
-      }
-    },
-    /** 内容顶到工具栏下时，Banner 顶部加一层主题色渐隐，保证工具栏文字可读 */
-    toolbarScrimVisible(): boolean {
-      return this.showToolbar && !this.autoTopInset && !this.searchActive && this.bannerHeight > 0
-    },
-    themeClass(): string {
-      try {
-        return useLingyunTheme().rootClass || 'theme-light'
-      } catch (e) {
-        return 'theme-light'
-      }
-    },
-    hasRating(): boolean {
-      return this.store.rating !== undefined && this.store.rating !== ''
-    },
-    storeMetaParts(): string[] {
-      return [this.store.salesText || '', this.store.deliveryText || ''].filter(Boolean)
-    },
-    cartMap(): LingyunOrderCart {
-      return this.modelValue || {}
-    },
-    /** 每个商品（含所有规格 / 属性组合行）的已选总数量 */
-    cartItemTotals(): Record<string, number> {
-      const totals: Record<string, number> = {}
-      this.cartLines.forEach((line) => {
-        totals[line.item.key] = (totals[line.item.key] || 0) + line.quantity
-      })
-      return totals
-    },
-    cartLines(): LingyunOrderCartLine[] {
-      return this.buildCartLines(this.cartMap)
-    },
-    cartCount(): number {
-      return this.cartLines.reduce((sum, line) => sum + line.quantity, 0)
-    },
-    cartTotal(): number {
-      const total = this.cartLines.reduce(
-        (sum, line) => sum + this.linePrice(line) * line.quantity,
-        0,
-      )
-      return Math.round(total * 100) / 100
-    },
-    goodsTotal(): number {
-      if (Number(this.totalGoodsCount) > 0) return Number(this.totalGoodsCount)
-      return this.categories.reduce(
-        (sum, category) => sum + (category.goods || []).length,
-        0,
-      )
-    },
-    effectiveRenderMode(): 'all' | 'windowed' | 'category' {
-      const mode = String(this.renderMode || 'auto')
-      if (mode === 'all' || mode === 'windowed' || mode === 'category') return mode
-      if (this.loadByCategory) return 'category'
-      if (this.windowed) return 'windowed'
-      const total = this.goodsTotal
-      if (total > Number(this.categoryThreshold) || 0) return 'category'
-      if (total > Number(this.windowedThreshold) || 0) return 'windowed'
-      return 'all'
-    },
-    categoryMode(): boolean {
-      return this.effectiveRenderMode === 'category'
-    },
-    windowedMode(): boolean {
-      return this.effectiveRenderMode === 'windowed'
-    },
-    activeCategory(): LingyunOrderCategory | null {
-      const list = this.categories || []
-      return list.find((category) => category.key === this.activeKey) || list[0] || null
-    },
-    /** windowed：当前已展开的分类数量；点击靠后的分类会自动展开到目标 */
-    renderedCount(): number {
-      const length = this.categories.length
-      if (!this.windowedMode) return length
-      const size = Math.max(1, Number(this.windowSize) || 1)
-      const activeIndex = this.categories.findIndex(
-        (category) => category.key === this.activeKey,
-      )
-      const activeNeed = activeIndex >= 0 ? activeIndex + size : 0
-      return Math.min(
-        length,
-        Math.max(Number(this.renderUntil) || 0, activeNeed, size),
-      )
-    },
-    /** 默认渲染全部分类；按分类加载时只渲染当前分类；windowed 按分类分段渲染 */
-    visibleCategories(): LingyunOrderCategory[] {
-      if (this.categoryMode) {
-        if (this.categoryLoading) return []
-        return this.activeCategory ? [this.activeCategory] : []
-      }
-      if (!this.windowedMode) return this.categories
-      return this.categories.slice(0, this.renderedCount)
-    },
-    hasVisibleGoods(): boolean {
-      return this.visibleCategories.some(
-        (category) => (category.goods || []).length > 0,
-      )
-    },
-    /** 分类还没到：整块下方只留空态。搜索中、按分类加载中不算空 */
-    catalogEmpty(): boolean {
-      if (this.searchActive) return false
-      if (this.categoryMode && this.categoryLoading) return false
-      return !(this.categories || []).length
-    },
-    searchKeyword(): string {
-      return String(this.searchText || '').trim().toLowerCase()
-    },
-    /** 搜索结果按原分类分组，保留原始 categoryKey 供规格 / 快照使用 */
-    searchCategories(): LingyunOrderCategory[] {
-      const keyword = this.searchKeyword
-      if (!keyword) return []
-      const result: LingyunOrderCategory[] = []
-      this.categories.forEach((category) => {
-        const goods = (category.goods || []).filter((item) => {
-          const specTexts = (item.specs || []).map((spec) => spec.text)
-          const attributeTexts = (item.attributeGroups || []).reduce<string[]>(
-            (texts, group) => [
-              ...texts,
-              group.title,
-              ...(group.options || []).map((option) => option.text),
-            ],
-            [],
-          )
-          const haystack = [
-            item.name,
-            item.specText,
-            ...(item.details || []),
-            ...specTexts,
-            ...attributeTexts,
-            category.text,
-          ]
-            .join(' ')
-            .toLowerCase()
-          return haystack.includes(keyword)
-        })
-        if (goods.length) result.push({ ...category, goods })
-      })
-      return result
-    },
-    searchResultCount(): number {
-      return this.searchCategories.reduce(
-        (sum, category) => sum + (category.goods || []).length,
-        0,
-      )
-    },
-    displayCategories(): LingyunOrderCategory[] {
-      return this.searchActive ? this.searchCategories : this.visibleCategories
-    },
-    searchTopId(): string {
-      return `${this.uid}-search-top`
-    },
-    /** 购物车详情内容版本：行 key / 数量 / 选择变化会触发重新测高 */
-    cartVersion(): string {
-      return this.cartLines
-        .map(
-          (line) =>
-            `${line.key}:${line.quantity}:${this.cartLineSelections(line).join('/')}`,
+  banner: { type: String, default: '' },
+  bannerHeight: { type: Number, default: 140 },
+  /** 隐藏顶部店铺卡片（logo / 名称 / 评分 / 公告）；banner 与返回钮不受影响 */
+  showStore: { type: Boolean, default: true },
+  /** 隐藏金额：商品价 / 详情价 / 规格价 / 购物车金额与合计；数量与结算按钮保留 */
+  showAmount: { type: Boolean, default: true },
+  showBack: { type: [Boolean, String], default: 'auto' },
+  /** 顶栏返回钮默认返回上一页；false 时只抛 back，由页面处理 */
+  autoBack: { type: Boolean, default: true },
+  showNav: { type: Boolean, default: true },
+  showToolbar: { type: Boolean, default: false },
+  /** 工具栏是否自动给页面加顶部安全区；false 时页面内容顶到顶部（Banner 垫在工具栏下） */
+  autoTopInset: { type: Boolean, default: true },
+  /** 顶部工具栏自定义按钮组，透传 lingyun-app-page 的 trailingButtons（与主题钮同一组） */
+  toolbarButtons: {
+    type: Array as PropType<LingyunOrderToolbarButtonGroups>,
+    default: () => [],
+  },
+  /** 工具栏按钮点击弹出 #toolbar-menu 浮层；小程序需显式开启 */
+  toolbarMenuEnabled: { type: Boolean, default: false },
+  title: { type: String, default: '' },
+  minPrice: { type: Number, default: 0 },
+  deliveryFee: { type: Number, default: 0 },
+  currency: { type: String, default: '¥' },
+  maxCount: { type: Number, default: 99 },
+  checkoutText: { type: String, default: '去结算' },
+  cartTitle: { type: String, default: '已选商品' },
+  clearText: { type: String, default: '清空' },
+  emptyText: { type: String, default: '暂无商品' },
+  emptyCartText: { type: String, default: '未选购商品' },
+  soldOutText: { type: String, default: '商品已售罄' },
+  specButtonText: { type: String, default: '选规格' },
+  /** 数量单位，如「件」；商品上的 quantityUnit 优先 */
+  quantityUnit: { type: String, default: '' },
+  /** 价格小数位；-1 去掉多余的 0，2 固定两位 */
+  priceDecimals: { type: Number, default: -1 },
+  accentColor: { type: String, default: '' },
+  safeArea: { type: Boolean, default: true },
+  /** 按分类加载：右侧只渲染当前分类，关闭滚动联动；点击分类抛 category-change 由宿主取数 */
+  loadByCategory: { type: Boolean, default: false },
+  /** 按分类加载时宿主正在取当前分类数据，显示加载态 */
+  categoryLoading: { type: Boolean, default: false },
+  loadingText: { type: String, default: '加载中…' },
+  /** 全量模式下按分类分段渲染：先渲染前 N 个分类，滚到底部再追加，点击分类自动展开到目标 */
+  windowed: { type: Boolean, default: false },
+  /** windowed 每次追加的分类数 */
+  windowSize: { type: Number, default: 2 },
+  /** 渲染模式：auto 按商品总数自动选择；all / windowed / category 显式指定 */
+  renderMode: { type: String, default: 'auto' },
+  /** auto：商品数大于该值时启用分段加载 */
+  windowedThreshold: { type: Number, default: 100 },
+  /** auto：商品数大于该值时启用按分类加载 */
+  categoryThreshold: { type: Number, default: 500 },
+  /** 商品总数；宿主按分类懒加载、categories 里不是全量商品时传入，auto 判断更准确 */
+  totalGoodsCount: { type: Number, default: 0 },
+  /** 顶部工具栏显示搜索入口（需 showToolbar=true）；搜索时显示内置搜索视图 */
+  searchable: { type: Boolean, default: true },
+  /** 搜索未输入关键字时的提示 */
+  searchHintText: { type: String, default: '输入商品名称 / 规格搜索' },
+  /** 搜索无结果文案 */
+  searchEmptyText: { type: String, default: '没有找到相关商品' },
+  /** 点商品图 / 名称打开内置商品详情 Sheet；false 时只抛 goods-click */
+  goodsDetail: { type: Boolean, default: true },
+  /** 商品详情 Sheet 标题（宽屏显示；移动端头图模式隐藏） */
+  goodsDetailTitle: { type: String, default: '商品详情' },
+  /** 商品详情 Sheet 加购按钮文案 */
+  addToCartText: { type: String, default: '加入购物车' },
+  /** 只有属性、没有规格的商品，详情底部按钮文案 */
+  attributeButtonText: { type: String, default: '选属性' },
+})
+
+const emit = defineEmits([
+  'update:modelValue',
+  'change',
+  'category-change',
+  'goods-click',
+  'spec-request',
+  'cart-clear',
+  'checkout',
+  'search',
+  'back',
+])
+
+const instance = getCurrentInstance()
+
+const reportScroll = useLingyunAppPageScroll()
+
+const uid = `og${Math.random().toString(36).slice(2, 8)}`
+const detailThumbUid = `ogd${Math.random().toString(36).slice(2, 8)}`
+
+const activeKey = ref('')
+const railIntoId = ref('')
+const listIntoId = ref('')
+const listScrollTop = ref(0)
+const sectionTops = ref<number[]>([])
+const offsetsReady = ref(false)
+const spyLockedUntil = ref(0)
+const railIndicatorTop = ref(0)
+const railIndicatorHeight = ref(0)
+const railIndicatorVisible = ref(false)
+const railIndicatorReady = ref(false)
+const railPulseKey = ref('')
+const renderUntil = ref(0)
+/** 已选商品快照：分类数据按需加载后，切换分类仍能保留其它分类的已选商品 */
+const cartSnapshots = ref<Record<string, { item: LingyunOrderGoods; categoryKey: string }>>({})
+/** 页面底部安全区；购物车悬浮在列表上方，列表尾部要留出让位高度 */
+const safeBottom = ref(0)
+/** 视口宽度；商品详情宽屏左右布局与移动端头图模式切换 */
+const windowWidth = ref(375)
+/** 宽屏卡片布局下商品列表的列数（按列表实际宽度测量，1–4） */
+const listColumns = ref(1)
+/** 商品详情 Sheet */
+const goodsDetailOpen = ref(false)
+const goodsDetailItem = ref<LingyunOrderGoods | null>(null)
+const goodsDetailCategoryKey = ref('')
+/** 商品详情当前大图下标 */
+const goodsDetailImageIndex = ref(0)
+/** 工具栏搜索 */
+const searchActive = ref(false)
+const searchText = ref('')
+/** 商品详情缩略图横向滚动容器 / 目标 id */
+const detailThumbInto = ref('')
+/** 购物车详情展开时锁住列表 / 分类栏滚动，避免背景跟着滑动 */
+const cartDetailOpen = ref(false)
+/** 规格 / 属性选择 Sheet（页面专用子组件） */
+const variantOpen = ref(false)
+const variantItem = ref<LingyunOrderGoods | null>(null)
+const variantCategoryKey = ref('')
+
+let pulseTimer: ReturnType<typeof setTimeout> | null = null
+let measureTimer: ReturnType<typeof setTimeout> | null = null
+let columnsTimer: ReturnType<typeof setTimeout> | null = null
+let spyTimers: ReturnType<typeof setTimeout>[] = []
+let onWindowResize: (() => void) | null = null
+
+function firstChar(value: unknown): string {
+  const text = String(value == null ? '' : value).trim()
+  return Array.from(text)[0] || '商'
+}
+
+function storeMark(): string {
+  const mark = props.store && props.store.mark != null ? String(props.store.mark).trim() : ''
+  return mark || firstChar(props.store && props.store.name)
+}
+
+function syncSafeBottom(): void {
+  try {
+    const info =
+      typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
+    const inset = info && info.safeAreaInsets
+    safeBottom.value = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
+    const width = Number(info && info.windowWidth)
+    if (Number.isFinite(width) && width > 0) windowWidth.value = width
+  } catch {
+    safeBottom.value = 0
+  }
+}
+
+function metaText(item: LingyunOrderGoods): string {
+  return [item.specText || '', item.salesText || ''].filter(Boolean).join(' · ')
+}
+
+function formatPrice(value: unknown): string {
+  const number = Number(value)
+  const safe = Number.isFinite(number) ? number : 0
+  if (props.priceDecimals >= 0) return safe.toFixed(props.priceDecimals)
+  return String(Number(safe.toFixed(2)))
+}
+
+function quantityUnitOf(item: LingyunOrderGoods): string {
+  return item.quantityUnit || props.quantityUnit
+}
+
+function hasCategoryBadge(category: LingyunOrderCategory): boolean {
+  const badge = category.badge
+  return badge !== undefined && badge !== null && badge !== ''
+}
+
+function railIdOfKey(key: string): string {
+  return `${uid}-cat-${sanitizeKey(key)}`
+}
+
+function railIdOf(category: LingyunOrderCategory): string {
+  return railIdOfKey(category.key)
+}
+
+function sectionIdOf(category: LingyunOrderCategory): string {
+  return `${uid}-sec-${sanitizeKey(category.key)}`
+}
+
+function detailThumbIdOf(index: number): string {
+  return `${detailThumbUid}-thumb-${index}`
+}
+
+function isSpecSoldOut(spec: LingyunOrderSpec): boolean {
+  return !!spec.soldOut || finiteStock(spec.stock) === 0
+}
+
+function hasSpecs(item: LingyunOrderGoods | null | undefined): boolean {
+  return !!item && Array.isArray(item.specs) && item.specs.length > 0
+}
+
+function hasAttributes(item: LingyunOrderGoods | null | undefined): boolean {
+  return (
+    !!item &&
+    Array.isArray(item.attributeGroups) &&
+    item.attributeGroups.length > 0
+  )
+}
+
+/** 有规格或属性：点 + 打开选择 Sheet，不再直接加购 */
+function isVariantItem(item: LingyunOrderGoods | null | undefined): boolean {
+  return !!item && (hasSpecs(item) || hasAttributes(item))
+}
+
+function itemStep(item: LingyunOrderGoods): number {
+  return item.step != null && Number(item.step) > 0 ? Number(item.step) : 1
+}
+
+function linePrice(line: LingyunOrderCartLine): number {
+  const price = Number(line.spec?.price)
+  return Number.isFinite(price) ? price : Number(line.item.price) || 0
+}
+
+/** 规格价格区间：主列表 / 详情用区间价，避免只显示基础价造成误解 */
+function specPriceRange(item: LingyunOrderGoods): {
+  min: number
+  max: number
+  hasPrice: boolean
+  range: boolean
+} {
+  const base = Number(item.price) || 0
+  const specs = Array.isArray(item.specs) ? item.specs : []
+  if (!specs.length) {
+    return { min: base, max: base, hasPrice: base > 0, range: false }
+  }
+  const prices = specs
+    .map((spec) => {
+      const price = Number(spec.price)
+      return Number.isFinite(price) ? price : base
+    })
+    .filter((price) => price > 0)
+  if (!prices.length) {
+    return { min: 0, max: 0, hasPrice: false, range: false }
+  }
+  const min = Math.min(...prices)
+  const max = Math.max(...prices)
+  return { min, max, hasPrice: true, range: max > min }
+}
+
+/** 多规格显示最低价 + 起；此时不显示划线原价，避免误导 */
+function priceIsStarting(item: LingyunOrderGoods): boolean {
+  if (!isVariantItem(item)) return false
+  return (
+    specPriceRange(item).hasPrice &&
+    Array.isArray(item.specs) &&
+    item.specs.length > 1
+  )
+}
+
+function priceAmountText(item: LingyunOrderGoods): string {
+  const stats = specPriceRange(item)
+  if (isVariantItem(item) && stats.hasPrice) {
+    const amount = formatPrice(stats.min)
+    return priceIsStarting(item) ? `${amount}起` : amount
+  }
+  return formatPrice(item.price)
+}
+
+/** 单行上限：商品 / 规格 max；无规格商品再受库存限制。库存为规格 / 商品级，组合行按已占用数量扣减 */
+function itemMax(item: LingyunOrderGoods): number {
+  const base =
+    item.max != null && Number.isFinite(Number(item.max))
+      ? Number(item.max)
+      : props.maxCount
+  if (hasSpecs(item)) return base
+  const stock = finiteStock(item.stock)
+  return stock != null ? Math.min(base, stock) : base
+}
+
+/** 有规格 / 属性但没有任何价格时不画价格；普通商品保持原行为 */
+function showPrice(item: LingyunOrderGoods): boolean {
+  if (item.multiSpec) return Number(item.price) > 0
+  if (isVariantItem(item)) return specPriceRange(item).hasPrice
+  return true
+}
+
+function isItemSoldOut(item: LingyunOrderGoods): boolean {
+  if (item.soldOut) return true
+  if (hasSpecs(item)) {
+    return (item.specs || []).every((spec) => isSpecSoldOut(spec))
+  }
+  const stock = finiteStock(item.stock)
+  return stock != null && stock <= 0
+}
+
+function itemLookup(): Map<string, { item: LingyunOrderGoods; categoryKey: string }> {
+  const lookup = new Map<string, { item: LingyunOrderGoods; categoryKey: string }>()
+  props.categories.forEach((category) => {
+    ;(category.goods || []).forEach((item) => {
+      lookup.set(item.key, { item, categoryKey: category.key })
+    })
+  })
+  return lookup
+}
+
+/** 把规格 / 属性行 key 还原成购物车行；找不到商品时回退到快照 */
+function resolveCartLine(
+  key: string,
+  quantity: number,
+  lookup: Map<string, { item: LingyunOrderGoods; categoryKey: string }>,
+): LingyunOrderCartLine | null {
+  const parsed = parseLineKey(key)
+  const current = lookup.get(parsed.itemKey)
+  const snapshot = cartSnapshots.value[key]
+  const item = current ? current.item : snapshot ? snapshot.item : null
+  if (!item) return null
+  return {
+    key,
+    item,
+    categoryKey: current ? current.categoryKey : snapshot?.categoryKey || '',
+    quantity,
+    spec: findSpec(item, parsed.specKey),
+    attributes: attributesOf(item, parsed.optionTokens),
+  }
+}
+
+/** 同一商品内按规格顺序、属性分组顺序排列组合行 */
+function compareItemLines(a: LingyunOrderCartLine, b: LingyunOrderCartLine): number {
+  const item = a.item
+  const specIndex = (line: LingyunOrderCartLine): number => {
+    const key = line.spec?.key || ''
+    if (!key) return -1
+    return (item.specs || []).findIndex((spec) => spec.key === key)
+  }
+  const specDiff = specIndex(a) - specIndex(b)
+  if (specDiff) return specDiff
+  const attributeKey = (line: LingyunOrderCartLine): string =>
+    (line.attributes || [])
+      .map((attribute) => {
+        const groupIndex = (item.attributeGroups || []).findIndex(
+          (group) => group.key === attribute.groupKey,
         )
-        .join('|')
-    },
-    /** 列表 / 分类栏尾部预留：底栏 62 + 底部 8 + 顶部间隙 8 + 安全区 */
-    cartClearance(): number {
-      return 78 + (this.safeArea ? this.safeBottom : 0)
-    },
-    cartPadStyle(): Record<string, string> {
-      return {
-        height: `${this.wideLayout ? 12 : this.cartClearance}px`,
-      }
-    },
-    /** 宽屏卡片底部停在悬浮购物车上方，不再被购物车盖住圆角 */
-    wideBodyStyle(): Record<string, string> {
-      if (!this.wideLayout) return {}
-      /*
-       * cartClearance(78) = 8 底部 + 62 栏高 + 8 内容缓冲；
-       * 购物车玻璃描边约 2，卡片与购物车之间再留与页面上方一致的 12，故 +6。
-       */
-      return {
-        paddingBottom: `${this.cartClearance + 6}px`,
-      }
-    },
-    /** 商品详情 Sheet 在 body 端会脱离页面变量作用域，用行内变量带上主色 */
-    goodsDetailAccentStyle(): Record<string, string> {
-      return {
-        '--ly-og-detail-accent': this.accentColor || FALLBACK_ACCENT,
-      }
-    },
-    /** 移动端头图延伸到 Sheet 顶部；宽屏改为左右布局，不再穿透顶栏 */
-    goodsDetailBleedTop(): boolean {
-      return this.windowWidth > 0 && this.windowWidth < 690
-    },
-    goodsDetailWide(): boolean {
-      return this.windowWidth >= 690
-    },
-    /** 宽屏：左右两栏各自成为悬浮卡片，商品列表按实际宽度分多列 */
-    wideLayout(): boolean {
-      return this.windowWidth >= 690
-    },
-    /** 详情图集：优先 images，没有时回退到单张 image */
-    goodsDetailImages(): string[] {
-      const item = this.goodsDetailItem
-      if (!item) return []
-      const list = Array.isArray(item.images)
-        ? item.images.map((image) => String(image || '')).filter(Boolean)
-        : []
-      if (list.length) return list
-      return item.image ? [String(item.image)] : []
-    },
-    goodsDetailDescriptionLines(): string[] {
-      const item = this.goodsDetailItem
-      if (!item) return []
-      const raw = String(item.description || '').trim()
-      const lines = raw
-        ? raw.split(/\r?\n/)
-        : (item.details || []).map((line) => String(line))
-      const filtered = lines.map((line) => line.trim()).filter(Boolean)
-      return filtered.length ? filtered : ['暂无更多商品介绍']
-    },
-    goodsDetailAddLabel(): string {
-      const item = this.goodsDetailItem
-      if (!item) return this.addToCartText
-      if (this.isItemSoldOut(item)) return this.soldOutText
-      if (this.hasSpecs(item)) return this.specButtonText
-      if (this.hasAttributes(item)) return this.attributeButtonText
-      if (item.multiSpec) return this.specButtonText
-      return this.addToCartText
-    },
-    /** 详情当前商品数量，与外面列表共用购物车 */
-    goodsDetailQuantity(): number {
-      const item = this.goodsDetailItem
-      return item ? this.quantityOf(item) : 0
-    },
-    /** 已加购的普通商品在详情底部显示步进器；规格 / 属性商品打开选择 Sheet */
-    goodsDetailShowStepper(): boolean {
-      const item = this.goodsDetailItem
-      return (
-        !!item &&
-        !this.isItemSoldOut(item) &&
-        !item.multiSpec &&
-        !this.isVariantItem(item) &&
-        this.goodsDetailQuantity > 0
-      )
-    },
-  },
-  watch: {
-    windowWidth() {
-      this.scheduleListColumns()
-    },
-    searchActive() {
-      /* 搜索态隐藏分类栏，列表宽度变化，重新分列 */
-      this.$nextTick(() => this.scheduleListColumns())
-    },
-    categories: {
-      immediate: true,
-      deep: true,
-      handler() {
-        this.initActive()
-        this.syncCartSnapshots()
-        this.scheduleMeasure()
-        this.syncRailIndicator(false)
-      },
-    },
-    modelValue: {
-      deep: true,
-      handler() {
-        this.syncCartSnapshots()
-      },
-    },
-    activeKey(key: string) {
-      if (key) this.railIntoId = this.railIdOfKey(key)
-      this.syncRailIndicator(true)
-      if (this.categoryMode) this.resetListScroll()
-    },
-    categoryMode(value: boolean) {
-      if (value) {
-        this.offsetsReady = false
-        this.resetListScroll()
-        return
-      }
-      this.scheduleMeasure()
-      setTimeout(() => this.measureSections(), 120)
-    },
-    windowedMode(value: boolean) {
-      if (value) {
-        this.renderUntil = Math.max(
-          this.renderUntil,
-          Math.max(1, Number(this.windowSize) || 1),
-        )
-      }
-      this.$nextTick(() => {
-        this.scheduleMeasure()
-        setTimeout(() => this.measureSections(), 80)
-      })
-    },
-    goodsDetailImageIndex() {
-      if (this.goodsDetailOpen) this.syncDetailThumbInto()
-    },
-    goodsDetailOpen(value: boolean) {
-      if (!value) {
-        this.detailThumbInto = ''
-        return
-      }
-      this.$nextTick(() => {
-        setTimeout(() => this.syncDetailThumbInto(), 120)
-      })
-    },
-  },
-  mounted() {
-    this.initActive()
-    this.syncSafeBottom()
-    this.bindCartResize()
-    this.scheduleMeasure()
-    this.scheduleListColumns()
-    this.syncRailIndicator(false)
-    setTimeout(() => this.syncRailIndicator(false), 160)
-    this._spyTimers = [120, 420].map((delay) =>
-      setTimeout(() => this.measureSections(), delay),
-    )
-  },
-  beforeUnmount() {
-    clearTimeout(this._pulseTimer ?? undefined)
-    clearTimeout(this._measureTimer ?? undefined)
-    clearTimeout(this._columnsTimer ?? undefined)
-    this._spyTimers.forEach((timer) => clearTimeout(timer))
-    this.unbindCartResize()
-    this._pulseTimer = null
-    this._measureTimer = null
-    this._columnsTimer = null
-    this._spyTimers = []
-  },
-  methods: {
-    firstChar(value: unknown): string {
-      const text = String(value == null ? '' : value).trim()
-      return Array.from(text)[0] || '商'
-    },
-    storeMark(): string {
-      const mark = this.store && this.store.mark != null ? String(this.store.mark).trim() : ''
-      return mark || this.firstChar(this.store && this.store.name)
-    },
-    syncSafeBottom(): void {
-      try {
-        const info =
-          typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
-        const inset = info && info.safeAreaInsets
-        this.safeBottom = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
-        const width = Number(info && info.windowWidth)
-        if (Number.isFinite(width) && width > 0) this.windowWidth = width
-      } catch {
-        this.safeBottom = 0
-      }
-    },
-    bindCartResize(): void {
-      if (this._onWindowResize) return
-      const handler = () => {
-        this.syncSafeBottom()
-        this.scheduleListColumns()
-      }
-      this._onWindowResize = handler
-      try {
-        if (typeof uni.onWindowResize === 'function') uni.onWindowResize(handler)
-      } catch {
-        /* 端不支持 */
-      }
-    },
-    unbindCartResize(): void {
-      const handler = this._onWindowResize
-      try {
-        if (handler && typeof uni.offWindowResize === 'function') {
-          uni.offWindowResize(handler)
-        }
-      } catch {
-        /* 端不支持 */
-      }
-      this._onWindowResize = null
-    },
-    metaText(item: LingyunOrderGoods): string {
-      return [item.specText || '', item.salesText || ''].filter(Boolean).join(' · ')
-    },
-    formatPrice(value: unknown): string {
-      const number = Number(value)
-      const safe = Number.isFinite(number) ? number : 0
-      if (this.priceDecimals >= 0) return safe.toFixed(this.priceDecimals)
-      return String(Number(safe.toFixed(2)))
-    },
-    quantityUnitOf(item: LingyunOrderGoods): string {
-      return item.quantityUnit || this.quantityUnit
-    },
-    hasCategoryBadge(category: LingyunOrderCategory): boolean {
-      const badge = category.badge
-      return badge !== undefined && badge !== null && badge !== ''
-    },
-    railIdOf(category: LingyunOrderCategory): string {
-      return this.railIdOfKey(category.key)
-    },
-    railIdOfKey(key: string): string {
-      return `${this.uid}-cat-${sanitizeKey(key)}`
-    },
-    sectionIdOf(category: LingyunOrderCategory): string {
-      return `${this.uid}-sec-${sanitizeKey(category.key)}`
-    },
-    initActive(): void {
-      const list = this.categories || []
-      if (!list.length) {
-        this.activeKey = ''
-        return
-      }
-      if (list.some((category) => category.key === this.activeKey)) return
-      this.activeKey = list[0].key
-    },
-    quantityOfKey(key: string): number {
-      const quantity = Number(this.cartMap[key])
-      return Number.isFinite(quantity) && quantity > 0 ? Math.floor(quantity) : 0
-    },
-    /** 有规格或属性：点 + 打开选择 Sheet，不再直接加购 */
-    isVariantItem(item: LingyunOrderGoods | null | undefined): boolean {
-      return !!item && (this.hasSpecs(item) || this.hasAttributes(item))
-    },
-    hasSpecs(item: LingyunOrderGoods | null | undefined): boolean {
-      return !!item && Array.isArray(item.specs) && item.specs.length > 0
-    },
-    hasAttributes(item: LingyunOrderGoods | null | undefined): boolean {
-      return (
-        !!item &&
-        Array.isArray(item.attributeGroups) &&
-        item.attributeGroups.length > 0
-      )
-    },
-    /** 商品下所有规格 / 属性组合行的数量合计 */
-    quantityOf(item: LingyunOrderGoods): number {
-      return this.cartItemTotals[item.key] || 0
-    },
-    categoryQuantity(category: LingyunOrderCategory): number {
-      return this.cartLines.reduce(
-        (total, line) => (line.categoryKey === category.key ? total + line.quantity : total),
-        0,
-      )
-    },
-    /** 规格价格区间：主列表 / 详情用区间价，避免只显示基础价造成误解 */
-    specPriceRange(item: LingyunOrderGoods): {
-      min: number
-      max: number
-      hasPrice: boolean
-      range: boolean
-    } {
-      const base = Number(item.price) || 0
-      const specs = Array.isArray(item.specs) ? item.specs : []
-      if (!specs.length) {
-        return { min: base, max: base, hasPrice: base > 0, range: false }
-      }
-      const prices = specs
-        .map((spec) => {
-          const price = Number(spec.price)
-          return Number.isFinite(price) ? price : base
-        })
-        .filter((price) => price > 0)
-      if (!prices.length) {
-        return { min: 0, max: 0, hasPrice: false, range: false }
-      }
-      const min = Math.min(...prices)
-      const max = Math.max(...prices)
-      return { min, max, hasPrice: true, range: max > min }
-    },
-    priceAmountText(item: LingyunOrderGoods): string {
-      const stats = this.specPriceRange(item)
-      if (this.isVariantItem(item) && stats.hasPrice) {
-        const amount = this.formatPrice(stats.min)
-        return this.priceIsStarting(item) ? `${amount}起` : amount
-      }
-      return this.formatPrice(item.price)
-    },
-    /** 多规格显示最低价 + 起；此时不显示划线原价，避免误导 */
-    priceIsStarting(item: LingyunOrderGoods): boolean {
-      if (!this.isVariantItem(item)) return false
-      return (
-        this.specPriceRange(item).hasPrice &&
-        Array.isArray(item.specs) &&
-        item.specs.length > 1
-      )
-    },
-    /** 有规格 / 属性但没有任何价格时不画价格；普通商品保持原行为 */
-    showPrice(item: LingyunOrderGoods): boolean {
-      if (item.multiSpec) return Number(item.price) > 0
-      if (this.isVariantItem(item)) return this.specPriceRange(item).hasPrice
-      return true
-    },
-    /** 单行上限：商品 / 规格 max；无规格商品再受库存限制。库存为规格 / 商品级，组合行按已占用数量扣减 */
-    itemMax(item: LingyunOrderGoods): number {
-      const base =
-        item.max != null && Number.isFinite(Number(item.max))
-          ? Number(item.max)
-          : this.maxCount
-      if (this.hasSpecs(item)) return base
-      const stock = finiteStock(item.stock)
-      return stock != null ? Math.min(base, stock) : base
-    },
-    itemStep(item: LingyunOrderGoods): number {
-      return item.step != null && Number(item.step) > 0 ? Number(item.step) : 1
-    },
-    countOf(cart: LingyunOrderCart): number {
-      return this.buildCartLines(cart).reduce((sum, line) => sum + line.quantity, 0)
-    },
-    totalOf(cart: LingyunOrderCart): number {
-      const total = this.buildCartLines(cart).reduce(
-        (sum, line) => sum + this.linePrice(line) * line.quantity,
-        0,
-      )
-      return Math.round(total * 100) / 100
-    },
-    linePrice(line: LingyunOrderCartLine): number {
-      const price = Number(line.spec?.price)
-      return Number.isFinite(price) ? price : Number(line.item.price) || 0
-    },
-    isSpecSoldOut(spec: LingyunOrderSpec): boolean {
-      return !!spec.soldOut || finiteStock(spec.stock) === 0
-    },
-    isItemSoldOut(item: LingyunOrderGoods): boolean {
-      if (item.soldOut) return true
-      if (this.hasSpecs(item)) {
-        return (item.specs || []).every((spec) => this.isSpecSoldOut(spec))
-      }
-      const stock = finiteStock(item.stock)
-      return stock != null && stock <= 0
-    },
-    /** 当前行允许的最大数量：受 max 与库存限制；库存按规格 / 商品扣减其它组合行 */
-    lineMax(line: LingyunOrderCartLine): number {
-      const spec = line.spec
-      const specMax = Number(spec?.max)
-      const base =
-        Number.isFinite(specMax) && specMax > 0
-          ? Math.floor(specMax)
-          : this.itemMax(line.item)
-      let stock: number | null = null
-      if (spec) stock = finiteStock(spec.stock)
-      else if (!this.hasSpecs(line.item)) stock = finiteStock(line.item.stock)
-      if (stock == null) return base
-      const usedOther = this.cartLines.reduce((sum, other) => {
-        if (other.key === line.key) return sum
-        if (other.item.key !== line.item.key) return sum
-        if (spec) {
-          if (!other.spec || other.spec.key !== spec.key) return sum
-        } else if (other.spec) {
-          return sum
-        }
-        return sum + other.quantity
-      }, 0)
-      return Math.max(line.quantity, Math.min(base, stock - usedOther))
-    },
-    itemLookup(): Map<string, { item: LingyunOrderGoods; categoryKey: string }> {
-      const lookup = new Map<string, { item: LingyunOrderGoods; categoryKey: string }>()
-      this.categories.forEach((category) => {
-        ;(category.goods || []).forEach((item) => {
-          lookup.set(item.key, { item, categoryKey: category.key })
-        })
-      })
-      return lookup
-    },
-    /** 把规格 / 属性行 key 还原成购物车行；找不到商品时回退到快照 */
-    resolveCartLine(
-      key: string,
-      quantity: number,
-      lookup: Map<string, { item: LingyunOrderGoods; categoryKey: string }>,
-    ): LingyunOrderCartLine | null {
-      const parsed = parseLineKey(key)
-      const current = lookup.get(parsed.itemKey)
-      const snapshot = this.cartSnapshots[key]
-      const item = current ? current.item : snapshot ? snapshot.item : null
-      if (!item) return null
-      return {
-        key,
-        item,
-        categoryKey: current ? current.categoryKey : snapshot?.categoryKey || '',
-        quantity,
-        spec: findSpec(item, parsed.specKey),
-        attributes: attributesOf(item, parsed.optionTokens),
-      }
-    },
-    /** 同一商品内按规格顺序、属性分组顺序排列组合行 */
-    compareItemLines(a: LingyunOrderCartLine, b: LingyunOrderCartLine): number {
-      const item = a.item
-      const specIndex = (line: LingyunOrderCartLine): number => {
-        const key = line.spec?.key || ''
-        if (!key) return -1
-        return (item.specs || []).findIndex((spec) => spec.key === key)
-      }
-      const specDiff = specIndex(a) - specIndex(b)
-      if (specDiff) return specDiff
-      const attributeKey = (line: LingyunOrderCartLine): string =>
-        (line.attributes || [])
-          .map((attribute) => {
-            const groupIndex = (item.attributeGroups || []).findIndex(
-              (group) => group.key === attribute.groupKey,
+        const group = (item.attributeGroups || [])[groupIndex]
+        const optionIndex = group
+          ? (group.options || []).findIndex(
+              (option) => option.key === attribute.optionKey,
             )
-            const group = (item.attributeGroups || [])[groupIndex]
-            const optionIndex = group
-              ? (group.options || []).findIndex(
-                  (option) => option.key === attribute.optionKey,
-                )
-              : -1
-            return `${groupIndex}:${optionIndex}`
-          })
-          .join(',')
-      return attributeKey(a).localeCompare(attributeKey(b))
-    },
-    /** 生成购物车行：按分类 / 商品 / 规格 / 属性顺序，快照行排在最后 */
-    buildCartLines(cart: LingyunOrderCart): LingyunOrderCartLine[] {
-      const lookup = this.itemLookup()
-      const byItem = new Map<string, LingyunOrderCartLine[]>()
-      Object.keys(cart).forEach((key) => {
-        const quantity = Number(cart[key])
-        if (!Number.isFinite(quantity) || quantity <= 0) return
-        const line = this.resolveCartLine(key, Math.floor(quantity), lookup)
-        if (!line) return
-        const list = byItem.get(line.item.key)
-        if (list) list.push(line)
-        else byItem.set(line.item.key, [line])
+          : -1
+        return `${groupIndex}:${optionIndex}`
       })
-      const lines: LingyunOrderCartLine[] = []
-      this.categories.forEach((category) => {
-        ;(category.goods || []).forEach((item) => {
-          const list = byItem.get(item.key)
-          if (!list) return
-          list.sort((a, b) => this.compareItemLines(a, b))
-          lines.push(...list)
-          byItem.delete(item.key)
-        })
-      })
-      const orphan: LingyunOrderCartLine[] = []
-      byItem.forEach((list) => orphan.push(...list))
-      orphan.sort((a, b) =>
-        a.categoryKey === b.categoryKey
-          ? a.item.key.localeCompare(b.item.key)
-          : a.categoryKey.localeCompare(b.categoryKey),
+      .join(',')
+  return attributeKey(a).localeCompare(attributeKey(b))
+}
+
+/** 生成购物车行：按分类 / 商品 / 规格 / 属性顺序，快照行排在最后 */
+function buildCartLines(cart: LingyunOrderCart): LingyunOrderCartLine[] {
+  const lookup = itemLookup()
+  const byItem = new Map<string, LingyunOrderCartLine[]>()
+  Object.keys(cart).forEach((key) => {
+    const quantity = Number(cart[key])
+    if (!Number.isFinite(quantity) || quantity <= 0) return
+    const line = resolveCartLine(key, Math.floor(quantity), lookup)
+    if (!line) return
+    const list = byItem.get(line.item.key)
+    if (list) list.push(line)
+    else byItem.set(line.item.key, [line])
+  })
+  const lines: LingyunOrderCartLine[] = []
+  props.categories.forEach((category) => {
+    ;(category.goods || []).forEach((item) => {
+      const list = byItem.get(item.key)
+      if (!list) return
+      list.sort((a, b) => compareItemLines(a, b))
+      lines.push(...list)
+      byItem.delete(item.key)
+    })
+  })
+  const orphan: LingyunOrderCartLine[] = []
+  byItem.forEach((list) => orphan.push(...list))
+  orphan.sort((a, b) =>
+    a.categoryKey === b.categoryKey
+      ? a.item.key.localeCompare(b.item.key)
+      : a.categoryKey.localeCompare(b.categoryKey),
+  )
+  lines.push(...orphan)
+  return lines
+}
+
+function countOf(cart: LingyunOrderCart): number {
+  return buildCartLines(cart).reduce((sum, line) => sum + line.quantity, 0)
+}
+
+function totalOf(cart: LingyunOrderCart): number {
+  const total = buildCartLines(cart).reduce(
+    (sum, line) => sum + linePrice(line) * line.quantity,
+    0,
+  )
+  return Math.round(total * 100) / 100
+}
+
+/** 购物车行按「每行一个选择」排列：规格一行，每个已选属性选项各一行 */
+function cartLineSelections(line: LingyunOrderCartLine): string[] {
+  const lines: string[] = []
+  if (line.spec?.text) lines.push(`规格：${line.spec.text}`)
+  ;(line.attributes || []).forEach((attribute) => {
+    const quantity = Math.floor(Number(attribute.quantity))
+    const suffix = Number.isFinite(quantity) && quantity > 1 ? ` ×${quantity}` : ''
+    lines.push(`${attribute.groupTitle}：${attribute.optionText}${suffix}`)
+  })
+  if (!lines.length && line.item.specText) lines.push(line.item.specText)
+  return lines
+}
+
+/** 购物车行缩略图：优先第一个有图的属性选项，其次规格图，最后商品图 */
+function cartLineImage(line: LingyunOrderCartLine): string {
+  const attribute = (line.attributes || []).find((entry) => entry.optionImage)
+  if (attribute && attribute.optionImage) return attribute.optionImage
+  if (line.spec?.image) return line.spec.image
+  return line.item.image || ''
+}
+
+function categoryKeyOf(item: LingyunOrderGoods): string {
+  for (const category of props.categories) {
+    if ((category.goods || []).some((entry) => entry.key === item.key)) {
+      return category.key
+    }
+  }
+  return ''
+}
+
+function initActive(): void {
+  const list = props.categories || []
+  if (!list.length) {
+    activeKey.value = ''
+    return
+  }
+  if (list.some((category) => category.key === activeKey.value)) return
+  activeKey.value = list[0].key
+}
+
+const cartMap = computed((): LingyunOrderCart => props.modelValue || {})
+
+function quantityOfKey(key: string): number {
+  const quantity = Number(cartMap.value[key])
+  return Number.isFinite(quantity) && quantity > 0 ? Math.floor(quantity) : 0
+}
+
+function syncCartSnapshots(): void {
+  const cart = cartMap.value
+  const next: Record<string, { item: LingyunOrderGoods; categoryKey: string }> = {}
+  /* 先保留已选但当前分类数据还没加载回来的快照 */
+  Object.keys(cartSnapshots.value).forEach((key) => {
+    if (quantityOfKey(key) > 0) next[key] = cartSnapshots.value[key]
+  })
+  const lookup = itemLookup()
+  Object.keys(cart).forEach((key) => {
+    const quantity = Number(cart[key])
+    if (!Number.isFinite(quantity) || quantity <= 0) return
+    const parsed = parseLineKey(key)
+    const found = lookup.get(parsed.itemKey)
+    if (!found) return
+    next[key] = {
+      item: { ...found.item },
+      categoryKey: found.categoryKey,
+    }
+  })
+  cartSnapshots.value = next
+}
+
+const themeClass = computed((): string => {
+  try {
+    return useLingyunTheme().rootClass || 'theme-light'
+  } catch (e) {
+    return 'theme-light'
+  }
+})
+
+const hasRating = computed((): boolean => {
+  return props.store.rating !== undefined && props.store.rating !== ''
+})
+
+const storeMetaParts = computed((): string[] => {
+  return [props.store.salesText || '', props.store.deliveryText || ''].filter(Boolean)
+})
+
+/** 宽屏：左右两栏各自成为悬浮卡片，商品列表按实际宽度分多列 */
+const wideLayout = computed((): boolean => {
+  return windowWidth.value >= 690
+})
+
+const rootStyle = computed((): Record<string, string> => {
+  return {
+    '--ly-og-accent': props.accentColor || FALLBACK_ACCENT,
+  }
+})
+
+const rootClass = computed((): Record<string, boolean> => {
+  const multi = wideLayout.value && listColumns.value > 1
+  return {
+    'lingyun-order-goods--no-banner': props.bannerHeight <= 0,
+    'lingyun-order-goods--wide': wideLayout.value,
+    'lingyun-order-goods--multi': multi,
+    'lingyun-order-goods--cols-2': multi && listColumns.value === 2,
+    'lingyun-order-goods--cols-3': multi && listColumns.value === 3,
+    'lingyun-order-goods--cols-4': multi && listColumns.value >= 4,
+  }
+})
+
+/** 内容顶到工具栏下时，Banner 顶部加一层主题色渐隐，保证工具栏文字可读 */
+const toolbarScrimVisible = computed((): boolean => {
+  return props.showToolbar && !props.autoTopInset && !searchActive.value && props.bannerHeight > 0
+})
+
+const cartLines = computed((): LingyunOrderCartLine[] => {
+  return buildCartLines(cartMap.value)
+})
+
+/** 每个商品（含所有规格 / 属性组合行）的已选总数量 */
+const cartItemTotals = computed((): Record<string, number> => {
+  const totals: Record<string, number> = {}
+  cartLines.value.forEach((line) => {
+    totals[line.item.key] = (totals[line.item.key] || 0) + line.quantity
+  })
+  return totals
+})
+
+/** 商品下所有规格 / 属性组合行的数量合计 */
+function quantityOf(item: LingyunOrderGoods): number {
+  return cartItemTotals.value[item.key] || 0
+}
+
+const cartCount = computed((): number => {
+  return cartLines.value.reduce((sum, line) => sum + line.quantity, 0)
+})
+
+const cartTotal = computed((): number => {
+  const total = cartLines.value.reduce(
+    (sum, line) => sum + linePrice(line) * line.quantity,
+    0,
+  )
+  return Math.round(total * 100) / 100
+})
+
+function categoryQuantity(category: LingyunOrderCategory): number {
+  return cartLines.value.reduce(
+    (total, line) => (line.categoryKey === category.key ? total + line.quantity : total),
+    0,
+  )
+}
+
+/** 当前行允许的最大数量：受 max 与库存限制；库存按规格 / 商品扣减其它组合行 */
+function lineMax(line: LingyunOrderCartLine): number {
+  const spec = line.spec
+  const specMax = Number(spec?.max)
+  const base =
+    Number.isFinite(specMax) && specMax > 0
+      ? Math.floor(specMax)
+      : itemMax(line.item)
+  let stock: number | null = null
+  if (spec) stock = finiteStock(spec.stock)
+  else if (!hasSpecs(line.item)) stock = finiteStock(line.item.stock)
+  if (stock == null) return base
+  const usedOther = cartLines.value.reduce((sum, other) => {
+    if (other.key === line.key) return sum
+    if (other.item.key !== line.item.key) return sum
+    if (spec) {
+      if (!other.spec || other.spec.key !== spec.key) return sum
+    } else if (other.spec) {
+      return sum
+    }
+    return sum + other.quantity
+  }, 0)
+  return Math.max(line.quantity, Math.min(base, stock - usedOther))
+}
+
+/** 列表 / 分类栏尾部预留：底栏 62 + 底部 8 + 顶部间隙 8 + 安全区 */
+const cartClearance = computed((): number => {
+  return 78 + (props.safeArea ? safeBottom.value : 0)
+})
+
+const cartPadStyle = computed((): Record<string, string> => {
+  return {
+    height: `${wideLayout.value ? 12 : cartClearance.value}px`,
+  }
+})
+
+/** 宽屏卡片底部停在悬浮购物车上方，不再被购物车盖住圆角 */
+const wideBodyStyle = computed((): Record<string, string> => {
+  if (!wideLayout.value) return {}
+  /*
+   * cartClearance(78) = 8 底部 + 62 栏高 + 8 内容缓冲；
+   * 购物车玻璃描边约 2，卡片与购物车之间再留与页面上方一致的 12，故 +6。
+   */
+  return {
+    paddingBottom: `${cartClearance.value + 6}px`,
+  }
+})
+
+const goodsTotal = computed((): number => {
+  if (Number(props.totalGoodsCount) > 0) return Number(props.totalGoodsCount)
+  return props.categories.reduce(
+    (sum, category) => sum + (category.goods || []).length,
+    0,
+  )
+})
+
+const effectiveRenderMode = computed((): 'all' | 'windowed' | 'category' => {
+  const mode = String(props.renderMode || 'auto')
+  if (mode === 'all' || mode === 'windowed' || mode === 'category') return mode
+  if (props.loadByCategory) return 'category'
+  if (props.windowed) return 'windowed'
+  const total = goodsTotal.value
+  if (total > Number(props.categoryThreshold) || 0) return 'category'
+  if (total > Number(props.windowedThreshold) || 0) return 'windowed'
+  return 'all'
+})
+
+const categoryMode = computed((): boolean => {
+  return effectiveRenderMode.value === 'category'
+})
+
+const windowedMode = computed((): boolean => {
+  return effectiveRenderMode.value === 'windowed'
+})
+
+const activeCategory = computed((): LingyunOrderCategory | null => {
+  const list = props.categories || []
+  return list.find((category) => category.key === activeKey.value) || list[0] || null
+})
+
+/** windowed：当前已展开的分类数量；点击靠后的分类会自动展开到目标 */
+const renderedCount = computed((): number => {
+  const length = props.categories.length
+  if (!windowedMode.value) return length
+  const size = Math.max(1, Number(props.windowSize) || 1)
+  const activeIndex = props.categories.findIndex(
+    (category) => category.key === activeKey.value,
+  )
+  const activeNeed = activeIndex >= 0 ? activeIndex + size : 0
+  return Math.min(
+    length,
+    Math.max(Number(renderUntil.value) || 0, activeNeed, size),
+  )
+})
+
+/** 默认渲染全部分类；按分类加载时只渲染当前分类；windowed 按分类分段渲染 */
+const visibleCategories = computed((): LingyunOrderCategory[] => {
+  if (categoryMode.value) {
+    if (props.categoryLoading) return []
+    return activeCategory.value ? [activeCategory.value] : []
+  }
+  if (!windowedMode.value) return props.categories
+  return props.categories.slice(0, renderedCount.value)
+})
+
+const hasVisibleGoods = computed((): boolean => {
+  return visibleCategories.value.some(
+    (category) => (category.goods || []).length > 0,
+  )
+})
+
+/** 分类还没到：整块下方只留空态。搜索中、按分类加载中不算空 */
+const catalogEmpty = computed((): boolean => {
+  if (searchActive.value) return false
+  if (categoryMode.value && props.categoryLoading) return false
+  return !(props.categories || []).length
+})
+
+const searchKeyword = computed((): string => {
+  return String(searchText.value || '').trim().toLowerCase()
+})
+
+/** 搜索结果按原分类分组，保留原始 categoryKey 供规格 / 快照使用 */
+const searchCategories = computed((): LingyunOrderCategory[] => {
+  const keyword = searchKeyword.value
+  if (!keyword) return []
+  const result: LingyunOrderCategory[] = []
+  props.categories.forEach((category) => {
+    const goods = (category.goods || []).filter((item) => {
+      const specTexts = (item.specs || []).map((spec) => spec.text)
+      const attributeTexts = (item.attributeGroups || []).reduce<string[]>(
+        (texts, group) => [
+          ...texts,
+          group.title,
+          ...(group.options || []).map((option) => option.text),
+        ],
+        [],
       )
-      lines.push(...orphan)
-      return lines
-    },
-    syncCartSnapshots(): void {
-      const cart = this.cartMap
-      const next: Record<string, { item: LingyunOrderGoods; categoryKey: string }> = {}
-      /* 先保留已选但当前分类数据还没加载回来的快照 */
-      Object.keys(this.cartSnapshots).forEach((key) => {
-        if (this.quantityOfKey(key) > 0) next[key] = this.cartSnapshots[key]
-      })
-      const lookup = this.itemLookup()
-      Object.keys(cart).forEach((key) => {
-        const quantity = Number(cart[key])
-        if (!Number.isFinite(quantity) || quantity <= 0) return
-        const parsed = parseLineKey(key)
-        const found = lookup.get(parsed.itemKey)
-        if (!found) return
-        next[key] = {
-          item: { ...found.item },
-          categoryKey: found.categoryKey,
-        }
-      })
-      this.cartSnapshots = next
-    },
-    categoryKeyOf(item: LingyunOrderGoods): string {
-      for (const category of this.categories) {
-        if ((category.goods || []).some((entry) => entry.key === item.key)) {
-          return category.key
-        }
-      }
-      return ''
-    },
-    setQuantity(item: LingyunOrderGoods, value: unknown): void {
-      if (this.isItemSoldOut(item) || this.isVariantItem(item)) return
-      const raw = Number(value)
-      const safe = Number.isFinite(raw) ? Math.floor(raw) : 0
-      const quantity = Math.max(0, Math.min(this.itemMax(item), safe))
-      if (quantity === this.quantityOf(item)) return
-      const cart: LingyunOrderCart = { ...this.cartMap }
-      if (quantity > 0) {
-        cart[item.key] = quantity
-        this.cartSnapshots[item.key] = {
-          item: { ...item },
-          categoryKey: this.categoryKeyOf(item),
-        }
-      } else {
-        delete cart[item.key]
-        delete this.cartSnapshots[item.key]
-      }
-      this.$emit('update:modelValue', cart)
-      const payload: LingyunOrderChangePayload = {
-        item,
-        quantity,
-        cart,
-        count: this.countOf(cart),
-        totalPrice: this.totalOf(cart),
-        key: item.key,
-      }
-      this.$emit('change', payload)
-    },
-    onPlus(item: LingyunOrderGoods, category: LingyunOrderCategory): void {
-      if (this.isItemSoldOut(item)) return
-      if (item.multiSpec) {
-        const payload: LingyunOrderSpecPayload = { item, categoryKey: category.key }
-        this.$emit('spec-request', payload)
+      const haystack = [
+        item.name,
+        item.specText,
+        ...(item.details || []),
+        ...specTexts,
+        ...attributeTexts,
+        category.text,
+      ]
+        .join(' ')
+        .toLowerCase()
+      return haystack.includes(keyword)
+    })
+    if (goods.length) result.push({ ...category, goods })
+  })
+  return result
+})
+
+const searchResultCount = computed((): number => {
+  return searchCategories.value.reduce(
+    (sum, category) => sum + (category.goods || []).length,
+    0,
+  )
+})
+
+const displayCategories = computed((): LingyunOrderCategory[] => {
+  return searchActive.value ? searchCategories.value : visibleCategories.value
+})
+
+const searchTopId = computed((): string => {
+  return `${uid}-search-top`
+})
+
+/** 购物车详情内容版本：行 key / 数量 / 选择变化会触发重新测高 */
+const cartVersion = computed((): string => {
+  return cartLines.value
+    .map(
+      (line) =>
+        `${line.key}:${line.quantity}:${cartLineSelections(line).join('/')}`,
+    )
+    .join('|')
+})
+
+/** 商品详情 Sheet 在 body 端会脱离页面变量作用域，用行内变量带上主色 */
+const goodsDetailAccentStyle = computed((): Record<string, string> => {
+  return {
+    '--ly-og-detail-accent': props.accentColor || FALLBACK_ACCENT,
+  }
+})
+
+/** 移动端头图延伸到 Sheet 顶部；宽屏改为左右布局，不再穿透顶栏 */
+const goodsDetailBleedTop = computed((): boolean => {
+  return windowWidth.value > 0 && windowWidth.value < 690
+})
+
+const goodsDetailWide = computed((): boolean => {
+  return windowWidth.value >= 690
+})
+
+/** 详情图集：优先 images，没有时回退到单张 image */
+const goodsDetailImages = computed((): string[] => {
+  const item = goodsDetailItem.value
+  if (!item) return []
+  const list = Array.isArray(item.images)
+    ? item.images.map((image) => String(image || '')).filter(Boolean)
+    : []
+  if (list.length) return list
+  return item.image ? [String(item.image)] : []
+})
+
+const goodsDetailDescriptionLines = computed((): string[] => {
+  const item = goodsDetailItem.value
+  if (!item) return []
+  const raw = String(item.description || '').trim()
+  const lines = raw
+    ? raw.split(/\r?\n/)
+    : (item.details || []).map((line) => String(line))
+  const filtered = lines.map((line) => line.trim()).filter(Boolean)
+  return filtered.length ? filtered : ['暂无更多商品介绍']
+})
+
+/** 详情当前商品数量，与外面列表共用购物车 */
+const goodsDetailQuantity = computed((): number => {
+  const item = goodsDetailItem.value
+  return item ? quantityOf(item) : 0
+})
+
+/** 已加购的普通商品在详情底部显示步进器；规格 / 属性商品打开选择 Sheet */
+const goodsDetailShowStepper = computed((): boolean => {
+  const item = goodsDetailItem.value
+  return (
+    !!item &&
+    !isItemSoldOut(item) &&
+    !item.multiSpec &&
+    !isVariantItem(item) &&
+    goodsDetailQuantity.value > 0
+  )
+})
+
+const goodsDetailAddLabel = computed((): string => {
+  const item = goodsDetailItem.value
+  if (!item) return props.addToCartText
+  if (isItemSoldOut(item)) return props.soldOutText
+  if (hasSpecs(item)) return props.specButtonText
+  if (hasAttributes(item)) return props.attributeButtonText
+  if (item.multiSpec) return props.specButtonText
+  return props.addToCartText
+})
+
+function setQuantity(item: LingyunOrderGoods, value: unknown): void {
+  if (isItemSoldOut(item) || isVariantItem(item)) return
+  const raw = Number(value)
+  const safe = Number.isFinite(raw) ? Math.floor(raw) : 0
+  const quantity = Math.max(0, Math.min(itemMax(item), safe))
+  if (quantity === quantityOf(item)) return
+  const cart: LingyunOrderCart = { ...cartMap.value }
+  if (quantity > 0) {
+    cart[item.key] = quantity
+    cartSnapshots.value[item.key] = {
+      item: { ...item },
+      categoryKey: categoryKeyOf(item),
+    }
+  } else {
+    delete cart[item.key]
+    delete cartSnapshots.value[item.key]
+  }
+  emit('update:modelValue', cart)
+  const payload: LingyunOrderChangePayload = {
+    item,
+    quantity,
+    cart,
+    count: countOf(cart),
+    totalPrice: totalOf(cart),
+    key: item.key,
+  }
+  emit('change', payload)
+}
+
+/** 打开规格 / 属性选择 Sheet（页面专用子组件） */
+function openVariantSheet(item: LingyunOrderGoods, categoryKey: string): void {
+  if (isItemSoldOut(item)) return
+  variantItem.value = { ...item }
+  variantCategoryKey.value = categoryKey
+  variantOpen.value = true
+}
+
+/** 规格 / 属性行的统一写回：更新 cart、快照并抛事件 */
+function applyLineQuantity(payload: VariantQuantityPayload): void {
+  const item = payload.item
+  const key = payload.key
+  if (!item || !key) return
+  const raw = Math.floor(Number(payload.quantity))
+  if (!Number.isFinite(raw)) return
+  const spec = payload.spec
+  const specMax = Number(spec?.max)
+  const base =
+    Number.isFinite(specMax) && specMax > 0
+      ? Math.floor(specMax)
+      : itemMax(item)
+  let limit = base
+  let stock: number | null = null
+  if (spec) stock = finiteStock(spec.stock)
+  else if (!hasSpecs(item)) stock = finiteStock(item.stock)
+  if (stock != null) {
+    const parsed = parseLineKey(key)
+    let usedOther = 0
+    Object.keys(cartMap.value).forEach((otherKey) => {
+      if (otherKey === key) return
+      const otherQuantity = Math.floor(Number(cartMap.value[otherKey]))
+      if (!Number.isFinite(otherQuantity) || otherQuantity <= 0) return
+      const otherParsed = parseLineKey(otherKey)
+      if (otherParsed.itemKey !== parsed.itemKey) return
+      if (spec) {
+        if (otherParsed.specKey !== spec.key) return
+      } else if (otherParsed.specKey) {
         return
       }
-      if (this.isVariantItem(item)) {
-        this.openVariantSheet(item, category.key)
-        return
-      }
-      this.setQuantity(item, this.quantityOf(item) + this.itemStep(item))
-    },
-    onItemQuantity(item: LingyunOrderGoods, value: unknown): void {
-      this.setQuantity(item, value)
-    },
-    /** 打开规格 / 属性选择 Sheet（页面专用子组件） */
-    openVariantSheet(item: LingyunOrderGoods, categoryKey: string): void {
-      if (this.isItemSoldOut(item)) return
-      this.variantItem = { ...item }
-      this.variantCategoryKey = categoryKey
-      this.variantOpen = true
-    },
-    onVariantQuantityChange(payload: VariantQuantityPayload): void {
-      this.applyLineQuantity({
-        ...payload,
-        categoryKey: this.variantCategoryKey,
-      })
-    },
-    /** 购物车详情里直接调整某一行的数量 */
-    onCartLineQuantity(line: LingyunOrderCartLine, value: unknown): void {
-      this.applyLineQuantity({
-        item: line.item,
-        key: line.key,
-        quantity: Number(value),
-        spec: line.spec,
-        attributes: line.attributes || [],
-        categoryKey: line.categoryKey,
-      })
-    },
-    /** 规格 / 属性行的统一写回：更新 cart、快照并抛事件 */
-    applyLineQuantity(payload: VariantQuantityPayload): void {
-      const item = payload.item
-      const key = payload.key
-      if (!item || !key) return
-      const raw = Math.floor(Number(payload.quantity))
-      if (!Number.isFinite(raw)) return
-      const spec = payload.spec
-      const specMax = Number(spec?.max)
-      const base =
-        Number.isFinite(specMax) && specMax > 0
-          ? Math.floor(specMax)
-          : this.itemMax(item)
-      let limit = base
-      let stock: number | null = null
-      if (spec) stock = finiteStock(spec.stock)
-      else if (!this.hasSpecs(item)) stock = finiteStock(item.stock)
-      if (stock != null) {
-        const parsed = parseLineKey(key)
-        let usedOther = 0
-        Object.keys(this.cartMap).forEach((otherKey) => {
-          if (otherKey === key) return
-          const otherQuantity = Math.floor(Number(this.cartMap[otherKey]))
-          if (!Number.isFinite(otherQuantity) || otherQuantity <= 0) return
-          const otherParsed = parseLineKey(otherKey)
-          if (otherParsed.itemKey !== parsed.itemKey) return
-          if (spec) {
-            if (otherParsed.specKey !== spec.key) return
-          } else if (otherParsed.specKey) {
-            return
-          }
-          usedOther += otherQuantity
-        })
-        limit = Math.min(base, Math.max(0, stock - usedOther))
-        const currentQuantity = this.quantityOfKey(key)
-        if (currentQuantity > limit) limit = currentQuantity
-      }
-      const quantity = Math.max(0, Math.min(limit, raw))
-      if (quantity === this.quantityOfKey(key)) return
-      const cart: LingyunOrderCart = { ...this.cartMap }
-      if (quantity > 0) {
-        cart[key] = quantity
-        this.cartSnapshots[key] = {
-          item: { ...item },
-          categoryKey: payload.categoryKey || this.categoryKeyOf(item),
-        }
-      } else {
-        delete cart[key]
-        delete this.cartSnapshots[key]
-      }
-      this.$emit('update:modelValue', cart)
-      const change: LingyunOrderChangePayload = {
-        item,
-        quantity,
-        cart,
-        count: this.countOf(cart),
-        totalPrice: this.totalOf(cart),
-        key,
-        spec: payload.spec,
-        attributes: payload.attributes || [],
-      }
-      this.$emit('change', change)
-    },
-    /** 购物车行按「每行一个选择」排列：规格一行，每个已选属性选项各一行 */
-    cartLineSelections(line: LingyunOrderCartLine): string[] {
-      const lines: string[] = []
-      if (line.spec?.text) lines.push(`规格：${line.spec.text}`)
-      ;(line.attributes || []).forEach((attribute) => {
-        const quantity = Math.floor(Number(attribute.quantity))
-        const suffix = Number.isFinite(quantity) && quantity > 1 ? ` ×${quantity}` : ''
-        lines.push(`${attribute.groupTitle}：${attribute.optionText}${suffix}`)
-      })
-      if (!lines.length && line.item.specText) lines.push(line.item.specText)
-      return lines
-    },
-    /** 购物车行缩略图：优先第一个有图的属性选项，其次规格图，最后商品图 */
-    cartLineImage(line: LingyunOrderCartLine): string {
-      const attribute = (line.attributes || []).find((entry) => entry.optionImage)
-      if (attribute && attribute.optionImage) return attribute.optionImage
-      if (line.spec?.image) return line.spec.image
-      return line.item.image || ''
-    },
-    onGoodsClick(item: LingyunOrderGoods, category: LingyunOrderCategory): void {
-      this.goodsDetailItem = { ...item }
-      this.goodsDetailCategoryKey = category.key
-      this.goodsDetailImageIndex = 0
-      if (this.goodsDetail) this.goodsDetailOpen = true
-      const payload: LingyunOrderGoodsClickPayload = { item, categoryKey: category.key }
-      this.$emit('goods-click', payload)
-    },
-    /** 工具栏搜索开关：搜索时切到搜索结果视图，关闭后回到列表 */
-    onSearchingUpdate(value: boolean): void {
-      const active = !!value
-      if (active === this.searchActive) return
-      this.searchActive = active
-      if (active) {
-        this.searchText = ''
-        this.resetSearchListScroll()
-        this.$emit('search', { value: '', count: 0 })
-        return
-      }
-      this.searchText = ''
-      this.listIntoId = ''
-      const category = this.activeCategory
-      if (category) {
-        this.$nextTick(() => {
-          this.listIntoId = this.sectionIdOf(category)
-        })
-      }
-    },
-    onSearchValueUpdate(value: unknown): void {
-      const text = String(value == null ? '' : value)
-      if (text === this.searchText) return
-      this.searchText = text
-      this.$emit('search', { value: text, count: this.searchResultCount })
-      this.resetSearchListScroll()
-    },
-    resetSearchListScroll(): void {
-      if (!this.searchActive) return
-      this.listIntoId = ''
-      this.$nextTick(() => {
-        this.listIntoId = this.searchTopId
-      })
-    },
-    /** 商品详情缩略图切换大图 */
-    selectGoodsDetailImage(index: number): void {
-      const safe = Math.floor(Number(index))
-      if (!Number.isFinite(safe)) return
-      if (safe < 0 || safe >= this.goodsDetailImages.length) return
-      this.goodsDetailImageIndex = safe
-    },
-    detailThumbIdOf(index: number): string {
-      return `${this.detailThumbUid}-thumb-${index}`
-    },
-    /** 缩略图横向列表平滑滚到当前项 */
-    syncDetailThumbInto(): void {
-      const index = Math.max(0, Math.floor(Number(this.goodsDetailImageIndex) || 0))
-      this.detailThumbInto = ''
-      this.$nextTick(() => {
-        this.detailThumbInto = this.detailThumbIdOf(index)
-      })
-    },
-    /** 商品详情内加购：规格 / 属性商品先收起详情再打开选择 Sheet */
-    addFromGoodsDetail(): void {
-      const item = this.goodsDetailItem
-      if (!item || this.isItemSoldOut(item)) return
-      if (item.multiSpec) {
-        const payload: LingyunOrderSpecPayload = {
-          item,
-          categoryKey: this.goodsDetailCategoryKey,
-        }
-        this.goodsDetailOpen = false
-        this.$emit('spec-request', payload)
-        return
-      }
-      if (this.isVariantItem(item)) {
-        const categoryKey = this.goodsDetailCategoryKey
-        this.goodsDetailOpen = false
-        this.openVariantSheet(item, categoryKey)
-        return
-      }
-      this.setQuantity(item, this.quantityOf(item) + this.itemStep(item))
-    },
-    clearCart(): void {
-      const cart: LingyunOrderCart = {}
-      this.$emit('update:modelValue', cart)
-      this.$emit('cart-clear', { cart, count: 0, totalPrice: 0 })
-    },
-    onCartDetailOpen(): void {
-      this.cartDetailOpen = true
-    },
-    onCartDetailClose(): void {
-      this.cartDetailOpen = false
-    },
-    onCheckout(): void {
-      const payload: LingyunOrderCheckoutPayload = {
-        cart: { ...this.cartMap },
-        lines: this.cartLines,
-        count: this.cartCount,
-        totalPrice: this.cartTotal,
-        deliveryFee: this.deliveryFee,
-      }
-      this.$emit('checkout', payload)
-    },
-    selectCategory(category: LingyunOrderCategory, index: number): void {
-      this.applyActive(category, index, true)
-      this.pulseRail(category.key)
-      if (this.categoryMode) {
-        this.resetListScroll()
-        return
-      }
-      const target = this.sectionIdOf(category)
-      /* 同一个分类重复点击也要能回到顶部：先清空再下一帧写入 */
-      this.listIntoId = ''
-      this.$nextTick(() => {
-        this.listIntoId = target
-      })
-      this.spyLockedUntil = Date.now() + 460
-      if (this.windowedMode) {
-        this.$nextTick(() => {
-          this.scheduleMeasure()
-          setTimeout(() => this.measureSections(), 80)
-        })
-      }
-    },
-    /** 按分类加载：切分类后右侧回到顶部 */
-    resetListScroll(): void {
-      const category = this.activeCategory
-      if (!category) return
-      const target = this.sectionIdOf(category)
-      this.listIntoId = ''
-      this.$nextTick(() => {
-        this.listIntoId = target
-      })
-    },
-    /** 点击分类时文字做一次轻微回弹，和 tabbar 选中反馈一致 */
-    pulseRail(key: string): void {
-      clearTimeout(this._pulseTimer ?? undefined)
-      this.railPulseKey = ''
-      this.$nextTick(() => {
-        this.railPulseKey = key
-        this._pulseTimer = setTimeout(() => {
-          this.railPulseKey = ''
-          this._pulseTimer = null
-        }, 360)
-      })
-    },
-    /** 左侧选中背景：测量当前分类位置，切换时滑动过去 */
-    syncRailIndicator(animate = true): void {
-      if (!this.activeKey) return
-      this.$nextTick(() => {
-        try {
-          const query = uni.createSelectorQuery().in(this)
-          query.select('.lingyun-order-goods__rail-inner').boundingClientRect()
-          query.select(`#${this.railIdOfKey(this.activeKey)}`).boundingClientRect()
-          query.exec((res) => {
-            const inner = res && res[0]
-            const item = res && res[1]
-            if (!inner || !item || !item.height) return
-            this.railIndicatorTop = Number(item.top) - Number(inner.top)
-            this.railIndicatorHeight = Number(item.height)
-            if (!this.railIndicatorVisible) {
-              this.railIndicatorVisible = true
-              this.railIndicatorReady = false
-              this.$nextTick(() => {
-                setTimeout(() => {
-                  this.railIndicatorReady = true
-                }, 20)
-              })
-              return
-            }
-            if (!animate) {
-              this.railIndicatorReady = false
-              this.$nextTick(() => {
-                setTimeout(() => {
-                  this.railIndicatorReady = true
-                }, 20)
-              })
-            }
+      usedOther += otherQuantity
+    })
+    limit = Math.min(base, Math.max(0, stock - usedOther))
+    const currentQuantity = quantityOfKey(key)
+    if (currentQuantity > limit) limit = currentQuantity
+  }
+  const quantity = Math.max(0, Math.min(limit, raw))
+  if (quantity === quantityOfKey(key)) return
+  const cart: LingyunOrderCart = { ...cartMap.value }
+  if (quantity > 0) {
+    cart[key] = quantity
+    cartSnapshots.value[key] = {
+      item: { ...item },
+      categoryKey: payload.categoryKey || categoryKeyOf(item),
+    }
+  } else {
+    delete cart[key]
+    delete cartSnapshots.value[key]
+  }
+  emit('update:modelValue', cart)
+  const change: LingyunOrderChangePayload = {
+    item,
+    quantity,
+    cart,
+    count: countOf(cart),
+    totalPrice: totalOf(cart),
+    key,
+    spec: payload.spec,
+    attributes: payload.attributes || [],
+  }
+  emit('change', change)
+}
+
+function onVariantQuantityChange(payload: VariantQuantityPayload): void {
+  applyLineQuantity({
+    ...payload,
+    categoryKey: variantCategoryKey.value,
+  })
+}
+
+/** 购物车详情里直接调整某一行的数量 */
+function onCartLineQuantity(line: LingyunOrderCartLine, value: unknown): void {
+  applyLineQuantity({
+    item: line.item,
+    key: line.key,
+    quantity: Number(value),
+    spec: line.spec,
+    attributes: line.attributes || [],
+    categoryKey: line.categoryKey,
+  })
+}
+
+function onPlus(item: LingyunOrderGoods, category: LingyunOrderCategory): void {
+  if (isItemSoldOut(item)) return
+  if (item.multiSpec) {
+    const payload: LingyunOrderSpecPayload = { item, categoryKey: category.key }
+    emit('spec-request', payload)
+    return
+  }
+  if (isVariantItem(item)) {
+    openVariantSheet(item, category.key)
+    return
+  }
+  setQuantity(item, quantityOf(item) + itemStep(item))
+}
+
+function onItemQuantity(item: LingyunOrderGoods, value: unknown): void {
+  setQuantity(item, value)
+}
+
+function onGoodsClick(item: LingyunOrderGoods, category: LingyunOrderCategory): void {
+  goodsDetailItem.value = { ...item }
+  goodsDetailCategoryKey.value = category.key
+  goodsDetailImageIndex.value = 0
+  if (props.goodsDetail) goodsDetailOpen.value = true
+  const payload: LingyunOrderGoodsClickPayload = { item, categoryKey: category.key }
+  emit('goods-click', payload)
+}
+
+function resetSearchListScroll(): void {
+  if (!searchActive.value) return
+  listIntoId.value = ''
+  nextTick(() => {
+    listIntoId.value = searchTopId.value
+  })
+}
+
+/** 工具栏搜索开关：搜索时切到搜索结果视图，关闭后回到列表 */
+function onSearchingUpdate(value: boolean): void {
+  const active = !!value
+  if (active === searchActive.value) return
+  searchActive.value = active
+  if (active) {
+    searchText.value = ''
+    resetSearchListScroll()
+    emit('search', { value: '', count: 0 })
+    return
+  }
+  searchText.value = ''
+  listIntoId.value = ''
+  const category = activeCategory.value
+  if (category) {
+    nextTick(() => {
+      listIntoId.value = sectionIdOf(category)
+    })
+  }
+}
+
+function onSearchValueUpdate(value: unknown): void {
+  const text = String(value == null ? '' : value)
+  if (text === searchText.value) return
+  searchText.value = text
+  emit('search', { value: text, count: searchResultCount.value })
+  resetSearchListScroll()
+}
+
+/** 商品详情缩略图切换大图 */
+function selectGoodsDetailImage(index: number): void {
+  const safe = Math.floor(Number(index))
+  if (!Number.isFinite(safe)) return
+  if (safe < 0 || safe >= goodsDetailImages.value.length) return
+  goodsDetailImageIndex.value = safe
+}
+
+/** 缩略图横向列表平滑滚到当前项 */
+function syncDetailThumbInto(): void {
+  const index = Math.max(0, Math.floor(Number(goodsDetailImageIndex.value) || 0))
+  detailThumbInto.value = ''
+  nextTick(() => {
+    detailThumbInto.value = detailThumbIdOf(index)
+  })
+}
+
+/** 商品详情内加购：规格 / 属性商品先收起详情再打开选择 Sheet */
+function addFromGoodsDetail(): void {
+  const item = goodsDetailItem.value
+  if (!item || isItemSoldOut(item)) return
+  if (item.multiSpec) {
+    const payload: LingyunOrderSpecPayload = {
+      item,
+      categoryKey: goodsDetailCategoryKey.value,
+    }
+    goodsDetailOpen.value = false
+    emit('spec-request', payload)
+    return
+  }
+  if (isVariantItem(item)) {
+    const categoryKey = goodsDetailCategoryKey.value
+    goodsDetailOpen.value = false
+    openVariantSheet(item, categoryKey)
+    return
+  }
+  setQuantity(item, quantityOf(item) + itemStep(item))
+}
+
+function clearCart(): void {
+  const cart: LingyunOrderCart = {}
+  emit('update:modelValue', cart)
+  emit('cart-clear', { cart, count: 0, totalPrice: 0 })
+}
+
+function onCartDetailOpen(): void {
+  cartDetailOpen.value = true
+}
+
+function onCartDetailClose(): void {
+  cartDetailOpen.value = false
+}
+
+function onCheckout(): void {
+  const payload: LingyunOrderCheckoutPayload = {
+    cart: { ...cartMap.value },
+    lines: cartLines.value,
+    count: cartCount.value,
+    totalPrice: cartTotal.value,
+    deliveryFee: props.deliveryFee,
+  }
+  emit('checkout', payload)
+}
+
+/** 按分类加载：切分类后右侧回到顶部 */
+function resetListScroll(): void {
+  const category = activeCategory.value
+  if (!category) return
+  const target = sectionIdOf(category)
+  listIntoId.value = ''
+  nextTick(() => {
+    listIntoId.value = target
+  })
+}
+
+/** 点击分类时文字做一次轻微回弹，和 tabbar 选中反馈一致 */
+function pulseRail(key: string): void {
+  clearTimeout(pulseTimer ?? undefined)
+  railPulseKey.value = ''
+  nextTick(() => {
+    railPulseKey.value = key
+    pulseTimer = setTimeout(() => {
+      railPulseKey.value = ''
+      pulseTimer = null
+    }, 360)
+  })
+}
+
+/** 左侧选中背景：测量当前分类位置，切换时滑动过去 */
+function syncRailIndicator(animate = true): void {
+  if (!activeKey.value) return
+  nextTick(() => {
+    try {
+      const query = uni.createSelectorQuery().in(instance?.proxy as never)
+      query.select('.lingyun-order-goods__rail-inner').boundingClientRect()
+      query.select(`#${railIdOfKey(activeKey.value)}`).boundingClientRect()
+      query.exec((res) => {
+        const inner = res && res[0]
+        const item = res && res[1]
+        if (!inner || !item || !item.height) return
+        railIndicatorTop.value = Number(item.top) - Number(inner.top)
+        railIndicatorHeight.value = Number(item.height)
+        if (!railIndicatorVisible.value) {
+          railIndicatorVisible.value = true
+          railIndicatorReady.value = false
+          nextTick(() => {
+            setTimeout(() => {
+              railIndicatorReady.value = true
+            }, 20)
           })
-        } catch {
-          /* 初始未布局时测不到，等下一次切换再测 */
+          return
         }
-      })
-    },
-    reportPageScroll(top: number): void {
-      const report = (this as unknown as {
-        reportScroll?: (scrollTop: number) => void
-      }).reportScroll
-      if (typeof report === 'function') report(top)
-    },
-    onListScroll(event: ScrollEvent): void {
-      const top = Number(event && event.detail && event.detail.scrollTop)
-      if (!Number.isFinite(top) || top < 0) return
-      this.reportPageScroll(top)
-      if (this.searchActive || this.categoryMode) return
-      this.listScrollTop = top
-      if (!this.offsetsReady || Date.now() < this.spyLockedUntil) return
-      this.syncActiveFromScroll(top)
-    },
-    onListScrollUpper(): void {
-      this.reportPageScroll(0)
-    },
-    onListScrollToLower(): void {
-      if (this.searchActive || this.categoryMode || !this.windowedMode) return
-      const size = Math.max(1, Number(this.windowSize) || 1)
-      const next = Math.min(this.categories.length, this.renderedCount + size)
-      if (next <= this.renderedCount) return
-      this.renderUntil = next
-      this.$nextTick(() => {
-        this.scheduleMeasure()
-        setTimeout(() => this.measureSections(), 60)
-      })
-    },
-    syncActiveFromScroll(top: number): void {
-      const tops = this.sectionTops
-      if (!tops.length) return
-      let index = 0
-      for (let i = 0; i < tops.length; i += 1) {
-        if (tops[i] <= top + 8) index = i
-        else break
-      }
-      const category = this.categories[index]
-      if (!category || category.key === this.activeKey) return
-      this.applyActive(category, index, true)
-    },
-    applyActive(
-      category: LingyunOrderCategory,
-      index: number,
-      emitEvent: boolean,
-    ): void {
-      if (!category || category.key === this.activeKey) return
-      this.activeKey = category.key
-      this.railIntoId = this.railIdOf(category)
-      if (emitEvent) {
-        const payload: LingyunOrderCategoryChangePayload = {
-          key: category.key,
-          index,
-        }
-        this.$emit('category-change', payload)
-      }
-    },
-    scheduleListColumns(): void {
-      clearTimeout(this._columnsTimer ?? undefined)
-      this._columnsTimer = setTimeout(() => {
-        this._columnsTimer = null
-        this.syncListColumns()
-      }, 120)
-    },
-    /** 按商品列表实际宽度决定列数：每列至少约 300px，最多 4 列 */
-    syncListColumns(): void {
-      if (!this.wideLayout) {
-        this.listColumns = 1
-        return
-      }
-      this.$nextTick(() => {
-        try {
-          const query = uni.createSelectorQuery().in(this)
-          query.select('.lingyun-order-goods__list').boundingClientRect()
-          query.exec((result) => {
-            const rect = result && result[0]
-            const width = Number(rect && rect.width)
-            if (!Number.isFinite(width) || width <= 0) return
-            const gap = 10
-            const minColumn = 300
-            /* 列表内边距左右各 12，列间距按 margin 计算 */
-            const inner = Math.max(0, width - 24)
-            let columns = Math.floor((inner + gap) / (minColumn + gap))
-            columns = Math.max(1, Math.min(4, columns))
-            if (columns === this.listColumns) return
-            this.listColumns = columns
-            /* 列数变化会大幅改变分组高度，重新测滚动联动位置 */
-            this.offsetsReady = false
-            this.scheduleMeasure()
-            setTimeout(() => this.measureSections(), 80)
+        if (!animate) {
+          railIndicatorReady.value = false
+          nextTick(() => {
+            setTimeout(() => {
+              railIndicatorReady.value = true
+            }, 20)
           })
-        } catch {
-          /* 初始未布局时测不到，等 resize / 搜索切换再测 */
         }
       })
-    },
-    scheduleMeasure(): void {
-      if (this.categoryMode) return
-      clearTimeout(this._measureTimer ?? undefined)
-      this._measureTimer = setTimeout(() => {
-        this._measureTimer = null
-        this.measureSections()
-      }, 90)
-    },
-    measureSections(): void {
-      if (this.searchActive || this.categoryMode || !this.categories.length) return
-      const categories = this.visibleCategories
-      this.$nextTick(() => {
-        try {
-          const query = uni.createSelectorQuery().in(this)
-          query.select('.lingyun-order-goods__list').boundingClientRect()
-          categories.forEach((category) => {
-            query.select(`#${this.sectionIdOf(category)}`).boundingClientRect()
-          })
-          query.exec((result) => {
-            const list = result && result[0]
-            if (!list || typeof list.top !== 'number') {
-              this.offsetsReady = false
-              return
-            }
-            const tops: number[] = []
-            for (let i = 0; i < categories.length; i += 1) {
-              const rect = result[i + 1]
-              tops.push(
-                rect
-                  ? Math.max(0, Number(rect.top) - Number(list.top) + this.listScrollTop)
-                  : 0,
-              )
-            }
-            this.sectionTops = tops
-            this.offsetsReady = true
-          })
-        } catch {
-          this.offsetsReady = false
-        }
+    } catch {
+      /* 初始未布局时测不到，等下一次切换再测 */
+    }
+  })
+}
+
+function reportPageScroll(top: number): void {
+  if (typeof reportScroll === 'function') reportScroll(top)
+}
+
+function applyActive(
+  category: LingyunOrderCategory,
+  index: number,
+  emitEvent: boolean,
+): void {
+  if (!category || category.key === activeKey.value) return
+  activeKey.value = category.key
+  railIntoId.value = railIdOf(category)
+  if (emitEvent) {
+    const payload: LingyunOrderCategoryChangePayload = {
+      key: category.key,
+      index,
+    }
+    emit('category-change', payload)
+  }
+}
+
+function syncActiveFromScroll(top: number): void {
+  const tops = sectionTops.value
+  if (!tops.length) return
+  let index = 0
+  for (let i = 0; i < tops.length; i += 1) {
+    if (tops[i] <= top + 8) index = i
+    else break
+  }
+  const category = props.categories[index]
+  if (!category || category.key === activeKey.value) return
+  applyActive(category, index, true)
+}
+
+function onListScroll(event: ScrollEvent): void {
+  const top = Number(event && event.detail && event.detail.scrollTop)
+  if (!Number.isFinite(top) || top < 0) return
+  reportPageScroll(top)
+  if (searchActive.value || categoryMode.value) return
+  listScrollTop.value = top
+  if (!offsetsReady.value || Date.now() < spyLockedUntil.value) return
+  syncActiveFromScroll(top)
+}
+
+function onListScrollUpper(): void {
+  reportPageScroll(0)
+}
+
+function measureSections(): void {
+  if (searchActive.value || categoryMode.value || !props.categories.length) return
+  const categories = visibleCategories.value
+  nextTick(() => {
+    try {
+      const query = uni.createSelectorQuery().in(instance?.proxy as never)
+      query.select('.lingyun-order-goods__list').boundingClientRect()
+      categories.forEach((category) => {
+        query.select(`#${sectionIdOf(category)}`).boundingClientRect()
       })
-    },
+      query.exec((result) => {
+        const list = result && result[0]
+        if (!list || typeof list.top !== 'number') {
+          offsetsReady.value = false
+          return
+        }
+        const tops: number[] = []
+        for (let i = 0; i < categories.length; i += 1) {
+          const rect = result[i + 1]
+          tops.push(
+            rect
+              ? Math.max(0, Number(rect.top) - Number(list.top) + listScrollTop.value)
+              : 0,
+          )
+        }
+        sectionTops.value = tops
+        offsetsReady.value = true
+      })
+    } catch {
+      offsetsReady.value = false
+    }
+  })
+}
+
+function scheduleMeasure(): void {
+  if (categoryMode.value) return
+  clearTimeout(measureTimer ?? undefined)
+  measureTimer = setTimeout(() => {
+    measureTimer = null
+    measureSections()
+  }, 90)
+}
+
+function onListScrollToLower(): void {
+  if (searchActive.value || categoryMode.value || !windowedMode.value) return
+  const size = Math.max(1, Number(props.windowSize) || 1)
+  const next = Math.min(props.categories.length, renderedCount.value + size)
+  if (next <= renderedCount.value) return
+  renderUntil.value = next
+  nextTick(() => {
+    scheduleMeasure()
+    setTimeout(() => measureSections(), 60)
+  })
+}
+
+/** 按商品列表实际宽度决定列数：每列至少约 300px，最多 4 列 */
+function syncListColumns(): void {
+  if (!wideLayout.value) {
+    listColumns.value = 1
+    return
+  }
+  nextTick(() => {
+    try {
+      const query = uni.createSelectorQuery().in(instance?.proxy as never)
+      query.select('.lingyun-order-goods__list').boundingClientRect()
+      query.exec((result) => {
+        const rect = result && result[0]
+        const width = Number(rect && rect.width)
+        if (!Number.isFinite(width) || width <= 0) return
+        const gap = 10
+        const minColumn = 300
+        /* 列表内边距左右各 12，列间距按 margin 计算 */
+        const inner = Math.max(0, width - 24)
+        let columns = Math.floor((inner + gap) / (minColumn + gap))
+        columns = Math.max(1, Math.min(4, columns))
+        if (columns === listColumns.value) return
+        listColumns.value = columns
+        /* 列数变化会大幅改变分组高度，重新测滚动联动位置 */
+        offsetsReady.value = false
+        scheduleMeasure()
+        setTimeout(() => measureSections(), 80)
+      })
+    } catch {
+      /* 初始未布局时测不到，等 resize / 搜索切换再测 */
+    }
+  })
+}
+
+function scheduleListColumns(): void {
+  clearTimeout(columnsTimer ?? undefined)
+  columnsTimer = setTimeout(() => {
+    columnsTimer = null
+    syncListColumns()
+  }, 120)
+}
+
+function selectCategory(category: LingyunOrderCategory, index: number): void {
+  applyActive(category, index, true)
+  pulseRail(category.key)
+  if (categoryMode.value) {
+    resetListScroll()
+    return
+  }
+  const target = sectionIdOf(category)
+  /* 同一个分类重复点击也要能回到顶部：先清空再下一帧写入 */
+  listIntoId.value = ''
+  nextTick(() => {
+    listIntoId.value = target
+  })
+  spyLockedUntil.value = Date.now() + 460
+  if (windowedMode.value) {
+    nextTick(() => {
+      scheduleMeasure()
+      setTimeout(() => measureSections(), 80)
+    })
+  }
+}
+
+function bindCartResize(): void {
+  if (onWindowResize) return
+  const handler = () => {
+    syncSafeBottom()
+    scheduleListColumns()
+  }
+  onWindowResize = handler
+  try {
+    if (typeof uni.onWindowResize === 'function') uni.onWindowResize(handler)
+  } catch {
+    /* 端不支持 */
+  }
+}
+
+function unbindCartResize(): void {
+  const handler = onWindowResize
+  try {
+    if (handler && typeof uni.offWindowResize === 'function') {
+      uni.offWindowResize(handler)
+    }
+  } catch {
+    /* 端不支持 */
+  }
+  onWindowResize = null
+}
+
+watch(windowWidth, () => {
+  scheduleListColumns()
+})
+
+watch(searchActive, () => {
+  /* 搜索态隐藏分类栏，列表宽度变化，重新分列 */
+  nextTick(() => scheduleListColumns())
+})
+
+watch(
+  () => props.categories,
+  () => {
+    initActive()
+    syncCartSnapshots()
+    scheduleMeasure()
+    syncRailIndicator(false)
   },
+  { immediate: true, deep: true },
+)
+
+watch(
+  () => props.modelValue,
+  () => {
+    syncCartSnapshots()
+  },
+  { deep: true },
+)
+
+watch(activeKey, (key: string) => {
+  if (key) railIntoId.value = railIdOfKey(key)
+  syncRailIndicator(true)
+  if (categoryMode.value) resetListScroll()
+})
+
+watch(categoryMode, (value: boolean) => {
+  if (value) {
+    offsetsReady.value = false
+    resetListScroll()
+    return
+  }
+  scheduleMeasure()
+  setTimeout(() => measureSections(), 120)
+})
+
+watch(windowedMode, (value: boolean) => {
+  if (value) {
+    renderUntil.value = Math.max(
+      renderUntil.value,
+      Math.max(1, Number(props.windowSize) || 1),
+    )
+  }
+  nextTick(() => {
+    scheduleMeasure()
+    setTimeout(() => measureSections(), 80)
+  })
+})
+
+watch(goodsDetailImageIndex, () => {
+  if (goodsDetailOpen.value) syncDetailThumbInto()
+})
+
+watch(goodsDetailOpen, (value: boolean) => {
+  if (!value) {
+    detailThumbInto.value = ''
+    return
+  }
+  nextTick(() => {
+    setTimeout(() => syncDetailThumbInto(), 120)
+  })
+})
+
+onMounted(() => {
+  initActive()
+  syncSafeBottom()
+  bindCartResize()
+  scheduleMeasure()
+  scheduleListColumns()
+  syncRailIndicator(false)
+  setTimeout(() => syncRailIndicator(false), 160)
+  spyTimers = [120, 420].map((delay) =>
+    setTimeout(() => measureSections(), delay),
+  )
+})
+
+onBeforeUnmount(() => {
+  clearTimeout(pulseTimer ?? undefined)
+  clearTimeout(measureTimer ?? undefined)
+  clearTimeout(columnsTimer ?? undefined)
+  spyTimers.forEach((timer) => clearTimeout(timer))
+  unbindCartResize()
+  pulseTimer = null
+  measureTimer = null
+  columnsTimer = null
+  spyTimers = []
 })
 </script>
 
@@ -2137,6 +2258,17 @@ export default defineComponent({
   box-sizing: border-box;
   background-color: var(--lingyun-bg-grouped-primary, #{$lingyun-bg-grouped-primary});
 }
+
+/*
+ * 小程序 page 默认高度由内容撑开，height: 100% 链会断掉，
+ * 导致内部 scroll-view 高度等于内容高度而无法滚动，这里直接吃满视口。
+ */
+/* #ifdef MP */
+.lingyun-order-goods {
+  height: 100vh;
+  min-height: 100vh;
+}
+/* #endif */
 
 /* ---------- 店铺头 ---------- */
 

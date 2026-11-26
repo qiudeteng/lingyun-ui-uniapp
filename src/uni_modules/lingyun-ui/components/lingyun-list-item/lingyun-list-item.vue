@@ -101,8 +101,8 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, inject, onMounted, ref, useSlots, watch } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
 
 type SwipeSurface = {
@@ -141,223 +141,243 @@ type SwitchChangeEvent = { detail?: { value?: unknown } }
  * @property {Number} sliderValue / sliderMin / sliderMax / sliderStep
  * @event {Function} click / switchChange / stepperChange / sliderChange
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunListItem',
-  emits: ['click', 'switchChange', 'update:switchChecked', 'stepperChange', 'update:stepperValue', 'sliderChange', 'update:sliderValue'],
-  inject: {
-    /** 是否嵌在 lingyun-swipe-action-item 内（常量，非手势状态） */
-    lingyunSwipeHost: {
-      default: false,
-    },
-    /** 滑动表面状态：hideDivider / hideDividerFromPrev 为 true 时藏顶部分割线。一对一，不挂整表 */
-    lingyunSwipeSurface: {
-      default: null as SwipeSurface | null,
-    },
+})
+
+const props = defineProps({
+  title: { type: String, default: '' },
+  detail: { type: String, default: '' },
+  note: { type: String, default: '' },
+  subtitle: { type: String, default: '' },
+  thumb: { type: String, default: '' },
+  thumbSize: { type: String, default: 'auto' },
+  accessory: { type: String, default: 'none' },
+  role: { type: String, default: 'default' },
+  clickable: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
+  hideDivider: { type: Boolean, default: false },
+  switchChecked: { type: Boolean, default: false },
+  stepperValue: { type: Number, default: 0 },
+  stepperMin: { type: Number, default: 0 },
+  stepperMax: { type: Number, default: 10 },
+  stepperStep: { type: Number, default: 1 },
+  sliderValue: { type: Number, default: 50 },
+  sliderMin: { type: Number, default: 0 },
+  sliderMax: { type: Number, default: 100 },
+  sliderStep: { type: Number, default: 1 },
+  popupLabel: { type: String, default: 'Pop-up button' },
+})
+
+const emit = defineEmits(['click', 'switchChange', 'update:switchChecked', 'stepperChange', 'update:stepperValue', 'sliderChange', 'update:sliderValue'])
+
+/** 是否嵌在 lingyun-swipe-action-item 内（常量，非手势状态） */
+const lingyunSwipeHost = inject<boolean>('lingyunSwipeHost', false)
+/** 滑动表面状态：hideDivider / hideDividerFromPrev 为 true 时藏顶部分割线。一对一，不挂整表 */
+const lingyunSwipeSurface = inject<SwipeSurface | null>('lingyunSwipeSurface', null)
+
+const instance = getCurrentInstance()
+const slots = useSlots()
+
+const isFirstChild = ref(false)
+const sliderDragging = ref(false)
+const innerSliderValue = ref(50)
+const listBound = ref(false)
+
+/** 本行在滑 / 上一行在滑（借走本行顶线当对方底边） */
+const dividerHiddenBySwipe = computed((): boolean => {
+  const s = lingyunSwipeSurface as SwipeSurface | null
+  if (!s) return false
+  return !!(s.hideDivider || s.hideDividerFromPrev)
+})
+
+const isDestructive = computed(() => {
+  return props.role === 'destructive'
+})
+
+const resolvedAccessory = computed(() => {
+  const allowed = ['none', 'disclosure', 'popup', 'stepper', 'toggle', 'slider']
+  return allowed.includes(props.accessory) ? props.accessory : 'none'
+})
+
+const isSlider = computed(() => {
+  return resolvedAccessory.value === 'slider'
+})
+
+const resolvedNote = computed(() => {
+  return props.note || props.subtitle
+})
+
+const showLeading = computed(() => {
+  return !!(props.thumb || slots.icon)
+})
+
+const resolvedThumbSize = computed(() => {
+  if (props.thumbSize === 'lg' || props.thumbSize === 'base') {
+    return props.thumbSize
+  }
+  /* auto：有 Subtitle（note/subtitle）→ 大图 42；否则小图 30 */
+  return resolvedNote.value ? 'lg' : 'base'
+})
+
+const leadingSizeClass = computed(() => {
+  return resolvedThumbSize.value === 'lg'
+    ? 'lingyun-list-item__leading--lg'
+    : 'lingyun-list-item__leading--base'
+})
+
+/** 与 Sketch List Image 一致：lg 42 / base 30 */
+const thumbBox = computed((): number => {
+  return resolvedThumbSize.value === 'lg' ? 42 : 30
+})
+
+/** lg 圆角 10，base 圆角 7 */
+const thumbRadius = computed((): number => {
+  return resolvedThumbSize.value === 'lg' ? 10 : 7
+})
+
+const dividerLeadingClass = computed(() => {
+  if (!showLeading.value) return ''
+  return resolvedThumbSize.value === 'lg'
+    ? 'lingyun-list-item__divider--leading-lg'
+    : 'lingyun-list-item__divider--leading'
+})
+
+const showTrailing = computed(() => {
+  if (isSlider.value || isDestructive.value) return false
+  if (slots.extra) return true
+  if (props.detail) return true
+  return ['disclosure', 'popup', 'stepper', 'toggle'].includes(resolvedAccessory.value)
+})
+
+const isInteractive = computed(() => {
+  if (props.disabled) return false
+  if (isDestructive.value) return true
+  if (props.clickable) return true
+  return resolvedAccessory.value === 'disclosure' || resolvedAccessory.value === 'popup'
+})
+
+const hoverClass = computed(() => {
+  /* 滑动行不做按压高亮：微信横向拖动不取消 hover，松手时灰底消失会被看成胶囊闪烁 */
+  if (lingyunSwipeHost) return ''
+  return isInteractive.value ? 'lingyun-list-item--hover' : ''
+})
+
+const themeClass = computed(() => {
+  try {
+    return useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    return 'theme-light'
+  }
+})
+
+const rootClass = computed(() => {
+  return [
+    themeClass.value,
+    isDestructive.value ? 'lingyun-list-item--destructive' : '',
+    props.disabled ? 'lingyun-list-item--disabled' : '',
+    isSlider.value ? 'lingyun-list-item--slider' : '',
+    resolvedNote.value ? 'lingyun-list-item--tall' : '',
+    showLeading.value ? 'lingyun-list-item--leading' : '',
+    showLeading.value && resolvedThumbSize.value === 'lg' ? 'lingyun-list-item--leading-lg' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const stepperAtMin = computed(() => {
+  return props.stepperValue <= props.stepperMin
+})
+
+const stepperAtMax = computed(() => {
+  return props.stepperValue >= props.stepperMax
+})
+
+const switchColor = computed(() => {
+  return '#34c759'
+})
+
+/**
+ * 沿 $parent 找到最近的 LingyunList，只登记一次首行。
+ * 对齐 uni-list getForm：不 inject 列表实例，父级数据变化不会带动每一行更新。
+ */
+function getList(): ListHost | null {
+  let parent = (instance?.proxy?.$parent as unknown as ListHost | null) ?? null
+  while (parent) {
+    if (parent.$options && parent.$options.name === 'LingyunList') return parent
+    parent = parent.$parent || null
+  }
+  return null
+}
+
+function markFirstChild(): void {
+  const list = getList()
+  if (!list) return
+  listBound.value = true
+  if (!list.firstChildAppend) {
+    list.firstChildAppend = true
+    isFirstChild.value = true
+  }
+}
+
+function onClick(): void {
+  if (!isInteractive.value) return
+  emit('click')
+}
+
+function onSwitchChange(e: Event): void {
+  const detail = (e as unknown as SwitchChangeEvent).detail
+  const checked = !!(detail && detail.value)
+  emit('update:switchChecked', checked)
+  emit('switchChange', detail || { value: checked })
+}
+
+function onStep(dir: number): void {
+  if (props.disabled) return
+  const next = props.stepperValue + dir * props.stepperStep
+  const clamped = Math.min(props.stepperMax, Math.max(props.stepperMin, next))
+  if (clamped === props.stepperValue) return
+  emit('update:stepperValue', clamped)
+  emit('stepperChange', clamped)
+}
+
+function onSliderChanging(value: unknown): void {
+  const next = Number(value)
+  if (!Number.isFinite(next)) return
+  sliderDragging.value = true
+  emit('update:sliderValue', next)
+}
+
+function onSliderChange(value: unknown): void {
+  const next = Number(value)
+  if (!Number.isFinite(next)) return
+  sliderDragging.value = false
+  innerSliderValue.value = next
+  emit('update:sliderValue', next)
+  emit('sliderChange', next)
+}
+
+watch(
+  () => props.sliderValue,
+  (v: number) => {
+    if (sliderDragging.value) return
+    const next = Number(v)
+    if (!Number.isFinite(next)) return
+    if (next === innerSliderValue.value) return
+    innerSliderValue.value = next
   },
-  props: {
-    title: { type: String, default: '' },
-    detail: { type: String, default: '' },
-    note: { type: String, default: '' },
-    subtitle: { type: String, default: '' },
-    thumb: { type: String, default: '' },
-    thumbSize: { type: String, default: 'auto' },
-    accessory: { type: String, default: 'none' },
-    role: { type: String, default: 'default' },
-    clickable: { type: Boolean, default: false },
-    disabled: { type: Boolean, default: false },
-    hideDivider: { type: Boolean, default: false },
-    switchChecked: { type: Boolean, default: false },
-    stepperValue: { type: Number, default: 0 },
-    stepperMin: { type: Number, default: 0 },
-    stepperMax: { type: Number, default: 10 },
-    stepperStep: { type: Number, default: 1 },
-    sliderValue: { type: Number, default: 50 },
-    sliderMin: { type: Number, default: 0 },
-    sliderMax: { type: Number, default: 100 },
-    sliderStep: { type: Number, default: 1 },
-    popupLabel: { type: String, default: 'Pop-up button' },
-  },
-  data() {
-    return {
-      isFirstChild: false,
-      sliderDragging: false,
-      innerSliderValue: 50,
-      listBound: false,
-    }
-  },
-  watch: {
-    sliderValue: {
-      immediate: true,
-      handler(v: number) {
-        if (this.sliderDragging) return
-        const next = Number(v)
-        if (!Number.isFinite(next)) return
-        if (next === this.innerSliderValue) return
-        this.innerSliderValue = next
-      },
-    },
-  },
-  created() {
-    this.markFirstChild()
-  },
-  mounted() {
-    if (this.listBound) return
-    this.markFirstChild()
-    if (!this.listBound) {
-      /* 独立使用：无父级列表时不画顶部分割线 */
-      this.isFirstChild = true
-    }
-  },
-  computed: {
-    /** 本行在滑 / 上一行在滑（借走本行顶线当对方底边） */
-    dividerHiddenBySwipe(): boolean {
-      const s = this.lingyunSwipeSurface as SwipeSurface | null
-      if (!s) return false
-      return !!(s.hideDivider || s.hideDividerFromPrev)
-    },
-    isDestructive() {
-      return this.role === 'destructive'
-    },
-    resolvedAccessory() {
-      const allowed = ['none', 'disclosure', 'popup', 'stepper', 'toggle', 'slider']
-      return allowed.includes(this.accessory) ? this.accessory : 'none'
-    },
-    isSlider() {
-      return this.resolvedAccessory === 'slider'
-    },
-    resolvedNote() {
-      return this.note || this.subtitle
-    },
-    showLeading() {
-      return !!(this.thumb || this.$slots.icon)
-    },
-    resolvedThumbSize() {
-      if (this.thumbSize === 'lg' || this.thumbSize === 'base') {
-        return this.thumbSize
-      }
-      /* auto：有 Subtitle（note/subtitle）→ 大图 42；否则小图 30 */
-      return this.resolvedNote ? 'lg' : 'base'
-    },
-    leadingSizeClass() {
-      return this.resolvedThumbSize === 'lg'
-        ? 'lingyun-list-item__leading--lg'
-        : 'lingyun-list-item__leading--base'
-    },
-    /** 与 Sketch List Image 一致：lg 42 / base 30 */
-    thumbBox(): number {
-      return this.resolvedThumbSize === 'lg' ? 42 : 30
-    },
-    /** lg 圆角 10，base 圆角 7 */
-    thumbRadius(): number {
-      return this.resolvedThumbSize === 'lg' ? 10 : 7
-    },
-    dividerLeadingClass() {
-      if (!this.showLeading) return ''
-      return this.resolvedThumbSize === 'lg'
-        ? 'lingyun-list-item__divider--leading-lg'
-        : 'lingyun-list-item__divider--leading'
-    },
-    showTrailing() {
-      if (this.isSlider || this.isDestructive) return false
-      if (this.$slots.extra) return true
-      if (this.detail) return true
-      return ['disclosure', 'popup', 'stepper', 'toggle'].includes(this.resolvedAccessory)
-    },
-    isInteractive() {
-      if (this.disabled) return false
-      if (this.isDestructive) return true
-      if (this.clickable) return true
-      return this.resolvedAccessory === 'disclosure' || this.resolvedAccessory === 'popup'
-    },
-    hoverClass() {
-      /* 滑动行不做按压高亮：微信横向拖动不取消 hover，松手时灰底消失会被看成胶囊闪烁 */
-      if (this.lingyunSwipeHost) return ''
-      return this.isInteractive ? 'lingyun-list-item--hover' : ''
-    },
-    themeClass() {
-      try {
-        return useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        return 'theme-light'
-      }
-    },
-    rootClass() {
-      return [
-        this.themeClass,
-        this.isDestructive ? 'lingyun-list-item--destructive' : '',
-        this.disabled ? 'lingyun-list-item--disabled' : '',
-        this.isSlider ? 'lingyun-list-item--slider' : '',
-        this.resolvedNote ? 'lingyun-list-item--tall' : '',
-        this.showLeading ? 'lingyun-list-item--leading' : '',
-        this.showLeading && this.resolvedThumbSize === 'lg' ? 'lingyun-list-item--leading-lg' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    stepperAtMin() {
-      return this.stepperValue <= this.stepperMin
-    },
-    stepperAtMax() {
-      return this.stepperValue >= this.stepperMax
-    },
-    switchColor() {
-      return '#34c759'
-    },
-  },
-  methods: {
-    /**
-     * 沿 $parent 找到最近的 LingyunList，只登记一次首行。
-     * 对齐 uni-list getForm：不 inject 列表实例，父级数据变化不会带动每一行更新。
-     */
-    getList(): ListHost | null {
-      let parent = this.$parent as ListHost | null
-      while (parent) {
-        if (parent.$options && parent.$options.name === 'LingyunList') return parent
-        parent = parent.$parent || null
-      }
-      return null
-    },
-    markFirstChild() {
-      const list = this.getList()
-      if (!list) return
-      this.listBound = true
-      if (!list.firstChildAppend) {
-        list.firstChildAppend = true
-        this.isFirstChild = true
-      }
-    },
-    onClick() {
-      if (!this.isInteractive) return
-      this.$emit('click')
-    },
-    onSwitchChange(e: SwitchChangeEvent) {
-      const checked = !!(e && e.detail && e.detail.value)
-      this.$emit('update:switchChecked', checked)
-      this.$emit('switchChange', e.detail || { value: checked })
-    },
-    onStep(dir: number) {
-      if (this.disabled) return
-      const next = this.stepperValue + dir * this.stepperStep
-      const clamped = Math.min(this.stepperMax, Math.max(this.stepperMin, next))
-      if (clamped === this.stepperValue) return
-      this.$emit('update:stepperValue', clamped)
-      this.$emit('stepperChange', clamped)
-    },
-    onSliderChanging(value: unknown) {
-      const next = Number(value)
-      if (!Number.isFinite(next)) return
-      this.sliderDragging = true
-      this.$emit('update:sliderValue', next)
-    },
-    onSliderChange(value: unknown) {
-      const next = Number(value)
-      if (!Number.isFinite(next)) return
-      this.sliderDragging = false
-      this.innerSliderValue = next
-      this.$emit('update:sliderValue', next)
-      this.$emit('sliderChange', next)
-    },
-  },
+  { immediate: true },
+)
+
+markFirstChild()
+
+onMounted(() => {
+  if (listBound.value) return
+  markFirstChild()
+  if (!listBound.value) {
+    /* 独立使用：无父级列表时不画顶部分割线 */
+    isFirstChild.value = true
+  }
 })
 </script>
 

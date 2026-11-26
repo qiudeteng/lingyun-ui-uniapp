@@ -21,57 +21,56 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed } from 'vue'
+import { type PropType } from 'vue'
 
 /**
  * lingyun-checkbox
  * 自绘框 + lingyun-icon 勾（避免 mp 原生 checkbox 默认绿 / color 失效）
  * @see design/CHECKS.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunCheckbox',
-  emits: ['update:modelValue', 'update:checked', 'change'],
-  options: {
-    virtualHost: true,
-    styleIsolation: 'shared',
-  },
-  props: {
-    modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    checked: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    label: { type: String, default: '' },
-    disabled: { type: Boolean, default: false },
-    color: { type: String, default: '' },
-  },
-  computed: {
-    current() {
-      if (this.modelValue !== undefined && this.modelValue !== null) return !!this.modelValue
-      return !!this.checked
-    },
-    rootClass() {
-      return [
-        this.current ? 'lingyun-checkbox--on' : '',
-        this.disabled ? 'lingyun-checkbox--disabled' : '',
-      ].filter(Boolean)
-    },
-    boxStyle() {
-      if (!this.current || !this.color) return {}
-      return {
-        backgroundColor: this.color,
-        borderColor: this.color,
-      }
-    },
-  },
-  methods: {
-    onTap() {
-      if (this.disabled) return
-      const next = !this.current
-      this.$emit('update:modelValue', next)
-      this.$emit('update:checked', next)
-      this.$emit('change', next)
-    },
-  },
+  virtualHost: true,
+  styleIsolation: 'shared',
 })
+
+const props = defineProps({
+  modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  checked: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  label: { type: String, default: '' },
+  disabled: { type: Boolean, default: false },
+  color: { type: String, default: '' },
+})
+
+const emit = defineEmits(['update:modelValue', 'update:checked', 'change'])
+
+const current = computed((): boolean => {
+  if (props.modelValue !== undefined && props.modelValue !== null) return !!props.modelValue
+  return !!props.checked
+})
+const rootClass = computed((): string[] => {
+  return [
+    current.value ? 'lingyun-checkbox--on' : '',
+    props.disabled ? 'lingyun-checkbox--disabled' : '',
+  ].filter(Boolean)
+})
+const boxStyle = computed((): Record<string, string> => {
+  if (!current.value || !props.color) return {}
+  return {
+    backgroundColor: props.color,
+    borderColor: props.color,
+  }
+})
+
+function onTap(): void {
+  if (props.disabled) return
+  const next = !current.value
+  emit('update:modelValue', next)
+  emit('update:checked', next)
+  emit('change', next)
+}
 </script>
 
 <style lang="scss">

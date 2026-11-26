@@ -216,7 +216,7 @@
 </template>
 
 <script setup lang="ts">
-  import type { LingyunTableColumn, LingyunTableRow } from '@/uni_modules/lingyun-ui/components/lingyun-table/lingyun-table.vue'
+  import type { LingyunTableColumn, LingyunTableRow } from '@/uni_modules/lingyun-ui/components/lingyun-table/types'
 
   const shortcuts = [
     { icon: 'shop', text: '店铺', color: '#0088ff', link: '/pages/demo/grid' },

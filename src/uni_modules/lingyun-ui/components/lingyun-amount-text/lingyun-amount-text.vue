@@ -9,8 +9,9 @@
   />
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed } from 'vue'
+import { type PropType } from 'vue'
 import LingyunText from '../lingyun-text/lingyun-text.vue'
 import { formatLingyunAmount } from '../../utils/amountFormat'
 
@@ -29,35 +30,34 @@ import { formatLingyunAmount } from '../../utils/amountFormat'
  * @property {Boolean} bold 是否加粗
  * @property {Boolean} block 是否块级展示
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunAmountText',
-  components: { LingyunText },
-  props: {
-    value: {
-      type: [Number, String] as PropType<number | string | null | undefined>,
-      default: undefined,
-    },
-    /** 小数位，默认 2；范围 0–6 */
-    decimals: { type: Number, default: 2 },
-    /** 金额前缀，如 ¥ */
-    prefix: { type: String, default: '' },
-    /** 解析失败时的文案 */
-    fallback: { type: String, default: '' },
-    /** lingyun-text 字阶，默认 body */
-    type: { type: String, default: 'body' },
-    /** 语义色（label / secondary / tertiary / primary / link / ...）或任意 CSS 颜色 */
-    color: { type: String, default: '' },
-    bold: { type: Boolean, default: false },
-    block: { type: Boolean, default: false },
+})
+
+const props = defineProps({
+  value: {
+    type: [Number, String] as PropType<number | string | null | undefined>,
+    default: undefined,
   },
-  computed: {
-    text(): string {
-      return formatLingyunAmount(this.value, {
-        decimals: this.decimals,
-        prefix: this.prefix,
-        fallback: this.fallback,
-      })
-    },
-  },
+  /** 小数位，默认 2；范围 0–6 */
+  decimals: { type: Number, default: 2 },
+  /** 金额前缀，如 ¥ */
+  prefix: { type: String, default: '' },
+  /** 解析失败时的文案 */
+  fallback: { type: String, default: '' },
+  /** lingyun-text 字阶，默认 body */
+  type: { type: String, default: 'body' },
+  /** 语义色（label / secondary / tertiary / primary / link / ...）或任意 CSS 颜色 */
+  color: { type: String, default: '' },
+  bold: { type: Boolean, default: false },
+  block: { type: Boolean, default: false },
+})
+
+const text = computed((): string => {
+  return formatLingyunAmount(props.value, {
+    decimals: props.decimals,
+    prefix: props.prefix,
+    fallback: props.fallback,
+  })
 })
 </script>

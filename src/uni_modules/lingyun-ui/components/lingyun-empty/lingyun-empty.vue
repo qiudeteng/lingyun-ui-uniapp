@@ -47,56 +47,56 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-
+<script setup lang="ts">
+import { computed, useSlots } from 'vue'
 /**
  * lingyun-empty
  * Sketch Examples/Empty State：plain · symbol · circle
  * @see design/EMPTY.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunEmpty',
-  props: {
-    title: { type: String, default: '' },
-    description: { type: String, default: '' },
-    desc: { type: String, default: '' },
-    icon: { type: String, default: '' },
-    /** plain | symbol | circle；空则按是否有 icon 推断 */
-    variant: { type: String, default: '' },
-    iconColor: { type: String, default: '' },
-    /** 撑满父高并垂直居中正文 */
-    fill: { type: Boolean, default: false },
-    /** inline | bottom */
-    actionPlacement: { type: String, default: 'inline' },
-  },
-  computed: {
-    descText() {
-      return this.description || this.desc || ''
-    },
-    hasIconSlot() {
-      return !!(this.$slots && this.$slots.icon)
-    },
-    hasAction() {
-      return !!(this.$slots && this.$slots.action)
-    },
-    resolvedVariant() {
-      const v = (this.variant || '').trim()
-      if (v === 'plain' || v === 'symbol' || v === 'circle') return v
-      if (this.icon || this.hasIconSlot) return 'symbol'
-      return 'plain'
-    },
-    showIcon() {
-      if (this.resolvedVariant === 'plain') {
-        return this.hasIconSlot || !!this.icon
-      }
-      return true
-    },
-    iconStyle(): Record<string, string> {
-      if (!this.iconColor) return {}
-      return { color: this.iconColor }
-    },
-  },
+})
+
+const props = defineProps({
+  title: { type: String, default: '' },
+  description: { type: String, default: '' },
+  desc: { type: String, default: '' },
+  icon: { type: String, default: '' },
+  /** plain | symbol | circle；空则按是否有 icon 推断 */
+  variant: { type: String, default: '' },
+  iconColor: { type: String, default: '' },
+  /** 撑满父高并垂直居中正文 */
+  fill: { type: Boolean, default: false },
+  /** inline | bottom */
+  actionPlacement: { type: String, default: 'inline' },
+})
+
+const slots = useSlots()
+
+const descText = computed((): string => props.description || props.desc || '')
+
+const hasIconSlot = computed((): boolean => !!(slots && slots.icon))
+
+const hasAction = computed((): boolean => !!(slots && slots.action))
+
+const resolvedVariant = computed((): string => {
+  const v = (props.variant || '').trim()
+  if (v === 'plain' || v === 'symbol' || v === 'circle') return v
+  if (props.icon || hasIconSlot.value) return 'symbol'
+  return 'plain'
+})
+
+const showIcon = computed((): boolean => {
+  if (resolvedVariant.value === 'plain') {
+    return hasIconSlot.value || !!props.icon
+  }
+  return true
+})
+
+const iconStyle = computed((): Record<string, string> => {
+  if (!props.iconColor) return {}
+  return { color: props.iconColor }
 })
 </script>
 

@@ -12,34 +12,26 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { reactive } from 'vue'
+import { provide } from 'vue'
 
 /**
  * lingyun-form-group
  * 视觉对齐 lingyun-list 分组卡，不依赖 list 组件
  * @see design/FORMS.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunFormGroup',
-  props: {
-    title: { type: String, default: '' },
-    footer: { type: String, default: '' },
-  },
-  data() {
-    return {
-      firstChildAppend: false,
-    }
-  },
-  provide() {
-    return {
-      lingyunFormGroup: this,
-    }
-  },
-  created() {
-    this.firstChildAppend = false
-  },
 })
+
+const props = defineProps({
+  title: { type: String, default: '' },
+  footer: { type: String, default: '' },
+})
+
+const groupState = reactive({ firstChildAppend: false })
+provide('lingyunFormGroup', groupState)
 </script>
 
 <style lang="scss">

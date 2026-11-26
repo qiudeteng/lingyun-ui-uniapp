@@ -89,6 +89,7 @@
 | `safe-area` | 避开底部安全区 | true |
 | `cart-count` | cart：购物车数量，显示在圆钮角标 | 0 |
 | `total` | cart：商品合计金额 | 0 |
+| `show-amount` | cart：显示合计金额、起送价与配送费提示；`false` 时数量角标与结算按钮保留 | true |
 | `min-price` | cart：起送价 | 0 |
 | `delivery-fee` | cart：配送费，大于 0 时显示「另需配送费」 | 0 |
 | `currency` | cart：货币符号 | ¥ |

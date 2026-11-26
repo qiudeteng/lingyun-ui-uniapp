@@ -62,8 +62,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed } from 'vue'
+import { type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
 import type {
   LingyunPaginationChangePayload,
@@ -76,135 +77,138 @@ import type {
  * @description 分页：总数、页码窗口、上一页 / 下一页、简单模式、小尺寸
  * @see design/PAGINATION.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunPagination',
-  emits: ['update:modelValue', 'change'],
-  props: {
-    modelValue: { type: Number, default: 1 },
-    total: { type: Number, default: 0 },
-    pageSize: { type: Number, default: 10 },
-    maxButtons: { type: Number, default: 7 },
-    size: {
-      type: String as PropType<LingyunPaginationSize>,
-      default: 'default',
-    },
-    showTotal: { type: Boolean, default: true },
-    totalText: { type: String, default: '' },
-    showPrevNext: { type: Boolean, default: true },
-    simple: { type: Boolean, default: false },
-    hideOnSinglePage: { type: Boolean, default: false },
-    disabled: { type: Boolean, default: false },
-  },
-  computed: {
-    rootClass(): string {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* pinia 未就绪 */
-      }
-      return themeClass
-    },
-    sizeKey(): LingyunPaginationSize {
-      return this.size === 'small' ? 'small' : 'default'
-    },
-    resolvedPageSize(): number {
-      const value = Math.floor(Number(this.pageSize))
-      return Number.isFinite(value) && value > 0 ? value : 10
-    },
-    resolvedTotal(): number {
-      const value = Math.floor(Number(this.total))
-      return Number.isFinite(value) && value > 0 ? value : 0
-    },
-    pageCount(): number {
-      return Math.max(1, Math.ceil(this.resolvedTotal / this.resolvedPageSize))
-    },
-    currentPage(): number {
-      const value = Math.floor(Number(this.modelValue))
-      if (!Number.isFinite(value)) return 1
-      return Math.min(this.pageCount, Math.max(1, value))
-    },
-    resolvedTotalText(): string {
-      return this.totalText || `共 ${this.resolvedTotal} 条`
-    },
-    visible(): boolean {
-      return !(this.hideOnSinglePage && this.pageCount <= 1)
-    },
-    pageItems(): LingyunPaginationItem[] {
-      const total = this.pageCount
-      const max = Math.max(5, Math.min(11, Math.floor(Number(this.maxButtons)) || 7))
-      if (total <= max) {
-        return Array.from({ length: total }, (_, index) => ({
-          key: `page-${index + 1}`,
-          page: index + 1,
-          ellipsis: false,
-        }))
-      }
-      const innerCount = max - 4
-      let start = Math.max(2, this.currentPage - Math.floor(innerCount / 2))
-      let end = start + innerCount - 1
-      if (end > total - 2) {
-        end = total - 1
-        start = end - innerCount + 1
-      }
-      if (start < 2) start = 2
-      const items: LingyunPaginationItem[] = [
-        { key: 'page-1', page: 1, ellipsis: false },
-      ]
-      if (start > 2) {
-        items.push({ key: 'ellipsis-left', page: 0, ellipsis: true })
-      }
-      for (let page = start; page <= end; page += 1) {
-        items.push({
-          key: `page-${page}`,
-          page,
-          ellipsis: false,
-        })
-      }
-      if (end < total - 1) {
-        items.push({ key: 'ellipsis-right', page: 0, ellipsis: true })
-      }
-      items.push({
-        key: `page-${total}`,
-        page: total,
-        ellipsis: false,
-      })
-      return items
-    },
-  },
-  methods: {
-    onItemClick(item: LingyunPaginationItem): void {
-      if (this.disabled) return
-      if (item.ellipsis) {
-        const step = Math.max(1, Math.floor((Math.max(5, this.maxButtons) - 4) / 2))
-        this.go(item.key === 'ellipsis-left' ? this.currentPage - step : this.currentPage + step)
-        return
-      }
-      this.go(item.page)
-    },
-    go(page: number): void {
-      if (this.disabled) return
-      const next = Math.min(
-        this.pageCount,
-        Math.max(1, Math.floor(Number(page)) || 1),
-      )
-      if (next === this.currentPage) return
-      const payload: LingyunPaginationChangePayload = {
-        page: next,
-        pageSize: this.resolvedPageSize,
-        pageCount: this.pageCount,
-      }
-      this.$emit('update:modelValue', next)
-      this.$emit('change', payload)
-    },
-    prev(): void {
-      this.go(this.currentPage - 1)
-    },
-    next(): void {
-      this.go(this.currentPage + 1)
-    },
-  },
 })
+
+const props = defineProps({
+  modelValue: { type: Number, default: 1 },
+  total: { type: Number, default: 0 },
+  pageSize: { type: Number, default: 10 },
+  maxButtons: { type: Number, default: 7 },
+  size: {
+    type: String as PropType<LingyunPaginationSize>,
+    default: 'default',
+  },
+  showTotal: { type: Boolean, default: true },
+  totalText: { type: String, default: '' },
+  showPrevNext: { type: Boolean, default: true },
+  simple: { type: Boolean, default: false },
+  hideOnSinglePage: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
+})
+
+const emit = defineEmits(['update:modelValue', 'change'])
+
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* pinia 未就绪 */
+  }
+  return themeClass
+})
+const sizeKey = computed((): LingyunPaginationSize => {
+  return props.size === 'small' ? 'small' : 'default'
+})
+const resolvedPageSize = computed((): number => {
+  const value = Math.floor(Number(props.pageSize))
+  return Number.isFinite(value) && value > 0 ? value : 10
+})
+const resolvedTotal = computed((): number => {
+  const value = Math.floor(Number(props.total))
+  return Number.isFinite(value) && value > 0 ? value : 0
+})
+const pageCount = computed((): number => {
+  return Math.max(1, Math.ceil(resolvedTotal.value / resolvedPageSize.value))
+})
+const currentPage = computed((): number => {
+  const value = Math.floor(Number(props.modelValue))
+  if (!Number.isFinite(value)) return 1
+  return Math.min(pageCount.value, Math.max(1, value))
+})
+const resolvedTotalText = computed((): string => {
+  return props.totalText || `共 ${resolvedTotal.value} 条`
+})
+const visible = computed((): boolean => {
+  return !(props.hideOnSinglePage && pageCount.value <= 1)
+})
+const pageItems = computed((): LingyunPaginationItem[] => {
+  const total = pageCount.value
+  const max = Math.max(5, Math.min(11, Math.floor(Number(props.maxButtons)) || 7))
+  if (total <= max) {
+    return Array.from({ length: total }, (_, index) => ({
+      key: `page-${index + 1}`,
+      page: index + 1,
+      ellipsis: false,
+    }))
+  }
+  const innerCount = max - 4
+  let start = Math.max(2, currentPage.value - Math.floor(innerCount / 2))
+  let end = start + innerCount - 1
+  if (end > total - 2) {
+    end = total - 1
+    start = end - innerCount + 1
+  }
+  if (start < 2) start = 2
+  const items: LingyunPaginationItem[] = [
+    { key: 'page-1', page: 1, ellipsis: false },
+  ]
+  if (start > 2) {
+    items.push({ key: 'ellipsis-left', page: 0, ellipsis: true })
+  }
+  for (let page = start; page <= end; page += 1) {
+    items.push({
+      key: `page-${page}`,
+      page,
+      ellipsis: false,
+    })
+  }
+  if (end < total - 1) {
+    items.push({ key: 'ellipsis-right', page: 0, ellipsis: true })
+  }
+  items.push({
+    key: `page-${total}`,
+    page: total,
+    ellipsis: false,
+  })
+  return items
+})
+
+function go(page: number): void {
+  if (props.disabled) return
+  const next = Math.min(
+    pageCount.value,
+    Math.max(1, Math.floor(Number(page)) || 1),
+  )
+  if (next === currentPage.value) return
+  const payload: LingyunPaginationChangePayload = {
+    page: next,
+    pageSize: resolvedPageSize.value,
+    pageCount: pageCount.value,
+  }
+  emit('update:modelValue', next)
+  emit('change', payload)
+}
+
+function onItemClick(item: LingyunPaginationItem): void {
+  if (props.disabled) return
+  if (item.ellipsis) {
+    const step = Math.max(1, Math.floor((Math.max(5, props.maxButtons) - 4) / 2))
+    go(item.key === 'ellipsis-left' ? currentPage.value - step : currentPage.value + step)
+    return
+  }
+  go(item.page)
+}
+
+function prev(): void {
+  go(currentPage.value - 1)
+}
+
+function next(): void {
+  go(currentPage.value + 1)
+}
 </script>
 
 <style lang="scss">

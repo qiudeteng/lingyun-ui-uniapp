@@ -48,8 +48,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+import { type PropType } from 'vue'
 
 /**
  * lingyun-stepper
@@ -67,133 +68,132 @@ function clipSideText(value: unknown): string {
   return Array.from(text).slice(0, 4).join('')
 }
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunStepper',
-  emits: ['update:modelValue', 'update:value', 'change'],
-  props: {
-    modelValue: { type: Number as PropType<number | undefined>, default: undefined },
-    value: { type: Number as PropType<number | undefined>, default: undefined },
-    min: { type: Number, default: 0 },
-    max: { type: Number, default: 10 },
-    step: { type: Number, default: 1 },
-    disabled: { type: Boolean, default: false },
-    /** 在 − / + 之间展示可编辑的当前值 */
-    showValue: { type: Boolean, default: false },
-    /** 步进器左侧灰色说明文字，最多 4 个字 */
-    leftText: { type: String, default: '' },
-    /** 步进器右侧灰色说明文字，最多 4 个字 */
-    rightText: { type: String, default: '' },
-    /** 尺寸：default 30 高；large 38 高，按钮更宽，适合真机大点击区 */
-    size: { type: String, default: 'default' },
-  },
-  data() {
-    return {
-      draft: '',
-      editing: false,
-    }
-  },
-  watch: {
-    current: {
-      immediate: true,
-      handler(val: number) {
-        if (!this.editing) this.draft = this.format(val)
-      },
-    },
-  },
-  computed: {
-    current(): number {
-      if (this.modelValue !== undefined && this.modelValue !== null) return Number(this.modelValue)
-      if (this.value !== undefined && this.value !== null) return Number(this.value)
-      return 0
-    },
-    atMin(): boolean {
-      return this.disabled || this.current <= this.min
-    },
-    atMax(): boolean {
-      return this.disabled || this.current >= this.max
-    },
-    leftTextClipped(): string {
-      return clipSideText(this.leftText)
-    },
-    rightTextClipped(): string {
-      return clipSideText(this.rightText)
-    },
-    isLarge(): boolean {
-      return this.size === 'large'
-    },
-    valueStyle(): { width: string } {
-      const text = this.editing ? String(this.draft) : this.format(this.current)
-      const len = Math.max(1, text.length)
-      /* 15px 数字约 8.3px/位，留 ~1.7px/位余量 + 12px 内边距，按位数自适应 */
-      return { width: `${Math.max(36, Math.ceil(len * 10 + 12))}px` }
-    },
-  },
-  methods: {
-    format(n: number): string {
-      const value = Number(n)
-      if (!Number.isFinite(value)) return ''
-      const step = Number(this.step) || 1
-      const digits = (String(step).split('.')[1] || '').length
-      return digits ? String(Number(value.toFixed(Math.min(8, digits)))) : String(value)
-    },
-    emitValue(next: number) {
-      this.editing = false
-      this.draft = this.format(next)
-      if (next === this.current) return
-      this.$emit('update:modelValue', next)
-      this.$emit('update:value', next)
-      this.$emit('change', next)
-    },
-    onStep(dir: number) {
-      if (this.disabled) return
-      const next = this.current + dir * (Number(this.step) || 1)
-      const clamped = Math.min(this.max, Math.max(this.min, next))
-      if (clamped === this.current) {
-        this.editing = false
-        this.draft = this.format(this.current)
-        return
-      }
-      this.emitValue(clamped)
-    },
-    onFocus() {
-      this.editing = true
-    },
-    readEventValue(event?: StepperFieldEvent | null): string | null {
-      if (!event) return null
-      const detail = event.detail
-      if (detail && detail.value != null) return String(detail.value)
-      const target = event.target
-      if (target && target.value != null) return String(target.value)
-      return null
-    },
-    onDraft(event?: unknown) {
-      const value = this.readEventValue(event as StepperFieldEvent)
-      this.draft = value == null ? '' : value
-    },
-    commitDraft(event?: unknown) {
-      const typed = this.readEventValue(event as StepperFieldEvent)
-      if (typed != null) this.draft = typed
-      this.editing = false
-      const raw = String(this.draft).trim()
-      const parsed = Number(raw)
-      if (raw === '' || !Number.isFinite(parsed)) {
-        this.draft = this.format(this.current)
-        return
-      }
-      const step = Number(this.step) || 1
-      const min = Number(this.min)
-      const max = Number(this.max)
-      let next = parsed
-      if (step > 0) {
-        const snapped = min + Math.round((parsed - min) / step) * step
-        const digits = (String(step).split('.')[1] || '').length
-        next = digits ? Number(snapped.toFixed(Math.min(8, digits))) : snapped
-      }
-      next = Math.min(max, Math.max(min, next))
-      this.emitValue(next)
-    },
-  },
 })
+
+const props = defineProps({
+  modelValue: { type: Number as PropType<number | undefined>, default: undefined },
+  value: { type: Number as PropType<number | undefined>, default: undefined },
+  min: { type: Number, default: 0 },
+  max: { type: Number, default: 10 },
+  step: { type: Number, default: 1 },
+  disabled: { type: Boolean, default: false },
+  /** 在 − / + 之间展示可编辑的当前值 */
+  showValue: { type: Boolean, default: false },
+  /** 步进器左侧灰色说明文字，最多 4 个字 */
+  leftText: { type: String, default: '' },
+  /** 步进器右侧灰色说明文字，最多 4 个字 */
+  rightText: { type: String, default: '' },
+  /** 尺寸：default 30 高；large 38 高，按钮更宽，适合真机大点击区 */
+  size: { type: String, default: 'default' },
+})
+
+const emit = defineEmits(['update:modelValue', 'update:value', 'change'])
+
+const draft = ref('')
+const editing = ref(false)
+
+const current = computed((): number => {
+  if (props.modelValue !== undefined && props.modelValue !== null) return Number(props.modelValue)
+  if (props.value !== undefined && props.value !== null) return Number(props.value)
+  return 0
+})
+
+const atMin = computed((): boolean => props.disabled || current.value <= props.min)
+
+const atMax = computed((): boolean => props.disabled || current.value >= props.max)
+
+const leftTextClipped = computed((): string => clipSideText(props.leftText))
+
+const rightTextClipped = computed((): string => clipSideText(props.rightText))
+
+const isLarge = computed((): boolean => props.size === 'large')
+
+function format(n: number): string {
+  const value = Number(n)
+  if (!Number.isFinite(value)) return ''
+  const step = Number(props.step) || 1
+  const digits = (String(step).split('.')[1] || '').length
+  return digits ? String(Number(value.toFixed(Math.min(8, digits)))) : String(value)
+}
+
+const valueStyle = computed((): { width: string } => {
+  const text = editing.value ? String(draft.value) : format(current.value)
+  const len = Math.max(1, text.length)
+  /* 15px 数字约 8.3px/位，留 ~1.7px/位余量 + 12px 内边距，按位数自适应 */
+  return { width: `${Math.max(36, Math.ceil(len * 10 + 12))}px` }
+})
+
+function emitValue(next: number): void {
+  editing.value = false
+  draft.value = format(next)
+  if (next === current.value) return
+  emit('update:modelValue', next)
+  emit('update:value', next)
+  emit('change', next)
+}
+
+function onStep(dir: number): void {
+  if (props.disabled) return
+  const next = current.value + dir * (Number(props.step) || 1)
+  const clamped = Math.min(props.max, Math.max(props.min, next))
+  if (clamped === current.value) {
+    editing.value = false
+    draft.value = format(current.value)
+    return
+  }
+  emitValue(clamped)
+}
+
+function onFocus(): void {
+  editing.value = true
+}
+
+function readEventValue(event?: StepperFieldEvent | null): string | null {
+  if (!event) return null
+  const detail = event.detail
+  if (detail && detail.value != null) return String(detail.value)
+  const target = event.target
+  if (target && target.value != null) return String(target.value)
+  return null
+}
+
+function onDraft(event?: unknown): void {
+  const value = readEventValue(event as StepperFieldEvent)
+  draft.value = value == null ? '' : value
+}
+
+function commitDraft(event?: unknown): void {
+  const typed = readEventValue(event as StepperFieldEvent)
+  if (typed != null) draft.value = typed
+  editing.value = false
+  const raw = String(draft.value).trim()
+  const parsed = Number(raw)
+  if (raw === '' || !Number.isFinite(parsed)) {
+    draft.value = format(current.value)
+    return
+  }
+  const step = Number(props.step) || 1
+  const min = Number(props.min)
+  const max = Number(props.max)
+  let next = parsed
+  if (step > 0) {
+    const snapped = min + Math.round((parsed - min) / step) * step
+    const digits = (String(step).split('.')[1] || '').length
+    next = digits ? Number(snapped.toFixed(Math.min(8, digits))) : snapped
+  }
+  next = Math.min(max, Math.max(min, next))
+  emitValue(next)
+}
+
+watch(
+  current,
+  (val: number) => {
+    if (!editing.value) draft.value = format(val)
+  },
+  { immediate: true },
+)
 </script>
 
 <style lang="scss">

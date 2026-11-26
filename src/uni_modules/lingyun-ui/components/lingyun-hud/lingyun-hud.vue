@@ -19,10 +19,11 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { inject, type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
-import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
+import { syncLingyunMpOverlayHold } from '../../utils/mp-overlay-gate'
 import {
   LINGYUN_APP_PAGE_SCROLL_LOCK,
   type LingyunAppPageScrollLock,
@@ -35,143 +36,161 @@ import {
 const LEAVE_MS = 240
 const ENTER_KICK_MS = 40
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunHud',
-  mixins: [mpOverlayHoldMixin],
-  emits: ['update:show', 'update:modelValue', 'close'],
-  inject: {
-    appPageScrollLock: {
-      from: LINGYUN_APP_PAGE_SCROLL_LOCK,
-      default: null as LingyunAppPageScrollLock | null,
-    },
-  },
-  props: {
-    show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    text: { type: String, default: '' },
-    maskClosable: { type: Boolean, default: false },
-    zIndex: { type: [Number, String] as PropType<number | string>, default: 1200 },
-  },
-  data() {
-    return {
-      mounted: false,
-      phase: '',
-      leaveTimer: null as ReturnType<typeof setTimeout> | null,
-      enterTimer: null as ReturnType<typeof setTimeout> | null,
-      _appScrollLocked: false,
+})
+
+const props = defineProps({
+  show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  text: { type: String, default: '' },
+  maskClosable: { type: Boolean, default: false },
+  zIndex: { type: [Number, String] as PropType<number | string>, default: 1200 },
+})
+
+const emit = defineEmits(['update:show', 'update:modelValue', 'close'])
+
+const appPageScrollLock = inject(LINGYUN_APP_PAGE_SCROLL_LOCK, null)
+
+const mounted = ref(false)
+const phase = ref('')
+const leaveTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const enterTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _appScrollLocked = ref(false)
+const _lingyunMpOverlayHold = ref(false)
+
+const visible = computed((): boolean => {
+  if (props.show !== undefined && props.show !== null) return !!props.show
+  if (props.modelValue !== undefined && props.modelValue !== null) return !!props.modelValue
+  return false
+})
+
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* ignore */
+  }
+  return [themeClass, phase.value ? `lingyun-hud--${phase.value}` : ''].filter(Boolean).join(' ')
+})
+
+const rootStyle = computed((): Record<string, number> => {
+  return { zIndex: Number(props.zIndex) || 1200 }
+})
+
+function clearTimers(): void {
+  if (leaveTimer.value) clearTimeout(leaveTimer.value)
+  if (enterTimer.value) clearTimeout(enterTimer.value)
+  leaveTimer.value = null
+  enterTimer.value = null
+}
+
+function lockPageScroll(): void {
+  try {
+    const lockApi = appPageScrollLock as LingyunAppPageScrollLock | null
+    if (lockApi && typeof lockApi.lock === 'function' && !_appScrollLocked.value) {
+      lockApi.lock()
+      _appScrollLocked.value = true
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function unlockPageScroll(): void {
+  try {
+    const lockApi = appPageScrollLock as LingyunAppPageScrollLock | null
+    if (_appScrollLocked.value && lockApi && typeof lockApi.unlock === 'function') {
+      lockApi.unlock()
+    }
+    _appScrollLocked.value = false
+  } catch {
+    _appScrollLocked.value = false
+  }
+}
+
+function openAnim(): void {
+  clearTimers()
+  mounted.value = true
+  phase.value = 'enter'
+  nextTick(() => {
+    const kick = () => {
+      enterTimer.value = setTimeout(() => {
+        phase.value = 'open'
+        enterTimer.value = null
+      }, ENTER_KICK_MS)
+    }
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => requestAnimationFrame(kick))
+    } else {
+      kick()
+    }
+  })
+}
+
+function closeAnim(): void {
+  clearTimers()
+  if (!mounted.value) {
+    unlockPageScroll()
+    return
+  }
+  phase.value = 'leave'
+  leaveTimer.value = setTimeout(() => {
+    mounted.value = false
+    phase.value = ''
+    leaveTimer.value = null
+    unlockPageScroll()
+  }, LEAVE_MS)
+}
+
+function setVisible(next: unknown): void {
+  const val = !!next
+  emit('update:show', val)
+  emit('update:modelValue', val)
+  if (!val) emit('close')
+}
+
+function close(): void {
+  setVisible(false)
+}
+
+function onOverlayClick(): void {
+  if (!props.maskClosable) return
+  close()
+}
+
+watch(
+  visible,
+  (val: boolean) => {
+    if (val) {
+      lockPageScroll()
+      openAnim()
+    } else {
+      closeAnim()
     }
   },
-  computed: {
-    visible() {
-      if (this.show !== undefined && this.show !== null) return !!this.show
-      if (this.modelValue !== undefined && this.modelValue !== null) return !!this.modelValue
-      return false
-    },
-    rootClass() {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* ignore */
-      }
-      return [themeClass, this.phase ? `lingyun-hud--${this.phase}` : ''].filter(Boolean).join(' ')
-    },
-    rootStyle() {
-      return { zIndex: Number(this.zIndex) || 1200 }
-    },
+  { immediate: true },
+)
+
+watch(
+  phase,
+  (value: string) => {
+    _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+      !!_lingyunMpOverlayHold.value,
+      !!value,
+    )
   },
-  watch: {
-    visible: {
-      immediate: true,
-      handler(val: boolean) {
-        if (val) {
-          this.lockPageScroll()
-          this.openAnim()
-        } else {
-          this.closeAnim()
-        }
-      },
-    },
-  },
-  beforeUnmount() {
-    this.clearTimers()
-    this.unlockPageScroll()
-  },
-  methods: {
-    clearTimers() {
-      if (this.leaveTimer) clearTimeout(this.leaveTimer)
-      if (this.enterTimer) clearTimeout(this.enterTimer)
-      this.leaveTimer = null
-      this.enterTimer = null
-    },
-    openAnim() {
-      this.clearTimers()
-      this.mounted = true
-      this.phase = 'enter'
-      this.$nextTick(() => {
-        const kick = () => {
-          this.enterTimer = setTimeout(() => {
-            this.phase = 'open'
-            this.enterTimer = null
-          }, ENTER_KICK_MS)
-        }
-        if (typeof requestAnimationFrame === 'function') {
-          requestAnimationFrame(() => requestAnimationFrame(kick))
-        } else {
-          kick()
-        }
-      })
-    },
-    closeAnim() {
-      this.clearTimers()
-      if (!this.mounted) {
-        this.unlockPageScroll()
-        return
-      }
-      this.phase = 'leave'
-      this.leaveTimer = setTimeout(() => {
-        this.mounted = false
-        this.phase = ''
-        this.leaveTimer = null
-        this.unlockPageScroll()
-      }, LEAVE_MS)
-    },
-    setVisible(next: unknown) {
-      const val = !!next
-      this.$emit('update:show', val)
-      this.$emit('update:modelValue', val)
-      if (!val) this.$emit('close')
-    },
-    close() {
-      this.setVisible(false)
-    },
-    onOverlayClick() {
-      if (!this.maskClosable) return
-      this.close()
-    },
-    lockPageScroll() {
-      try {
-        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
-        if (lockApi && typeof lockApi.lock === 'function' && !this._appScrollLocked) {
-          lockApi.lock()
-          this._appScrollLocked = true
-        }
-      } catch {
-        /* ignore */
-      }
-    },
-    unlockPageScroll() {
-      try {
-        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
-        if (this._appScrollLocked && lockApi && typeof lockApi.unlock === 'function') {
-          lockApi.unlock()
-        }
-        this._appScrollLocked = false
-      } catch {
-        this._appScrollLocked = false
-      }
-    },
-  },
+  { immediate: true },
+)
+
+onBeforeUnmount(() => {
+  _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+    !!_lingyunMpOverlayHold.value,
+    false,
+  )
+  clearTimers()
+  unlockPageScroll()
 })
 </script>
 

@@ -30,8 +30,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
 import type {
   LingyunScanErrorPayload,
@@ -67,144 +68,147 @@ function normalizeResult(value: unknown): LingyunScanResult {
  * @description 扫码入口：小程序 / App 走 uni.scanCode，H5 用 scanFn 自定义
  * @see design/SCAN.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunScan',
-  emits: ['start', 'success', 'error', 'cancel'],
-  props: {
-    scanType: {
-      type: Array as PropType<string[]>,
-      default: () => DEFAULT_SCAN_TYPES,
-    },
-    onlyFromCamera: { type: Boolean, default: false },
-    scanText: { type: String, default: '将二维码/条码放入框内，即可自动扫描' },
-    text: { type: String, default: '扫码' },
-    scanningText: { type: String, default: '扫描中…' },
-    tip: { type: String, default: '' },
-    variant: {
-      type: String as PropType<LingyunScanVariant>,
-      default: 'borderedProminent',
-    },
-    size: { type: String, default: 'large' },
-    block: { type: Boolean, default: false },
-    showIcon: { type: Boolean, default: true },
-    icon: { type: String, default: 'scan' },
-    iconSize: { type: Number, default: 20 },
-    disabled: { type: Boolean, default: false },
-    showErrorToast: { type: Boolean, default: true },
-    /** 覆盖原生扫码，适合 H5 网页扫码或测试 */
-    scanFn: {
-      type: Function as unknown as PropType<LingyunScanFn | undefined>,
-      default: undefined,
-    },
-  },
-  data(): { scanning: boolean } {
-    return {
-      scanning: false,
-    }
-  },
-  computed: {
-    rootClass(): string {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* pinia 未就绪 */
-      }
-      return themeClass
-    },
-    resolvedScanType(): string[] {
-      const list = Array.isArray(this.scanType) ? this.scanType : []
-      const valid = list.map((item) => String(item || '').trim()).filter(Boolean)
-      return valid.length ? valid : DEFAULT_SCAN_TYPES
-    },
-    scanOptions(): LingyunScanOptions {
-      return {
-        scanType: this.resolvedScanType,
-        onlyFromCamera: this.onlyFromCamera,
-        scanText: this.scanText,
-      }
-    },
-  },
-  methods: {
-    scan(): void {
-      if (this.disabled || this.scanning) return
-      this.scanning = true
-      this.$emit('start')
+})
 
-      if (this.scanFn) {
-        try {
-          Promise.resolve(this.scanFn(this.scanOptions))
-            .then((value) => this.onScanSuccess(value))
-            .catch((error) => this.onScanRejected(this.errorMessage(error), error))
-        } catch (error) {
-          this.onScanRejected(this.errorMessage(error), error)
-        }
-        return
-      }
-
-      // #ifdef H5
-      this.onScanFail('H5 暂不支持原生扫码，请使用 scan-fn 接入网页扫码')
-      return
-      // #endif
-
-      // #ifndef H5
-      try {
-        ;(
-          uni as typeof uni & {
-            scanCode: (options: Record<string, unknown>) => void
-          }
-        ).scanCode({
-          scanType: this.resolvedScanType,
-          onlyFromCamera: this.onlyFromCamera,
-          scanText: this.scanText,
-          success: (result: unknown) => this.onScanSuccess(result),
-          fail: (error: { errMsg?: string }) => {
-            const message = error && error.errMsg ? error.errMsg : '扫码失败'
-            this.onScanRejected(message, error)
-          },
-        })
-      } catch (error) {
-        this.onScanFail(this.errorMessage(error), error)
-      }
-      // #endif
-    },
-    onScanSuccess(value: unknown): void {
-      const result = normalizeResult(value)
-      if (!result.result && !result.path) {
-        this.onScanFail('未识别到扫码内容')
-        return
-      }
-      this.scanning = false
-      this.$emit('success', result)
-    },
-    onScanRejected(message: string, error?: unknown): void {
-      if (/cancel/i.test(message)) {
-        this.scanning = false
-        this.$emit('cancel')
-        return
-      }
-      this.onScanFail(message, error)
-    },
-    onScanFail(message: string, error?: unknown): void {
-      this.scanning = false
-      const payload: LingyunScanErrorPayload = { message, error }
-      if (this.showErrorToast && message) {
-        uni.showToast({ title: message, icon: 'none' })
-      }
-      this.$emit('error', payload)
-    },
-    errorMessage(error: unknown): string {
-      if (error instanceof Error && error.message) return error.message
-      if (typeof error === 'string' && error) return error
-      if (error && typeof error === 'object') {
-        const raw = error as { errMsg?: unknown; message?: unknown }
-        if (raw.errMsg != null) return String(raw.errMsg)
-        if (raw.message != null) return String(raw.message)
-      }
-      return '扫码失败'
-    },
+const props = defineProps({
+  scanType: {
+    type: Array as PropType<string[]>,
+    default: () => ['qrCode', 'barCode'],
+  },
+  onlyFromCamera: { type: Boolean, default: false },
+  scanText: { type: String, default: '将二维码/条码放入框内，即可自动扫描' },
+  text: { type: String, default: '扫码' },
+  scanningText: { type: String, default: '扫描中…' },
+  tip: { type: String, default: '' },
+  variant: {
+    type: String as PropType<LingyunScanVariant>,
+    default: 'borderedProminent',
+  },
+  size: { type: String, default: 'large' },
+  block: { type: Boolean, default: false },
+  showIcon: { type: Boolean, default: true },
+  icon: { type: String, default: 'scan' },
+  iconSize: { type: Number, default: 20 },
+  disabled: { type: Boolean, default: false },
+  showErrorToast: { type: Boolean, default: true },
+  /** 覆盖原生扫码，适合 H5 网页扫码或测试 */
+  scanFn: {
+    type: Function as unknown as PropType<LingyunScanFn | undefined>,
+    default: undefined,
   },
 })
+
+const emit = defineEmits(['start', 'success', 'error', 'cancel'])
+
+const scanning = ref(false)
+
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* pinia 未就绪 */
+  }
+  return themeClass
+})
+
+const resolvedScanType = computed((): string[] => {
+  const list = Array.isArray(props.scanType) ? props.scanType : []
+  const valid = list.map((item) => String(item || '').trim()).filter(Boolean)
+  return valid.length ? valid : DEFAULT_SCAN_TYPES
+})
+
+const scanOptions = computed((): LingyunScanOptions => {
+  return {
+    scanType: resolvedScanType.value,
+    onlyFromCamera: props.onlyFromCamera,
+    scanText: props.scanText,
+  }
+})
+
+function scan(): void {
+  if (props.disabled || scanning.value) return
+  scanning.value = true
+  emit('start')
+
+  if (props.scanFn) {
+    try {
+      Promise.resolve(props.scanFn(scanOptions.value))
+        .then((value) => onScanSuccess(value))
+        .catch((error) => onScanRejected(errorMessage(error), error))
+    } catch (error) {
+      onScanRejected(errorMessage(error), error)
+    }
+    return
+  }
+
+  // #ifdef H5
+  onScanFail('H5 暂不支持原生扫码，请使用 scan-fn 接入网页扫码')
+  return
+  // #endif
+
+  // #ifndef H5
+  try {
+    ;(
+      uni as typeof uni & {
+        scanCode: (options: Record<string, unknown>) => void
+      }
+    ).scanCode({
+      scanType: resolvedScanType.value,
+      onlyFromCamera: props.onlyFromCamera,
+      scanText: props.scanText,
+      success: (result: unknown) => onScanSuccess(result),
+      fail: (error: { errMsg?: string }) => {
+        const message = error && error.errMsg ? error.errMsg : '扫码失败'
+        onScanRejected(message, error)
+      },
+    })
+  } catch (error) {
+    onScanFail(errorMessage(error), error)
+  }
+  // #endif
+}
+
+function onScanSuccess(value: unknown): void {
+  const result = normalizeResult(value)
+  if (!result.result && !result.path) {
+    onScanFail('未识别到扫码内容')
+    return
+  }
+  scanning.value = false
+  emit('success', result)
+}
+
+function onScanRejected(message: string, error?: unknown): void {
+  if (/cancel/i.test(message)) {
+    scanning.value = false
+    emit('cancel')
+    return
+  }
+  onScanFail(message, error)
+}
+
+function onScanFail(message: string, error?: unknown): void {
+  scanning.value = false
+  const payload: LingyunScanErrorPayload = { message, error }
+  if (props.showErrorToast && message) {
+    uni.showToast({ title: message, icon: 'none' })
+  }
+  emit('error', payload)
+}
+
+function errorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message
+  if (typeof error === 'string' && error) return error
+  if (error && typeof error === 'object') {
+    const raw = error as { errMsg?: unknown; message?: unknown }
+    if (raw.errMsg != null) return String(raw.errMsg)
+    if (raw.message != null) return String(raw.message)
+  }
+  return '扫码失败'
+}
 </script>
 
 <style lang="scss">

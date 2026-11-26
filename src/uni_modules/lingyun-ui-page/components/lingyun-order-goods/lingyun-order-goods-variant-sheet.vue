@@ -32,12 +32,17 @@
           </view>
           <view class="lingyun-order-goods-variant__spec-main">
             <text class="lingyun-order-goods-variant__spec-name">{{ spec.text }}</text>
-            <view v-if="showSpecPrice(spec)" class="lingyun-order-goods-variant__spec-price">
-              <text class="lingyun-order-goods-variant__currency">{{ currency }}</text>
-              <text class="lingyun-order-goods-variant__amount">{{ formatPrice(specPrice(spec)) }}</text>
-              <text v-if="spec.originalPrice" class="lingyun-order-goods-variant__original">
-                {{ currency }}{{ formatPrice(spec.originalPrice) }}
-              </text>
+            <view
+              v-if="showSpecPrice(spec) && (showAmount || specStockText(spec))"
+              class="lingyun-order-goods-variant__spec-price"
+            >
+              <template v-if="showAmount">
+                <text class="lingyun-order-goods-variant__currency">{{ currency }}</text>
+                <text class="lingyun-order-goods-variant__amount">{{ formatPrice(specPrice(spec)) }}</text>
+                <text v-if="spec.originalPrice" class="lingyun-order-goods-variant__original">
+                  {{ currency }}{{ formatPrice(spec.originalPrice) }}
+                </text>
+              </template>
               <text v-if="specStockText(spec)" class="lingyun-order-goods-variant__spec-stock">
                 {{ specStockText(spec) }}
               </text>
@@ -121,7 +126,7 @@
               </view>
               <view class="lingyun-order-goods-variant__option-body">
                 <text
-                  v-if="showSpecPrice(spec)"
+                  v-if="showAmount && showSpecPrice(spec)"
                   class="lingyun-order-goods-variant__option-price"
                 >{{ currency }}{{ formatPrice(specPrice(spec)) }}</text>
                 <view
@@ -372,7 +377,7 @@
         <template v-else>
           <view class="lingyun-order-goods-variant__combo-footer">
             <view class="lingyun-order-goods-variant__combo-info">
-              <view class="lingyun-order-goods-variant__combo-price">
+              <view v-if="showAmount" class="lingyun-order-goods-variant__combo-price">
                 <text class="lingyun-order-goods-variant__combo-currency">{{ currency }}</text>
                 <text class="lingyun-order-goods-variant__combo-amount">
                   {{ formatPrice(currentPrice) }}
@@ -413,8 +418,9 @@
   </lingyun-sheets>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { type PropType } from 'vue'
 import type {
   LingyunOrderAttributeGroup,
   LingyunOrderAttributeOption,
@@ -446,528 +452,593 @@ type QuantityPayload = {
  * @description 点单页专用的规格 / 属性选择 Sheet：
  * 只有规格时列出全部规格逐个加减；有属性时先单选规格（如有），再按分组选属性，
  * 底部对当前「规格 + 属性」组合加购 / 步进。数据只读，数量变化抛 quantity-change。
+ * @property {Boolean} showAmount 显示规格 / 组合价格；默认 true。隐藏后库存与数量提示保留
  */
-export default defineComponent({
+
+defineOptions({
   name: 'LingyunOrderGoodsVariantSheet',
-  emits: ['update:show', 'quantity-change'],
-  props: {
-    show: { type: Boolean, default: false },
-    item: { type: Object as PropType<LingyunOrderGoods | null>, default: null },
-    cart: {
-      type: Object as PropType<LingyunOrderCart>,
-      default: () => ({}),
-    },
-    currency: { type: String, default: '¥' },
-    priceDecimals: { type: Number, default: -1 },
-    maxCount: { type: Number, default: 99 },
-    quantityUnit: { type: String, default: '' },
-    accentColor: { type: String, default: '' },
-    addToCartText: { type: String, default: '加入购物车' },
-    soldOutText: { type: String, default: '商品已售罄' },
+})
+
+const props = defineProps({
+  show: { type: Boolean, default: false },
+  item: { type: Object as PropType<LingyunOrderGoods | null>, default: null },
+  cart: {
+    type: Object as PropType<LingyunOrderCart>,
+    default: () => ({}),
   },
-  data() {
-    return {
-      selectedSpecKey: '',
-      selection: {} as Record<string, Record<string, number>>,
-      /** 视口宽度：宽屏 / 超宽屏的 Sheet 宽度与图片网格列数都按它计算 */
-      windowWidth: 375,
-      _onWindowResize: null as (() => void) | null,
+  currency: { type: String, default: '¥' },
+  priceDecimals: { type: Number, default: -1 },
+  /** 隐藏规格 / 组合价格；库存与数量提示保留 */
+  showAmount: { type: Boolean, default: true },
+  maxCount: { type: Number, default: 99 },
+  quantityUnit: { type: String, default: '' },
+  accentColor: { type: String, default: '' },
+  addToCartText: { type: String, default: '加入购物车' },
+  soldOutText: { type: String, default: '商品已售罄' },
+})
+
+const emit = defineEmits(['update:show', 'quantity-change'])
+
+const selectedSpecKey = ref<string>('')
+const selection = ref<Record<string, Record<string, number>>>({})
+/** 视口宽度：宽屏 / 超宽屏的 Sheet 宽度与图片网格列数都按它计算 */
+const windowWidth = ref<number>(375)
+const _onWindowResize = ref<(() => void) | null>(null)
+
+const innerShow = computed({
+  get(): boolean {
+    return props.show
+  },
+  set(value: boolean) {
+    emit('update:show', value)
+  },
+})
+
+const specs = computed((): LingyunOrderSpec[] => {
+  return props.item && Array.isArray(props.item.specs) ? props.item.specs : []
+})
+
+const groups = computed((): LingyunOrderAttributeGroup[] => {
+  return props.item && Array.isArray(props.item.attributeGroups)
+    ? props.item.attributeGroups
+    : []
+})
+
+/** 规格里有图时用图片卡片，否则退回文字胶囊 */
+const specsHaveImages = computed((): boolean => {
+  return specs.value.some((spec) => !!spec.image)
+})
+
+const mode = computed((): 'specs' | 'combo' => {
+  return groups.value.length ? 'combo' : 'specs'
+})
+
+const title = computed((): string => {
+  if (mode.value === 'specs') {
+    return (props.item && props.item.name) || '选择规格'
+  }
+  return specs.value.length ? '选择规格与属性' : '选择属性'
+})
+
+const detent = computed((): string => {
+  return mode.value === 'combo' ? 'large' : 'medium'
+})
+
+const accentStyle = computed((): Record<string, string> => {
+  return {
+    '--ly-og-accent': props.accentColor || 'var(--lingyun-system-blue, #0088ff)',
+  }
+})
+
+const itemMax = computed((): number => {
+  const max = Number(props.item?.max)
+  return Number.isFinite(max) && max > 0 ? Math.floor(max) : props.maxCount
+})
+
+const step = computed((): number => {
+  const step = Number(props.item?.step)
+  return Number.isFinite(step) && step > 0 ? Math.floor(step) : 1
+})
+
+const quantityUnitText = computed((): string => {
+  return (props.item && props.item.quantityUnit) || props.quantityUnit
+})
+
+/**
+ * 有图选项的列数：Sheet 沿用 lingyun-sheets 默认宽度（宽屏面板上限 936），
+ * 按面板可用宽度自动分列——每列至少约 170px，窄屏固定 3 列，最后一行左对齐。
+ */
+const gridColumns = computed((): number => {
+  if (windowWidth.value < 690) return 3
+  /* lingyun-sheets 宽屏面板宽度 = min(936, 视口 - 64)；内容区左右内边距 16×2 */
+  const panel = Math.min(936, Math.max(320, windowWidth.value - 64))
+  const grid = Math.max(0, panel - 32)
+  const gap = 8
+  const minCard = 170
+  return Math.max(3, Math.min(8, Math.floor((grid + gap) / (minCard + gap))))
+})
+
+const gridColsClass = computed((): string => {
+  return gridColumns.value > 3
+    ? `lingyun-order-goods-variant__option-grid--cols-${gridColumns.value}`
+    : ''
+})
+
+/**
+ * 纯规格列表的列数：宽屏面板足够宽时一行两个（每个至少约 420px），
+ * 否则一行一个，最后一行左对齐。
+ */
+const specColumns = computed((): number => {
+  if (windowWidth.value < 690) return 1
+  /* lingyun-sheets 宽屏面板宽度 = min(936, 视口 - 64)；内容区左右内边距 16×2 */
+  const panel = Math.min(936, Math.max(320, windowWidth.value - 64))
+  const grid = Math.max(0, panel - 32)
+  const gap = 12
+  const minRow = 420
+  return Math.max(1, Math.min(2, Math.floor((grid + gap) / (minRow + gap))))
+})
+
+function syncWindowWidth(): void {
+  try {
+    const info =
+      typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
+    const width = Number(info && info.windowWidth)
+    if (Number.isFinite(width) && width > 0) windowWidth.value = width
+  } catch {
+    /* 端不支持 */
+  }
+}
+
+function firstChar(value: unknown): string {
+  const text = String(value == null ? '' : value).trim()
+  return Array.from(text)[0] || '规'
+}
+
+/** 属性选项启用状态：后台可直接返回 enabled=false */
+function optionDisabled(option: LingyunOrderAttributeOption): boolean {
+  return !!option.disabled || option.enabled === false
+}
+
+/** 某选项在当前组合里的数量 */
+function optionQuantity(
+  group: LingyunOrderAttributeGroup,
+  option: LingyunOrderAttributeOption,
+): number {
+  const selected = selection.value[group.key] || {}
+  const quantity = Number(selected[option.key])
+  return Number.isFinite(quantity) && quantity > 0 ? Math.floor(quantity) : 0
+}
+
+function groupTotalQuantityFrom(selected: Record<string, number> | undefined): number {
+  const map = selected || {}
+  return Object.keys(map).reduce((sum, key) => {
+    const quantity = Math.floor(Number(map[key]))
+    return sum + (Number.isFinite(quantity) && quantity > 0 ? quantity : 0)
+  }, 0)
+}
+
+/** 分组里已选数量合计（多选按数量计，不是不同选项数） */
+function groupTotalQuantity(group: LingyunOrderAttributeGroup): number {
+  return groupTotalQuantityFrom(selection.value[group.key])
+}
+
+function isSpecSoldOut(spec: LingyunOrderSpec): boolean {
+  return !!spec.soldOut || finiteStock(spec.stock) === 0
+}
+
+function quantityOf(key: string): number {
+  if (!key) return 0
+  const quantity = Number((props.cart || {})[key])
+  return Number.isFinite(quantity) && quantity > 0 ? Math.floor(quantity) : 0
+}
+
+function specPrice(spec: LingyunOrderSpec): number {
+  const price = Number(spec.price)
+  if (Number.isFinite(price)) return price
+  return Number(props.item?.price) || 0
+}
+
+function formatPrice(value: unknown): string {
+  const number = Number(value)
+  const safe = Number.isFinite(number) ? number : 0
+  if (props.priceDecimals >= 0) return safe.toFixed(props.priceDecimals)
+  return String(Number(safe.toFixed(2)))
+}
+
+/** 必选分组默认选中第一个可用选项，打开即可加购 */
+function defaultOptionFor(
+  group: LingyunOrderAttributeGroup,
+): LingyunOrderAttributeOption | null {
+  return (
+    (group.options || []).find((option) => !optionDisabled(option)) || null
+  )
+}
+
+function ensureRequiredDefaults(
+  selection: Record<string, Record<string, number>>,
+): Record<string, Record<string, number>> {
+  const next = { ...selection }
+  groups.value.forEach((group) => {
+    if (!group.required) return
+    if (groupTotalQuantityFrom(next[group.key]) > 0) return
+    const option = defaultOptionFor(group)
+    if (option) next[group.key] = { [option.key]: 1 }
+  })
+  return next
+}
+
+function specImage(spec: LingyunOrderSpec): string {
+  return spec.image || (props.item && props.item.image) || ''
+}
+
+function specCardImage(spec: LingyunOrderSpec): string {
+  return specImage(spec)
+}
+
+function selectSpec(spec: LingyunOrderSpec): void {
+  if (isSpecSoldOut(spec)) return
+  selectedSpecKey.value = spec.key
+}
+
+function resetSelection(): void {
+  const first =
+    specs.value.find((spec) => !isSpecSoldOut(spec)) || specs.value[0]
+  selectedSpecKey.value = first ? first.key : ''
+  selection.value = ensureRequiredDefaults({})
+}
+
+const selectedSpec = computed((): LingyunOrderSpec | undefined => {
+  return findSpec(props.item, selectedSpecKey.value)
+})
+
+/** 按分组顺序取已选 `groupKey=optionKey*数量` token，保证组合行 key 稳定 */
+const selectedOptionTokens = computed((): string[] => {
+  const tokens: string[] = []
+  groups.value.forEach((group) => {
+    const selected = selection.value[group.key] || {}
+    ;(group.options || []).forEach((option) => {
+      const quantity = optionQuantity(group, option)
+      if (quantity > 0) {
+        tokens.push(`${group.key}=${option.key}*${quantity}`)
+      }
+    })
+  })
+  return tokens
+})
+
+const selectedAttributes = computed((): LingyunOrderCartAttribute[] => {
+  return attributesOf(props.item, selectedOptionTokens.value)
+})
+
+const comboKey = computed((): string => {
+  if (!props.item) return ''
+  return buildLineKey(
+    props.item.key,
+    selectedSpec.value?.key || '',
+    selectedOptionTokens.value,
+  )
+})
+
+const comboQuantity = computed((): number => {
+  return quantityOf(comboKey.value)
+})
+
+/** 规格库存扣掉购物车里同规格组合后的剩余数量 */
+function specRemaining(spec: LingyunOrderSpec): number | null {
+  const stock = finiteStock(spec.stock)
+  if (stock == null) return null
+  const item = props.item
+  if (!item) return stock
+  let used = 0
+  Object.keys(props.cart || {}).forEach((key) => {
+    const parsed = parseLineKey(key)
+    if (parsed.itemKey !== item.key || parsed.specKey !== spec.key) return
+    const quantity = Math.floor(Number((props.cart || {})[key]))
+    if (Number.isFinite(quantity) && quantity > 0) used += quantity
+  })
+  return Math.max(0, stock - used)
+}
+
+function specStockText(spec: LingyunOrderSpec): string {
+  const stock = finiteStock(spec.stock)
+  if (stock == null) return ''
+  if (stock <= 0) return '售罄'
+  const remaining = specRemaining(spec)
+  return `剩 ${remaining == null ? stock : remaining}`
+}
+
+/** 当前选择的库存剩余：规格库存或商品库存（无规格时）减去其它组合行 */
+function stockRemaining(): number | null {
+  const item = props.item
+  if (!item) return null
+  const spec = selectedSpec.value
+  const stock = spec
+    ? finiteStock(spec.stock)
+    : specs.value.length
+      ? null
+      : finiteStock(item.stock)
+  if (stock == null) return null
+  const currentKey = comboKey.value
+  let used = 0
+  Object.keys(props.cart || {}).forEach((key) => {
+    if (key === currentKey) return
+    const parsed = parseLineKey(key)
+    if (parsed.itemKey !== item.key) return
+    if (spec) {
+      if (parsed.specKey !== spec.key) return
+    } else if (parsed.specKey) {
+      return
     }
-  },
-  computed: {
-    innerShow: {
-      get(): boolean {
-        return this.show
-      },
-      set(value: boolean) {
-        this.$emit('update:show', value)
-      },
-    },
-    specs(): LingyunOrderSpec[] {
-      return this.item && Array.isArray(this.item.specs) ? this.item.specs : []
-    },
-    groups(): LingyunOrderAttributeGroup[] {
-      return this.item && Array.isArray(this.item.attributeGroups)
-        ? this.item.attributeGroups
-        : []
-    },
-    /** 规格里有图时用图片卡片，否则退回文字胶囊 */
-    specsHaveImages(): boolean {
-      return this.specs.some((spec) => !!spec.image)
-    },
-    mode(): 'specs' | 'combo' {
-      return this.groups.length ? 'combo' : 'specs'
-    },
-    title(): string {
-      if (this.mode === 'specs') {
-        return (this.item && this.item.name) || '选择规格'
+    const quantity = Math.floor(Number((props.cart || {})[key]))
+    if (Number.isFinite(quantity) && quantity > 0) used += quantity
+  })
+  return Math.max(0, stock - used)
+}
+
+function specQuantity(spec: LingyunOrderSpec): number {
+  if (!props.item) return 0
+  return quantityOf(buildLineKey(props.item.key, spec.key))
+}
+
+function specMax(spec: LingyunOrderSpec): number {
+  const max = Number(spec.max)
+  const base =
+    Number.isFinite(max) && max > 0 ? Math.floor(max) : itemMax.value
+  const stock = finiteStock(spec.stock)
+  return stock == null ? base : Math.min(base, stock)
+}
+
+function showSpecPrice(spec: LingyunOrderSpec): boolean {
+  return specPrice(spec) > 0
+}
+
+/** 规格价和基础价不同时在文字胶囊上补价格；图片卡片始终显示价格 */
+function specChipLabel(spec: LingyunOrderSpec): string {
+  if (!showSpecPrice(spec)) return spec.text
+  return `${spec.text} ${props.currency}${formatPrice(specPrice(spec))}`
+}
+
+function isOptionSelected(
+  group: LingyunOrderAttributeGroup,
+  option: LingyunOrderAttributeOption,
+): boolean {
+  return optionQuantity(group, option) > 0
+}
+
+/** 多选：增加一个该选项；单选：直接选中 */
+function addOption(
+  group: LingyunOrderAttributeGroup,
+  option: LingyunOrderAttributeOption,
+): void {
+  if (optionDisabled(option)) return
+  const max = groupMax(group)
+  if (max <= 1) {
+    selection.value = { ...selection.value, [group.key]: { [option.key]: 1 } }
+    return
+  }
+  if (groupTotalQuantity(group) >= max) {
+    uni.showToast({ title: `最多选择 ${max} 个`, icon: 'none' })
+    return
+  }
+  const current = { ...(selection.value[group.key] || {}) }
+  const quantity = Number(current[option.key]) || 0
+  current[option.key] = Math.min(props.maxCount, quantity + 1)
+  selection.value = { ...selection.value, [group.key]: current }
+}
+
+/** 多选组选满后禁止继续加 */
+function isGroupFull(group: LingyunOrderAttributeGroup): boolean {
+  const max = groupMax(group)
+  return max > 1 && groupTotalQuantity(group) >= max
+}
+
+/** 多选：减少一个；减到 0 自动取消该选项 */
+function decreaseOption(
+  group: LingyunOrderAttributeGroup,
+  option: LingyunOrderAttributeOption,
+): void {
+  const current = { ...(selection.value[group.key] || {}) }
+  const quantity = Number(current[option.key]) || 0
+  if (quantity <= 0) return
+  if (quantity <= 1) delete current[option.key]
+  else current[option.key] = quantity - 1
+  selection.value = { ...selection.value, [group.key]: current }
+}
+
+/** max<=1 为单选：卡片显示勾选圆点；>1 为多选：显示 + / 数量步进器 */
+function isSingleGroup(group: LingyunOrderAttributeGroup): boolean {
+  return groupMax(group) <= 1
+}
+
+/** 分组里任一选项有图时用图片卡片 */
+function groupHasImages(group: LingyunOrderAttributeGroup): boolean {
+  return (group.options || []).some((option) => !!option.image)
+}
+
+function groupHint(group: LingyunOrderAttributeGroup): string {
+  const max = groupMax(group)
+  const scope = group.required ? '必选' : '可选'
+  return `${scope} · ${max > 1 ? `最多选 ${max} 个` : '单选'}`
+}
+
+function emitQuantity(
+  key: string,
+  quantity: number,
+  spec?: LingyunOrderSpec,
+  attributes: LingyunOrderCartAttribute[] = [],
+): void {
+  if (!props.item || !key) return
+  const payload: QuantityPayload = {
+    item: props.item,
+    key,
+    quantity,
+    spec,
+    attributes,
+  }
+  emit('quantity-change', payload)
+}
+
+const lineMax = computed((): number => {
+  const spec = selectedSpec.value
+  const max = Number(spec?.max)
+  const base =
+    Number.isFinite(max) && max > 0 ? Math.floor(max) : itemMax.value
+  const remaining = stockRemaining()
+  if (remaining == null) return base
+  return Math.max(comboQuantity.value, Math.min(base, remaining))
+})
+
+const canSubmit = computed((): boolean => {
+  if (!props.item || props.item.soldOut) return false
+  if (
+    specs.value.length &&
+    (!selectedSpec.value || isSpecSoldOut(selectedSpec.value))
+  ) {
+    return false
+  }
+  const valid = groups.value.every((group) =>
+    groupSelectionValid(group, selection.value[group.key]),
+  )
+  if (!valid) return false
+  const remaining = stockRemaining()
+  return !(remaining != null && remaining <= 0 && comboQuantity.value <= 0)
+})
+
+const hint = computed((): string => {
+  if (!props.item) return ''
+  if (specs.value.length && !selectedSpec.value) return '请选择规格'
+  const missing = groups.value.find(
+    (group) => group.required && groupTotalQuantity(group) < 1,
+  )
+  if (missing) return `请选择${missing.title}`
+  if (selectedSpec.value && isSpecSoldOut(selectedSpec.value)) {
+    return '该规格已售罄'
+  }
+  const remaining = stockRemaining()
+  if (remaining != null && remaining <= 0 && comboQuantity.value <= 0) {
+    return '库存不足'
+  }
+  return ''
+})
+
+/** 当前选择的一份价格（规格价优先，无规格用商品价） */
+const currentPrice = computed((): number => {
+  const spec = selectedSpec.value
+  if (spec) return specPrice(spec)
+  return Number(props.item?.price) || 0
+})
+
+const canAdd = computed((): boolean => {
+  return canSubmit.value && comboQuantity.value < lineMax.value
+})
+
+/** 左侧提示：校验/库存提示优先，其次显示当前组合已选数量 */
+const footerHint = computed((): string => {
+  if (hint.value) return hint.value
+  if (comboQuantity.value > 0 && comboQuantity.value >= lineMax.value) {
+    return '已达上限'
+  }
+  if (comboQuantity.value > 0) return `已选 ${comboQuantity.value} 件`
+  return ''
+})
+
+/** 点卡片：单选直接选 / 取消；多选未选中时加 1，已选中交给步进器 */
+function onOptionTap(
+  group: LingyunOrderAttributeGroup,
+  option: LingyunOrderAttributeOption,
+): void {
+  if (optionDisabled(option)) return
+  const max = groupMax(group)
+  if (max <= 1) {
+    if (optionQuantity(group, option) > 0) {
+      if (!group.required) {
+        selection.value = { ...selection.value, [group.key]: {} }
       }
-      return this.specs.length ? '选择规格与属性' : '选择属性'
-    },
-    detent(): string {
-      return this.mode === 'combo' ? 'large' : 'medium'
-    },
-    accentStyle(): Record<string, string> {
-      return {
-        '--ly-og-accent': this.accentColor || 'var(--lingyun-system-blue, #0088ff)',
-      }
-    },
-    selectedSpec(): LingyunOrderSpec | undefined {
-      return findSpec(this.item, this.selectedSpecKey)
-    },
-    /** 按分组顺序取已选 `groupKey=optionKey*数量` token，保证组合行 key 稳定 */
-    selectedOptionTokens(): string[] {
-      const tokens: string[] = []
-      this.groups.forEach((group) => {
-        const selected = this.selection[group.key] || {}
-        ;(group.options || []).forEach((option) => {
-          const quantity = this.optionQuantity(group, option)
-          if (quantity > 0) {
-            tokens.push(`${group.key}=${option.key}*${quantity}`)
-          }
-        })
-      })
-      return tokens
-    },
-    selectedAttributes(): LingyunOrderCartAttribute[] {
-      return attributesOf(this.item, this.selectedOptionTokens)
-    },
-    comboKey(): string {
-      if (!this.item) return ''
-      return buildLineKey(
-        this.item.key,
-        this.selectedSpec?.key || '',
-        this.selectedOptionTokens,
-      )
-    },
-    comboQuantity(): number {
-      return this.quantityOf(this.comboKey)
-    },
-    itemMax(): number {
-      const max = Number(this.item?.max)
-      return Number.isFinite(max) && max > 0 ? Math.floor(max) : this.maxCount
-    },
-    lineMax(): number {
-      const spec = this.selectedSpec
-      const max = Number(spec?.max)
-      const base =
-        Number.isFinite(max) && max > 0 ? Math.floor(max) : this.itemMax
-      const remaining = this.stockRemaining()
-      if (remaining == null) return base
-      return Math.max(this.comboQuantity, Math.min(base, remaining))
-    },
-    step(): number {
-      const step = Number(this.item?.step)
-      return Number.isFinite(step) && step > 0 ? Math.floor(step) : 1
-    },
-    quantityUnitText(): string {
-      return (this.item && this.item.quantityUnit) || this.quantityUnit
-    },
-    canSubmit(): boolean {
-      if (!this.item || this.item.soldOut) return false
-      if (
-        this.specs.length &&
-        (!this.selectedSpec || this.isSpecSoldOut(this.selectedSpec))
-      ) {
-        return false
-      }
-      const valid = this.groups.every((group) =>
-        groupSelectionValid(group, this.selection[group.key]),
-      )
-      if (!valid) return false
-      const remaining = this.stockRemaining()
-      return !(remaining != null && remaining <= 0 && this.comboQuantity <= 0)
-    },
-    hint(): string {
-      if (!this.item) return ''
-      if (this.specs.length && !this.selectedSpec) return '请选择规格'
-      const missing = this.groups.find(
-        (group) => group.required && this.groupTotalQuantity(group) < 1,
-      )
-      if (missing) return `请选择${missing.title}`
-      if (this.selectedSpec && this.isSpecSoldOut(this.selectedSpec)) {
-        return '该规格已售罄'
-      }
-      const remaining = this.stockRemaining()
-      if (remaining != null && remaining <= 0 && this.comboQuantity <= 0) {
-        return '库存不足'
-      }
-      return ''
-    },
-    /** 当前选择的一份价格（规格价优先，无规格用商品价） */
-    currentPrice(): number {
-      const spec = this.selectedSpec
-      if (spec) return this.specPrice(spec)
-      return Number(this.item?.price) || 0
-    },
-    /**
-     * 有图选项的列数：Sheet 沿用 lingyun-sheets 默认宽度（宽屏面板上限 936），
-     * 按面板可用宽度自动分列——每列至少约 170px，窄屏固定 3 列，最后一行左对齐。
-     */
-    gridColumns(): number {
-      if (this.windowWidth < 690) return 3
-      /* lingyun-sheets 宽屏面板宽度 = min(936, 视口 - 64)；内容区左右内边距 16×2 */
-      const panel = Math.min(936, Math.max(320, this.windowWidth - 64))
-      const grid = Math.max(0, panel - 32)
-      const gap = 8
-      const minCard = 170
-      return Math.max(3, Math.min(8, Math.floor((grid + gap) / (minCard + gap))))
-    },
-    gridColsClass(): string {
-      return this.gridColumns > 3
-        ? `lingyun-order-goods-variant__option-grid--cols-${this.gridColumns}`
-        : ''
-    },
-    /**
-     * 纯规格列表的列数：宽屏面板足够宽时一行两个（每个至少约 420px），
-     * 否则一行一个，最后一行左对齐。
-     */
-    specColumns(): number {
-      if (this.windowWidth < 690) return 1
-      /* lingyun-sheets 宽屏面板宽度 = min(936, 视口 - 64)；内容区左右内边距 16×2 */
-      const panel = Math.min(936, Math.max(320, this.windowWidth - 64))
-      const grid = Math.max(0, panel - 32)
-      const gap = 12
-      const minRow = 420
-      return Math.max(1, Math.min(2, Math.floor((grid + gap) / (minRow + gap))))
-    },
-    canAdd(): boolean {
-      return this.canSubmit && this.comboQuantity < this.lineMax
-    },
-    /** 左侧提示：校验/库存提示优先，其次显示当前组合已选数量 */
-    footerHint(): string {
-      if (this.hint) return this.hint
-      if (this.comboQuantity > 0 && this.comboQuantity >= this.lineMax) {
-        return '已达上限'
-      }
-      if (this.comboQuantity > 0) return `已选 ${this.comboQuantity} 件`
-      return ''
-    },
-  },
-  watch: {
-    show: {
-      immediate: true,
-      handler(value: boolean) {
-        if (value) this.resetSelection()
-      },
-    },
-    item: {
-      handler() {
-        if (this.show) this.resetSelection()
-      },
-    },
-  },
-  mounted() {
-    this.syncWindowWidth()
-    const handler = () => this.syncWindowWidth()
-    this._onWindowResize = handler
-    try {
-      if (typeof uni.onWindowResize === 'function') uni.onWindowResize(handler)
-    } catch {
-      /* 端不支持 */
+      return
     }
+    selection.value = { ...selection.value, [group.key]: { [option.key]: 1 } }
+    return
+  }
+  if (optionQuantity(group, option) > 0) return
+  addOption(group, option)
+}
+
+function closeSheet(): void {
+  innerShow.value = false
+}
+
+function onAdd(): void {
+  if (!props.item) return
+  if (!canAdd.value) {
+    const text = footerHint.value || hint.value
+    if (text) uni.showToast({ title: text, icon: 'none' })
+    return
+  }
+  const next = Math.min(lineMax.value, comboQuantity.value + step.value)
+  emitQuantity(comboKey.value, next, selectedSpec.value, selectedAttributes.value)
+  closeSheet()
+}
+
+function onSpecPlus(spec: LingyunOrderSpec): void {
+  if (!props.item) return
+  const key = buildLineKey(props.item.key, spec.key)
+  const next = Math.min(specMax(spec), specQuantity(spec) + step.value)
+  emitQuantity(key, next, spec, [])
+}
+
+function onSpecQuantity(spec: LingyunOrderSpec, value: unknown): void {
+  if (!props.item) return
+  const raw = Math.floor(Number(value))
+  if (!Number.isFinite(raw)) return
+  const next = Math.max(0, Math.min(specMax(spec), raw))
+  const key = buildLineKey(props.item.key, spec.key)
+  emitQuantity(key, next, spec, [])
+}
+
+function onComboQuantityChange(value: unknown): void {
+  if (!props.item) return
+  const raw = Math.floor(Number(value))
+  if (!Number.isFinite(raw)) return
+  const next = Math.max(0, Math.min(lineMax.value, raw))
+  emitQuantity(comboKey.value, next, selectedSpec.value, selectedAttributes.value)
+}
+
+watch(
+  () => props.show,
+  (value: boolean) => {
+    if (value) resetSelection()
   },
-  beforeUnmount() {
-    const handler = this._onWindowResize
-    try {
-      if (handler && typeof uni.offWindowResize === 'function') {
-        uni.offWindowResize(handler)
-      }
-    } catch {
-      /* 端不支持 */
+  { immediate: true },
+)
+
+watch(
+  () => props.item,
+  () => {
+    if (props.show) resetSelection()
+  },
+)
+
+onMounted(() => {
+  syncWindowWidth()
+  const handler = () => syncWindowWidth()
+  _onWindowResize.value = handler
+  try {
+    if (typeof uni.onWindowResize === 'function') uni.onWindowResize(handler)
+  } catch {
+    /* 端不支持 */
+  }
+})
+
+onBeforeUnmount(() => {
+  const handler = _onWindowResize.value
+  try {
+    if (handler && typeof uni.offWindowResize === 'function') {
+      uni.offWindowResize(handler)
     }
-    this._onWindowResize = null
-  },
-  methods: {
-    syncWindowWidth(): void {
-      try {
-        const info =
-          typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
-        const width = Number(info && info.windowWidth)
-        if (Number.isFinite(width) && width > 0) this.windowWidth = width
-      } catch {
-        /* 端不支持 */
-      }
-    },
-    resetSelection(): void {
-      const first =
-        this.specs.find((spec) => !this.isSpecSoldOut(spec)) || this.specs[0]
-      this.selectedSpecKey = first ? first.key : ''
-      this.selection = this.ensureRequiredDefaults({})
-    },
-    /** 必选分组默认选中第一个可用选项，打开即可加购 */
-    defaultOptionFor(
-      group: LingyunOrderAttributeGroup,
-    ): LingyunOrderAttributeOption | null {
-      return (
-        (group.options || []).find((option) => !this.optionDisabled(option)) || null
-      )
-    },
-    ensureRequiredDefaults(
-      selection: Record<string, Record<string, number>>,
-    ): Record<string, Record<string, number>> {
-      const next = { ...selection }
-      this.groups.forEach((group) => {
-        if (!group.required) return
-        if (this.groupTotalQuantityFrom(next[group.key]) > 0) return
-        const option = this.defaultOptionFor(group)
-        if (option) next[group.key] = { [option.key]: 1 }
-      })
-      return next
-    },
-    quantityOf(key: string): number {
-      if (!key) return 0
-      const quantity = Number((this.cart || {})[key])
-      return Number.isFinite(quantity) && quantity > 0 ? Math.floor(quantity) : 0
-    },
-    firstChar(value: unknown): string {
-      const text = String(value == null ? '' : value).trim()
-      return Array.from(text)[0] || '规'
-    },
-    specImage(spec: LingyunOrderSpec): string {
-      return spec.image || (this.item && this.item.image) || ''
-    },
-    specCardImage(spec: LingyunOrderSpec): string {
-      return this.specImage(spec)
-    },
-    isSpecSoldOut(spec: LingyunOrderSpec): boolean {
-      return !!spec.soldOut || finiteStock(spec.stock) === 0
-    },
-    /** 规格库存扣掉购物车里同规格组合后的剩余数量 */
-    specRemaining(spec: LingyunOrderSpec): number | null {
-      const stock = finiteStock(spec.stock)
-      if (stock == null) return null
-      const item = this.item
-      if (!item) return stock
-      let used = 0
-      Object.keys(this.cart || {}).forEach((key) => {
-        const parsed = parseLineKey(key)
-        if (parsed.itemKey !== item.key || parsed.specKey !== spec.key) return
-        const quantity = Math.floor(Number((this.cart || {})[key]))
-        if (Number.isFinite(quantity) && quantity > 0) used += quantity
-      })
-      return Math.max(0, stock - used)
-    },
-    specStockText(spec: LingyunOrderSpec): string {
-      const stock = finiteStock(spec.stock)
-      if (stock == null) return ''
-      if (stock <= 0) return '售罄'
-      const remaining = this.specRemaining(spec)
-      return `剩 ${remaining == null ? stock : remaining}`
-    },
-    /** 当前选择的库存剩余：规格库存或商品库存（无规格时）减去其它组合行 */
-    stockRemaining(): number | null {
-      const item = this.item
-      if (!item) return null
-      const spec = this.selectedSpec
-      const stock = spec
-        ? finiteStock(spec.stock)
-        : this.specs.length
-          ? null
-          : finiteStock(item.stock)
-      if (stock == null) return null
-      const currentKey = this.comboKey
-      let used = 0
-      Object.keys(this.cart || {}).forEach((key) => {
-        if (key === currentKey) return
-        const parsed = parseLineKey(key)
-        if (parsed.itemKey !== item.key) return
-        if (spec) {
-          if (parsed.specKey !== spec.key) return
-        } else if (parsed.specKey) {
-          return
-        }
-        const quantity = Math.floor(Number((this.cart || {})[key]))
-        if (Number.isFinite(quantity) && quantity > 0) used += quantity
-      })
-      return Math.max(0, stock - used)
-    },
-    /** 属性选项启用状态：后台可直接返回 enabled=false */
-    optionDisabled(option: LingyunOrderAttributeOption): boolean {
-      return !!option.disabled || option.enabled === false
-    },
-    /** 分组里任一选项有图时用图片卡片 */
-    groupHasImages(group: LingyunOrderAttributeGroup): boolean {
-      return (group.options || []).some((option) => !!option.image)
-    },
-    /** max<=1 为单选：卡片显示勾选圆点；>1 为多选：显示 + / 数量步进器 */
-    isSingleGroup(group: LingyunOrderAttributeGroup): boolean {
-      return groupMax(group) <= 1
-    },
-    specQuantity(spec: LingyunOrderSpec): number {
-      if (!this.item) return 0
-      return this.quantityOf(buildLineKey(this.item.key, spec.key))
-    },
-    specMax(spec: LingyunOrderSpec): number {
-      const max = Number(spec.max)
-      const base =
-        Number.isFinite(max) && max > 0 ? Math.floor(max) : this.itemMax
-      const stock = finiteStock(spec.stock)
-      return stock == null ? base : Math.min(base, stock)
-    },
-    specPrice(spec: LingyunOrderSpec): number {
-      const price = Number(spec.price)
-      if (Number.isFinite(price)) return price
-      return Number(this.item?.price) || 0
-    },
-    showSpecPrice(spec: LingyunOrderSpec): boolean {
-      return this.specPrice(spec) > 0
-    },
-    /** 规格价和基础价不同时在文字胶囊上补价格；图片卡片始终显示价格 */
-    specChipLabel(spec: LingyunOrderSpec): string {
-      if (!this.showSpecPrice(spec)) return spec.text
-      return `${spec.text} ${this.currency}${this.formatPrice(this.specPrice(spec))}`
-    },
-    formatPrice(value: unknown): string {
-      const number = Number(value)
-      const safe = Number.isFinite(number) ? number : 0
-      if (this.priceDecimals >= 0) return safe.toFixed(this.priceDecimals)
-      return String(Number(safe.toFixed(2)))
-    },
-    selectSpec(spec: LingyunOrderSpec): void {
-      if (this.isSpecSoldOut(spec)) return
-      this.selectedSpecKey = spec.key
-    },
-    isOptionSelected(
-      group: LingyunOrderAttributeGroup,
-      option: LingyunOrderAttributeOption,
-    ): boolean {
-      return this.optionQuantity(group, option) > 0
-    },
-    /** 某选项在当前组合里的数量 */
-    optionQuantity(
-      group: LingyunOrderAttributeGroup,
-      option: LingyunOrderAttributeOption,
-    ): number {
-      const selected = this.selection[group.key] || {}
-      const quantity = Number(selected[option.key])
-      return Number.isFinite(quantity) && quantity > 0 ? Math.floor(quantity) : 0
-    },
-    /** 分组里已选数量合计（多选按数量计，不是不同选项数） */
-    groupTotalQuantity(group: LingyunOrderAttributeGroup): number {
-      return this.groupTotalQuantityFrom(this.selection[group.key])
-    },
-    groupTotalQuantityFrom(selected: Record<string, number> | undefined): number {
-      const map = selected || {}
-      return Object.keys(map).reduce((sum, key) => {
-        const quantity = Math.floor(Number(map[key]))
-        return sum + (Number.isFinite(quantity) && quantity > 0 ? quantity : 0)
-      }, 0)
-    },
-    /** 多选组选满后禁止继续加 */
-    isGroupFull(group: LingyunOrderAttributeGroup): boolean {
-      const max = groupMax(group)
-      return max > 1 && this.groupTotalQuantity(group) >= max
-    },
-    /** 点卡片：单选直接选 / 取消；多选未选中时加 1，已选中交给步进器 */
-    onOptionTap(
-      group: LingyunOrderAttributeGroup,
-      option: LingyunOrderAttributeOption,
-    ): void {
-      if (this.optionDisabled(option)) return
-      const max = groupMax(group)
-      if (max <= 1) {
-        if (this.optionQuantity(group, option) > 0) {
-          if (!group.required) {
-            this.selection = { ...this.selection, [group.key]: {} }
-          }
-          return
-        }
-        this.selection = { ...this.selection, [group.key]: { [option.key]: 1 } }
-        return
-      }
-      if (this.optionQuantity(group, option) > 0) return
-      this.addOption(group, option)
-    },
-    /** 多选：增加一个该选项；单选：直接选中 */
-    addOption(
-      group: LingyunOrderAttributeGroup,
-      option: LingyunOrderAttributeOption,
-    ): void {
-      if (this.optionDisabled(option)) return
-      const max = groupMax(group)
-      if (max <= 1) {
-        this.selection = { ...this.selection, [group.key]: { [option.key]: 1 } }
-        return
-      }
-      if (this.groupTotalQuantity(group) >= max) {
-        uni.showToast({ title: `最多选择 ${max} 个`, icon: 'none' })
-        return
-      }
-      const current = { ...(this.selection[group.key] || {}) }
-      const quantity = Number(current[option.key]) || 0
-      current[option.key] = Math.min(this.maxCount, quantity + 1)
-      this.selection = { ...this.selection, [group.key]: current }
-    },
-    /** 多选：减少一个；减到 0 自动取消该选项 */
-    decreaseOption(
-      group: LingyunOrderAttributeGroup,
-      option: LingyunOrderAttributeOption,
-    ): void {
-      const current = { ...(this.selection[group.key] || {}) }
-      const quantity = Number(current[option.key]) || 0
-      if (quantity <= 0) return
-      if (quantity <= 1) delete current[option.key]
-      else current[option.key] = quantity - 1
-      this.selection = { ...this.selection, [group.key]: current }
-    },
-    groupHint(group: LingyunOrderAttributeGroup): string {
-      const max = groupMax(group)
-      const scope = group.required ? '必选' : '可选'
-      return `${scope} · ${max > 1 ? `最多选 ${max} 个` : '单选'}`
-    },
-    emitQuantity(
-      key: string,
-      quantity: number,
-      spec?: LingyunOrderSpec,
-      attributes: LingyunOrderCartAttribute[] = [],
-    ): void {
-      if (!this.item || !key) return
-      const payload: QuantityPayload = {
-        item: this.item,
-        key,
-        quantity,
-        spec,
-        attributes,
-      }
-      this.$emit('quantity-change', payload)
-    },
-    onSpecPlus(spec: LingyunOrderSpec): void {
-      if (!this.item) return
-      const key = buildLineKey(this.item.key, spec.key)
-      const next = Math.min(this.specMax(spec), this.specQuantity(spec) + this.step)
-      this.emitQuantity(key, next, spec, [])
-    },
-    onSpecQuantity(spec: LingyunOrderSpec, value: unknown): void {
-      if (!this.item) return
-      const raw = Math.floor(Number(value))
-      if (!Number.isFinite(raw)) return
-      const next = Math.max(0, Math.min(this.specMax(spec), raw))
-      const key = buildLineKey(this.item.key, spec.key)
-      this.emitQuantity(key, next, spec, [])
-    },
-    onAdd(): void {
-      if (!this.item) return
-      if (!this.canAdd) {
-        const text = this.footerHint || this.hint
-        if (text) uni.showToast({ title: text, icon: 'none' })
-        return
-      }
-      const next = Math.min(this.lineMax, this.comboQuantity + this.step)
-      this.emitQuantity(this.comboKey, next, this.selectedSpec, this.selectedAttributes)
-      this.closeSheet()
-    },
-    onComboQuantityChange(value: unknown): void {
-      if (!this.item) return
-      const raw = Math.floor(Number(value))
-      if (!Number.isFinite(raw)) return
-      const next = Math.max(0, Math.min(this.lineMax, raw))
-      this.emitQuantity(this.comboKey, next, this.selectedSpec, this.selectedAttributes)
-    },
-    closeSheet(): void {
-      this.innerShow = false
-    },
-  },
+  } catch {
+    /* 端不支持 */
+  }
+  _onWindowResize.value = null
 })
 </script>
 

@@ -9,8 +9,9 @@
   />
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed } from 'vue'
+import type { PropType } from 'vue'
 import LingyunText from '../lingyun-text/lingyun-text.vue'
 import {
   formatLingyunDate,
@@ -34,46 +35,45 @@ import {
  * @property {Boolean} bold 是否加粗
  * @property {Boolean} block 是否块级展示
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunDateText',
-  components: { LingyunText },
-  props: {
-    value: {
-      type: [String, Number, Date] as PropType<string | number | Date | null | undefined>,
-      default: undefined,
-    },
-    precision: {
-      type: String as PropType<LingyunDatePrecision>,
-      default: 'day',
-    },
-    now: {
-      type: [String, Number, Date] as PropType<string | number | Date | undefined>,
-      default: undefined,
-    },
-    todayText: { type: String, default: '今天' },
-    yesterdayText: { type: String, default: '昨天' },
-    tomorrowText: { type: String, default: '明天' },
-    separator: { type: String, default: ' ' },
-    fallback: { type: String, default: '' },
-    /** lingyun-text 字阶，默认 body */
-    type: { type: String, default: 'body' },
-    /** 语义色（label / secondary / tertiary / primary / link / ...）或任意 CSS 颜色 */
-    color: { type: String, default: '' },
-    bold: { type: Boolean, default: false },
-    block: { type: Boolean, default: false },
+})
+
+const props = defineProps({
+  value: {
+    type: [String, Number, Date] as PropType<string | number | Date | null | undefined>,
+    default: undefined,
   },
-  computed: {
-    text(): string {
-      return formatLingyunDate(this.value, {
-        precision: this.precision,
-        now: this.now,
-        todayText: this.todayText,
-        yesterdayText: this.yesterdayText,
-        tomorrowText: this.tomorrowText,
-        separator: this.separator,
-        fallback: this.fallback,
-      })
-    },
+  precision: {
+    type: String as PropType<LingyunDatePrecision>,
+    default: 'day',
   },
+  now: {
+    type: [String, Number, Date] as PropType<string | number | Date | undefined>,
+    default: undefined,
+  },
+  todayText: { type: String, default: '今天' },
+  yesterdayText: { type: String, default: '昨天' },
+  tomorrowText: { type: String, default: '明天' },
+  separator: { type: String, default: ' ' },
+  fallback: { type: String, default: '' },
+  /** lingyun-text 字阶，默认 body */
+  type: { type: String, default: 'body' },
+  /** 语义色（label / secondary / tertiary / primary / link / ...）或任意 CSS 颜色 */
+  color: { type: String, default: '' },
+  bold: { type: Boolean, default: false },
+  block: { type: Boolean, default: false },
+})
+
+const text = computed((): string => {
+  return formatLingyunDate(props.value, {
+    precision: props.precision,
+    now: props.now,
+    todayText: props.todayText,
+    yesterdayText: props.yesterdayText,
+    tomorrowText: props.tomorrowText,
+    separator: props.separator,
+    fallback: props.fallback,
+  })
 })
 </script>

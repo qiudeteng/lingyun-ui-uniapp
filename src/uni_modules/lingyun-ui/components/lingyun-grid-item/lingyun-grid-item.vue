@@ -64,8 +64,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, inject, onBeforeUnmount } from 'vue'
+import type { PropType } from 'vue'
 import { openLingyunHostedPage, resolveLingyunPageUrl } from '../../utils/pageNavAdapter'
 
 const DEFAULT_ICON_PX = 28
@@ -125,186 +126,209 @@ function asGrid(grid: unknown): LingyunGridLike | null {
  * @property {String|Number|Boolean} info 角标；true 为圆点
  * @property {String} link 页面路径。有值时点击后跳转
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunGridItem',
-  options: {
-    // 去掉宿主后，宽度才能作用在 flex 子项上。否则小程序里格子宽度是 0
-    virtualHost: true,
+  // 去掉宿主后，宽度才能作用在 flex 子项上。否则小程序里格子宽度是 0
+  virtualHost: true,
+})
+
+const props = defineProps({
+  index: { type: Number, default: 0 },
+  icon: { type: String, default: '' },
+  iconSrc: { type: String, default: '' },
+  iconSize: { type: [Number, String], default: '' },
+  shape: { type: String, default: '' },
+  radius: { type: [Number, String], default: '' },
+  text: { type: String, default: '' },
+  color: { type: String, default: '' },
+  link: { type: String, default: '' },
+  info: {
+    type: [String, Number, Boolean] as PropType<string | number | boolean>,
+    default: '',
   },
-  inject: ['grid'],
-  props: {
-    index: { type: Number, default: 0 },
-    icon: { type: String, default: '' },
-    iconSrc: { type: String, default: '' },
-    iconSize: { type: [Number, String], default: '' },
-    shape: { type: String, default: '' },
-    radius: { type: [Number, String], default: '' },
-    text: { type: String, default: '' },
-    color: { type: String, default: '' },
-    link: { type: String, default: '' },
-    info: {
-      type: [String, Number, Boolean] as PropType<string | number | boolean>,
-      default: '',
+})
+
+const gridContext = inject('grid')
+
+const instance = getCurrentInstance()
+
+const column = computed((): number => {
+  const grid = asGrid(gridContext)
+  const count = Number(grid && grid.column) || 3
+  return count > 0 ? count : 3
+})
+
+const square = computed((): boolean => {
+  const grid = asGrid(gridContext)
+  return !grid || grid.square !== false
+})
+
+const showBorder = computed((): boolean => {
+  const grid = asGrid(gridContext)
+  return !!(grid && grid.showBorder)
+})
+
+const highlight = computed((): boolean => {
+  const grid = asGrid(gridContext)
+  return !grid || grid.highlight !== false
+})
+
+const order = computed((): number => {
+  const grid = asGrid(gridContext)
+  const list: unknown[] = (grid && grid.childList) || []
+  const epoch = grid ? grid.epoch : 0
+  void epoch
+  const found = list.indexOf(instance?.proxy)
+  return found >= 0 ? found : 0
+})
+
+const count = computed((): number => {
+  const grid = asGrid(gridContext)
+  const list: unknown[] = (grid && grid.childList) || []
+  const epoch = grid ? grid.epoch : 0
+  void epoch
+  return list.length
+})
+
+const cellStyle = computed(() => {
+  const width = `${100 / column.value}%`
+  // 小程序 flex 子项认 flex-basis，只写 width 时主轴宽度会变成 0
+  return {
+    width,
+    flex: `0 0 ${width}`,
+  }
+})
+
+const iconPx = computed((): number => {
+  const own = parseIconPx(props.iconSize)
+  if (own > 0) return own
+  const grid = asGrid(gridContext)
+  const parent = parseIconPx(grid && grid.iconSize)
+  return parent > 0 ? parent : DEFAULT_ICON_PX
+})
+
+const iconWrapStyle = computed((): Record<string, string> => {
+  const size = `${iconPx.value}px`
+  return { width: size, height: size }
+})
+
+const imageShape = computed((): string => {
+  if (props.shape) return props.shape
+  const grid = asGrid(gridContext)
+  if (grid && grid.shape) return String(grid.shape)
+  return 'rounded'
+})
+
+const imageRadius = computed((): string | number | undefined => {
+  if (props.radius !== '' && props.radius != null) return props.radius
+  const grid = asGrid(gridContext)
+  const parent = grid ? grid.radius : ''
+  if (parent !== '' && parent != null) return parent
+  return undefined
+})
+
+const imageRadiusAttr = computed((): Record<string, string | number> => {
+  const radius = imageRadius.value
+  if (radius === '' || radius == null) return {}
+  return { radius }
+})
+
+const iconColor = computed((): string => {
+  return props.color || 'var(--lingyun-system-blue, #0088ff)'
+})
+
+const imageSrc = computed((): string => {
+  const src = String(props.iconSrc || '').trim()
+  if (src) return src
+  const icon = String(props.icon || '').trim()
+  return isImageSource(icon) ? icon : ''
+})
+
+const iconType = computed((): string => {
+  if (imageSrc.value) return ''
+  return String(props.icon || '').trim()
+})
+
+const badgeRaw = computed((): string | number => {
+  if (props.info === true || props.info === 'dot') return 'dot'
+  if (typeof props.info === 'number') return props.info
+  if (typeof props.info === 'string' && props.info) return props.info
+  return ''
+})
+
+const hasBadge = computed((): boolean => {
+  return badgeRaw.value !== ''
+})
+
+const badgeDot = computed((): boolean => {
+  return badgeRaw.value === 'dot'
+})
+
+const badgeText = computed((): string | number => {
+  return badgeDot.value ? '' : badgeRaw.value
+})
+
+const boxClass = computed(() => {
+  if (!showBorder.value) return ''
+  const col = column.value
+  const orderValue = order.value
+  const countValue = count.value
+  const lastCol = (orderValue + 1) % col === 0
+  const remainder = countValue % col
+  const lastRowStart = remainder === 0 ? Math.max(0, countValue - col) : countValue - remainder
+  const lastRow = countValue > 0 && orderValue >= lastRowStart
+  return [
+    'lingyun-grid-item__box--border',
+    lastCol ? 'lingyun-grid-item__box--edge-right' : '',
+    lastRow ? 'lingyun-grid-item__box--edge-bottom' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const borderStyle = computed((): Record<string, string> => {
+  const grid = asGrid(gridContext)
+  const color = grid && grid.borderColor
+  if (!showBorder.value || !color) return {}
+  return {
+    borderRightColor: color,
+    borderBottomColor: color,
+  }
+})
+
+function openLink(): void {
+  const raw = String(props.link || '').trim()
+  if (!raw) return
+  if (openLingyunHostedPage(raw, raw)) return
+  const next = resolveLingyunPageUrl(raw)
+  if (!next) return
+  if (openLingyunHostedPage(next, raw)) return
+  uni.navigateTo({
+    url: next,
+    fail: () => {
+      uni.redirectTo({ url: next })
     },
-  },
-  computed: {
-    column(): number {
-      const grid = asGrid(this.grid)
-      const count = Number(grid && grid.column) || 3
-      return count > 0 ? count : 3
-    },
-    square(): boolean {
-      const grid = asGrid(this.grid)
-      return !grid || grid.square !== false
-    },
-    showBorder(): boolean {
-      const grid = asGrid(this.grid)
-      return !!(grid && grid.showBorder)
-    },
-    highlight(): boolean {
-      const grid = asGrid(this.grid)
-      return !grid || grid.highlight !== false
-    },
-    order(): number {
-      const grid = asGrid(this.grid)
-      const list: unknown[] = (grid && grid.childList) || []
-      const epoch = grid ? grid.epoch : 0
-      void epoch
-      const found = list.indexOf(this)
-      return found >= 0 ? found : 0
-    },
-    count(): number {
-      const grid = asGrid(this.grid)
-      const list: unknown[] = (grid && grid.childList) || []
-      const epoch = grid ? grid.epoch : 0
-      void epoch
-      return list.length
-    },
-    cellStyle() {
-      const width = `${100 / this.column}%`
-      // 小程序 flex 子项认 flex-basis，只写 width 时主轴宽度会变成 0
-      return {
-        width,
-        flex: `0 0 ${width}`,
-      }
-    },
-    iconPx(): number {
-      const own = parseIconPx(this.iconSize)
-      if (own > 0) return own
-      const grid = asGrid(this.grid)
-      const parent = parseIconPx(grid && grid.iconSize)
-      return parent > 0 ? parent : DEFAULT_ICON_PX
-    },
-    iconWrapStyle(): Record<string, string> {
-      const size = `${this.iconPx}px`
-      return { width: size, height: size }
-    },
-    imageShape(): string {
-      if (this.shape) return this.shape
-      const grid = asGrid(this.grid)
-      if (grid && grid.shape) return String(grid.shape)
-      return 'rounded'
-    },
-    imageRadius(): string | number | undefined {
-      if (this.radius !== '' && this.radius != null) return this.radius
-      const grid = asGrid(this.grid)
-      const parent = grid ? grid.radius : ''
-      if (parent !== '' && parent != null) return parent
-      return undefined
-    },
-    imageRadiusAttr(): Record<string, string | number> {
-      const radius = this.imageRadius
-      if (radius === '' || radius == null) return {}
-      return { radius }
-    },
-    iconColor(): string {
-      return this.color || 'var(--lingyun-system-blue, #0088ff)'
-    },
-    imageSrc(): string {
-      const src = String(this.iconSrc || '').trim()
-      if (src) return src
-      const icon = String(this.icon || '').trim()
-      return isImageSource(icon) ? icon : ''
-    },
-    iconType(): string {
-      if (this.imageSrc) return ''
-      return String(this.icon || '').trim()
-    },
-    badgeRaw(): string | number {
-      if (this.info === true || this.info === 'dot') return 'dot'
-      if (typeof this.info === 'number') return this.info
-      if (typeof this.info === 'string' && this.info) return this.info
-      return ''
-    },
-    hasBadge(): boolean {
-      return this.badgeRaw !== ''
-    },
-    badgeDot(): boolean {
-      return this.badgeRaw === 'dot'
-    },
-    badgeText(): string | number {
-      return this.badgeDot ? '' : this.badgeRaw
-    },
-    boxClass() {
-      if (!this.showBorder) return ''
-      const col = this.column
-      const order = this.order
-      const count = this.count
-      const lastCol = (order + 1) % col === 0
-      const remainder = count % col
-      const lastRowStart = remainder === 0 ? Math.max(0, count - col) : count - remainder
-      const lastRow = count > 0 && order >= lastRowStart
-      return [
-        'lingyun-grid-item__box--border',
-        lastCol ? 'lingyun-grid-item__box--edge-right' : '',
-        lastRow ? 'lingyun-grid-item__box--edge-bottom' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    borderStyle(): Record<string, string> {
-      const grid = asGrid(this.grid)
-      const color = grid && grid.borderColor
-      if (!this.showBorder || !color) return {}
-      return {
-        borderRightColor: color,
-        borderBottomColor: color,
-      }
-    },
-  },
-  created() {
-    const grid = asGrid(this.grid)
-    if (grid && typeof grid.register === 'function') grid.register(this)
-  },
-  beforeUnmount() {
-    const grid = asGrid(this.grid)
-    if (grid && typeof grid.unregister === 'function') grid.unregister(this)
-  },
-  methods: {
-    onClick() {
-      const grid = asGrid(this.grid)
-      if (grid && typeof grid.change === 'function') {
-        grid.change({
-          detail: { index: this.index },
-        })
-      }
-      this.openLink()
-    },
-    openLink() {
-      const raw = String(this.link || '').trim()
-      if (!raw) return
-      if (openLingyunHostedPage(raw, raw)) return
-      const next = resolveLingyunPageUrl(raw)
-      if (!next) return
-      if (openLingyunHostedPage(next, raw)) return
-      uni.navigateTo({
-        url: next,
-        fail: () => {
-          uni.redirectTo({ url: next })
-        },
-      })
-    },
-  },
+  })
+}
+
+function onClick(): void {
+  const grid = asGrid(gridContext)
+  if (grid && typeof grid.change === 'function') {
+    grid.change({
+      detail: { index: props.index },
+    })
+  }
+  openLink()
+}
+
+const gridInstance = asGrid(gridContext)
+if (gridInstance && typeof gridInstance.register === 'function') {
+  gridInstance.register(instance?.proxy)
+}
+
+onBeforeUnmount(() => {
+  const grid = asGrid(gridContext)
+  if (grid && typeof grid.unregister === 'function') grid.unregister(instance?.proxy)
 })
 </script>
 

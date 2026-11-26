@@ -12,15 +12,13 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-
+<script setup lang="ts">
 /**
  * lingyun-split-view
  * @description iPhone Duo 内屏横屏折叠/半折的双栏内容。
  * 官方画板 951×669：左主栏 456、折痕避让带 40、右详情栏 371、右侧返回列 84。
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunSplitView',
 })
 </script>

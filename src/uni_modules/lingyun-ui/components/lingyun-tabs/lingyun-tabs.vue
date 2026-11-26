@@ -85,8 +85,10 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType, type Ref } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { nextLingyunUid } from '../../utils/uid'
+import type { PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
 import { LINGYUN_APP_PAGE_TOP_INSET } from '../lingyun-app-page/useLingyunAppPageScroll'
 import type { LingyunTabItem, LingyunTabsVariant } from './types'
@@ -107,7 +109,6 @@ interface TabMetrics {
   viewportWidth: number
 }
 
-let tabsSequence = 0
 
 /** pill 轨道上下左右的内边距，首尾选中胶囊需与轨道外缘同心 */
 const PILL_TRACK_PADDING = 2
@@ -117,389 +118,455 @@ const PILL_TRACK_PADDING = 2
  * @description 顶部可滚动 Tab View：underline / pill、滑动指示器、自动滚入
  * @see design/TABS.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunTabs',
-  emits: ['update:modelValue', 'change'],
-  inject: {
-    appPageTopInset: {
-      from: LINGYUN_APP_PAGE_TOP_INSET,
-      default: null as Ref<number> | null,
-    },
-  },
-  props: {
-    modelValue: { type: String, default: '' },
-    items: {
-      type: Array as PropType<LingyunTabItem[]>,
-      default: () => [],
-    },
-    variant: {
-      type: String as PropType<LingyunTabsVariant>,
-      default: 'underline',
-    },
-    scrollable: { type: Boolean, default: true },
-    sticky: { type: Boolean, default: false },
-    align: {
-      type: String as PropType<'start' | 'center'>,
-      default: 'start',
-    },
-    showIndicator: { type: Boolean, default: true },
-    safeArea: { type: Boolean, default: false },
-    stickyTop: {
-      type: Number as PropType<number | undefined>,
-      default: undefined,
-    },
-    zIndex: { type: Number, default: 10 },
-  },
-  data(): {
-    uid: number
-    scrollLeftValue: number
-    indicatorLeft: number
-    indicatorWidth: number
-    /** pill 轨道总宽，用于判断首尾是否贴住轨道外缘 */
-    trackWidth: number
-    indicatorReady: boolean
-    measureAttempts: number
-    measureTimer: ReturnType<typeof setTimeout> | null
-  } {
-    return {
-      uid: (tabsSequence += 1),
-      scrollLeftValue: 0,
-      indicatorLeft: 0,
-      indicatorWidth: 0,
-      trackWidth: 0,
-      indicatorReady: false,
-      measureAttempts: 0,
-      measureTimer: null,
-    }
-  },
-  computed: {
-    variantKey(): LingyunTabsVariant {
-      return this.variant === 'pill' ? 'pill' : 'underline'
-    },
-    normalizedItems(): NormalizedTab[] {
-      const list = Array.isArray(this.items) ? this.items : []
-      return list
-        .map((item, index) => {
-          const raw = item as LingyunTabItem
-          return {
-            key: String(raw?.key ?? index),
-            text: String(raw?.text ?? raw?.key ?? ''),
-            icon: String(raw?.icon || ''),
-            badge: raw?.badge,
-            disabled: raw?.disabled === true,
-            raw,
-          }
-        })
-        .filter((item) => item.text)
-    },
-    activeIndex(): number {
-      const key = String(this.modelValue ?? '')
-      const index = this.normalizedItems.findIndex((item) => item.key === key)
-      if (index >= 0) return index
-      return this.normalizedItems.length ? 0 : -1
-    },
-    activeItem(): LingyunTabItem | null {
-      const item = this.normalizedItems[this.activeIndex]
-      return item ? item.raw : null
-    },
-    activeKey(): string {
-      const item = this.normalizedItems[this.activeIndex]
-      return item ? item.key : ''
-    },
-    trackId(): string {
-      return `lingyun-tabs-track-${this.uid}`
-    },
-    scrollId(): string {
-      return `lingyun-tabs-scroll-${this.uid}`
-    },
-    rootClass(): string {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* pinia 未就绪 */
-      }
-      return [themeClass, `lingyun-tabs--${this.variantKey}`]
-        .filter(Boolean)
-        .join(' ')
-    },
-    barClass(): string {
-      return [
-        'lingyun-tabs__bar',
-        `lingyun-tabs__bar--${this.variantKey}`,
-        this.sticky ? 'lingyun-tabs__bar--sticky' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    barStyle(): Record<string, string> {
-      if (!this.sticky) return {}
-      return {
-        top: `${this.resolvedStickyTop}px`,
-        zIndex: String(Number(this.zIndex) || 10),
-      }
-    },
-    resolvedStickyTop(): number {
-      if (this.stickyTop !== undefined && this.stickyTop !== null) {
-        return Math.max(0, Number(this.stickyTop) || 0)
-      }
-      const injected = this.appPageTopInset as Ref<number> | null
-      const inset =
-        injected && typeof injected === 'object' && 'value' in injected
-          ? Number(injected.value)
-          : 0
-      return Number.isFinite(inset) ? Math.max(0, inset) : 0
-    },
-    trackClass(): string {
-      return [
-        `lingyun-tabs__track--${this.variantKey}`,
-        this.align === 'center' ? 'lingyun-tabs__track--center' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    indicatorStyle(): Record<string, string> {
-      const left = this.indicatorLeft
-      const width = this.indicatorWidth
-      if (this.variantKey === 'pill') {
-        const atStart =
-          this.activeIndex === 0 && left <= PILL_TRACK_PADDING + 0.5
-        const atEnd =
-          this.activeIndex === this.normalizedItems.length - 1 &&
-          this.trackWidth > 0 &&
-          Math.abs(left + width - (this.trackWidth - PILL_TRACK_PADDING)) <= 1.5
-        if (atStart) {
-          // 首个 Tab：与轨道左端圆角同心，左侧不再额外内缩
-          return {
-            left: `${left}px`,
-            width: `${Math.max(0, width - PILL_TRACK_PADDING)}px`,
-            top: `${PILL_TRACK_PADDING}px`,
-            height: '32px',
-          }
-        }
-        if (atEnd) {
-          // 末个 Tab：与轨道右端圆角同心
-          return {
-            left: `${left + PILL_TRACK_PADDING}px`,
-            width: `${Math.max(0, width - PILL_TRACK_PADDING)}px`,
-            top: `${PILL_TRACK_PADDING}px`,
-            height: '32px',
-          }
-        }
-        return {
-          left: `${left + PILL_TRACK_PADDING}px`,
-          width: `${Math.max(0, width - PILL_TRACK_PADDING * 2)}px`,
-          top: `${PILL_TRACK_PADDING}px`,
-          height: '32px',
-        }
-      }
-      return {
-        left: `${left + 12}px`,
-        width: `${Math.max(0, width - 24)}px`,
-        bottom: '0px',
-        height: '2px',
-      }
-    },
-  },
-  watch: {
-    modelValue() {
-      this.syncActive()
-    },
-    items: {
-      deep: true,
-      handler() {
-        this.$nextTick(() => this.syncActive())
-      },
-    },
-    variant() {
-      this.$nextTick(() => this.syncActive())
-    },
-    align() {
-      this.$nextTick(() => this.syncActive())
-    },
-    showIndicator(value: boolean) {
-      if (value) this.syncActive()
-    },
-    scrollable() {
-      this.$nextTick(() => this.syncActive())
-    },
-  },
-  mounted() {
-    this.syncActive()
-  },
-  beforeUnmount() {
-    if (this.measureTimer) {
-      clearTimeout(this.measureTimer)
-      this.measureTimer = null
-    }
-  },
-  methods: {
-    tabId(index: number): string {
-      return `lingyun-tabs-tab-${this.uid}-${index}`
-    },
-    hasBadge(item: NormalizedTab): boolean {
-      return item.badge !== undefined && item.badge !== null && item.badge !== ''
-    },
-    tabClass(item: NormalizedTab, index: number): string {
-      return [
-        index === this.activeIndex ? 'lingyun-tabs__tab--active' : '',
-        item.disabled ? 'lingyun-tabs__tab--disabled' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    onTabClick(item: NormalizedTab, _index: number): void {
-      if (item.disabled) return
-      this.select(item.key)
-    },
-    select(key: string): void {
-      const target = this.normalizedItems.find(
-        (item) => item.key === String(key),
-      )
-      if (!target || target.disabled) return
-      const index = this.normalizedItems.indexOf(target)
-      if (String(this.modelValue ?? '') !== target.key) {
-        this.$emit('update:modelValue', target.key)
-        this.$emit('change', {
-          key: target.key,
-          item: target.raw,
-          index,
-        })
-      }
-      this.measureAttempts = 0
-      this.$nextTick(() => this.measureIndicator())
-    },
-    scrollToKey(key: string): void {
-      const index = this.normalizedItems.findIndex(
-        (item) => item.key === String(key),
-      )
-      if (index < 0) return
-      this.$nextTick(() => {
-        this.measureTab(index, (metrics) => {
-          if (metrics) this.centerScroll(metrics)
-        })
-      })
-    },
-    refresh(): void {
-      this.syncActive()
-    },
-    syncActive(): void {
-      this.measureAttempts = 0
-      this.$nextTick(() => this.measureIndicator())
-    },
-    /** 读取 Tab 相对轨道的位置与滚动可视区宽度，H5 直接量 DOM */
-    measureTab(
-      index: number,
-      callback: (metrics: TabMetrics | null) => void,
-    ): void {
-      // #ifdef H5
-      if (typeof document !== 'undefined') {
-        const track = document.getElementById(this.trackId)
-        const tab = document.getElementById(this.tabId(index))
-        const viewport = document.getElementById(this.scrollId)
-        if (
-          track &&
-          tab &&
-          tab.offsetWidth > 0 &&
-          viewport &&
-          viewport.clientWidth > 0
-        ) {
-          callback({
-            left: tab.offsetLeft,
-            width: tab.offsetWidth,
-            trackWidth: track.offsetWidth,
-            viewportWidth: viewport.clientWidth,
-          })
-          return
-        }
-      }
-      // #endif
+})
 
-      uni
-        .createSelectorQuery()
-        .in(this)
-        .select(`#${this.trackId}`)
-        .boundingClientRect()
-        .select(`#${this.tabId(index)}`)
-        .boundingClientRect()
-        .select(`#${this.scrollId}`)
-        .boundingClientRect()
-        .exec((res) => {
-          const track = res && (res[0] as { left?: number; width?: number } | null)
-          const tab =
-            res && (res[1] as { left?: number; width?: number } | null)
-          const viewport =
-            res && (res[2] as { width?: number } | null)
-          if (
-            !track ||
-            !tab ||
-            !tab.width ||
-            tab.left === undefined ||
-            !viewport ||
-            !viewport.width
-          ) {
-            callback(null)
-            return
-          }
-          callback({
-            left: Number(tab.left) - Number(track.left || 0),
-            width: Number(tab.width),
-            trackWidth: Number(track.width || 0),
-            viewportWidth: Number(viewport.width),
-          })
-        })
-    },
-    /** 激活项居中滚动，左右两侧都保留可见 Tab */
-    centerScroll(metrics: TabMetrics): void {
-      if (!this.scrollable) return
-      const maxScroll = Math.max(
-        0,
-        metrics.trackWidth - metrics.viewportWidth,
-      )
-      const target = Math.min(
-        maxScroll,
-        Math.max(
-          0,
-          metrics.left + metrics.width / 2 - metrics.viewportWidth / 2,
-        ),
-      )
-      const next = Math.round(target * 100) / 100
-      if (Math.abs(this.scrollLeftValue - next) < 0.5) return
-      this.scrollLeftValue = next
-    },
-    measureIndicator(): void {
-      const index = this.activeIndex
-      if (index < 0) {
-        this.indicatorReady = false
-        this.trackWidth = 0
+const props = defineProps({
+  modelValue: { type: String, default: '' },
+  items: {
+    type: Array as PropType<LingyunTabItem[]>,
+    default: () => [],
+  },
+  variant: {
+    type: String as PropType<LingyunTabsVariant>,
+    default: 'underline',
+  },
+  scrollable: { type: Boolean, default: true },
+  sticky: { type: Boolean, default: false },
+  align: {
+    type: String as PropType<'start' | 'center'>,
+    default: 'start',
+  },
+  showIndicator: { type: Boolean, default: true },
+  safeArea: { type: Boolean, default: false },
+  stickyTop: {
+    type: Number as PropType<number | undefined>,
+    default: undefined,
+  },
+  zIndex: { type: Number, default: 10 },
+})
+
+const emit = defineEmits(['update:modelValue', 'change'])
+
+const appPageTopInset = inject(LINGYUN_APP_PAGE_TOP_INSET, null)
+
+const instance = getCurrentInstance()
+
+const uid = ref(nextLingyunUid('tabs'))
+const scrollLeftValue = ref(0)
+const indicatorLeft = ref(0)
+const indicatorWidth = ref(0)
+/** pill 轨道总宽，用于判断首尾是否贴住轨道外缘 */
+const trackWidth = ref(0)
+const indicatorReady = ref(false)
+const measureAttempts = ref(0)
+const measureTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+
+const variantKey = computed((): LingyunTabsVariant => {
+  return props.variant === 'pill' ? 'pill' : 'underline'
+})
+
+const normalizedItems = computed((): NormalizedTab[] => {
+  const list = Array.isArray(props.items) ? props.items : []
+  return list
+    .map((item, index) => {
+      const raw = item as LingyunTabItem
+      return {
+        key: String(raw?.key ?? index),
+        text: String(raw?.text ?? raw?.key ?? ''),
+        icon: String(raw?.icon || ''),
+        badge: raw?.badge,
+        disabled: raw?.disabled === true,
+        raw,
+      }
+    })
+    .filter((item) => item.text)
+})
+
+const activeIndex = computed((): number => {
+  const key = String(props.modelValue ?? '')
+  const index = normalizedItems.value.findIndex((item) => item.key === key)
+  if (index >= 0) return index
+  return normalizedItems.value.length ? 0 : -1
+})
+
+const activeItem = computed((): LingyunTabItem | null => {
+  const item = normalizedItems.value[activeIndex.value]
+  return item ? item.raw : null
+})
+
+const activeKey = computed((): string => {
+  const item = normalizedItems.value[activeIndex.value]
+  return item ? item.key : ''
+})
+
+const trackId = computed((): string => {
+  return `lingyun-tabs-track-${uid.value}`
+})
+
+const scrollId = computed((): string => {
+  return `lingyun-tabs-scroll-${uid.value}`
+})
+
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* pinia 未就绪 */
+  }
+  return [themeClass, `lingyun-tabs--${variantKey.value}`]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const barClass = computed((): string => {
+  return [
+    'lingyun-tabs__bar',
+    `lingyun-tabs__bar--${variantKey.value}`,
+    props.sticky ? 'lingyun-tabs__bar--sticky' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const barStyle = computed((): Record<string, string> => {
+  if (!props.sticky) return {}
+  return {
+    top: `${resolvedStickyTop.value}px`,
+    zIndex: String(Number(props.zIndex) || 10),
+  }
+})
+
+const resolvedStickyTop = computed((): number => {
+  if (props.stickyTop !== undefined && props.stickyTop !== null) {
+    return Math.max(0, Number(props.stickyTop) || 0)
+  }
+  const injected = appPageTopInset
+  const inset =
+    injected && typeof injected === 'object' && 'value' in injected
+      ? Number(injected.value)
+      : 0
+  return Number.isFinite(inset) ? Math.max(0, inset) : 0
+})
+
+const trackClass = computed((): string => {
+  return [
+    `lingyun-tabs__track--${variantKey.value}`,
+    props.align === 'center' ? 'lingyun-tabs__track--center' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const indicatorStyle = computed((): Record<string, string> => {
+  const left = indicatorLeft.value
+  const width = indicatorWidth.value
+  if (variantKey.value === 'pill') {
+    const atStart =
+      activeIndex.value === 0 && left <= PILL_TRACK_PADDING + 0.5
+    const atEnd =
+      activeIndex.value === normalizedItems.value.length - 1 &&
+      trackWidth.value > 0 &&
+      Math.abs(left + width - (trackWidth.value - PILL_TRACK_PADDING)) <= 1.5
+    if (atStart) {
+      // 首个 Tab：与轨道左端圆角同心，左侧不再额外内缩
+      return {
+        left: `${left}px`,
+        width: `${Math.max(0, width - PILL_TRACK_PADDING)}px`,
+        top: `${PILL_TRACK_PADDING}px`,
+        height: '32px',
+      }
+    }
+    if (atEnd) {
+      // 末个 Tab：与轨道右端圆角同心
+      return {
+        left: `${left + PILL_TRACK_PADDING}px`,
+        width: `${Math.max(0, width - PILL_TRACK_PADDING)}px`,
+        top: `${PILL_TRACK_PADDING}px`,
+        height: '32px',
+      }
+    }
+    return {
+      left: `${left + PILL_TRACK_PADDING}px`,
+      width: `${Math.max(0, width - PILL_TRACK_PADDING * 2)}px`,
+      top: `${PILL_TRACK_PADDING}px`,
+      height: '32px',
+    }
+  }
+  return {
+    left: `${left + 12}px`,
+    width: `${Math.max(0, width - 24)}px`,
+    bottom: '0px',
+    height: '2px',
+  }
+})
+
+function tabId(index: number): string {
+  return `lingyun-tabs-tab-${uid.value}-${index}`
+}
+
+function hasBadge(item: NormalizedTab): boolean {
+  return item.badge !== undefined && item.badge !== null && item.badge !== ''
+}
+
+function tabClass(item: NormalizedTab, index: number): string {
+  return [
+    index === activeIndex.value ? 'lingyun-tabs__tab--active' : '',
+    item.disabled ? 'lingyun-tabs__tab--disabled' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+/** 读取 Tab 相对轨道的位置与滚动可视区宽度，H5 直接量 DOM */
+function measureTab(
+  index: number,
+  callback: (metrics: TabMetrics | null) => void,
+): void {
+  // #ifdef H5 || WEB
+  if (typeof document !== 'undefined') {
+    const track = document.getElementById(trackId.value)
+    const tab = document.getElementById(tabId(index))
+    const viewport = document.getElementById(scrollId.value)
+    if (
+      track &&
+      tab &&
+      tab.offsetWidth > 0 &&
+      viewport &&
+      viewport.clientWidth > 0
+    ) {
+      callback({
+        left: tab.offsetLeft,
+        width: tab.offsetWidth,
+        trackWidth: track.offsetWidth,
+        viewportWidth: viewport.clientWidth,
+      })
+      return
+    }
+  }
+  // #endif
+
+  uni
+    .createSelectorQuery()
+    .in(instance?.proxy as never)
+    .select(`#${trackId.value}`)
+    .boundingClientRect()
+    .select(`#${tabId(index)}`)
+    .boundingClientRect()
+    .select(`#${scrollId.value}`)
+    .boundingClientRect()
+    .exec((res) => {
+      const track = res && (res[0] as { left?: number; width?: number } | null)
+      const tab =
+        res && (res[1] as { left?: number; width?: number } | null)
+      const viewport =
+        res && (res[2] as { width?: number } | null)
+      if (
+        !track ||
+        !tab ||
+        !tab.width ||
+        tab.left === undefined ||
+        !viewport ||
+        !viewport.width
+      ) {
+        callback(null)
         return
       }
-      const retry = () => {
-        if (this.measureAttempts >= 3) return
-        this.measureAttempts += 1
-        if (this.measureTimer) clearTimeout(this.measureTimer)
-        this.measureTimer = setTimeout(() => {
-          this.measureTimer = null
-          this.measureIndicator()
-        }, 60)
-      }
-
-      this.$nextTick(() => {
-        this.measureTab(index, (metrics) => {
-          if (!metrics) {
-            retry()
-            return
-          }
-          this.indicatorLeft = Math.max(0, metrics.left)
-          this.indicatorWidth = Math.max(0, metrics.width)
-          this.trackWidth = Math.max(0, metrics.trackWidth)
-          this.indicatorReady = this.indicatorWidth > 0
-          this.measureAttempts = 0
-          this.centerScroll(metrics)
-        })
+      callback({
+        left: Number(tab.left) - Number(track.left || 0),
+        width: Number(tab.width),
+        trackWidth: Number(track.width || 0),
+        viewportWidth: Number(viewport.width),
       })
-    },
+    })
+}
+
+/** 激活项居中滚动，左右两侧都保留可见 Tab */
+function centerScroll(metrics: TabMetrics): void {
+  if (!props.scrollable) return
+  const maxScroll = Math.max(
+    0,
+    metrics.trackWidth - metrics.viewportWidth,
+  )
+  const target = Math.min(
+    maxScroll,
+    Math.max(
+      0,
+      metrics.left + metrics.width / 2 - metrics.viewportWidth / 2,
+    ),
+  )
+  const next = Math.round(target * 100) / 100
+  // #ifdef H5 || WEB
+  /* uni-app x Web 的 scroll-view 不响应动态 scroll-left，且会在随后的渲染中
+   * 把滚动位置重置回 0；这里直接操作 DOM 滚动容器，并在渲染结束后补设。 */
+  if (typeof document !== 'undefined') {
+    const apply = () => {
+      const host: any = document.getElementById(scrollId.value)
+      if (!host) return
+      const list: any[] =
+        host.querySelectorAll && host.querySelectorAll
+          ? Array.prototype.slice.call(
+              host.querySelectorAll('.uni-scroll-view'),
+            )
+          : []
+      let target: any = null
+      for (let i = 0; i < list.length; i += 1) {
+        if (list[i].scrollWidth > list[i].clientWidth + 1) {
+          target = list[i]
+          break
+        }
+      }
+      if (!target) target = list.length ? list[list.length - 1] : host
+      if (Math.abs(Number(target.scrollLeft || 0) - next) >= 0.5) {
+        target.scrollLeft = next
+      }
+    }
+    apply()
+    let tries = 0
+    const tick = () => {
+      apply()
+      tries += 1
+      if (tries < 30) requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+    return
+  }
+  // #endif
+  if (Math.abs(scrollLeftValue.value - next) < 0.5) return
+  scrollLeftValue.value = next
+}
+
+function measureIndicator(): void {
+  const index = activeIndex.value
+  if (index < 0) {
+    indicatorReady.value = false
+    trackWidth.value = 0
+    return
+  }
+  const retry = () => {
+    if (measureAttempts.value >= 3) return
+    measureAttempts.value += 1
+    if (measureTimer.value) clearTimeout(measureTimer.value)
+    measureTimer.value = setTimeout(() => {
+      measureTimer.value = null
+      measureIndicator()
+    }, 60)
+  }
+
+  nextTick(() => {
+    measureTab(index, (metrics) => {
+      if (!metrics) {
+        retry()
+        return
+      }
+      indicatorLeft.value = Math.max(0, metrics.left)
+      indicatorWidth.value = Math.max(0, metrics.width)
+      trackWidth.value = Math.max(0, metrics.trackWidth)
+      indicatorReady.value = indicatorWidth.value > 0
+      measureAttempts.value = 0
+      centerScroll(metrics)
+    })
+  })
+}
+
+function select(key: string): void {
+  const target = normalizedItems.value.find(
+    (item) => item.key === String(key),
+  )
+  if (!target || target.disabled) return
+  const index = normalizedItems.value.indexOf(target)
+  if (String(props.modelValue ?? '') !== target.key) {
+    emit('update:modelValue', target.key)
+    emit('change', {
+      key: target.key,
+      item: target.raw,
+      index,
+    })
+  }
+  measureAttempts.value = 0
+  nextTick(() => measureIndicator())
+}
+
+function onTabClick(item: NormalizedTab, _index: number): void {
+  if (item.disabled) return
+  select(item.key)
+}
+
+function scrollToKey(key: string): void {
+  const index = normalizedItems.value.findIndex(
+    (item) => item.key === String(key),
+  )
+  if (index < 0) return
+  nextTick(() => {
+    measureTab(index, (metrics) => {
+      if (metrics) centerScroll(metrics)
+    })
+  })
+}
+
+function refresh(): void {
+  syncActive()
+}
+
+function syncActive(): void {
+  measureAttempts.value = 0
+  nextTick(() => measureIndicator())
+}
+
+watch(
+  () => props.modelValue,
+  () => {
+    syncActive()
   },
+)
+
+watch(
+  () => props.items,
+  () => {
+    nextTick(() => syncActive())
+  },
+  { deep: true },
+)
+
+watch(
+  () => props.variant,
+  () => {
+    nextTick(() => syncActive())
+  },
+)
+
+watch(
+  () => props.align,
+  () => {
+    nextTick(() => syncActive())
+  },
+)
+
+watch(
+  () => props.showIndicator,
+  (value: boolean) => {
+    if (value) syncActive()
+  },
+)
+
+watch(
+  () => props.scrollable,
+  () => {
+    nextTick(() => syncActive())
+  },
+)
+
+onMounted(() => {
+  syncActive()
+})
+
+onBeforeUnmount(() => {
+  if (measureTimer.value) {
+    clearTimeout(measureTimer.value)
+    measureTimer.value = null
+  }
 })
 </script>
 

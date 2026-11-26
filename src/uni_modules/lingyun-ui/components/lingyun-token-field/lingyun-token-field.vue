@@ -72,8 +72,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, onBeforeUnmount, ref } from 'vue'
+import { type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
 import type {
   LingyunTokenFieldAddPayload,
@@ -92,226 +93,230 @@ type InputEventLike = {
  * @description 多选标签输入：回车 / 分隔符添加、建议、去重、上限
  * @see design/TOKEN_FIELDS.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunTokenField',
-  emits: [
-    'update:modelValue',
-    'change',
-    'add',
-    'remove',
-    'invalid',
-    'focus',
-    'blur',
-  ],
-  props: {
-    modelValue: {
-      type: Array as PropType<string[]>,
-      default: () => [],
-    },
-    label: { type: String, default: '' },
-    placeholder: { type: String, default: '输入后按回车添加' },
-    max: { type: Number, default: 0 },
-    suggestions: {
-      type: Array as PropType<string[]>,
-      default: () => [],
-    },
-    allowCustom: { type: Boolean, default: true },
-    allowDuplicate: { type: Boolean, default: false },
-    addOnBlur: { type: Boolean, default: true },
-    disabled: { type: Boolean, default: false },
-    readonly: { type: Boolean, default: false },
-    showCount: { type: Boolean, default: false },
-    inputMaxlength: { type: Number, default: 40 },
+})
+
+const props = defineProps({
+  modelValue: {
+    type: Array as PropType<string[]>,
+    default: () => [],
   },
-  data(): {
-    inputValue: string
-    focused: boolean
-    selectingSuggestion: boolean
-    blurTimer: ReturnType<typeof setTimeout> | null
-  } {
-    return {
-      inputValue: '',
-      focused: false,
-      selectingSuggestion: false,
-      blurTimer: null,
-    }
+  label: { type: String, default: '' },
+  placeholder: { type: String, default: '输入后按回车添加' },
+  max: { type: Number, default: 0 },
+  suggestions: {
+    type: Array as PropType<string[]>,
+    default: () => [],
   },
-  beforeUnmount() {
-    if (this.blurTimer) {
-      clearTimeout(this.blurTimer)
-      this.blurTimer = null
-    }
-  },
-  computed: {
-    rootClass(): string {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* pinia 未就绪 */
-      }
-      return themeClass
-    },
-    tokens(): string[] {
-      return (Array.isArray(this.modelValue) ? this.modelValue : [])
-        .map((token) => String(token == null ? '' : token))
-        .filter((token) => token.length > 0)
-    },
-    resolvedMax(): number {
-      const value = Math.floor(Number(this.max))
-      return Number.isFinite(value) && value > 0 ? value : 0
-    },
-    atMax(): boolean {
-      return this.resolvedMax > 0 && this.tokens.length >= this.resolvedMax
-    },
-    suggestionItems(): string[] {
-      if (this.disabled || this.readonly || this.atMax) return []
-      const query = this.inputValue.trim().toLowerCase()
-      const selected = new Set(this.tokens)
-      const seen = new Set<string>()
-      return (Array.isArray(this.suggestions) ? this.suggestions : [])
-        .map((item) => String(item == null ? '' : item).trim())
-        .filter((item) => {
-          if (!item || selected.has(item) || seen.has(item)) return false
-          if (query && !item.toLowerCase().includes(query)) return false
-          seen.add(item)
-          return true
-        })
-        .slice(0, 6)
-    },
-    suggestionVisible(): boolean {
-      return this.focused && this.suggestionItems.length > 0
-    },
-  },
-  methods: {
-    focusInput(): void {
-      if (this.disabled || this.readonly) return
-      this.focused = true
-    },
-    onFocus(): void {
-      this.focused = true
-      this.$emit('focus')
-    },
-    onBlur(): void {
-      if (this.selectingSuggestion) {
-        this.scheduleBlur()
-        return
-      }
-      this.focused = false
-      if (this.addOnBlur && this.inputValue.trim()) {
-        this.addToken(this.inputValue)
-      }
-      this.$emit('blur')
-    },
-    onSuggestionPointerDown(): void {
-      this.selectingSuggestion = true
-      if (this.blurTimer) {
-        clearTimeout(this.blurTimer)
-        this.blurTimer = null
-      }
-    },
-    scheduleBlur(): void {
-      if (this.blurTimer) clearTimeout(this.blurTimer)
-      this.blurTimer = setTimeout(() => {
-        this.blurTimer = null
-        this.selectingSuggestion = false
-        this.focused = false
-      }, 160)
-    },
-    onInput(event: InputEvent): void {
-      const rawEvent = event as unknown as InputEventLike
-      const detail = rawEvent?.detail
-      const target = rawEvent?.target
-      const value =
-        detail && detail.value != null
-          ? detail.value
-          : target && target.value != null
-            ? target.value
-            : ''
-      const raw = String(value)
-      if (/[,，]/.test(raw)) {
-        raw.split(/[,，]/).forEach((part) => {
-          if (part.trim()) this.addToken(part)
-        })
-        this.inputValue = ''
-        return
-      }
-      this.inputValue = raw
-    },
-    onConfirm(): void {
-      if (this.inputValue.trim()) {
-        this.addToken(this.inputValue)
-        return
-      }
-      if (this.suggestionItems.length) {
-        this.addToken(this.suggestionItems[0])
-      }
-    },
-    selectSuggestion(value: string): void {
-      this.addToken(value)
-      this.selectingSuggestion = false
-      if (this.blurTimer) {
-        clearTimeout(this.blurTimer)
-        this.blurTimer = null
-      }
-      this.focused = false
-    },
-    addToken(raw: string): boolean {
-      if (this.disabled || this.readonly) return false
-      const token = String(raw == null ? '' : raw).trim()
-      if (!token) return false
-      if (this.atMax) {
-        this.emitInvalid(token, 'max')
-        return false
-      }
-      if (!this.allowDuplicate && this.tokens.includes(token)) {
-        this.inputValue = ''
-        this.emitInvalid(token, 'duplicate')
-        return false
-      }
-      if (
-        !this.allowCustom &&
-        !this.suggestions.map((item) => String(item)).includes(token)
-      ) {
-        this.emitInvalid(token, 'custom')
-        return false
-      }
-      const next = this.tokens.concat(token)
-      this.inputValue = ''
-      this.$emit('update:modelValue', next)
-      const change: LingyunTokenFieldChangePayload = { tokens: next }
-      this.$emit('change', change)
-      const payload: LingyunTokenFieldAddPayload = { token, tokens: next }
-      this.$emit('add', payload)
+  allowCustom: { type: Boolean, default: true },
+  allowDuplicate: { type: Boolean, default: false },
+  addOnBlur: { type: Boolean, default: true },
+  disabled: { type: Boolean, default: false },
+  readonly: { type: Boolean, default: false },
+  showCount: { type: Boolean, default: false },
+  inputMaxlength: { type: Number, default: 40 },
+})
+
+const emit = defineEmits([
+  'update:modelValue',
+  'change',
+  'add',
+  'remove',
+  'invalid',
+  'focus',
+  'blur',
+])
+
+const inputValue = ref('')
+const focused = ref(false)
+const selectingSuggestion = ref(false)
+const blurTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* pinia 未就绪 */
+  }
+  return themeClass
+})
+const tokens = computed((): string[] => {
+  return (Array.isArray(props.modelValue) ? props.modelValue : [])
+    .map((token) => String(token == null ? '' : token))
+    .filter((token) => token.length > 0)
+})
+const resolvedMax = computed((): number => {
+  const value = Math.floor(Number(props.max))
+  return Number.isFinite(value) && value > 0 ? value : 0
+})
+const atMax = computed((): boolean => {
+  return resolvedMax.value > 0 && tokens.value.length >= resolvedMax.value
+})
+const suggestionItems = computed((): string[] => {
+  if (props.disabled || props.readonly || atMax.value) return []
+  const query = inputValue.value.trim().toLowerCase()
+  const selected = new Set(tokens.value)
+  const seen = new Set<string>()
+  return (Array.isArray(props.suggestions) ? props.suggestions : [])
+    .map((item) => String(item == null ? '' : item).trim())
+    .filter((item) => {
+      if (!item || selected.has(item) || seen.has(item)) return false
+      if (query && !item.toLowerCase().includes(query)) return false
+      seen.add(item)
       return true
-    },
-    removeToken(index: number): void {
-      if (this.disabled || this.readonly) return
-      const tokens = this.tokens.slice()
-      const token = tokens[index]
-      if (token == null) return
-      tokens.splice(index, 1)
-      this.$emit('update:modelValue', tokens)
-      const change: LingyunTokenFieldChangePayload = { tokens }
-      this.$emit('change', change)
-      const payload: LingyunTokenFieldRemovePayload = {
-        token,
-        index,
-        tokens,
-      }
-      this.$emit('remove', payload)
-    },
-    clear(): void {
-      if (this.disabled || this.readonly) return
-      this.$emit('update:modelValue', [])
-      const change: LingyunTokenFieldChangePayload = { tokens: [] }
-      this.$emit('change', change)
-    },
-    emitInvalid(value: string, reason: 'duplicate' | 'max' | 'custom'): void {
-      const payload: LingyunTokenFieldInvalidPayload = { value, reason }
-      this.$emit('invalid', payload)
-    },
-  },
+    })
+    .slice(0, 6)
+})
+const suggestionVisible = computed((): boolean => {
+  return focused.value && suggestionItems.value.length > 0
+})
+
+function emitInvalid(value: string, reason: 'duplicate' | 'max' | 'custom'): void {
+  const payload: LingyunTokenFieldInvalidPayload = { value, reason }
+  emit('invalid', payload)
+}
+
+function addToken(raw: string): boolean {
+  if (props.disabled || props.readonly) return false
+  const token = String(raw == null ? '' : raw).trim()
+  if (!token) return false
+  if (atMax.value) {
+    emitInvalid(token, 'max')
+    return false
+  }
+  if (!props.allowDuplicate && tokens.value.includes(token)) {
+    inputValue.value = ''
+    emitInvalid(token, 'duplicate')
+    return false
+  }
+  if (
+    !props.allowCustom &&
+    !props.suggestions.map((item) => String(item)).includes(token)
+  ) {
+    emitInvalid(token, 'custom')
+    return false
+  }
+  const next = tokens.value.concat(token)
+  inputValue.value = ''
+  emit('update:modelValue', next)
+  const change: LingyunTokenFieldChangePayload = { tokens: next }
+  emit('change', change)
+  const payload: LingyunTokenFieldAddPayload = { token, tokens: next }
+  emit('add', payload)
+  return true
+}
+
+function scheduleBlur(): void {
+  if (blurTimer.value) clearTimeout(blurTimer.value)
+  blurTimer.value = setTimeout(() => {
+    blurTimer.value = null
+    selectingSuggestion.value = false
+    focused.value = false
+  }, 160)
+}
+
+function focusInput(): void {
+  if (props.disabled || props.readonly) return
+  focused.value = true
+}
+
+function onFocus(): void {
+  focused.value = true
+  emit('focus')
+}
+
+function onBlur(): void {
+  if (selectingSuggestion.value) {
+    scheduleBlur()
+    return
+  }
+  focused.value = false
+  if (props.addOnBlur && inputValue.value.trim()) {
+    addToken(inputValue.value)
+  }
+  emit('blur')
+}
+
+function onSuggestionPointerDown(): void {
+  selectingSuggestion.value = true
+  if (blurTimer.value) {
+    clearTimeout(blurTimer.value)
+    blurTimer.value = null
+  }
+}
+
+function onInput(event: InputEvent): void {
+  const rawEvent = event as unknown as InputEventLike
+  const detail = rawEvent?.detail
+  const target = rawEvent?.target
+  const value =
+    detail && detail.value != null
+      ? detail.value
+      : target && target.value != null
+        ? target.value
+        : ''
+  const raw = String(value)
+  if (/[,，]/.test(raw)) {
+    raw.split(/[,，]/).forEach((part) => {
+      if (part.trim()) addToken(part)
+    })
+    inputValue.value = ''
+    return
+  }
+  inputValue.value = raw
+}
+
+function onConfirm(): void {
+  if (inputValue.value.trim()) {
+    addToken(inputValue.value)
+    return
+  }
+  if (suggestionItems.value.length) {
+    addToken(suggestionItems.value[0])
+  }
+}
+
+function selectSuggestion(value: string): void {
+  addToken(value)
+  selectingSuggestion.value = false
+  if (blurTimer.value) {
+    clearTimeout(blurTimer.value)
+    blurTimer.value = null
+  }
+  focused.value = false
+}
+
+function removeToken(index: number): void {
+  if (props.disabled || props.readonly) return
+  const nextTokens = tokens.value.slice()
+  const token = nextTokens[index]
+  if (token == null) return
+  nextTokens.splice(index, 1)
+  emit('update:modelValue', nextTokens)
+  const change: LingyunTokenFieldChangePayload = { tokens: nextTokens }
+  emit('change', change)
+  const payload: LingyunTokenFieldRemovePayload = {
+    token,
+    index,
+    tokens: nextTokens,
+  }
+  emit('remove', payload)
+}
+
+function clear(): void {
+  if (props.disabled || props.readonly) return
+  emit('update:modelValue', [])
+  const change: LingyunTokenFieldChangePayload = { tokens: [] }
+  emit('change', change)
+}
+
+onBeforeUnmount(() => {
+  if (blurTimer.value) {
+    clearTimeout(blurTimer.value)
+    blurTimer.value = null
+  }
 })
 </script>
 

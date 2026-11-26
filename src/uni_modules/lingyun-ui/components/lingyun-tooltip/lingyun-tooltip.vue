@@ -29,159 +29,166 @@
   </lingyun-popover>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { nextLingyunUid } from '../../utils/uid'
+import type { PropType } from 'vue'
 import type {
   LingyunTooltipPlacement,
   LingyunTooltipTrigger,
 } from './types'
 
-let tooltipSequence = 0
 
 /**
  * lingyun-tooltip
  * @description 轻量说明气泡：H5 hover / 点击，移动端长按 / 点击；复用 lingyun-popover
  * @see design/TOOLTIPS.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunTooltip',
-  emits: ['show', 'hide'],
-  props: {
-    text: { type: String, default: '' },
-    placement: {
-      type: String as PropType<LingyunTooltipPlacement>,
-      default: 'top',
-    },
-    trigger: {
-      type: String as PropType<LingyunTooltipTrigger>,
-      default: 'hover',
-    },
-    showArrow: { type: Boolean, default: true },
-    width: { type: [Number, String] as PropType<number | string>, default: 0 },
-    zIndex: { type: [Number, String] as PropType<number | string>, default: 1200 },
-    showDelay: { type: Number, default: 120 },
-    hideDelay: { type: Number, default: 80 },
-    disabled: { type: Boolean, default: false },
+})
+
+const props = defineProps({
+  text: { type: String, default: '' },
+  placement: {
+    type: String as PropType<LingyunTooltipPlacement>,
+    default: 'top',
   },
-  data(): {
-    uid: number
-    visible: boolean
-    showTimer: ReturnType<typeof setTimeout> | null
-    hideTimer: ReturnType<typeof setTimeout> | null
-    autoHideTimer: ReturnType<typeof setTimeout> | null
-  } {
-    return {
-      uid: (tooltipSequence += 1),
-      visible: false,
-      showTimer: null,
-      hideTimer: null,
-      autoHideTimer: null,
-    }
+  trigger: {
+    type: String as PropType<LingyunTooltipTrigger>,
+    default: 'hover',
   },
-  computed: {
-    triggerId(): string {
-      return `lingyun-tooltip-trigger-${this.uid}`
-    },
+  showArrow: { type: Boolean, default: true },
+  width: { type: [Number, String] as PropType<number | string>, default: 0 },
+  zIndex: { type: [Number, String] as PropType<number | string>, default: 1200 },
+  showDelay: { type: Number, default: 120 },
+  hideDelay: { type: Number, default: 80 },
+  disabled: { type: Boolean, default: false },
+})
+
+const emit = defineEmits(['show', 'hide'])
+
+const uid = ref(nextLingyunUid('tooltip'))
+const visible = ref(false)
+const showTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const hideTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const autoHideTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+
+const triggerId = computed((): string => {
+  return `lingyun-tooltip-trigger-${uid.value}`
+})
+
+function onMouseEnter(): void {
+  if (props.disabled || props.trigger !== 'hover') return
+  scheduleShow()
+}
+
+function onMouseLeave(): void {
+  if (props.disabled || props.trigger !== 'hover') return
+  scheduleHide()
+}
+
+function onTriggerClick(): void {
+  if (props.disabled) return
+  if (props.trigger === 'click') {
+    visible.value ? hideNow() : showNow()
+    return
+  }
+  // #ifndef H5
+  visible.value ? hideNow() : showNow()
+  // #endif
+}
+
+function onLongPress(): void {
+  if (props.disabled) return
+  showNow()
+  clearAutoHide()
+  autoHideTimer.value = setTimeout(() => {
+    autoHideTimer.value = null
+    hideNow()
+  }, 2200)
+}
+
+function scheduleShow(): void {
+  clearHideTimer()
+  if (visible.value) return
+  clearShowTimer()
+  const delay = Math.max(0, Number(props.showDelay) || 0)
+  if (!delay) {
+    visible.value = true
+    return
+  }
+  showTimer.value = setTimeout(() => {
+    showTimer.value = null
+    visible.value = true
+  }, delay)
+}
+
+function scheduleHide(): void {
+  clearShowTimer()
+  if (!visible.value) return
+  clearHideTimer()
+  const delay = Math.max(0, Number(props.hideDelay) || 0)
+  if (!delay) {
+    visible.value = false
+    return
+  }
+  hideTimer.value = setTimeout(() => {
+    hideTimer.value = null
+    visible.value = false
+  }, delay)
+}
+
+function showNow(): void {
+  clearTimers()
+  visible.value = true
+}
+
+function hideNow(): void {
+  clearTimers()
+  visible.value = false
+}
+
+function clearShowTimer(): void {
+  if (showTimer.value) {
+    clearTimeout(showTimer.value)
+    showTimer.value = null
+  }
+}
+
+function clearHideTimer(): void {
+  if (hideTimer.value) {
+    clearTimeout(hideTimer.value)
+    hideTimer.value = null
+  }
+}
+
+function clearAutoHide(): void {
+  if (autoHideTimer.value) {
+    clearTimeout(autoHideTimer.value)
+    autoHideTimer.value = null
+  }
+}
+
+function clearTimers(): void {
+  clearShowTimer()
+  clearHideTimer()
+  clearAutoHide()
+}
+
+watch(visible, (value: boolean) => {
+  emit(value ? 'show' : 'hide')
+})
+
+watch(
+  () => props.disabled,
+  (value: boolean) => {
+    if (value) hideNow()
   },
-  watch: {
-    visible(value: boolean) {
-      this.$emit(value ? 'show' : 'hide')
-    },
-    disabled(value: boolean) {
-      if (value) this.hideNow()
-    },
-  },
-  beforeUnmount() {
-    this.clearTimers()
-  },
-  methods: {
-    onMouseEnter(): void {
-      if (this.disabled || this.trigger !== 'hover') return
-      this.scheduleShow()
-    },
-    onMouseLeave(): void {
-      if (this.disabled || this.trigger !== 'hover') return
-      this.scheduleHide()
-    },
-    onTriggerClick(): void {
-      if (this.disabled) return
-      if (this.trigger === 'click') {
-        this.visible ? this.hideNow() : this.showNow()
-        return
-      }
-      // #ifndef H5
-      this.visible ? this.hideNow() : this.showNow()
-      // #endif
-    },
-    onLongPress(): void {
-      if (this.disabled) return
-      this.showNow()
-      this.clearAutoHide()
-      this.autoHideTimer = setTimeout(() => {
-        this.autoHideTimer = null
-        this.hideNow()
-      }, 2200)
-    },
-    scheduleShow(): void {
-      this.clearHideTimer()
-      if (this.visible) return
-      this.clearShowTimer()
-      const delay = Math.max(0, Number(this.showDelay) || 0)
-      if (!delay) {
-        this.visible = true
-        return
-      }
-      this.showTimer = setTimeout(() => {
-        this.showTimer = null
-        this.visible = true
-      }, delay)
-    },
-    scheduleHide(): void {
-      this.clearShowTimer()
-      if (!this.visible) return
-      this.clearHideTimer()
-      const delay = Math.max(0, Number(this.hideDelay) || 0)
-      if (!delay) {
-        this.visible = false
-        return
-      }
-      this.hideTimer = setTimeout(() => {
-        this.hideTimer = null
-        this.visible = false
-      }, delay)
-    },
-    showNow(): void {
-      this.clearTimers()
-      this.visible = true
-    },
-    hideNow(): void {
-      this.clearTimers()
-      this.visible = false
-    },
-    clearShowTimer(): void {
-      if (this.showTimer) {
-        clearTimeout(this.showTimer)
-        this.showTimer = null
-      }
-    },
-    clearHideTimer(): void {
-      if (this.hideTimer) {
-        clearTimeout(this.hideTimer)
-        this.hideTimer = null
-      }
-    },
-    clearAutoHide(): void {
-      if (this.autoHideTimer) {
-        clearTimeout(this.autoHideTimer)
-        this.autoHideTimer = null
-      }
-    },
-    clearTimers(): void {
-      this.clearShowTimer()
-      this.clearHideTimer()
-      this.clearAutoHide()
-    },
-  },
+)
+
+onBeforeUnmount(() => {
+  clearTimers()
 })
 </script>
 

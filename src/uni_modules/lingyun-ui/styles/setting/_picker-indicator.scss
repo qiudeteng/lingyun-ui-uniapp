@@ -10,6 +10,8 @@
   background: transparent !important;
 }
 
+/* uvue 不支持伪元素，App 端 picker-view 为原生组件无需覆盖 */
+/* #ifndef APP */
 .lingyun-picker-sheet__indicator::before,
 .lingyun-picker-sheet__indicator::after,
 .lingyun-data-picker-sheet__indicator::before,
@@ -20,3 +22,4 @@
   height: 0 !important;
   background: transparent !important;
 }
+/* #endif */

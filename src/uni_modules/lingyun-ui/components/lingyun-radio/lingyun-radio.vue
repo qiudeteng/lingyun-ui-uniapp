@@ -21,8 +21,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed } from 'vue'
+import { inject, type PropType } from 'vue'
 
 type RadioGroupContext = {
   current: string | number | undefined
@@ -34,51 +35,47 @@ type RadioGroupContext = {
  * 自绘环 + lingyun-icon 实心点（避免 mp 原生 radio 默认绿 / color 失效）
  * @see design/CHECKS.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunRadio',
-  inject: {
-    lingyunRadioGroup: { default: null as RadioGroupContext | null },
-  },
-  options: {
-    virtualHost: true,
-    styleIsolation: 'shared',
-  },
-  props: {
-    value: { type: [String, Number] as PropType<string | number>, required: true },
-    label: { type: String, default: '' },
-    disabled: { type: Boolean, default: false },
-    color: { type: String, default: '' },
-  },
-  computed: {
-    isChecked() {
-      const g = this.lingyunRadioGroup as RadioGroupContext | null
-      if (!g) return false
-      return String(g.current) === String(this.value)
-    },
-    rootClass() {
-      return [
-        this.isChecked ? 'lingyun-radio--on' : '',
-        this.disabled ? 'lingyun-radio--disabled' : '',
-      ].filter(Boolean)
-    },
-    ringStyle() {
-      if (!this.isChecked || !this.color) return {}
-      return { borderColor: this.color }
-    },
-    dotColor() {
-      return this.color || 'var(--lingyun-primary, #0088ff)'
-    },
-  },
-  methods: {
-    onTap() {
-      if (this.disabled) return
-      const g = this.lingyunRadioGroup as RadioGroupContext | null
-      if (g && typeof g.select === 'function') {
-        g.select(this.value)
-      }
-    },
-  },
+  virtualHost: true,
+  styleIsolation: 'shared',
 })
+
+const props = defineProps({
+  value: { type: [String, Number] as PropType<string | number>, required: true },
+  label: { type: String, default: '' },
+  disabled: { type: Boolean, default: false },
+  color: { type: String, default: '' },
+})
+
+const lingyunRadioGroup = inject<RadioGroupContext | null>('lingyunRadioGroup', null)
+
+const isChecked = computed(() => {
+  const g = lingyunRadioGroup as RadioGroupContext | null
+  if (!g) return false
+  return String(g.current) === String(props.value)
+})
+const rootClass = computed(() => {
+  return [
+    isChecked.value ? 'lingyun-radio--on' : '',
+    props.disabled ? 'lingyun-radio--disabled' : '',
+  ].filter(Boolean)
+})
+const ringStyle = computed(() => {
+  if (!isChecked.value || !props.color) return {}
+  return { borderColor: props.color }
+})
+const dotColor = computed(() => {
+  return props.color || 'var(--lingyun-primary, #0088ff)'
+})
+
+function onTap() {
+  if (props.disabled) return
+  const g = lingyunRadioGroup as RadioGroupContext | null
+  if (g && typeof g.select === 'function') {
+    g.select(props.value)
+  }
+}
 </script>
 
 <style lang="scss">

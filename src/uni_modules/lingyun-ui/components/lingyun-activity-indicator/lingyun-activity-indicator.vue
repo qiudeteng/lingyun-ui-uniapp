@@ -8,43 +8,45 @@
   />
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-
+<script setup lang="ts">
+import { computed } from 'vue'
 /**
  * lingyun-activity-indicator
  * @description 环形转圈加载；Toast/HUD/页面内嵌复用
  * @see design/ACTIVITY_INDICATORS.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunActivityIndicator',
-  props: {
-    size: { type: String, default: 'medium' },
-    color: { type: String, default: '' },
-    animating: { type: Boolean, default: true },
-    hidesWhenStopped: { type: Boolean, default: true },
-  },
-  computed: {
-    sizeKey() {
-      const s = this.size
-      if (s === 'small' || s === 'large') return s
-      return 'medium'
-    },
-    visible() {
-      if (this.animating) return true
-      return this.hidesWhenStopped === false
-    },
-    rootClass() {
-      return [
-        `lingyun-activity-indicator--${this.sizeKey}`,
-        this.animating ? 'lingyun-activity-indicator--spin' : '',
-      ]
-    },
-    rootStyle() {
-      if (!this.color) return {}
-      return { borderTopColor: this.color, borderRightColor: this.color }
-    },
-  },
+})
+
+const props = defineProps({
+  size: { type: String, default: 'medium' },
+  color: { type: String, default: '' },
+  animating: { type: Boolean, default: true },
+  hidesWhenStopped: { type: Boolean, default: true },
+})
+
+const sizeKey = computed((): string => {
+  const s = props.size
+  if (s === 'small' || s === 'large') return s
+  return 'medium'
+})
+
+const visible = computed((): boolean => {
+  if (props.animating) return true
+  return props.hidesWhenStopped === false
+})
+
+const rootClass = computed((): string[] => {
+  return [
+    `lingyun-activity-indicator--${sizeKey.value}`,
+    props.animating ? 'lingyun-activity-indicator--spin' : '',
+  ]
+})
+
+const rootStyle = computed((): Record<string, string> => {
+  if (!props.color) return {}
+  return { borderTopColor: props.color, borderRightColor: props.color }
 })
 </script>
 

@@ -4,43 +4,40 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { reactive } from 'vue'
+import { provide, type PropType } from 'vue'
 
 /**
  * lingyun-radio-group
  * @see design/CHECKS.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunRadioGroup',
-  emits: ['update:modelValue', 'update:value', 'change'],
-  options: {
-    virtualHost: true,
-    styleIsolation: 'shared',
+  virtualHost: true,
+  styleIsolation: 'shared',
+})
+
+const props = defineProps({
+  modelValue: { type: [String, Number] as PropType<string | number | undefined>, default: undefined },
+  value: { type: [String, Number] as PropType<string | number | undefined>, default: undefined },
+})
+
+const emit = defineEmits(['update:modelValue', 'update:value', 'change'])
+
+const groupState = reactive({
+  get current() {
+    if (props.modelValue !== undefined && props.modelValue !== null) return props.modelValue
+    return props.value
   },
-  props: {
-    modelValue: { type: [String, Number] as PropType<string | number | undefined>, default: undefined },
-    value: { type: [String, Number] as PropType<string | number | undefined>, default: undefined },
-  },
-  provide() {
-    return {
-      lingyunRadioGroup: this,
-    }
-  },
-  computed: {
-    current() {
-      if (this.modelValue !== undefined && this.modelValue !== null) return this.modelValue
-      return this.value
-    },
-  },
-  methods: {
-    select(next: string | number) {
-      this.$emit('update:modelValue', next)
-      this.$emit('update:value', next)
-      this.$emit('change', next)
-    },
+  select(next: string | number) {
+    emit('update:modelValue', next)
+    emit('update:value', next)
+    emit('change', next)
   },
 })
+
+provide('lingyunRadioGroup', groupState)
 </script>
 
 <style lang="scss">

@@ -135,8 +135,9 @@
 </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { type PropType } from 'vue'
 import { useLingyunAppPageScroll } from '../../../lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 import type {
   LingyunPurchaseOrderDetailAction,
@@ -216,214 +217,229 @@ const DEFAULT_FILTERS: LingyunPurchaseOrderListFilter[] = [
  * 数据驱动，不请求接口；筛选、点订货单、操作、加载更多抛事件。
  * @see doc/page/purchase-order-list.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunPurchaseOrderListPanel',
-  emits: ['back', 'purchase-order-click', 'action', 'filter-change', 'update:filter', 'load-more', 'scroll'],
-  setup() {
-    const reportScroll = useLingyunAppPageScroll()
-    return { reportScroll }
+})
+
+const props = defineProps({
+  orders: {
+    type: Array as PropType<LingyunPurchaseOrderListOrder[]>,
+    default: () => [],
   },
-  props: {
-    orders: {
-      type: Array as PropType<LingyunPurchaseOrderListOrder[]>,
-      default: () => [],
-    },
-    filters: {
-      type: Array as PropType<LingyunPurchaseOrderListFilter[]>,
-      default: () => [],
-    },
-    filter: { type: String, default: 'all' },
-    loading: { type: Boolean, default: false },
-    loadingMore: { type: Boolean, default: false },
-    hasMore: { type: Boolean, default: false },
-    emptyText: { type: String, default: '暂无订货单' },
-    loadingText: { type: String, default: '加载中…' },
-    loadingMoreText: { type: String, default: '加载中…' },
-    noMoreText: { type: String, default: '没有更多订货单' },
-    title: { type: String, default: '订货单列表' },
-    showToolbar: { type: Boolean, default: true },
-    showBack: { type: Boolean, default: true },
-    showNav: { type: Boolean, default: true },
-    autoTopInset: { type: Boolean, default: true },
-    /** 返回钮默认返回上一页；false 时只抛 back，由页面处理 */
-    autoBack: { type: Boolean, default: true },
-    /** 列表从顶栏下方穿过，滚动时顶栏呈现液态玻璃；false 用 app-page 顶栏留白 */
-    scrollUnderToolbar: { type: Boolean, default: true },
-    showThemeSwitch: {
-      type: [Boolean, String] as PropType<boolean | string>,
-      default: 'auto',
-    },
-    currency: { type: String, default: '¥' },
-    priceDecimals: { type: Number, default: 2 },
-    /** 卡片横向最多展示的商品图数量，多出的显示 +N */
-    maxThumbnails: { type: Number, default: 3 },
-    /** full 宽度模式：内容区不留左右留白、卡片通宽直角（对齐 lingyun-section 的 full） */
-    full: { type: Boolean, default: false },
-    /** 分栏选中项 key（order.key || order.number）；空串不显示选中态 */
-    selectedKey: { type: String, default: '' },
-    /** 分栏面板模式：顶部占位高度 px（浮层 toolbar 的高度）；0 用页面壳的 --lingyun-app-page-bar */
-    topSpace: { type: Number, default: 0 },
+  filters: {
+    type: Array as PropType<LingyunPurchaseOrderListFilter[]>,
+    default: () => [],
   },
-  data() {
-    return {
-      activeFilter: this.filter || 'all',
-      scrollIntoView: '',
-    }
+  filter: { type: String, default: 'all' },
+  loading: { type: Boolean, default: false },
+  loadingMore: { type: Boolean, default: false },
+  hasMore: { type: Boolean, default: false },
+  emptyText: { type: String, default: '暂无订货单' },
+  loadingText: { type: String, default: '加载中…' },
+  loadingMoreText: { type: String, default: '加载中…' },
+  noMoreText: { type: String, default: '没有更多订货单' },
+  title: { type: String, default: '订货单列表' },
+  showToolbar: { type: Boolean, default: true },
+  showBack: { type: Boolean, default: true },
+  showNav: { type: Boolean, default: true },
+  autoTopInset: { type: Boolean, default: true },
+  /** 返回钮默认返回上一页；false 时只抛 back，由页面处理 */
+  autoBack: { type: Boolean, default: true },
+  /** 列表从顶栏下方穿过，滚动时顶栏呈现液态玻璃；false 用 app-page 顶栏留白 */
+  scrollUnderToolbar: { type: Boolean, default: true },
+  showThemeSwitch: {
+    type: [Boolean, String] as PropType<boolean | string>,
+    default: 'auto',
   },
-  mounted() {
-    this.resetScroll()
-  },
-  computed: {
-    resolvedFilters(): LingyunPurchaseOrderListFilter[] {
-      return this.filters.length ? this.filters : DEFAULT_FILTERS
-    },
-    thumbLimit(): number {
-      const value = Number(this.maxThumbnails)
-      return Number.isFinite(value) ? Math.max(1, Math.floor(value)) : 3
-    },
-    displayOrders(): LingyunPurchaseOrderListOrder[] {
-      if (!this.activeFilter || this.activeFilter === 'all') return this.orders
-      return this.orders.filter(
-        (order) => this.orderListStatus(order) === this.activeFilter,
-      )
-    },
-  },
-  watch: {
-    filter(value: string) {
-      this.activeFilter = value || 'all'
-      this.resetScroll()
-    },
-  },
-  methods: {
-    onBack(): void {
-      this.$emit('back')
-      if (!this.autoBack) return
-      const pages =
-        typeof getCurrentPages === 'function' ? getCurrentPages() : []
-      if (pages.length > 1) uni.navigateBack()
-    },
-    /** 页面重新进入 / 切换筛选时回到顶部，避免恢复上一次内部滚动位置 */
-    resetScroll(): void {
-      this.reportPageScroll(0)
-      this.scrollIntoView = ''
-      this.$nextTick(() => {
-        this.scrollIntoView = 'lingyun-purchase-order-list-top'
-      })
-    },
-    orderListStatus(order: LingyunPurchaseOrderListOrder): LingyunPurchaseOrderListStatus {
-      if (order.listStatus) return order.listStatus
-      if (order.status === 'pendingReview') return 'pendingReview'
-      if (order.status === 'completed') return 'completed'
-      if (order.status === 'cancelled') return 'cancelled'
-      return 'inProgress'
-    },
-    listStatusMeta(order: LingyunPurchaseOrderListOrder): ListStatusMeta {
-      const meta = LIST_STATUS_META[this.orderListStatus(order)]
-      return {
-        text: order.listStatusText || meta.text,
-        color: order.listStatusColor || meta.color,
-      }
-    },
-    orderItemsCount(order: LingyunPurchaseOrderListOrder): number {
-      return (order.items || []).reduce(
-        (sum, item) => sum + (Number(item.quantity) || 0),
-        0,
-      )
-    },
-    orderTotal(order: LingyunPurchaseOrderListOrder): number {
-      const amounts = order.amounts
-      if (!amounts) return 0
-      return amounts.paid !== undefined ? amounts.paid : amounts.payable
-    },
-    visibleThumbs(order: LingyunPurchaseOrderListOrder) {
-      return (order.items || []).slice(0, this.thumbLimit)
-    },
-    extraThumbCount(order: LingyunPurchaseOrderListOrder): number {
-      return Math.max(0, (order.items || []).length - this.thumbLimit)
-    },
-    subOrderSummary(order: LingyunPurchaseOrderListOrder): string {
-      const count = order.subOrders?.length || 0
-      return count > 0 ? `分 ${count} 个包裹` : ''
-    },
-    formatAmount(amount: number | undefined): string {
-      const value = Number(amount)
-      if (!Number.isFinite(value)) return '0'
-      const decimals = Number(this.priceDecimals)
-      if (Number.isFinite(decimals) && decimals < 0) {
-        return String(Number(value.toFixed(2)))
-      }
-      const fixed = Number.isFinite(decimals)
-        ? Math.min(6, Math.max(0, Math.floor(decimals)))
-        : 2
-      return value.toFixed(fixed)
-    },
-    firstChar(name: string): string {
-      return (name || '').trim().slice(0, 1) || '单'
-    },
-    orderActions(order: LingyunPurchaseOrderListOrder): LingyunPurchaseOrderDetailAction[] {
-      if (Array.isArray(order.actions)) return order.actions
-      return DEFAULT_ACTIONS[order.status] || []
-    },
-    actionVariantIn(
-      action: LingyunPurchaseOrderDetailAction,
-      index: number,
-      list: LingyunPurchaseOrderDetailAction[],
-    ): string {
-      if (action.variant) return action.variant
-      return index === list.length - 1 ? 'borderedProminent' : 'bordered'
-    },
-    onSegmentChange(payload: { value?: string | number }): void {
-      const key = String(payload?.value || '')
-      if (!key) return
-      this.onFilter(key as LingyunPurchaseOrderListFilterKey)
-    },
-    onFilter(key: LingyunPurchaseOrderListFilterKey): void {
-      this.activeFilter = key
-      this.resetScroll()
-      const filter = this.resolvedFilters.find((item) => item.key === key) || null
-      if (filter) {
-        const payload: LingyunPurchaseOrderListFilterPayload = { key, filter }
-        this.$emit('filter-change', payload)
-      }
-      this.$emit('update:filter', key)
-    },
-    isSelected(order: LingyunPurchaseOrderListOrder): boolean {
-      if (!this.selectedKey) return false
-      return (order.key || order.number) === this.selectedKey
-    },
-    onPurchaseOrderClick(order: LingyunPurchaseOrderListOrder, index: number): void {
-      const payload: LingyunPurchaseOrderListOrderPayload = { order, index }
-      this.$emit('purchase-order-click', payload)
-    },
-    onAction(order: LingyunPurchaseOrderListOrder, action: LingyunPurchaseOrderDetailAction): void {
-      if (action.disabled) return
-      const payload: LingyunPurchaseOrderListActionPayload = {
-        key: action.key,
-        action,
-        order,
-      }
-      this.$emit('action', payload)
-    },
-    reportPageScroll(top: number): void {
-      const report = (this as unknown as {
-        reportScroll?: (scrollTop: number) => void
-      }).reportScroll
-      if (typeof report === 'function') report(top)
-    },
-    onScroll(event: { detail?: { scrollTop?: number } }): void {
-      const top = Number(event?.detail?.scrollTop)
-      if (Number.isFinite(top) && top >= 0) {
-        this.reportPageScroll(top)
-        this.$emit('scroll', top)
-      }
-    },
-    onScrollToUpper(): void {
-      this.reportPageScroll(0)
-    },
-    onScrollToLower(): void {
-      if (!this.loadingMore && this.hasMore) this.$emit('load-more')
-    },
-  },
+  currency: { type: String, default: '¥' },
+  priceDecimals: { type: Number, default: 2 },
+  /** 卡片横向最多展示的商品图数量，多出的显示 +N */
+  maxThumbnails: { type: Number, default: 3 },
+  /** full 宽度模式：内容区不留左右留白、卡片通宽直角（对齐 lingyun-section 的 full） */
+  full: { type: Boolean, default: false },
+  /** 分栏选中项 key（order.key || order.number）；空串不显示选中态 */
+  selectedKey: { type: String, default: '' },
+  /** 分栏面板模式：顶部占位高度 px（浮层 toolbar 的高度）；0 用页面壳的 --lingyun-app-page-bar */
+  topSpace: { type: Number, default: 0 },
+})
+
+const emit = defineEmits(['back', 'purchase-order-click', 'action', 'filter-change', 'update:filter', 'load-more', 'scroll'])
+
+const reportScroll = useLingyunAppPageScroll()
+
+const activeFilter = ref(props.filter || 'all')
+const scrollIntoView = ref('')
+
+/* 以下纯工具函数被 computed 引用，必须先声明 */
+
+function orderListStatus(order: LingyunPurchaseOrderListOrder): LingyunPurchaseOrderListStatus {
+  if (order.listStatus) return order.listStatus
+  if (order.status === 'pendingReview') return 'pendingReview'
+  if (order.status === 'completed') return 'completed'
+  if (order.status === 'cancelled') return 'cancelled'
+  return 'inProgress'
+}
+
+const resolvedFilters = computed((): LingyunPurchaseOrderListFilter[] => {
+  return props.filters.length ? props.filters : DEFAULT_FILTERS
+})
+const thumbLimit = computed((): number => {
+  const value = Number(props.maxThumbnails)
+  return Number.isFinite(value) ? Math.max(1, Math.floor(value)) : 3
+})
+const displayOrders = computed((): LingyunPurchaseOrderListOrder[] => {
+  if (!activeFilter.value || activeFilter.value === 'all') return props.orders
+  return props.orders.filter(
+    (order) => orderListStatus(order) === activeFilter.value,
+  )
+})
+
+function onBack(): void {
+  emit('back')
+  if (!props.autoBack) return
+  const pages =
+    typeof getCurrentPages === 'function' ? getCurrentPages() : []
+  if (pages.length > 1) uni.navigateBack()
+}
+
+/** 页面重新进入 / 切换筛选时回到顶部，避免恢复上一次内部滚动位置 */
+function resetScroll(): void {
+  reportPageScroll(0)
+  scrollIntoView.value = ''
+  nextTick(() => {
+    scrollIntoView.value = 'lingyun-purchase-order-list-top'
+  })
+}
+
+watch(() => props.filter, (value: string) => {
+  activeFilter.value = value || 'all'
+  resetScroll()
+})
+
+function listStatusMeta(order: LingyunPurchaseOrderListOrder): ListStatusMeta {
+  const meta = LIST_STATUS_META[orderListStatus(order)]
+  return {
+    text: order.listStatusText || meta.text,
+    color: order.listStatusColor || meta.color,
+  }
+}
+
+function orderItemsCount(order: LingyunPurchaseOrderListOrder): number {
+  return (order.items || []).reduce(
+    (sum, item) => sum + (Number(item.quantity) || 0),
+    0,
+  )
+}
+
+function orderTotal(order: LingyunPurchaseOrderListOrder): number {
+  const amounts = order.amounts
+  if (!amounts) return 0
+  return amounts.paid !== undefined ? amounts.paid : amounts.payable
+}
+
+function visibleThumbs(order: LingyunPurchaseOrderListOrder) {
+  return (order.items || []).slice(0, thumbLimit.value)
+}
+
+function extraThumbCount(order: LingyunPurchaseOrderListOrder): number {
+  return Math.max(0, (order.items || []).length - thumbLimit.value)
+}
+
+function subOrderSummary(order: LingyunPurchaseOrderListOrder): string {
+  const count = order.subOrders?.length || 0
+  return count > 0 ? `分 ${count} 个包裹` : ''
+}
+
+function formatAmount(amount: number | undefined): string {
+  const value = Number(amount)
+  if (!Number.isFinite(value)) return '0'
+  const decimals = Number(props.priceDecimals)
+  if (Number.isFinite(decimals) && decimals < 0) {
+    return String(Number(value.toFixed(2)))
+  }
+  const fixed = Number.isFinite(decimals)
+    ? Math.min(6, Math.max(0, Math.floor(decimals)))
+    : 2
+  return value.toFixed(fixed)
+}
+
+function firstChar(name: string): string {
+  return (name || '').trim().slice(0, 1) || '单'
+}
+
+function orderActions(order: LingyunPurchaseOrderListOrder): LingyunPurchaseOrderDetailAction[] {
+  if (Array.isArray(order.actions)) return order.actions
+  return DEFAULT_ACTIONS[order.status] || []
+}
+
+function actionVariantIn(
+  action: LingyunPurchaseOrderDetailAction,
+  index: number,
+  list: LingyunPurchaseOrderDetailAction[],
+): string {
+  if (action.variant) return action.variant
+  return index === list.length - 1 ? 'borderedProminent' : 'bordered'
+}
+
+function onFilter(key: LingyunPurchaseOrderListFilterKey): void {
+  activeFilter.value = key
+  resetScroll()
+  const filter = resolvedFilters.value.find((item) => item.key === key) || null
+  if (filter) {
+    const payload: LingyunPurchaseOrderListFilterPayload = { key, filter }
+    emit('filter-change', payload)
+  }
+  emit('update:filter', key)
+}
+
+function onSegmentChange(payload: { value?: string | number }): void {
+  const key = String(payload?.value || '')
+  if (!key) return
+  onFilter(key as LingyunPurchaseOrderListFilterKey)
+}
+
+function isSelected(order: LingyunPurchaseOrderListOrder): boolean {
+  if (!props.selectedKey) return false
+  return (order.key || order.number) === props.selectedKey
+}
+
+function onPurchaseOrderClick(order: LingyunPurchaseOrderListOrder, index: number): void {
+  const payload: LingyunPurchaseOrderListOrderPayload = { order, index }
+  emit('purchase-order-click', payload)
+}
+
+function onAction(order: LingyunPurchaseOrderListOrder, action: LingyunPurchaseOrderDetailAction): void {
+  if (action.disabled) return
+  const payload: LingyunPurchaseOrderListActionPayload = {
+    key: action.key,
+    action,
+    order,
+  }
+  emit('action', payload)
+}
+
+function reportPageScroll(top: number): void {
+  reportScroll(top)
+}
+
+function onScroll(event: { detail?: { scrollTop?: number } }): void {
+  const top = Number(event?.detail?.scrollTop)
+  if (Number.isFinite(top) && top >= 0) {
+    reportPageScroll(top)
+    emit('scroll', top)
+  }
+}
+
+function onScrollToUpper(): void {
+  reportPageScroll(0)
+}
+
+function onScrollToLower(): void {
+  if (!props.loadingMore && props.hasMore) emit('load-more')
+}
+
+onMounted(() => {
+  resetScroll()
 })
 </script>
 

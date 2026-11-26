@@ -4,8 +4,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { computed, reactive } from 'vue'
+import { provide } from 'vue'
 import { watchLayoutWidth } from './layout'
 
 const JUSTIFY: Record<string, string> = {
@@ -30,41 +31,43 @@ const ALIGN: Record<string, string> = {
  * @property {String} justify start / center / end / space-between / space-around / space-evenly
  * @property {String} align top / middle / bottom。空则拉伸
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunRow',
-  options: {
-    virtualHost: true,
-  },
-  props: {
-    gutter: { type: Number, default: 0 },
-    justify: { type: String, default: 'start' },
-    align: { type: String, default: '' },
-  },
-  computed: {
-    rowStyle(): Record<string, string> {
-      const style: Record<string, string> = {
-        justifyContent: JUSTIFY[this.justify] || 'flex-start',
-      }
-      const align = ALIGN[this.align]
-      if (align) style.alignItems = align
-      const gutter = Number(this.gutter)
-      if (Number.isFinite(gutter) && gutter > 0) {
-        const half = `${gutter / 2}px`
-        style.marginLeft = `-${half}`
-        style.marginRight = `-${half}`
-        /* 仅写负 margin 不会让 width:100% 的块变宽，只会整体左移；补回 gutter 宽度 */
-        style.width = `calc(100% + ${gutter}px)`
-      }
-      return style
-    },
-  },
-  created() {
-    watchLayoutWidth()
-  },
-  provide() {
-    return { lingyunRow: this }
+  virtualHost: true,
+})
+
+const props = defineProps({
+  gutter: { type: Number, default: 0 },
+  justify: { type: String, default: 'start' },
+  align: { type: String, default: '' },
+})
+
+const rowState = reactive({
+  get gutter(): number {
+    return props.gutter
   },
 })
+
+provide('lingyunRow', rowState)
+
+const rowStyle = computed((): Record<string, string> => {
+  const style: Record<string, string> = {
+    justifyContent: JUSTIFY[props.justify] || 'flex-start',
+  }
+  const align = ALIGN[props.align]
+  if (align) style.alignItems = align
+  const gutter = Number(props.gutter)
+  if (Number.isFinite(gutter) && gutter > 0) {
+    const half = `${gutter / 2}px`
+    style.marginLeft = `-${half}`
+    style.marginRight = `-${half}`
+    /* 仅写负 margin 不会让 width:100% 的块变宽，只会整体左移；补回 gutter 宽度 */
+    style.width = `calc(100% + ${gutter}px)`
+  }
+  return style
+})
+
+watchLayoutWidth()
 </script>
 
 <style lang="scss">

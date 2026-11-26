@@ -13,8 +13,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed } from 'vue'
+import { provide, type PropType } from 'vue'
 import MarkdownBody from './markdown-body.vue'
 import { LINGYUN_MARKDOWN_CONTEXT } from './context'
 import type { LingyunMarkdownContext } from './context'
@@ -31,77 +32,74 @@ import type {
  * Markdown 预览：组件内自研解析器解析为原生渲染树，不使用 v-html / rich-text。
  * @see design/MARKDOWN.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunMarkdown',
-  components: { MarkdownBody },
-  emits: ['link-click', 'image-click'],
-  props: {
-    /** Markdown 源文本 */
-    content: { type: String, default: '' },
-    /** 空内容文案 */
-    emptyText: { type: String, default: '暂无内容' },
-    /** 正文字号，px */
-    fontSize: {
-      type: [Number, String] as PropType<number | string>,
-      default: 15,
-    },
-    /** 正文行高，px */
-    lineHeight: {
-      type: [Number, String] as PropType<number | string>,
-      default: 24,
-    },
-    /** 单个换行是否当 <br>；默认按 Markdown 规则折叠为空格 */
-    breaks: { type: Boolean, default: false },
-    /** 是否允许长按选择文本 */
-    selectable: { type: Boolean, default: false },
-    /** 代码块是否启用内置语法高亮 */
-    highlight: { type: Boolean, default: true },
+})
+
+const props = defineProps({
+  /** Markdown 源文本 */
+  content: { type: String, default: '' },
+  /** 空内容文案 */
+  emptyText: { type: String, default: '暂无内容' },
+  /** 正文字号，px */
+  fontSize: {
+    type: [Number, String] as PropType<number | string>,
+    default: 15,
   },
-  provide() {
-    const context: LingyunMarkdownContext = {
-      openLink: (payload: LingyunMarkdownLinkPayload) => {
-        this.$emit('link-click', payload)
+  /** 正文行高，px */
+  lineHeight: {
+    type: [Number, String] as PropType<number | string>,
+    default: 24,
+  },
+  /** 单个换行是否当 <br>；默认按 Markdown 规则折叠为空格 */
+  breaks: { type: Boolean, default: false },
+  /** 是否允许长按选择文本 */
+  selectable: { type: Boolean, default: false },
+  /** 代码块是否启用内置语法高亮 */
+  highlight: { type: Boolean, default: true },
+})
+
+const emit = defineEmits(['link-click', 'image-click'])
+
+const context: LingyunMarkdownContext = {
+  openLink: (payload: LingyunMarkdownLinkPayload) => {
+    emit('link-click', payload)
+  },
+  openImage: (payload: LingyunMarkdownImagePayload) => {
+    emit('image-click', payload)
+  },
+}
+provide(LINGYUN_MARKDOWN_CONTEXT, context)
+
+function cssSize(value: number | string, fallback: number): string {
+  const size = Number.parseFloat(String(value))
+  return Number.isFinite(size) && size > 0 ? `${size}px` : `${fallback}px`
+}
+
+const rows = computed((): LingyunMarkdownRow[] => {
+  try {
+    const blocks = parseLingyunMarkdown(props.content, {
+      breaks: props.breaks,
+    })
+    return flattenLingyunMarkdown(blocks)
+  } catch {
+    const text = (props.content || '').trim()
+    if (!text) return []
+    const fallback: LingyunMarkdownBlock[] = [
+      {
+        type: 'paragraph',
+        segments: [{ type: 'spans', spans: [{ text }] }],
       },
-      openImage: (payload: LingyunMarkdownImagePayload) => {
-        this.$emit('image-click', payload)
-      },
-    }
-    return {
-      [LINGYUN_MARKDOWN_CONTEXT]: context,
-    }
-  },
-  computed: {
-    rows(): LingyunMarkdownRow[] {
-      try {
-        const blocks = parseLingyunMarkdown(this.content, {
-          breaks: this.breaks,
-        })
-        return flattenLingyunMarkdown(blocks)
-      } catch {
-        const text = (this.content || '').trim()
-        if (!text) return []
-        const fallback: LingyunMarkdownBlock[] = [
-          {
-            type: 'paragraph',
-            segments: [{ type: 'spans', spans: [{ text }] }],
-          },
-        ]
-        return flattenLingyunMarkdown(fallback)
-      }
-    },
-    rootStyle(): Record<string, string> {
-      return {
-        '--ly-md-font-size': this.cssSize(this.fontSize, 15),
-        '--ly-md-line-height': this.cssSize(this.lineHeight, 24),
-      }
-    },
-  },
-  methods: {
-    cssSize(value: number | string, fallback: number): string {
-      const size = Number.parseFloat(String(value))
-      return Number.isFinite(size) && size > 0 ? `${size}px` : `${fallback}px`
-    },
-  },
+    ]
+    return flattenLingyunMarkdown(fallback)
+  }
+})
+
+const rootStyle = computed((): Record<string, string> => {
+  return {
+    '--ly-md-font-size': cssSize(props.fontSize, 15),
+    '--ly-md-line-height': cssSize(props.lineHeight, 24),
+  }
 })
 </script>
 

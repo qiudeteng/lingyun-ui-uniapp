@@ -80,8 +80,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, inject, ref, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { inject, type PropType } from 'vue'
 import { LINGYUN_APP_PAGE_NAV_INSET } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 
 type TabBadgeObject = {
@@ -141,533 +142,569 @@ type LensRect = {
  * @property {Boolean} fixed 固定底部悬浮（默认 true）
  * @event {Function} change / update:modelValue
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunTabbars',
-  setup() {
+})
+
+const props = defineProps({
+  items: {
+    type: Array as PropType<Array<TabItem | null | undefined>>,
+    default: () => [] as Array<TabItem | null | undefined>,
+  },
+  modelValue: {
+    type: [String, Number] as PropType<string | number | undefined>,
+    default: undefined,
+  },
+  value: {
+    type: [String, Number] as PropType<string | number | undefined>,
+    default: undefined,
+  },
+  variant: {
+    type: String,
+    default: 'default',
+  },
+  iconMode: {
+    type: String,
+    default: 'text',
+  },
+  /** default = iPhone 99 高；duo = iPhone Duo 内屏 95 高、77×54 Tab */
+  size: {
+    type: String,
+    default: 'default',
+  },
+  /** 没有匹配项时是否把第一项当作选中；页面壳自动导航传 false */
+  fallbackFirst: {
+    type: Boolean,
+    default: true,
+  },
+  /** 页面壳跨页切换时，指示器从这一项滑到当前项 */
+  fromKey: {
+    type: [String, Number],
+    default: '',
+  },
+  safeArea: {
+    type: Boolean,
+    default: true,
+  },
+  fixed: {
+    type: Boolean,
+    default: true,
+  },
+  /** 切换时触发轻震动，接近系统 Tab Bar 反馈 */
+  haptic: {
+    type: Boolean,
+    default: true,
+  },
+})
+
+const emit = defineEmits(['change', 'update:modelValue', 'update:value'])
+
+const instance = getCurrentInstance()
+
+const pageNavInset = inject(LINGYUN_APP_PAGE_NAV_INSET, ref(0))
+
+const instanceId = ref(`lytb-${Math.random().toString(36).slice(2, 8)}`)
+const indicator = ref({
+  left: 0,
+  top: 0,
+  width: 0,
+  height: 0,
+  visible: false,
+  ready: false,
+})
+const poppingKey = ref('')
+const _popTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _onResize = ref<(() => void) | null>(null)
+const _lensRaf = ref<number | null>(null)
+const _settleTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _lensLast = ref(0)
+const _center = ref<SpringState | null>(null)
+const _lensWidth = ref<SpringState | null>(null)
+const _targetCenter = ref(0)
+const _targetWidth = ref(0)
+const _restWidth = ref(0)
+const _targetTop = ref(0)
+const _targetH = ref(0)
+
+const current = computed(() => {
+  if (props.modelValue !== undefined && props.modelValue !== null) return props.modelValue
+  return props.value
+})
+
+const searchItem = computed(() => {
+  return (props.items || []).find((i) => i && i.role === 'search') || null
+})
+
+const mainItems = computed(() => {
+  const list = (props.items || []).filter((i): i is TabItem => !!(i && i.role !== 'search'))
+  /* 带搜索圆钮时最多 4+1；无搜索时 Sketch 最多 5 */
+  return searchItem.value ? list.slice(0, 4) : list.slice(0, 5)
+})
+
+const resolvedVariant = computed(() => {
+  return props.variant === 'prominent' ? 'prominent' : 'default'
+})
+
+const iconSize = computed((): number => {
+  return props.size === 'duo' ? 22 : 25
+})
+
+const iconImageStyle = computed((): { width: string; height: string } => {
+  return {
+    width: `${iconSize.value}px`,
+    height: `${iconSize.value}px`,
+  }
+})
+
+const rootClass = computed(() => {
+  return [
+    `lingyun-tabbars--${resolvedVariant.value}`,
+    props.fixed ? 'lingyun-tabbars--fixed' : '',
+    props.safeArea ? 'lingyun-tabbars--safe' : '',
+    props.size === 'duo' ? 'lingyun-tabbars--duo' : '',
+    searchItem.value ? 'lingyun-tabbars--with-search' : '',
+    /* 无搜索 4/5 项，或有搜索的 3+1 / 4+1：iPhone 左侧胶囊占满剩余宽度 */
+    (!searchItem.value && mainItems.value.length >= 4) ||
+    (searchItem.value && mainItems.value.length >= 3)
+      ? 'lingyun-tabbars--fill'
+      : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const barClass = computed(() => {
+  return resolvedVariant.value === 'prominent' ? 'lingyun-tabbars__bar--prominent' : ''
+})
+
+const wrapStyle = computed(() => {
+  const inset = Math.max(0, Number(pageNavInset.value) || 0)
+  /* inset=0 交给 CSS：窄屏 --fill 需要 left:0，内联 left 会覆盖它 */
+  return props.fixed && inset > 0
+    ? { left: `calc(${inset}px + (100% - ${inset}px) / 2)` }
+    : {}
+})
+
+const barId = computed(() => {
+  return `${instanceId.value}-bar`
+})
+
+const indicatorClass = computed(() => {
+  return [
+    indicator.value.ready ? 'lingyun-tabbars__indicator--ready' : '',
+    indicator.value.visible ? '' : 'lingyun-tabbars__indicator--hidden',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const indicatorStyle = computed(() => {
+  const { left, top, width, height } = indicator.value
+  return {
+    left: `${left}px`,
+    top: `${top}px`,
+    width: `${width}px`,
+    height: `${height}px`,
+  }
+})
+
+function prefersReducedMotion() {
+  /* #ifdef H5 */
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  }
+  /* #endif */
+  return false
+}
+
+function itemId(item: TabItem | null | undefined) {
+  return `${instanceId.value}-item-${item && item.key}`
+}
+
+function isPopping(item: TabItem | null | undefined): boolean {
+  return !!item && !!poppingKey.value && String(item.key) === poppingKey.value
+}
+
+function triggerPop(key: unknown): void {
+  if (key === undefined || key === null || key === '' || prefersReducedMotion()) return
+  poppingKey.value = String(key)
+  if (_popTimer.value) clearTimeout(_popTimer.value)
+  _popTimer.value = setTimeout(() => {
+    poppingKey.value = ''
+    _popTimer.value = null
+  }, 430)
+}
+
+function fireHaptic(): void {
+  if (!props.haptic) return
+  try {
+    const api = uni as typeof uni & {
+      vibrateShort?: (options?: { type?: 'heavy' | 'medium' | 'light' }) => void
+    }
+    api.vibrateShort?.({ type: 'light' })
+  } catch {
+    /* 端不支持 */
+  }
+}
+
+function scheduleFrame(fn: (time: number) => void): number {
+  /* #ifdef H5 */
+  return window.requestAnimationFrame(fn)
+  /* #endif */
+  /* #ifndef H5 */
+  return setTimeout(() => fn(Date.now()), 16)
+  /* #endif */
+}
+
+function cancelFrame(id?: number | null) {
+  if (typeof id !== 'number') return
+  const frameId = id
+  /* #ifdef H5 */
+  window.cancelAnimationFrame(frameId)
+  /* #endif */
+  /* #ifndef H5 */
+  clearTimeout(frameId)
+  /* #endif */
+}
+
+function stopLens() {
+  cancelFrame(_lensRaf.value)
+  _lensRaf.value = null
+}
+
+function clearSettleTimer() {
+  if (_settleTimer.value) {
+    clearTimeout(_settleTimer.value)
+    _settleTimer.value = null
+  }
+}
+
+function stepSpring(state: SpringState, target: number, stiffness: number, damping: number, dt: number) {
+  const force = (target - state.pos) * stiffness
+  const damp = -state.vel * damping
+  state.vel += (force + damp) * dt
+  state.pos += state.vel * dt
+}
+
+function lensSettled() {
+  const near = (state: SpringState, target: number) =>
+    Math.abs(state.pos - target) < 0.35 && Math.abs(state.vel) < 12
+  return (
+    near(_center.value!, _targetCenter.value) &&
+    near(_lensWidth.value!, _restWidth.value)
+  )
+}
+
+function paintLens() {
+  const center = _center.value!
+  const width = Math.max(_lensWidth.value!.pos, 8)
+  indicator.value.left = center.pos - width / 2
+  indicator.value.width = width
+  indicator.value.top = _targetTop.value
+  indicator.value.height = _targetH.value
+}
+
+/** 动画兜底：rAF 暂停、查询竞态或弹簧未收敛时，强制落到最新目标 */
+function armSettleTimer() {
+  clearSettleTimer()
+  _settleTimer.value = setTimeout(() => {
+    _settleTimer.value = null
+    if (!_center.value || !_lensWidth.value) return
+    stopLens()
+    _center.value = { pos: _targetCenter.value, vel: 0 }
+    _lensWidth.value = { pos: _restWidth.value, vel: 0 }
+    _targetWidth.value = _restWidth.value
+    paintLens()
+  }, 480)
+}
+
+function tickLens(now: number) {
+  const center = _center.value!
+  const width = _lensWidth.value!
+  const last = _lensLast.value || now
+  const dt = Math.min(0.032, Math.max(0.008, (now - last) / 1000))
+  _lensLast.value = now
+  /* 位置快速收敛；宽度慢半拍，形成液态拉伸但不压扁高度 */
+  stepSpring(center, _targetCenter.value, 520, 30, dt)
+  stepSpring(width, _targetWidth.value, 300, 26, dt)
+  /* 位移基本到位后，宽度再收回到静止尺寸 */
+  if (
+    Math.abs(center.pos - _targetCenter.value) < 1.2 &&
+    _targetWidth.value !== _restWidth.value
+  ) {
+    _targetWidth.value = _restWidth.value
+  }
+  paintLens()
+  if (lensSettled()) {
+    _center.value = { pos: _targetCenter.value, vel: 0 }
+    _lensWidth.value = { pos: _restWidth.value, vel: 0 }
+    _targetWidth.value = _restWidth.value
+    paintLens()
+    _lensRaf.value = null
+    clearSettleTimer()
+    return
+  }
+  _lensRaf.value = scheduleFrame((t) => tickLens(t))
+}
+
+function snapLens(rect: LensRect) {
+  stopLens()
+  clearSettleTimer()
+  _targetCenter.value = rect.left + rect.width / 2
+  _targetWidth.value = rect.width
+  _restWidth.value = rect.width
+  _targetTop.value = rect.top
+  _targetH.value = rect.height
+  _center.value = { pos: _targetCenter.value, vel: 0 }
+  _lensWidth.value = { pos: rect.width, vel: 0 }
+  paintLens()
+}
+
+function flowLens(rect: LensRect) {
+  if (!_center.value || !_lensWidth.value) {
+    snapLens(rect)
+    return
+  }
+  _targetCenter.value = rect.left + rect.width / 2
+  _restWidth.value = rect.width
+  /* 行进中先轻微拉宽 6%，中心到位后再收回来 */
+  _targetWidth.value = rect.width * 1.06
+  _targetTop.value = rect.top
+  _targetH.value = rect.height
+  indicator.value.visible = true
+  armSettleTimer()
+  if (!_lensRaf.value) {
+    _lensLast.value = 0
+    _lensRaf.value = scheduleFrame((t) => tickLens(t))
+  }
+}
+
+/** 选中透镜比 Tab 项外扩 4×2，边缘贴合胶囊内边距 */
+function selectionRect(item: { left: number; top: number; width: number; height: number }, bar: { left: number; top: number; width: number; height: number }): LensRect {
+  const padX = 4
+  const padY = 2
+  const left = Math.max(0, item.left - bar.left - padX)
+  const right = Math.min(bar.width, item.left - bar.left + item.width + padX)
+  const top = Math.max(0, item.top - bar.top - padY)
+  const bottom = Math.min(bar.height, item.top - bar.top + item.height + padY)
+  return {
+    left,
+    top,
+    width: Math.max(right - left, 8),
+    height: Math.max(bottom - top, 8),
+  }
+}
+
+function isActive(item: TabItem | null | undefined) {
+  if (!item) return false
+  if (current.value === undefined || current.value === null || current.value === '') {
+    return props.fallbackFirst && mainItems.value[0] && mainItems.value[0].key === item.key
+  }
+  return String(current.value) === String(item.key)
+}
+
+function itemClass(item: TabItem) {
+  return [
+    isActive(item) ? 'lingyun-tabbars__item--active' : '',
+    item.text ? '' : 'lingyun-tabbars__item--icon-only',
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+function badgeConfig(item: TabItem | null | undefined): BadgeView | null {
+  const b = item && item.badge
+  if (b == null || b === false || b === '') return null
+  if (b === true || b === 'dot') return { dot: true, text: '', color: 'red', max: 99 }
+  if (typeof b === 'object') {
     return {
-      pageNavInset: inject(LINGYUN_APP_PAGE_NAV_INSET, ref(0)),
+      text: b.text != null ? b.text : '',
+      color: b.color || b.type || 'red',
+      dot: !!(b.dot || b.text === 'dot'),
+      max: b.max != null ? Number(b.max) : 99,
     }
-  },
-  emits: ['change', 'update:modelValue', 'update:value'],
-  data() {
-    return {
-      instanceId: `lytb-${Math.random().toString(36).slice(2, 8)}`,
-      indicator: {
-        left: 0,
-        top: 0,
-        width: 0,
-        height: 0,
-        visible: false,
-        ready: false,
-      },
-      poppingKey: '',
-      _popTimer: null as ReturnType<typeof setTimeout> | null,
-      _onResize: null as (() => void) | null,
-      _lensRaf: null as number | null,
-      _settleTimer: null as ReturnType<typeof setTimeout> | null,
-      _lensLast: 0,
-      _center: null as SpringState | null,
-      _lensWidth: null as SpringState | null,
-      _targetCenter: 0,
-      _targetWidth: 0,
-      _restWidth: 0,
-      _targetTop: 0,
-      _targetH: 0,
+  }
+  return { text: b, color: 'red', dot: false, max: 99 }
+}
+
+function hasBadge(item: TabItem | null | undefined) {
+  const c = badgeConfig(item)
+  if (!c) return false
+  return c.dot || c.text === 0 || !!c.text
+}
+
+function badgeText(item: TabItem | null | undefined) {
+  const c = badgeConfig(item)
+  return c ? c.text : ''
+}
+
+function badgeColor(item: TabItem | null | undefined) {
+  const c = badgeConfig(item)
+  return c ? c.color : 'red'
+}
+
+function badgeDot(item: TabItem | null | undefined) {
+  const c = badgeConfig(item)
+  return !!(c && c.dot)
+}
+
+function badgeMax(item: TabItem | null | undefined) {
+  const c = badgeConfig(item)
+  return c && c.max != null ? c.max : 99
+}
+
+function onSelect(item: TabItem | null | undefined) {
+  if (!item) return
+  if (String(item.key) !== String(current.value)) fireHaptic()
+  emit('update:modelValue', item.key)
+  emit('update:value', item.key)
+  emit('change', item)
+}
+
+function syncIndicator(options?: { liquid?: boolean }, retry = 0) {
+  const liquid = !!(options && options.liquid)
+  const active = (mainItems.value || []).find((item) => isActive(item))
+  if (!active) {
+    stopLens()
+    clearSettleTimer()
+    indicator.value.visible = false
+    return
+  }
+  const expectedKey = String(active.key)
+  const stillCurrent = () => {
+    if (current.value === undefined || current.value === null || current.value === '') {
+      return true
     }
-  },
-  props: {
-    items: {
-      type: Array as PropType<Array<TabItem | null | undefined>>,
-      default: () => [] as Array<TabItem | null | undefined>,
-    },
-    modelValue: {
-      type: [String, Number] as PropType<string | number | undefined>,
-      default: undefined,
-    },
-    value: {
-      type: [String, Number] as PropType<string | number | undefined>,
-      default: undefined,
-    },
-    variant: {
-      type: String,
-      default: 'default',
-    },
-    iconMode: {
-      type: String,
-      default: 'text',
-    },
-    /** default = iPhone 99 高；duo = iPhone Duo 内屏 95 高、77×54 Tab */
-    size: {
-      type: String,
-      default: 'default',
-    },
-    /** 没有匹配项时是否把第一项当作选中；页面壳自动导航传 false */
-    fallbackFirst: {
-      type: Boolean,
-      default: true,
-    },
-    /** 页面壳跨页切换时，指示器从这一项滑到当前项 */
-    fromKey: {
-      type: [String, Number],
-      default: '',
-    },
-    safeArea: {
-      type: Boolean,
-      default: true,
-    },
-    fixed: {
-      type: Boolean,
-      default: true,
-    },
-    /** 切换时触发轻震动，接近系统 Tab Bar 反馈 */
-    haptic: {
-      type: Boolean,
-      default: true,
-    },
-  },
-  computed: {
-    current() {
-      if (this.modelValue !== undefined && this.modelValue !== null) return this.modelValue
-      return this.value
-    },
-    mainItems() {
-      const list = (this.items || []).filter((i): i is TabItem => !!(i && i.role !== 'search'))
-      /* 带搜索圆钮时最多 4+1；无搜索时 Sketch 最多 5 */
-      return this.searchItem ? list.slice(0, 4) : list.slice(0, 5)
-    },
-    searchItem() {
-      return (this.items || []).find((i) => i && i.role === 'search') || null
-    },
-    resolvedVariant() {
-      return this.variant === 'prominent' ? 'prominent' : 'default'
-    },
-    iconSize(): number {
-      return this.size === 'duo' ? 22 : 25
-    },
-    iconImageStyle(): { width: string; height: string } {
-      return {
-        width: `${this.iconSize}px`,
-        height: `${this.iconSize}px`,
-      }
-    },
-    rootClass() {
-      return [
-        `lingyun-tabbars--${this.resolvedVariant}`,
-        this.fixed ? 'lingyun-tabbars--fixed' : '',
-        this.safeArea ? 'lingyun-tabbars--safe' : '',
-        this.size === 'duo' ? 'lingyun-tabbars--duo' : '',
-        this.searchItem ? 'lingyun-tabbars--with-search' : '',
-        /* 无搜索 4/5 项，或有搜索的 3+1 / 4+1：iPhone 左侧胶囊占满剩余宽度 */
-        (!this.searchItem && this.mainItems.length >= 4) ||
-        (this.searchItem && this.mainItems.length >= 3)
-          ? 'lingyun-tabbars--fill'
-          : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    barClass() {
-      return this.resolvedVariant === 'prominent' ? 'lingyun-tabbars__bar--prominent' : ''
-    },
-    wrapStyle() {
-      const inset = Math.max(0, Number(this.pageNavInset) || 0)
-      /* inset=0 交给 CSS：窄屏 --fill 需要 left:0，内联 left 会覆盖它 */
-      return this.fixed && inset > 0
-        ? { left: `calc(${inset}px + (100% - ${inset}px) / 2)` }
-        : {}
-    },
-    barId() {
-      return `${this.instanceId}-bar`
-    },
-    indicatorClass() {
-      return [
-        this.indicator.ready ? 'lingyun-tabbars__indicator--ready' : '',
-        this.indicator.visible ? '' : 'lingyun-tabbars__indicator--hidden',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    indicatorStyle() {
-      const { left, top, width, height } = this.indicator
-      return {
-        left: `${left}px`,
-        top: `${top}px`,
-        width: `${width}px`,
-        height: `${height}px`,
-      }
-    },
-  },
-  watch: {
-    current(next) {
-      this.triggerPop(next)
-      this.syncIndicator({ liquid: true })
-    },
-    mainItems() {
-      this.syncIndicator({ liquid: false })
-    },
-  },
-  mounted() {
-    this.$nextTick(() => {
-      setTimeout(() => this.syncInitialIndicator(), 20)
-    })
-    /* #ifdef H5 */
-    const onResize = () => this.syncIndicator({ liquid: false })
-    this._onResize = onResize
-    window.addEventListener('resize', onResize)
-    /* #endif */
-  },
-  beforeUnmount() {
-    this.stopLens()
-    if (this._popTimer) {
-      clearTimeout(this._popTimer)
-      this._popTimer = null
-    }
-    if (this._settleTimer) {
-      clearTimeout(this._settleTimer)
-      this._settleTimer = null
-    }
-    /* #ifdef H5 */
-    const onResize = this._onResize
-    if (onResize) window.removeEventListener('resize', onResize)
-    /* #endif */
-  },
-  methods: {
-    itemId(item: TabItem | null | undefined) {
-      return `${this.instanceId}-item-${item && item.key}`
-    },
-    isPopping(item: TabItem | null | undefined): boolean {
-      return !!item && !!this.poppingKey && String(item.key) === this.poppingKey
-    },
-    triggerPop(key: unknown): void {
-      if (key === undefined || key === null || key === '' || this.prefersReducedMotion()) return
-      this.poppingKey = String(key)
-      if (this._popTimer) clearTimeout(this._popTimer)
-      this._popTimer = setTimeout(() => {
-        this.poppingKey = ''
-        this._popTimer = null
-      }, 430)
-    },
-    fireHaptic(): void {
-      if (!this.haptic) return
-      try {
-        const api = uni as typeof uni & {
-          vibrateShort?: (options?: { type?: 'heavy' | 'medium' | 'light' }) => void
-        }
-        api.vibrateShort?.({ type: 'light' })
-      } catch {
-        /* 端不支持 */
-      }
-    },
-    prefersReducedMotion() {
-      /* #ifdef H5 */
-      if (typeof window !== 'undefined' && window.matchMedia) {
-        return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      }
-      /* #endif */
-      return false
-    },
-    scheduleFrame(fn: (time: number) => void): number {
-      /* #ifdef H5 */
-      return window.requestAnimationFrame(fn)
-      /* #endif */
-      /* #ifndef H5 */
-      return setTimeout(() => fn(Date.now()), 16)
-      /* #endif */
-    },
-    cancelFrame(id?: number | null) {
-      if (typeof id !== 'number') return
-      const frameId = id
-      /* #ifdef H5 */
-      window.cancelAnimationFrame(frameId)
-      /* #endif */
-      /* #ifndef H5 */
-      clearTimeout(frameId)
-      /* #endif */
-    },
-    stopLens() {
-      this.cancelFrame(this._lensRaf)
-      this._lensRaf = null
-    },
-    clearSettleTimer() {
-      if (this._settleTimer) {
-        clearTimeout(this._settleTimer)
-        this._settleTimer = null
-      }
-    },
-    /** 动画兜底：rAF 暂停、查询竞态或弹簧未收敛时，强制落到最新目标 */
-    armSettleTimer() {
-      this.clearSettleTimer()
-      this._settleTimer = setTimeout(() => {
-        this._settleTimer = null
-        if (!this._center || !this._lensWidth) return
-        this.stopLens()
-        this._center = { pos: this._targetCenter, vel: 0 }
-        this._lensWidth = { pos: this._restWidth, vel: 0 }
-        this._targetWidth = this._restWidth
-        this.paintLens()
-      }, 480)
-    },
-    stepSpring(state: SpringState, target: number, stiffness: number, damping: number, dt: number) {
-      const force = (target - state.pos) * stiffness
-      const damp = -state.vel * damping
-      state.vel += (force + damp) * dt
-      state.pos += state.vel * dt
-    },
-    lensSettled() {
-      const near = (state: SpringState, target: number) =>
-        Math.abs(state.pos - target) < 0.35 && Math.abs(state.vel) < 12
-      return (
-        near(this._center!, this._targetCenter) &&
-        near(this._lensWidth!, this._restWidth)
-      )
-    },
-    paintLens() {
-      const center = this._center!
-      const width = Math.max(this._lensWidth!.pos, 8)
-      this.indicator.left = center.pos - width / 2
-      this.indicator.width = width
-      this.indicator.top = this._targetTop
-      this.indicator.height = this._targetH
-    },
-    tickLens(now: number) {
-      const center = this._center!
-      const width = this._lensWidth!
-      const last = this._lensLast || now
-      const dt = Math.min(0.032, Math.max(0.008, (now - last) / 1000))
-      this._lensLast = now
-      /* 位置快速收敛；宽度慢半拍，形成液态拉伸但不压扁高度 */
-      this.stepSpring(center, this._targetCenter, 520, 30, dt)
-      this.stepSpring(width, this._targetWidth, 300, 26, dt)
-      /* 位移基本到位后，宽度再收回到静止尺寸 */
-      if (
-        Math.abs(center.pos - this._targetCenter) < 1.2 &&
-        this._targetWidth !== this._restWidth
-      ) {
-        this._targetWidth = this._restWidth
-      }
-      this.paintLens()
-      if (this.lensSettled()) {
-        this._center = { pos: this._targetCenter, vel: 0 }
-        this._lensWidth = { pos: this._restWidth, vel: 0 }
-        this._targetWidth = this._restWidth
-        this.paintLens()
-        this._lensRaf = null
-        this.clearSettleTimer()
-        return
-      }
-      this._lensRaf = this.scheduleFrame((t) => this.tickLens(t))
-    },
-    snapLens(rect: LensRect) {
-      this.stopLens()
-      this.clearSettleTimer()
-      this._targetCenter = rect.left + rect.width / 2
-      this._targetWidth = rect.width
-      this._restWidth = rect.width
-      this._targetTop = rect.top
-      this._targetH = rect.height
-      this._center = { pos: this._targetCenter, vel: 0 }
-      this._lensWidth = { pos: rect.width, vel: 0 }
-      this.paintLens()
-    },
-    flowLens(rect: LensRect) {
-      if (!this._center || !this._lensWidth) {
-        this.snapLens(rect)
-        return
-      }
-      this._targetCenter = rect.left + rect.width / 2
-      this._restWidth = rect.width
-      /* 行进中先轻微拉宽 6%，中心到位后再收回来 */
-      this._targetWidth = rect.width * 1.06
-      this._targetTop = rect.top
-      this._targetH = rect.height
-      this.indicator.visible = true
-      this.armSettleTimer()
-      if (!this._lensRaf) {
-        this._lensLast = 0
-        this._lensRaf = this.scheduleFrame((t) => this.tickLens(t))
-      }
-    },
-    /** 选中透镜比 Tab 项外扩 4×2，边缘贴合胶囊内边距 */
-    selectionRect(item: { left: number; top: number; width: number; height: number }, bar: { left: number; top: number; width: number; height: number }): LensRect {
-      const padX = 4
-      const padY = 2
-      const left = Math.max(0, item.left - bar.left - padX)
-      const right = Math.min(bar.width, item.left - bar.left + item.width + padX)
-      const top = Math.max(0, item.top - bar.top - padY)
-      const bottom = Math.min(bar.height, item.top - bar.top + item.height + padY)
-      return {
-        left,
-        top,
-        width: Math.max(right - left, 8),
-        height: Math.max(bottom - top, 8),
-      }
-    },
-    /** 挂载时从上一页的 key 滑到当前 key；没有 fromKey 时直接落位 */
-    syncInitialIndicator(retry = 0) {
-      const active = (this.mainItems || []).find((item) => this.isActive(item))
-      const fromKey = this.fromKey
-      const fromItem = fromKey
-        ? (this.mainItems || []).find((item) => String(item.key) === String(fromKey))
-        : null
-      if (!active) {
-        /* 小程序新页面的路由可能晚一拍，等 active key 就绪再滑入 */
-        if (fromKey && retry < 6) {
-          setTimeout(() => this.syncInitialIndicator(retry + 1), 30)
+    return String(current.value) === expectedKey
+  }
+  nextTick(() => {
+    uni
+      .createSelectorQuery()
+      .in(instance?.proxy as any)
+      .select(`#${barId.value}`)
+      .boundingClientRect()
+      .select(`#${itemId(active)}`)
+      .boundingClientRect()
+      .exec((res) => {
+        const bar = res && res[0]
+        const item = res && res[1]
+        if (!bar || !item || !item.width) {
+          /* 页面刚切换 / 节点还没挂好时查询可能为空，重试几次 */
+          if (retry < 3 && stillCurrent()) {
+            setTimeout(() => syncIndicator(options, retry + 1), 40 * (retry + 1))
+          }
           return
         }
-        this.syncIndicator({ liquid: false })
-        return
-      }
-      if (
-        !fromItem ||
-        String(fromItem.key) === String(active.key) ||
-        this.prefersReducedMotion()
-      ) {
-        this.syncIndicator({ liquid: false })
-        return
-      }
-      this.$nextTick(() => {
-        uni
-          .createSelectorQuery()
-          .in(this)
-          .select(`#${this.barId}`)
-          .boundingClientRect()
-          .select(`#${this.itemId(fromItem)}`)
-          .boundingClientRect()
-          .select(`#${this.itemId(active)}`)
-          .boundingClientRect()
-          .exec((res) => {
-            const bar = res && res[0]
-            const fromRect = res && res[1]
-            const toRaw = res && res[2]
-            if (!bar || !fromRect || !fromRect.width || !toRaw || !toRaw.width) {
-              this.syncIndicator({ liquid: false })
-              return
-            }
-            const toRect = this.selectionRect(toRaw, bar)
-            this.indicator.visible = true
-            this.snapLens(this.selectionRect(fromRect, bar))
-            this.indicator.ready = true
-            this.$nextTick(() => {
-              this.flowLens(toRect)
-            })
-          })
-      })
-    },
-    syncIndicator(options?: { liquid?: boolean }, retry = 0) {
-      const liquid = !!(options && options.liquid)
-      const active = (this.mainItems || []).find((item) => this.isActive(item))
-      if (!active) {
-        this.stopLens()
-        this.clearSettleTimer()
-        this.indicator.visible = false
-        return
-      }
-      const expectedKey = String(active.key)
-      const stillCurrent = () => {
-        if (this.current === undefined || this.current === null || this.current === '') {
-          return true
+        if (!stillCurrent()) return
+        const toRect = selectionRect(item, bar)
+        const canFlow =
+          liquid &&
+          indicator.value.ready &&
+          indicator.value.visible &&
+          indicator.value.width > 0 &&
+          !prefersReducedMotion()
+        indicator.value.visible = true
+        if (canFlow) {
+          flowLens(toRect)
+          return
         }
-        return String(this.current) === expectedKey
-      }
-      this.$nextTick(() => {
-        uni
-          .createSelectorQuery()
-          .in(this)
-          .select(`#${this.barId}`)
-          .boundingClientRect()
-          .select(`#${this.itemId(active)}`)
-          .boundingClientRect()
-          .exec((res) => {
-            const bar = res && res[0]
-            const item = res && res[1]
-            if (!bar || !item || !item.width) {
-              /* 页面刚切换 / 节点还没挂好时查询可能为空，重试几次 */
-              if (retry < 3 && stillCurrent()) {
-                setTimeout(() => this.syncIndicator(options, retry + 1), 40 * (retry + 1))
-              }
-              return
-            }
-            if (!stillCurrent()) return
-            const toRect = this.selectionRect(item, bar)
-            const canFlow =
-              liquid &&
-              this.indicator.ready &&
-              this.indicator.visible &&
-              this.indicator.width > 0 &&
-              !this.prefersReducedMotion()
-            this.indicator.visible = true
-            if (canFlow) {
-              this.flowLens(toRect)
-              return
-            }
-            this.snapLens(toRect)
-            if (!this.indicator.ready) {
-              this.$nextTick(() => {
-                this.indicator.ready = true
-              })
-            }
+        snapLens(toRect)
+        if (!indicator.value.ready) {
+          nextTick(() => {
+            indicator.value.ready = true
           })
-      })
-    },
-    isActive(item: TabItem | null | undefined) {
-      if (!item) return false
-      if (this.current === undefined || this.current === null || this.current === '') {
-        return this.fallbackFirst && this.mainItems[0] && this.mainItems[0].key === item.key
-      }
-      return String(this.current) === String(item.key)
-    },
-    itemClass(item: TabItem) {
-      return [
-        this.isActive(item) ? 'lingyun-tabbars__item--active' : '',
-        item.text ? '' : 'lingyun-tabbars__item--icon-only',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    badgeConfig(item: TabItem | null | undefined): BadgeView | null {
-      const b = item && item.badge
-      if (b == null || b === false || b === '') return null
-      if (b === true || b === 'dot') return { dot: true, text: '', color: 'red', max: 99 }
-      if (typeof b === 'object') {
-        return {
-          text: b.text != null ? b.text : '',
-          color: b.color || b.type || 'red',
-          dot: !!(b.dot || b.text === 'dot'),
-          max: b.max != null ? Number(b.max) : 99,
         }
-      }
-      return { text: b, color: 'red', dot: false, max: 99 }
-    },
-    hasBadge(item: TabItem | null | undefined) {
-      const c = this.badgeConfig(item)
-      if (!c) return false
-      return c.dot || c.text === 0 || !!c.text
-    },
-    badgeText(item: TabItem | null | undefined) {
-      const c = this.badgeConfig(item)
-      return c ? c.text : ''
-    },
-    badgeColor(item: TabItem | null | undefined) {
-      const c = this.badgeConfig(item)
-      return c ? c.color : 'red'
-    },
-    badgeDot(item: TabItem | null | undefined) {
-      const c = this.badgeConfig(item)
-      return !!(c && c.dot)
-    },
-    badgeMax(item: TabItem | null | undefined) {
-      const c = this.badgeConfig(item)
-      return c && c.max != null ? c.max : 99
-    },
-    onSelect(item: TabItem | null | undefined) {
-      if (!item) return
-      if (String(item.key) !== String(this.current)) this.fireHaptic()
-      this.$emit('update:modelValue', item.key)
-      this.$emit('update:value', item.key)
-      this.$emit('change', item)
-    },
-  },
+      })
+  })
+}
+
+/** 挂载时从上一页的 key 滑到当前 key；没有 fromKey 时直接落位 */
+function syncInitialIndicator(retry = 0) {
+  const active = (mainItems.value || []).find((item) => isActive(item))
+  const fromKey = props.fromKey
+  const fromItem = fromKey
+    ? (mainItems.value || []).find((item) => String(item.key) === String(fromKey))
+    : null
+  if (!active) {
+    /* 小程序新页面的路由可能晚一拍，等 active key 就绪再滑入 */
+    if (fromKey && retry < 6) {
+      setTimeout(() => syncInitialIndicator(retry + 1), 30)
+      return
+    }
+    syncIndicator({ liquid: false })
+    return
+  }
+  if (
+    !fromItem ||
+    String(fromItem.key) === String(active.key) ||
+    prefersReducedMotion()
+  ) {
+    syncIndicator({ liquid: false })
+    return
+  }
+  nextTick(() => {
+    uni
+      .createSelectorQuery()
+      .in(instance?.proxy as any)
+      .select(`#${barId.value}`)
+      .boundingClientRect()
+      .select(`#${itemId(fromItem)}`)
+      .boundingClientRect()
+      .select(`#${itemId(active)}`)
+      .boundingClientRect()
+      .exec((res) => {
+        const bar = res && res[0]
+        const fromRect = res && res[1]
+        const toRaw = res && res[2]
+        if (!bar || !fromRect || !fromRect.width || !toRaw || !toRaw.width) {
+          syncIndicator({ liquid: false })
+          return
+        }
+        const toRect = selectionRect(toRaw, bar)
+        indicator.value.visible = true
+        snapLens(selectionRect(fromRect, bar))
+        indicator.value.ready = true
+        nextTick(() => {
+          flowLens(toRect)
+        })
+      })
+  })
+}
+
+watch(current, (next) => {
+  triggerPop(next)
+  syncIndicator({ liquid: true })
+})
+
+watch(mainItems, () => {
+  syncIndicator({ liquid: false })
+})
+
+onMounted(() => {
+  nextTick(() => {
+    setTimeout(() => syncInitialIndicator(), 20)
+  })
+  /* #ifdef H5 */
+  const onResize = () => syncIndicator({ liquid: false })
+  _onResize.value = onResize
+  window.addEventListener('resize', onResize)
+  /* #endif */
+})
+
+onBeforeUnmount(() => {
+  stopLens()
+  if (_popTimer.value) {
+    clearTimeout(_popTimer.value)
+    _popTimer.value = null
+  }
+  if (_settleTimer.value) {
+    clearTimeout(_settleTimer.value)
+    _settleTimer.value = null
+  }
+  /* #ifdef H5 */
+  const onResize = _onResize.value
+  if (onResize) window.removeEventListener('resize', onResize)
+  /* #endif */
 })
 </script>
 

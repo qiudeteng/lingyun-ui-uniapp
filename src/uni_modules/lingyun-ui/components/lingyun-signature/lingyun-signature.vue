@@ -86,8 +86,10 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, markRaw } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { nextLingyunUid } from '../../utils/uid'
+import { markRaw } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
 import type { LingyunSignatureConfirmPayload } from './types'
 
@@ -132,7 +134,6 @@ interface SignatureRect {
   top?: number
 }
 
-let signatureSequence = 0
 
 function touchesOf(event: TouchEvent): TouchLike[] {
   const list = event.touches as unknown as ArrayLike<TouchLike> | undefined
@@ -148,506 +149,530 @@ function clamp(value: number, min: number, max: number): number {
  * @description 手写签名板：触控 / 鼠标绘制、清除、重新签名、导出 PNG
  * @see design/SIGNATURE.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunSignature',
-  emits: ['update:modelValue', 'confirm', 'clear', 'start', 'end', 'error'],
-  props: {
-    modelValue: { type: String, default: '' },
-    title: { type: String, default: '手写签名' },
-    tip: { type: String, default: '' },
-    placeholder: { type: String, default: '请在此签名' },
-    height: { type: Number, default: 180 },
-    penColor: { type: String, default: '#1c1c1e' },
-    penWidth: { type: Number, default: 3 },
-    backgroundColor: { type: String, default: '#ffffff' },
-    confirmText: { type: String, default: '完成' },
-    clearText: { type: String, default: '清除' },
-    restartText: { type: String, default: '重新签名' },
-    exportingText: { type: String, default: '处理中…' },
-    showToolbar: { type: Boolean, default: true },
-    disabled: { type: Boolean, default: false },
-    readonly: { type: Boolean, default: false },
-  },
-  data(): {
-    uid: number
-    context: SignatureContext | null
-    contextReady: boolean
-    canvasWidth: number
-    canvasHeight: number
-    padLeft: number
-    padTop: number
-    strokes: SignatureStroke[]
-    currentStroke: SignatureStroke | null
-    drawing: boolean
-    hasInk: boolean
-    previewPath: string
-    exporting: boolean
-    measureAttempts: number
-    measureTimer: ReturnType<typeof setTimeout> | null
-    lastTouchAt: number
-    h5Pad: HTMLElement | null
-    h5MouseDown: ((event: MouseEvent) => void) | null
-    h5MouseMove: ((event: MouseEvent) => void) | null
-    h5MouseUp: ((event: MouseEvent) => void) | null
-    h5Resize: (() => void) | null
-  } {
-    return {
-      uid: (signatureSequence += 1),
-      context: null,
-      contextReady: false,
-      canvasWidth: 0,
-      canvasHeight: 0,
-      padLeft: 0,
-      padTop: 0,
-      strokes: [],
-      currentStroke: null,
-      drawing: false,
-      hasInk: false,
-      previewPath: '',
-      exporting: false,
-      measureAttempts: 0,
-      measureTimer: null,
-      lastTouchAt: 0,
-      h5Pad: null,
-      h5MouseDown: null,
-      h5MouseMove: null,
-      h5MouseUp: null,
-      h5Resize: null,
+})
+
+const props = defineProps({
+  modelValue: { type: String, default: '' },
+  title: { type: String, default: '手写签名' },
+  tip: { type: String, default: '' },
+  placeholder: { type: String, default: '请在此签名' },
+  height: { type: Number, default: 180 },
+  penColor: { type: String, default: '#1c1c1e' },
+  penWidth: { type: Number, default: 3 },
+  backgroundColor: { type: String, default: '#ffffff' },
+  confirmText: { type: String, default: '完成' },
+  clearText: { type: String, default: '清除' },
+  restartText: { type: String, default: '重新签名' },
+  exportingText: { type: String, default: '处理中…' },
+  showToolbar: { type: Boolean, default: true },
+  disabled: { type: Boolean, default: false },
+  readonly: { type: Boolean, default: false },
+})
+
+const emit = defineEmits([
+  'update:modelValue',
+  'confirm',
+  'clear',
+  'start',
+  'end',
+  'error',
+])
+
+const instance = getCurrentInstance()
+
+const uid = ref(nextLingyunUid('signature'))
+const context = ref<SignatureContext | null>(null)
+const contextReady = ref(false)
+const canvasWidth = ref(0)
+const canvasHeight = ref(0)
+const padLeft = ref(0)
+const padTop = ref(0)
+const strokes = ref<SignatureStroke[]>([])
+const currentStroke = ref<SignatureStroke | null>(null)
+const drawing = ref(false)
+const hasInk = ref(false)
+const previewPath = ref('')
+const exporting = ref(false)
+const measureAttempts = ref(0)
+const measureTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const lastTouchAt = ref(0)
+const h5Pad = ref<HTMLElement | null>(null)
+const h5MouseDown = ref<((event: MouseEvent) => void) | null>(null)
+const h5MouseMove = ref<((event: MouseEvent) => void) | null>(null)
+const h5MouseUp = ref<((event: MouseEvent) => void) | null>(null)
+const h5Resize = ref<(() => void) | null>(null)
+
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* pinia 未就绪 */
+  }
+  return themeClass
+})
+
+const canvasId = computed((): string => {
+  return `lingyun-signature-canvas-${uid.value}`
+})
+
+const padId = computed((): string => {
+  return `lingyun-signature-pad-${uid.value}`
+})
+
+const padHeight = computed((): number => {
+  return Math.max(120, Number(props.height) || 180)
+})
+
+const resolvedPenWidth = computed((): number => {
+  return clamp(Number(props.penWidth) || 3, 1, 12)
+})
+
+const padStyle = computed((): Record<string, string> => {
+  return {
+    height: `${padHeight.value}px`,
+    backgroundColor: props.backgroundColor || 'transparent',
+  }
+})
+
+const canDraw = computed((): boolean => {
+  return (
+    !props.disabled &&
+    !props.readonly &&
+    !exporting.value &&
+    !previewPath.value
+  )
+})
+
+function setupCanvas(): void {
+  if (!contextReady.value) {
+    const ctx = uni.createCanvasContext(canvasId.value, instance?.proxy)
+    context.value = markRaw(ctx as unknown as SignatureContext)
+    contextReady.value = true
+  }
+  measurePad()
+}
+
+function measurePad(forceRedraw = false): void {
+  const apply = (rect: SignatureRect) => {
+    const width = Number(rect.width) || 0
+    const height = Number(rect.height) || 0
+    if (width <= 0 || height <= 0) {
+      retryMeasure(forceRedraw)
+      return
     }
-  },
-  computed: {
-    rootClass(): string {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* pinia 未就绪 */
+    const changed =
+      Math.abs(width - canvasWidth.value) > 0.5 ||
+      Math.abs(height - canvasHeight.value) > 0.5
+    canvasWidth.value = width
+    canvasHeight.value = height
+    padLeft.value = Number(rect.left) || 0
+    padTop.value = Number(rect.top) || 0
+    measureAttempts.value = 0
+    if (changed || forceRedraw || !hasInk.value) redraw()
+  }
+
+  // #ifdef H5
+  if (typeof document !== 'undefined') {
+    const pad = document.getElementById(padId.value)
+    if (pad) {
+      apply(pad.getBoundingClientRect())
+      return
+    }
+  }
+  // #endif
+
+  uni
+    .createSelectorQuery()
+    .in(instance?.proxy)
+    .select(`#${padId.value}`)
+    .boundingClientRect()
+    .exec((res) => {
+      const rect = res && (res[0] as SignatureRect | null)
+      if (!rect) {
+        retryMeasure(forceRedraw)
+        return
       }
-      return themeClass
-    },
-    canvasId(): string {
-      return `lingyun-signature-canvas-${this.uid}`
-    },
-    padId(): string {
-      return `lingyun-signature-pad-${this.uid}`
-    },
-    padHeight(): number {
-      return Math.max(120, Number(this.height) || 180)
-    },
-    resolvedPenWidth(): number {
-      return clamp(Number(this.penWidth) || 3, 1, 12)
-    },
-    padStyle(): Record<string, string> {
-      return {
-        height: `${this.padHeight}px`,
-        backgroundColor: this.backgroundColor || 'transparent',
-      }
-    },
-    canDraw(): boolean {
-      return (
-        !this.disabled &&
-        !this.readonly &&
-        !this.exporting &&
-        !this.previewPath
-      )
-    },
-  },
-  watch: {
-    modelValue: {
-      immediate: true,
-      handler(value: string) {
-        const next = String(value == null ? '' : value)
-        if (next === this.previewPath) return
-        this.previewPath = next
-        if (!next) {
-          if (!this.drawing) this.clearCanvas()
-          return
-        }
-        this.drawing = false
-        this.currentStroke = null
-        this.hasInk = false
-      },
-    },
-    height() {
-      this.$nextTick(() => this.measurePad(true))
-    },
-  },
-  mounted() {
-    this.$nextTick(() => {
-      this.setupCanvas()
-      this.bindH5Mouse()
+      apply(rect)
     })
-  },
-  beforeUnmount() {
-    if (this.measureTimer) {
-      clearTimeout(this.measureTimer)
-      this.measureTimer = null
+}
+
+function retryMeasure(forceRedraw: boolean): void {
+  if (measureAttempts.value >= 3) return
+  measureAttempts.value += 1
+  if (measureTimer.value) clearTimeout(measureTimer.value)
+  measureTimer.value = setTimeout(() => {
+    measureTimer.value = null
+    measurePad(forceRedraw)
+  }, 60)
+}
+
+function redraw(): void {
+  const ctx = context.value
+  if (!ctx || canvasWidth.value <= 0 || canvasHeight.value <= 0) return
+  ctx.clearRect(0, 0, canvasWidth.value, canvasHeight.value)
+  if (props.backgroundColor && props.backgroundColor !== 'transparent') {
+    ctx.setFillStyle(props.backgroundColor)
+    ctx.fillRect(0, 0, canvasWidth.value, canvasHeight.value)
+  }
+  strokes.value.forEach((stroke) => drawStroke(stroke))
+  if (currentStroke.value) drawStroke(currentStroke.value)
+  ctx.draw()
+}
+
+function drawStroke(stroke: SignatureStroke): void {
+  const ctx = context.value
+  const points = stroke.points
+  if (!ctx || !points.length) return
+  const toX = (point: SignaturePoint) => point.x * canvasWidth.value
+  const toY = (point: SignaturePoint) => point.y * canvasHeight.value
+
+  if (points.length === 1) {
+    ctx.setFillStyle(props.penColor)
+    ctx.beginPath()
+    ctx.arc(
+      toX(points[0]),
+      toY(points[0]),
+      resolvedPenWidth.value / 2,
+      0,
+      Math.PI * 2,
+    )
+    ctx.fill()
+    return
+  }
+
+  ctx.setStrokeStyle(props.penColor)
+  ctx.setLineWidth(resolvedPenWidth.value)
+  ctx.setLineCap('round')
+  ctx.setLineJoin('round')
+  ctx.beginPath()
+  ctx.moveTo(toX(points[0]), toY(points[0]))
+  for (let index = 1; index < points.length; index += 1) {
+    ctx.lineTo(toX(points[index]), toY(points[index]))
+  }
+  ctx.stroke()
+}
+
+function drawSegment(previous: SignaturePoint, next: SignaturePoint): void {
+  const ctx = context.value
+  if (!ctx) return
+  ctx.setStrokeStyle(props.penColor)
+  ctx.setLineWidth(resolvedPenWidth.value)
+  ctx.setLineCap('round')
+  ctx.setLineJoin('round')
+  ctx.beginPath()
+  ctx.moveTo(
+    previous.x * canvasWidth.value,
+    previous.y * canvasHeight.value,
+  )
+  ctx.lineTo(next.x * canvasWidth.value, next.y * canvasHeight.value)
+  ctx.stroke()
+  ctx.draw(true)
+}
+
+function drawDot(point: SignaturePoint): void {
+  const ctx = context.value
+  if (!ctx) return
+  ctx.setFillStyle(props.penColor)
+  ctx.beginPath()
+  ctx.arc(
+    point.x * canvasWidth.value,
+    point.y * canvasHeight.value,
+    resolvedPenWidth.value / 2,
+    0,
+    Math.PI * 2,
+  )
+  ctx.fill()
+  ctx.draw(true)
+}
+
+function normalizePoint(x: number, y: number): SignaturePoint {
+  return {
+    x: clamp(x / canvasWidth.value, 0, 1),
+    y: clamp(y / canvasHeight.value, 0, 1),
+  }
+}
+
+function pointFromTouch(touch: TouchLike): SignaturePoint {
+  let x = 0
+  let y = 0
+  // #ifdef H5
+  x = Number(touch.clientX || 0) - padLeft.value
+  y = Number(touch.clientY || 0) - padTop.value
+  // #endif
+  // #ifndef H5
+  if (typeof touch.x === 'number' && typeof touch.y === 'number') {
+    x = touch.x
+    y = touch.y
+  } else {
+    x = Number(touch.clientX || 0) - padLeft.value
+    y = Number(touch.clientY || 0) - padTop.value
+  }
+  // #endif
+  return normalizePoint(x, y)
+}
+
+function pointFromMouse(event: MouseEvent): SignaturePoint {
+  return normalizePoint(
+    event.clientX - padLeft.value,
+    event.clientY - padTop.value,
+  )
+}
+
+function startStroke(point: SignaturePoint): void {
+  drawing.value = true
+  currentStroke.value = { points: [point] }
+  hasInk.value = true
+  emit('start')
+}
+
+function extendStroke(point: SignaturePoint): void {
+  const stroke = currentStroke.value
+  if (!drawing.value || !stroke) return
+  const previous = stroke.points[stroke.points.length - 1]
+  if (!previous) {
+    stroke.points.push(point)
+    return
+  }
+  const distance = Math.hypot(
+    (point.x - previous.x) * canvasWidth.value,
+    (point.y - previous.y) * canvasHeight.value,
+  )
+  if (distance < 0.6) return
+  stroke.points.push(point)
+  drawSegment(previous, point)
+}
+
+function endStroke(): void {
+  const stroke = currentStroke.value
+  if (!drawing.value || !stroke) return
+  if (stroke.points.length === 1) drawDot(stroke.points[0])
+  strokes.value.push(stroke)
+  currentStroke.value = null
+  drawing.value = false
+  emit('end')
+}
+
+function onTouchStart(event: TouchEvent): void {
+  if (!canDraw.value) return
+  lastTouchAt.value = Date.now()
+  refreshH5Rect()
+  const touch = touchesOf(event)[0]
+  if (!touch) return
+  startStroke(pointFromTouch(touch))
+}
+
+function onTouchMove(event: TouchEvent): void {
+  if (!canDraw.value || !drawing.value) return
+  const touch = touchesOf(event)[0]
+  if (!touch) return
+  extendStroke(pointFromTouch(touch))
+}
+
+function onTouchEnd(): void {
+  if (!drawing.value) return
+  endStroke()
+}
+
+function refreshH5Rect(): void {
+  // #ifdef H5
+  if (typeof document === 'undefined') return
+  const pad = document.getElementById(padId.value)
+  if (!pad) return
+  const rect = pad.getBoundingClientRect()
+  if (!rect.width || !rect.height) return
+  padLeft.value = rect.left
+  padTop.value = rect.top
+  if (
+    Math.abs(rect.width - canvasWidth.value) > 0.5 ||
+    Math.abs(rect.height - canvasHeight.value) > 0.5
+  ) {
+    canvasWidth.value = rect.width
+    canvasHeight.value = rect.height
+    redraw()
+  }
+  // #endif
+}
+
+function bindH5Mouse(): void {
+  // #ifdef H5
+  if (typeof document === 'undefined') return
+  const pad = document.getElementById(padId.value)
+  if (!pad) return
+  h5Pad.value = markRaw(pad as HTMLElement)
+  const down = (event: MouseEvent) => {
+    if (Date.now() - lastTouchAt.value < 500) return
+    if (!canDraw.value) return
+    event.preventDefault()
+    refreshH5Rect()
+    startStroke(pointFromMouse(event))
+  }
+  const move = (event: MouseEvent) => {
+    if (!drawing.value) return
+    event.preventDefault()
+    extendStroke(pointFromMouse(event))
+  }
+  const up = () => {
+    if (!drawing.value) return
+    endStroke()
+  }
+  const resizeHandler = () => measurePad(true)
+  h5MouseDown.value = down
+  h5MouseMove.value = move
+  h5MouseUp.value = up
+  h5Resize.value = resizeHandler
+  h5Pad.value.addEventListener('mousedown', down)
+  window.addEventListener('mousemove', move)
+  window.addEventListener('mouseup', up)
+  window.addEventListener('resize', resizeHandler)
+  // #endif
+}
+
+function unbindH5Mouse(): void {
+  // #ifdef H5
+  if (h5Pad.value && h5MouseDown.value) {
+    h5Pad.value.removeEventListener('mousedown', h5MouseDown.value)
+  }
+  if (h5MouseMove.value) {
+    window.removeEventListener('mousemove', h5MouseMove.value)
+  }
+  if (h5MouseUp.value) {
+    window.removeEventListener('mouseup', h5MouseUp.value)
+  }
+  if (h5Resize.value) {
+    window.removeEventListener('resize', h5Resize.value)
+  }
+  h5Pad.value = null
+  h5MouseDown.value = null
+  h5MouseMove.value = null
+  h5MouseUp.value = null
+  h5Resize.value = null
+  // #endif
+}
+
+function clearCanvas(): void {
+  strokes.value = []
+  currentStroke.value = null
+  drawing.value = false
+  hasInk.value = false
+  redraw()
+}
+
+function clear(): void {
+  if (props.disabled) return
+  previewPath.value = ''
+  clearCanvas()
+  emit('update:modelValue', '')
+  emit('clear')
+}
+
+function restart(): void {
+  if (props.disabled) return
+  previewPath.value = ''
+  clearCanvas()
+  emit('update:modelValue', '')
+  emit('clear')
+  nextTick(() => measurePad(true))
+}
+
+function confirm(): void {
+  if (exporting.value || props.disabled || props.readonly) return
+  if (!hasInk.value && !strokes.value.length) {
+    uni.showToast({ title: '请先签名', icon: 'none' })
+    return
+  }
+  exporting.value = true
+  const options: Record<string, unknown> = {
+    canvasId: canvasId.value,
+    fileType: 'png',
+    quality: 1,
+    success: (res: { tempFilePath?: string }) => {
+      exporting.value = false
+      const path = res && res.tempFilePath ? String(res.tempFilePath) : ''
+      if (!path) {
+        failExport('签名导出失败')
+        return
+      }
+      previewPath.value = path
+      drawing.value = false
+      currentStroke.value = null
+      emit('update:modelValue', path)
+      const payload: LingyunSignatureConfirmPayload = {
+        path,
+        width: canvasWidth.value,
+        height: canvasHeight.value,
+      }
+      emit('confirm', payload)
+    },
+    fail: (error: { errMsg?: string }) => {
+      exporting.value = false
+      failExport(error && error.errMsg ? error.errMsg : '签名导出失败')
+    },
+  }
+  try {
+    ;(
+      uni as typeof uni & {
+        canvasToTempFilePath: (
+          opts: Record<string, unknown>,
+          instance?: unknown,
+        ) => void
+      }
+    ).canvasToTempFilePath(options, instance?.proxy)
+  } catch {
+    exporting.value = false
+    failExport('签名导出失败')
+  }
+}
+
+function failExport(message: string): void {
+  uni.showToast({ title: message, icon: 'none' })
+  emit('error', { message })
+}
+
+function resize(): void {
+  measurePad(true)
+}
+
+watch(
+  () => props.modelValue,
+  (value: string) => {
+    const next = String(value == null ? '' : value)
+    if (next === previewPath.value) return
+    previewPath.value = next
+    if (!next) {
+      if (!drawing.value) clearCanvas()
+      return
     }
-    this.unbindH5Mouse()
-    this.context = null
+    drawing.value = false
+    currentStroke.value = null
+    hasInk.value = false
   },
-  methods: {
-    setupCanvas(): void {
-      if (!this.contextReady) {
-        const context = uni.createCanvasContext(this.canvasId, this)
-        this.context = markRaw(context as unknown as SignatureContext)
-        this.contextReady = true
-      }
-      this.measurePad()
-    },
-    measurePad(redraw = false): void {
-      const apply = (rect: SignatureRect) => {
-        const width = Number(rect.width) || 0
-        const height = Number(rect.height) || 0
-        if (width <= 0 || height <= 0) {
-          this.retryMeasure(redraw)
-          return
-        }
-        const changed =
-          Math.abs(width - this.canvasWidth) > 0.5 ||
-          Math.abs(height - this.canvasHeight) > 0.5
-        this.canvasWidth = width
-        this.canvasHeight = height
-        this.padLeft = Number(rect.left) || 0
-        this.padTop = Number(rect.top) || 0
-        this.measureAttempts = 0
-        if (changed || redraw || !this.hasInk) this.redraw()
-      }
+  { immediate: true },
+)
 
-      // #ifdef H5
-      if (typeof document !== 'undefined') {
-        const pad = document.getElementById(this.padId)
-        if (pad) {
-          apply(pad.getBoundingClientRect())
-          return
-        }
-      }
-      // #endif
-
-      uni
-        .createSelectorQuery()
-        .in(this)
-        .select(`#${this.padId}`)
-        .boundingClientRect()
-        .exec((res) => {
-          const rect = res && (res[0] as SignatureRect | null)
-          if (!rect) {
-            this.retryMeasure(redraw)
-            return
-          }
-          apply(rect)
-        })
-    },
-    retryMeasure(redraw: boolean): void {
-      if (this.measureAttempts >= 3) return
-      this.measureAttempts += 1
-      if (this.measureTimer) clearTimeout(this.measureTimer)
-      this.measureTimer = setTimeout(() => {
-        this.measureTimer = null
-        this.measurePad(redraw)
-      }, 60)
-    },
-    redraw(): void {
-      const context = this.context
-      if (!context || this.canvasWidth <= 0 || this.canvasHeight <= 0) return
-      context.clearRect(0, 0, this.canvasWidth, this.canvasHeight)
-      if (this.backgroundColor && this.backgroundColor !== 'transparent') {
-        context.setFillStyle(this.backgroundColor)
-        context.fillRect(0, 0, this.canvasWidth, this.canvasHeight)
-      }
-      this.strokes.forEach((stroke) => this.drawStroke(stroke))
-      if (this.currentStroke) this.drawStroke(this.currentStroke)
-      context.draw()
-    },
-    drawStroke(stroke: SignatureStroke): void {
-      const context = this.context
-      const points = stroke.points
-      if (!context || !points.length) return
-      const toX = (point: SignaturePoint) => point.x * this.canvasWidth
-      const toY = (point: SignaturePoint) => point.y * this.canvasHeight
-
-      if (points.length === 1) {
-        context.setFillStyle(this.penColor)
-        context.beginPath()
-        context.arc(
-          toX(points[0]),
-          toY(points[0]),
-          this.resolvedPenWidth / 2,
-          0,
-          Math.PI * 2,
-        )
-        context.fill()
-        return
-      }
-
-      context.setStrokeStyle(this.penColor)
-      context.setLineWidth(this.resolvedPenWidth)
-      context.setLineCap('round')
-      context.setLineJoin('round')
-      context.beginPath()
-      context.moveTo(toX(points[0]), toY(points[0]))
-      for (let index = 1; index < points.length; index += 1) {
-        context.lineTo(toX(points[index]), toY(points[index]))
-      }
-      context.stroke()
-    },
-    drawSegment(previous: SignaturePoint, next: SignaturePoint): void {
-      const context = this.context
-      if (!context) return
-      context.setStrokeStyle(this.penColor)
-      context.setLineWidth(this.resolvedPenWidth)
-      context.setLineCap('round')
-      context.setLineJoin('round')
-      context.beginPath()
-      context.moveTo(
-        previous.x * this.canvasWidth,
-        previous.y * this.canvasHeight,
-      )
-      context.lineTo(next.x * this.canvasWidth, next.y * this.canvasHeight)
-      context.stroke()
-      context.draw(true)
-    },
-    drawDot(point: SignaturePoint): void {
-      const context = this.context
-      if (!context) return
-      context.setFillStyle(this.penColor)
-      context.beginPath()
-      context.arc(
-        point.x * this.canvasWidth,
-        point.y * this.canvasHeight,
-        this.resolvedPenWidth / 2,
-        0,
-        Math.PI * 2,
-      )
-      context.fill()
-      context.draw(true)
-    },
-    normalizePoint(x: number, y: number): SignaturePoint {
-      return {
-        x: clamp(x / this.canvasWidth, 0, 1),
-        y: clamp(y / this.canvasHeight, 0, 1),
-      }
-    },
-    pointFromTouch(touch: TouchLike): SignaturePoint {
-      let x = 0
-      let y = 0
-      // #ifdef H5
-      x = Number(touch.clientX || 0) - this.padLeft
-      y = Number(touch.clientY || 0) - this.padTop
-      // #endif
-      // #ifndef H5
-      if (typeof touch.x === 'number' && typeof touch.y === 'number') {
-        x = touch.x
-        y = touch.y
-      } else {
-        x = Number(touch.clientX || 0) - this.padLeft
-        y = Number(touch.clientY || 0) - this.padTop
-      }
-      // #endif
-      return this.normalizePoint(x, y)
-    },
-    pointFromMouse(event: MouseEvent): SignaturePoint {
-      return this.normalizePoint(
-        event.clientX - this.padLeft,
-        event.clientY - this.padTop,
-      )
-    },
-    startStroke(point: SignaturePoint): void {
-      this.drawing = true
-      this.currentStroke = { points: [point] }
-      this.hasInk = true
-      this.$emit('start')
-    },
-    extendStroke(point: SignaturePoint): void {
-      const stroke = this.currentStroke
-      if (!this.drawing || !stroke) return
-      const previous = stroke.points[stroke.points.length - 1]
-      if (!previous) {
-        stroke.points.push(point)
-        return
-      }
-      const distance = Math.hypot(
-        (point.x - previous.x) * this.canvasWidth,
-        (point.y - previous.y) * this.canvasHeight,
-      )
-      if (distance < 0.6) return
-      stroke.points.push(point)
-      this.drawSegment(previous, point)
-    },
-    endStroke(): void {
-      const stroke = this.currentStroke
-      if (!this.drawing || !stroke) return
-      if (stroke.points.length === 1) this.drawDot(stroke.points[0])
-      this.strokes.push(stroke)
-      this.currentStroke = null
-      this.drawing = false
-      this.$emit('end')
-    },
-    onTouchStart(event: TouchEvent): void {
-      if (!this.canDraw) return
-      this.lastTouchAt = Date.now()
-      this.refreshH5Rect()
-      const touch = touchesOf(event)[0]
-      if (!touch) return
-      this.startStroke(this.pointFromTouch(touch))
-    },
-    onTouchMove(event: TouchEvent): void {
-      if (!this.canDraw || !this.drawing) return
-      const touch = touchesOf(event)[0]
-      if (!touch) return
-      this.extendStroke(this.pointFromTouch(touch))
-    },
-    onTouchEnd(): void {
-      if (!this.drawing) return
-      this.endStroke()
-    },
-    refreshH5Rect(): void {
-      // #ifdef H5
-      if (typeof document === 'undefined') return
-      const pad = document.getElementById(this.padId)
-      if (!pad) return
-      const rect = pad.getBoundingClientRect()
-      if (!rect.width || !rect.height) return
-      this.padLeft = rect.left
-      this.padTop = rect.top
-      if (
-        Math.abs(rect.width - this.canvasWidth) > 0.5 ||
-        Math.abs(rect.height - this.canvasHeight) > 0.5
-      ) {
-        this.canvasWidth = rect.width
-        this.canvasHeight = rect.height
-        this.redraw()
-      }
-      // #endif
-    },
-    bindH5Mouse(): void {
-      // #ifdef H5
-      if (typeof document === 'undefined') return
-      const pad = document.getElementById(this.padId)
-      if (!pad) return
-      this.h5Pad = markRaw(pad as HTMLElement)
-      this.h5MouseDown = (event: MouseEvent) => {
-        if (Date.now() - this.lastTouchAt < 500) return
-        if (!this.canDraw) return
-        event.preventDefault()
-        this.refreshH5Rect()
-        this.startStroke(this.pointFromMouse(event))
-      }
-      this.h5MouseMove = (event: MouseEvent) => {
-        if (!this.drawing) return
-        event.preventDefault()
-        this.extendStroke(this.pointFromMouse(event))
-      }
-      this.h5MouseUp = () => {
-        if (!this.drawing) return
-        this.endStroke()
-      }
-      this.h5Resize = () => this.measurePad(true)
-      this.h5Pad.addEventListener('mousedown', this.h5MouseDown)
-      window.addEventListener('mousemove', this.h5MouseMove)
-      window.addEventListener('mouseup', this.h5MouseUp)
-      window.addEventListener('resize', this.h5Resize)
-      // #endif
-    },
-    unbindH5Mouse(): void {
-      // #ifdef H5
-      if (this.h5Pad && this.h5MouseDown) {
-        this.h5Pad.removeEventListener('mousedown', this.h5MouseDown)
-      }
-      if (this.h5MouseMove) {
-        window.removeEventListener('mousemove', this.h5MouseMove)
-      }
-      if (this.h5MouseUp) {
-        window.removeEventListener('mouseup', this.h5MouseUp)
-      }
-      if (this.h5Resize) {
-        window.removeEventListener('resize', this.h5Resize)
-      }
-      this.h5Pad = null
-      this.h5MouseDown = null
-      this.h5MouseMove = null
-      this.h5MouseUp = null
-      this.h5Resize = null
-      // #endif
-    },
-    clearCanvas(): void {
-      this.strokes = []
-      this.currentStroke = null
-      this.drawing = false
-      this.hasInk = false
-      this.redraw()
-    },
-    clear(): void {
-      if (this.disabled) return
-      this.previewPath = ''
-      this.clearCanvas()
-      this.$emit('update:modelValue', '')
-      this.$emit('clear')
-    },
-    restart(): void {
-      if (this.disabled) return
-      this.previewPath = ''
-      this.clearCanvas()
-      this.$emit('update:modelValue', '')
-      this.$emit('clear')
-      this.$nextTick(() => this.measurePad(true))
-    },
-    confirm(): void {
-      if (this.exporting || this.disabled || this.readonly) return
-      if (!this.hasInk && !this.strokes.length) {
-        uni.showToast({ title: '请先签名', icon: 'none' })
-        return
-      }
-      this.exporting = true
-      const options: Record<string, unknown> = {
-        canvasId: this.canvasId,
-        fileType: 'png',
-        quality: 1,
-        success: (res: { tempFilePath?: string }) => {
-          this.exporting = false
-          const path = res && res.tempFilePath ? String(res.tempFilePath) : ''
-          if (!path) {
-            this.failExport('签名导出失败')
-            return
-          }
-          this.previewPath = path
-          this.drawing = false
-          this.currentStroke = null
-          this.$emit('update:modelValue', path)
-          const payload: LingyunSignatureConfirmPayload = {
-            path,
-            width: this.canvasWidth,
-            height: this.canvasHeight,
-          }
-          this.$emit('confirm', payload)
-        },
-        fail: (error: { errMsg?: string }) => {
-          this.exporting = false
-          this.failExport(error && error.errMsg ? error.errMsg : '签名导出失败')
-        },
-      }
-      try {
-        ;(
-          uni as typeof uni & {
-            canvasToTempFilePath: (
-              opts: Record<string, unknown>,
-              instance?: unknown,
-            ) => void
-          }
-        ).canvasToTempFilePath(options, this)
-      } catch {
-        this.exporting = false
-        this.failExport('签名导出失败')
-      }
-    },
-    failExport(message: string): void {
-      uni.showToast({ title: message, icon: 'none' })
-      this.$emit('error', { message })
-    },
-    resize(): void {
-      this.measurePad(true)
-    },
+watch(
+  () => props.height,
+  () => {
+    nextTick(() => measurePad(true))
   },
+)
+
+onMounted(() => {
+  nextTick(() => {
+    setupCanvas()
+    bindH5Mouse()
+  })
+})
+
+onBeforeUnmount(() => {
+  if (measureTimer.value) {
+    clearTimeout(measureTimer.value)
+    measureTimer.value = null
+  }
+  unbindH5Mouse()
+  context.value = null
 })
 </script>
 

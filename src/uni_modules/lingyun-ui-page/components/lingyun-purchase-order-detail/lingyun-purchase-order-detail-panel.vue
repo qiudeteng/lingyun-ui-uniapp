@@ -433,8 +433,9 @@
 </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { type PropType } from 'vue'
 import { useLingyunAppPageScroll } from '../../../lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 import { parseLingyunDate } from '../../../lingyun-ui/utils/dateFormat'
 import type {
@@ -553,567 +554,635 @@ const DEFAULT_ACTIONS: Record<LingyunPurchaseOrderDetailStatus, LingyunPurchaseO
  * 数据驱动，不请求接口；操作 / 商品 / 地址 / 复制抛事件。
  * @see doc/page/purchase-order-detail.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunPurchaseOrderDetailPanel',
-  emits: [
-    'back',
-    'action',
-    'item-click',
-    'sub-purchase-order-click',
-    'copy',
-    'payment-timeout',
-    'scroll',
-  ],
-  setup() {
-    const reportScroll = useLingyunAppPageScroll()
-    return { reportScroll }
+})
+
+const props = defineProps({
+  order: {
+    type: Object as PropType<LingyunPurchaseOrderDetailOrder | null>,
+    default: null,
   },
-  props: {
-    order: {
-      type: Object as PropType<LingyunPurchaseOrderDetailOrder | null>,
-      default: null,
-    },
-    loading: { type: Boolean, default: false },
-    loadingText: { type: String, default: '加载中…' },
-    emptyText: { type: String, default: '订货单不存在' },
-    title: { type: String, default: '订货单详情' },
-    showToolbar: { type: Boolean, default: true },
-    showBack: { type: Boolean, default: true },
-    showNav: { type: Boolean, default: true },
-    autoTopInset: { type: Boolean, default: true },
-    /** 返回钮默认返回上一页；false 时只抛 back，由页面处理 */
-    autoBack: { type: Boolean, default: true },
-    /** 内层滚动内容从顶栏下方穿过，滚动时顶栏呈现液态玻璃；false 用 app-page 顶栏留白 */
-    scrollUnderToolbar: { type: Boolean, default: true },
-    /** 页面级主题钮开关：auto 跟随全局，false 只隐藏当前页 */
-    showThemeSwitch: {
-      type: [Boolean, String] as PropType<boolean | string>,
-      default: 'auto',
-    },
-    toolbarButtons: {
-      type: Array as PropType<LingyunPurchaseOrderDetailToolbarButtons>,
-      default: () => [],
-    },
-    toolbarMenuEnabled: { type: Boolean, default: false },
-    currency: { type: String, default: '¥' },
-    priceDecimals: { type: Number, default: 2 },
-    /** 子订货单行横向最多展示的商品图数量，多出的显示 +N */
-    maxThumbnails: { type: Number, default: 3 },
-    /** 待付款倒计时，单位分钟，从 order.createdAt 起算 */
-    paymentTimeoutMinutes: { type: Number, default: 15 },
-    /** 分栏面板模式：顶部占位高度 px（浮层 toolbar 的高度）；0 用页面壳的 --lingyun-app-page-bar */
-    topSpace: { type: Number, default: 0 },
+  loading: { type: Boolean, default: false },
+  loadingText: { type: String, default: '加载中…' },
+  emptyText: { type: String, default: '订货单不存在' },
+  title: { type: String, default: '订货单详情' },
+  showToolbar: { type: Boolean, default: true },
+  showBack: { type: Boolean, default: true },
+  showNav: { type: Boolean, default: true },
+  autoTopInset: { type: Boolean, default: true },
+  /** 返回钮默认返回上一页；false 时只抛 back，由页面处理 */
+  autoBack: { type: Boolean, default: true },
+  /** 内层滚动内容从顶栏下方穿过，滚动时顶栏呈现液态玻璃；false 用 app-page 顶栏留白 */
+  scrollUnderToolbar: { type: Boolean, default: true },
+  /** 页面级主题钮开关：auto 跟随全局，false 只隐藏当前页 */
+  showThemeSwitch: {
+    type: [Boolean, String] as PropType<boolean | string>,
+    default: 'auto',
   },
-  data() {
-    return {
-      scrollIntoView: '',
-      itemsExpanded: false,
-      nowTs: Date.now(),
-      countdownTimer: null as ReturnType<typeof setInterval> | null,
-      paymentTimeoutNotified: false,
+  toolbarButtons: {
+    type: Array as PropType<LingyunPurchaseOrderDetailToolbarButtons>,
+    default: () => [],
+  },
+  toolbarMenuEnabled: { type: Boolean, default: false },
+  currency: { type: String, default: '¥' },
+  priceDecimals: { type: Number, default: 2 },
+  /** 子订货单行横向最多展示的商品图数量，多出的显示 +N */
+  maxThumbnails: { type: Number, default: 3 },
+  /** 待付款倒计时，单位分钟，从 order.createdAt 起算 */
+  paymentTimeoutMinutes: { type: Number, default: 15 },
+  /** 分栏面板模式：顶部占位高度 px（浮层 toolbar 的高度）；0 用页面壳的 --lingyun-app-page-bar */
+  topSpace: { type: Number, default: 0 },
+})
+
+const emit = defineEmits([
+  'back',
+  'action',
+  'item-click',
+  'sub-purchase-order-click',
+  'copy',
+  'payment-timeout',
+  'scroll',
+])
+
+const reportScroll = useLingyunAppPageScroll()
+
+const scrollIntoView = ref('')
+const itemsExpanded = ref(false)
+const nowTs = ref(Date.now())
+const countdownTimer = ref<ReturnType<typeof setInterval> | null>(null)
+const paymentTimeoutNotified = ref(false)
+
+/* 以下纯工具函数被 computed 引用，必须先声明 */
+
+function formatAmount(amount: number | undefined): string {
+  const value = Number(amount)
+  if (!Number.isFinite(value)) return '0'
+  const decimals = Number(props.priceDecimals)
+  if (Number.isFinite(decimals) && decimals < 0) {
+    return String(Number(value.toFixed(2)))
+  }
+  const fixed = Number.isFinite(decimals)
+    ? Math.min(6, Math.max(0, Math.floor(decimals)))
+    : 2
+  return value.toFixed(fixed)
+}
+
+function formatPrice(amount: number | undefined): string {
+  return `${props.currency}${formatAmount(amount)}`
+}
+
+function pad2(value: number): string {
+  return value < 10 ? `0${value}` : String(value)
+}
+
+function firstChar(name: string): string {
+  return (name || '').trim().slice(0, 1) || '单'
+}
+
+function thumbLimit(): number {
+  const value = Number(props.maxThumbnails)
+  return Number.isFinite(value) ? Math.max(1, Math.floor(value)) : 3
+}
+
+/** 从展示时间中只取日期，去掉时分；无法识别日期时返回空 */
+function dateToken(value: string): string {
+  const raw = String(value || '').trim().replace(/^预计\s*/, '')
+  const match = raw.match(
+    /^(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}|\d{1,2}月\d{1,2}日)/,
+  )
+  if (match) return match[1]
+  const relative = raw.match(/^(今天|昨天|明天|后天)/)
+  return relative ? relative[1] : ''
+}
+
+function latestSubStep(
+  subOrder: LingyunPurchaseOrderDetailSubOrder,
+): LingyunPurchaseOrderDetailTimelineStep | null {
+  /* 时间线按新到旧排列，只取最后一条（最新）日志 */
+  return (subOrder.timeline || [])[0] || null
+}
+
+const statusMeta = computed((): StatusMeta => {
+  const fallback = STATUS_META.pendingPayment
+  if (!props.order) return fallback
+  const meta = STATUS_META[props.order.status] || fallback
+  return {
+    ...meta,
+    text: props.order.statusText || meta.text,
+    hint: props.order.statusHint || meta.hint,
+    icon: props.order.statusIcon || meta.icon,
+    color: props.order.statusColor || meta.color,
+  }
+})
+
+const statusCardStyle = computed((): Record<string, string> => {
+  return {
+    background: `linear-gradient(135deg, ${statusMeta.value.tint} 0%, rgba(255, 255, 255, 0) 66%), var(--lingyun-bg-grouped-secondary, #ffffff)`,
+  }
+})
+
+const totalAmount = computed((): number => {
+  const amounts = props.order?.amounts
+  if (!amounts) return 0
+  return amounts.paid !== undefined ? amounts.paid : amounts.payable
+})
+
+const totalLabel = computed((): string => {
+  if (!props.order) return ''
+  if (props.order.status === 'pendingPayment') {
+    return '需付款'
+  }
+  if (props.order.status === 'cancelled') return '订货单金额'
+  return '实付款'
+})
+
+const paymentDeadline = computed((): number => {
+  if (!props.order || props.order.status !== 'pendingPayment') return 0
+  const created = parseLingyunDate(props.order.createdAt)
+  if (!created) return 0
+  const minutes = Number(props.paymentTimeoutMinutes)
+  const timeout = Number.isFinite(minutes) ? Math.max(1, minutes) : 15
+  return created.getTime() + timeout * 60 * 1000
+})
+
+const paymentRemainMs = computed((): number => {
+  if (!paymentDeadline.value) return 0
+  return Math.max(0, paymentDeadline.value - nowTs.value)
+})
+
+const paymentExpired = computed((): boolean => {
+  return paymentDeadline.value > 0 && paymentRemainMs.value <= 0
+})
+
+const paymentCountdownText = computed((): string => {
+  if (
+    !props.order ||
+    props.order.status !== 'pendingPayment' ||
+    !paymentDeadline.value
+  ) {
+    return ''
+  }
+  if (paymentExpired.value) return ''
+  const total = Math.floor(paymentRemainMs.value / 1000)
+  return `支付剩余 ${pad2(Math.floor(total / 60))}:${pad2(total % 60)}`
+})
+
+const deliveryType = computed((): LingyunPurchaseOrderDetailDeliveryType | '' => {
+  const order = props.order
+  if (!order) return ''
+  if (order.deliveryType) return order.deliveryType
+  if (order.receiver) return 'delivery'
+  if (order.pickup) return 'pickup'
+  return ''
+})
+
+const hasAddress = computed((): boolean => {
+  if (!props.order) return false
+  return deliveryType.value === 'delivery'
+    ? !!props.order.receiver
+    : deliveryType.value === 'pickup'
+      ? !!props.order.pickup
+      : false
+})
+
+const addressTitle = computed((): string => {
+  return deliveryType.value === 'pickup' ? '自提信息' : '配送信息'
+})
+
+const addressName = computed((): string => {
+  if (!props.order) return ''
+  if (deliveryType.value === 'pickup') return props.order.pickup?.storeName || ''
+  return props.order.receiver?.name || ''
+})
+
+const addressPhone = computed((): string => {
+  if (!props.order) return ''
+  if (deliveryType.value === 'pickup') return props.order.pickup?.phone || ''
+  return props.order.receiver?.phone || ''
+})
+
+const addressMain = computed((): string => {
+  if (!props.order) return ''
+  if (deliveryType.value === 'pickup') return props.order.pickup?.address || ''
+  return props.order.receiver?.address || ''
+})
+
+const addressMeta = computed((): string => {
+  if (!props.order) return ''
+  if (deliveryType.value === 'pickup') return props.order.pickup?.time || ''
+  return props.order.deliveryTime || ''
+})
+
+const hasSubOrders = computed((): boolean => {
+  return !!(props.order?.subOrders && props.order.subOrders.length)
+})
+
+/** 付款 / 审核前不展示预计送达时间 */
+const showAddressMeta = computed((): boolean => {
+  if (!addressMeta.value) return false
+  if (deliveryType.value === 'pickup') return true
+  if (hasSubOrders.value) return false
+  return (
+    props.order?.status !== 'pendingReview' &&
+    props.order?.status !== 'pendingPayment'
+  )
+})
+
+const itemsTitle = computed((): string => {
+  const count = (props.order?.items || []).reduce(
+    (sum, item) => sum + (Number(item.quantity) || 0),
+    0,
+  )
+  return count > 0 ? `商品清单 · 共 ${count} 件` : '商品清单'
+})
+
+const amountRows = computed((): AmountRow[] => {
+  const order = props.order
+  if (!order) return []
+  const amounts = order.amounts
+  const rows: AmountRow[] = [
+    { key: 'goods', label: '商品合计', value: formatPrice(amounts.goodsTotal) },
+  ]
+  if (amounts.deliveryFee && amounts.deliveryFee > 0) {
+    rows.push({
+      key: 'delivery',
+      label: '配送费',
+      value: formatPrice(amounts.deliveryFee),
+    })
+  }
+  if (amounts.discount && amounts.discount > 0) {
+    rows.push({
+      key: 'discount',
+      label: '优惠',
+      value: `-${formatPrice(amounts.discount)}`,
+    })
+  }
+  if (amounts.coupon && amounts.coupon > 0) {
+    rows.push({
+      key: 'coupon',
+      label: '优惠券',
+      value: `-${formatPrice(amounts.coupon)}`,
+    })
+  }
+  const paid = amounts.paid
+  rows.push({
+    key: 'total',
+    label:
+      paid !== undefined
+        ? '实付款'
+        : order.status === 'pendingPayment'
+          ? '需付款'
+          : '应付金额',
+    value: formatPrice(paid !== undefined ? paid : amounts.payable),
+    emphasis: true,
+  })
+  return rows
+})
+
+const timelineSteps = computed((): LingyunPurchaseOrderDetailTimelineStep[] => {
+  return props.order?.timeline || []
+})
+
+/** 审核前没有物流进度：待审核 / 待付款不显示时间线 */
+const showTimeline = computed((): boolean => {
+  if (!props.order || !timelineSteps.value.length) return false
+  return (
+    props.order.status !== 'pendingReview' &&
+    props.order.status !== 'pendingPayment'
+  )
+})
+
+const showLogistics = computed((): boolean => {
+  return (
+    showTimeline.value ||
+    !!props.order?.carrier ||
+    !!props.order?.trackingNumber
+  )
+})
+
+const subOrders = computed((): LingyunPurchaseOrderDetailSubOrder[] => {
+  return props.order?.subOrders || []
+})
+
+const orderInfoRows = computed((): LingyunPurchaseOrderDetailInfoRow[] => {
+  const order = props.order
+  if (!order) return []
+  const rows: LingyunPurchaseOrderDetailInfoRow[] = [
+    { label: '下单时间', value: order.createdAt },
+  ]
+  if (order.paidAt) rows.push({ label: '支付时间', value: order.paidAt })
+  if (order.paymentMethod) {
+    rows.push({ label: '支付方式', value: order.paymentMethod })
+  }
+  if (order.remark) rows.push({ label: '订货单备注', value: order.remark })
+  if (order.infoRows) rows.push(...order.infoRows)
+  return rows
+})
+
+const displayActions = computed((): LingyunPurchaseOrderDetailAction[] => {
+  const order = props.order
+  if (!order) return []
+  if (Array.isArray(order.actions)) return order.actions
+  return DEFAULT_ACTIONS[order.status] || []
+})
+
+const canToggleItems = computed((): boolean => {
+  return (props.order?.items?.length || 0) > 1
+})
+
+const showItemPreview = computed((): boolean => {
+  return canToggleItems.value && !itemsExpanded.value
+})
+
+const itemPreviewThumbs = computed((): LingyunPurchaseOrderDetailItem[] => {
+  return (props.order?.items || []).slice(0, thumbLimit())
+})
+
+const itemExtraThumbCount = computed((): number => {
+  const total = props.order?.items?.length || 0
+  return Math.max(0, total - thumbLimit())
+})
+
+/** 这些进行中状态不显示底部操作栏；待付款例外，保留取消 / 去支付 */
+const isInProgress = computed((): boolean => {
+  const status = props.order?.status
+  return (
+    status === 'pendingShipment' ||
+    status === 'shipped' ||
+    status === 'refund'
+  )
+})
+
+const showActions = computed((): boolean => {
+  return (
+    !!props.order &&
+    displayActions.value.length > 0 &&
+    !isInProgress.value
+  )
+})
+
+function stopCountdown(): void {
+  if (!countdownTimer.value) return
+  clearInterval(countdownTimer.value)
+  countdownTimer.value = null
+}
+
+function notifyPaymentTimeout(): void {
+  if (paymentTimeoutNotified.value || !props.order) return
+  paymentTimeoutNotified.value = true
+  const payload: LingyunPurchaseOrderDetailPaymentTimeoutPayload = {
+    order: props.order,
+  }
+  emit('payment-timeout', payload)
+}
+
+function startCountdown(): void {
+  stopCountdown()
+  paymentTimeoutNotified.value = false
+  if (!props.order || props.order.status !== 'pendingPayment') return
+  nowTs.value = Date.now()
+  if (!paymentDeadline.value) return
+  if (paymentRemainMs.value <= 0) {
+    notifyPaymentTimeout()
+    return
+  }
+  countdownTimer.value = setInterval(() => {
+    nowTs.value = Date.now()
+    if (paymentRemainMs.value <= 0) {
+      stopCountdown()
+      notifyPaymentTimeout()
     }
+  }, 1000)
+}
+
+function reportPageScroll(top: number): void {
+  reportScroll(top)
+}
+
+/** 页面重新进入时回到顶部，避免 H5 恢复上一次的内部 scroll-view 位置 */
+function resetScroll(): void {
+  reportPageScroll(0)
+  scrollIntoView.value = ''
+  nextTick(() => {
+    scrollIntoView.value = 'lingyun-purchase-order-detail-top'
+  })
+}
+
+function onScroll(event: { detail?: { scrollTop?: number } }): void {
+  const top = Number(event?.detail?.scrollTop)
+  if (Number.isFinite(top) && top >= 0) {
+    reportPageScroll(top)
+    emit('scroll', top)
+  }
+}
+
+function onScrollToUpper(): void {
+  reportPageScroll(0)
+}
+
+function onBack(): void {
+  emit('back')
+  if (!props.autoBack) return
+  const pages =
+    typeof getCurrentPages === 'function' ? getCurrentPages() : []
+  if (pages.length > 1) uni.navigateBack()
+}
+
+function isStepActive(step: LingyunPurchaseOrderDetailTimelineStep, index: number): boolean {
+  return step.active !== undefined ? step.active : index === 0
+}
+
+function subOrderItems(subOrder: LingyunPurchaseOrderDetailSubOrder): LingyunPurchaseOrderDetailItem[] {
+  return subOrder.items || []
+}
+
+function subOrderVisibleThumbs(
+  subOrder: LingyunPurchaseOrderDetailSubOrder,
+): LingyunPurchaseOrderDetailItem[] {
+  return subOrderItems(subOrder).slice(0, thumbLimit())
+}
+
+function subOrderExtraThumbCount(subOrder: LingyunPurchaseOrderDetailSubOrder): number {
+  return Math.max(
+    0,
+    subOrderItems(subOrder).length - thumbLimit(),
+  )
+}
+
+function subOrderItemsCount(subOrder: LingyunPurchaseOrderDetailSubOrder): number {
+  return subOrderItems(subOrder).reduce(
+    (sum, item) => sum + (Number(item.quantity) || 0),
+    0,
+  )
+}
+
+function subOrderHasAmounts(subOrder: LingyunPurchaseOrderDetailSubOrder): boolean {
+  return !!subOrder.amounts
+}
+
+function subOrderTotal(subOrder: LingyunPurchaseOrderDetailSubOrder): number {
+  const amounts = subOrder.amounts
+  if (!amounts) return 0
+  return amounts.paid !== undefined ? amounts.paid : amounts.payable
+}
+
+function subOrderMeta(subOrder: LingyunPurchaseOrderDetailSubOrder): StatusMeta {
+  const fallback = STATUS_META.pendingPayment
+  const meta = STATUS_META[subOrder.status] || fallback
+  return {
+    ...meta,
+    text: subOrder.statusText || meta.text,
+    hint: subOrder.statusHint || meta.hint,
+    icon: subOrder.statusIcon || meta.icon,
+    color: subOrder.statusColor || meta.color,
+  }
+}
+
+function subOrderWarehouseLabel(subOrder: LingyunPurchaseOrderDetailSubOrder): string {
+  const name = subOrder.warehouse?.name || ''
+  return name ? `发货仓库：${name}` : ''
+}
+
+function subOrderEstimateDate(subOrder: LingyunPurchaseOrderDetailSubOrder): string {
+  if (
+    subOrder.status !== 'pendingShipment' &&
+    subOrder.status !== 'shipped'
+  ) {
+    return ''
+  }
+  return dateToken(subOrder.deliveryTime || '')
+}
+
+function subOrderEstimate(subOrder: LingyunPurchaseOrderDetailSubOrder): string {
+  const date = subOrderEstimateDate(subOrder)
+  if (!date) return ''
+  const label = subOrder.status === 'pendingShipment' ? '发货' : '送达'
+  return `预计 ${date} ${label}`
+}
+
+/** 把时间线里的展示时间补成可解析的完整日期，交给 lingyun-date-text */
+function subOrderLogTimeValue(subOrder: LingyunPurchaseOrderDetailSubOrder): string {
+  const raw = String(latestSubStep(subOrder)?.time || '').trim()
+  if (!raw) return ''
+  if (/^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}/.test(raw)) return raw
+  if (/^\d{1,2}[-/.]\d{1,2}/.test(raw)) {
+    return `${new Date().getFullYear()}-${raw}`
+  }
+  const relative = raw.match(/^(今天|昨天|明天)\s*(.*)$/)
+  if (relative) {
+    const offset =
+      relative[1] === '今天' ? 0 : relative[1] === '昨天' ? -1 : 1
+    const date = new Date()
+    date.setDate(date.getDate() + offset)
+    const ymd = `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`
+    return relative[2] ? `${ymd} ${relative[2]}` : ymd
+  }
+  return raw
+}
+
+/** 相对日期文案也显示月-日，保证始终是 MM-DD HH:mm */
+function subOrderLogMonthDay(subOrder: LingyunPurchaseOrderDetailSubOrder): string {
+  const match = subOrderLogTimeValue(subOrder).match(
+    /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/,
+  )
+  if (!match) return ''
+  return `${pad2(Number(match[2]))}-${pad2(Number(match[3]))}`
+}
+
+function actionVariantIn(
+  action: LingyunPurchaseOrderDetailAction,
+  index: number,
+  list: LingyunPurchaseOrderDetailAction[],
+): string {
+  if (action.variant) return action.variant
+  return index === list.length - 1 ? 'borderedProminent' : 'bordered'
+}
+
+function actionVariant(
+  action: LingyunPurchaseOrderDetailAction,
+  index: number,
+): string {
+  return actionVariantIn(action, index, displayActions.value)
+}
+
+function onSubPurchaseOrderClick(subOrder: LingyunPurchaseOrderDetailSubOrder): void {
+  if (!props.order) return
+  const payload: LingyunPurchaseOrderDetailSubOrderPayload = {
+    order: props.order,
+    subOrder,
+  }
+  emit('sub-purchase-order-click', payload)
+}
+
+function onAction(action: LingyunPurchaseOrderDetailAction): void {
+  if (!props.order || action.disabled) return
+  const payload: LingyunPurchaseOrderDetailActionPayload = {
+    key: action.key,
+    action,
+    order: props.order,
+  }
+  emit('action', payload)
+}
+
+function toggleItems(): void {
+  itemsExpanded.value = !itemsExpanded.value
+}
+
+function onItemClick(item: LingyunPurchaseOrderDetailItem, index: number): void {
+  if (!props.order) return
+  const payload: LingyunPurchaseOrderDetailItemPayload = {
+    item,
+    index,
+    order: props.order,
+  }
+  emit('item-click', payload)
+}
+
+function copyText(text: string): void {
+  if (!text) return
+  const payload: LingyunPurchaseOrderDetailCopyPayload = { text }
+  try {
+    uni.setClipboardData({
+      data: text,
+      complete: () => emit('copy', payload),
+    })
+  } catch {
+    emit('copy', payload)
+  }
+}
+
+function copyTrackingNumber(): void {
+  copyText(props.order?.trackingNumber || '')
+}
+
+function copyOrderNumber(): void {
+  copyText(props.order?.number || '')
+}
+
+watch(
+  () => props.order?.number,
+  () => {
+    resetScroll()
+    itemsExpanded.value = false
+    startCountdown()
   },
-  watch: {
-    'order.number'() {
-      this.resetScroll()
-      this.itemsExpanded = false
-      this.startCountdown()
-    },
-    'order.status'() {
-      this.startCountdown()
-    },
+)
+
+watch(
+  () => props.order?.status,
+  () => {
+    startCountdown()
   },
-  mounted() {
-    this.resetScroll()
-    this.startCountdown()
-  },
-  beforeUnmount() {
-    this.stopCountdown()
-  },
-  computed: {
-    statusMeta(): StatusMeta {
-      const fallback = STATUS_META.pendingPayment
-      if (!this.order) return fallback
-      const meta = STATUS_META[this.order.status] || fallback
-      return {
-        ...meta,
-        text: this.order.statusText || meta.text,
-        hint: this.order.statusHint || meta.hint,
-        icon: this.order.statusIcon || meta.icon,
-        color: this.order.statusColor || meta.color,
-      }
-    },
-    statusCardStyle(): Record<string, string> {
-      return {
-        background: `linear-gradient(135deg, ${this.statusMeta.tint} 0%, rgba(255, 255, 255, 0) 66%), var(--lingyun-bg-grouped-secondary, #ffffff)`,
-      }
-    },
-    totalAmount(): number {
-      const amounts = this.order?.amounts
-      if (!amounts) return 0
-      return amounts.paid !== undefined ? amounts.paid : amounts.payable
-    },
-    totalLabel(): string {
-      if (!this.order) return ''
-      if (this.order.status === 'pendingPayment') {
-        return '需付款'
-      }
-      if (this.order.status === 'cancelled') return '订货单金额'
-      return '实付款'
-    },
-    paymentDeadline(): number {
-      if (!this.order || this.order.status !== 'pendingPayment') return 0
-      const created = parseLingyunDate(this.order.createdAt)
-      if (!created) return 0
-      const minutes = Number(this.paymentTimeoutMinutes)
-      const timeout = Number.isFinite(minutes) ? Math.max(1, minutes) : 15
-      return created.getTime() + timeout * 60 * 1000
-    },
-    paymentRemainMs(): number {
-      if (!this.paymentDeadline) return 0
-      return Math.max(0, this.paymentDeadline - this.nowTs)
-    },
-    paymentExpired(): boolean {
-      return this.paymentDeadline > 0 && this.paymentRemainMs <= 0
-    },
-    paymentCountdownText(): string {
-      if (
-        !this.order ||
-        this.order.status !== 'pendingPayment' ||
-        !this.paymentDeadline
-      ) {
-        return ''
-      }
-      if (this.paymentExpired) return ''
-      const total = Math.floor(this.paymentRemainMs / 1000)
-      return `支付剩余 ${this.pad2(Math.floor(total / 60))}:${this.pad2(total % 60)}`
-    },
-    deliveryType(): LingyunPurchaseOrderDetailDeliveryType | '' {
-      const order = this.order
-      if (!order) return ''
-      if (order.deliveryType) return order.deliveryType
-      if (order.receiver) return 'delivery'
-      if (order.pickup) return 'pickup'
-      return ''
-    },
-    hasAddress(): boolean {
-      if (!this.order) return false
-      return this.deliveryType === 'delivery'
-        ? !!this.order.receiver
-        : this.deliveryType === 'pickup'
-          ? !!this.order.pickup
-          : false
-    },
-    addressTitle(): string {
-      return this.deliveryType === 'pickup' ? '自提信息' : '配送信息'
-    },
-    addressName(): string {
-      if (!this.order) return ''
-      if (this.deliveryType === 'pickup') return this.order.pickup?.storeName || ''
-      return this.order.receiver?.name || ''
-    },
-    addressPhone(): string {
-      if (!this.order) return ''
-      if (this.deliveryType === 'pickup') return this.order.pickup?.phone || ''
-      return this.order.receiver?.phone || ''
-    },
-    addressMain(): string {
-      if (!this.order) return ''
-      if (this.deliveryType === 'pickup') return this.order.pickup?.address || ''
-      return this.order.receiver?.address || ''
-    },
-    addressMeta(): string {
-      if (!this.order) return ''
-      if (this.deliveryType === 'pickup') return this.order.pickup?.time || ''
-      return this.order.deliveryTime || ''
-    },
-    /** 付款 / 审核前不展示预计送达时间 */
-    showAddressMeta(): boolean {
-      if (!this.addressMeta) return false
-      if (this.deliveryType === 'pickup') return true
-      if (this.hasSubOrders) return false
-      return (
-        this.order?.status !== 'pendingReview' &&
-        this.order?.status !== 'pendingPayment'
-      )
-    },
-    itemsTitle(): string {
-      const count = (this.order?.items || []).reduce(
-        (sum, item) => sum + (Number(item.quantity) || 0),
-        0,
-      )
-      return count > 0 ? `商品清单 · 共 ${count} 件` : '商品清单'
-    },
-    amountRows(): AmountRow[] {
-      const order = this.order
-      if (!order) return []
-      const amounts = order.amounts
-      const rows: AmountRow[] = [
-        { key: 'goods', label: '商品合计', value: this.formatPrice(amounts.goodsTotal) },
-      ]
-      if (amounts.deliveryFee && amounts.deliveryFee > 0) {
-        rows.push({
-          key: 'delivery',
-          label: '配送费',
-          value: this.formatPrice(amounts.deliveryFee),
-        })
-      }
-      if (amounts.discount && amounts.discount > 0) {
-        rows.push({
-          key: 'discount',
-          label: '优惠',
-          value: `-${this.formatPrice(amounts.discount)}`,
-        })
-      }
-      if (amounts.coupon && amounts.coupon > 0) {
-        rows.push({
-          key: 'coupon',
-          label: '优惠券',
-          value: `-${this.formatPrice(amounts.coupon)}`,
-        })
-      }
-      const paid = amounts.paid
-      rows.push({
-        key: 'total',
-        label:
-          paid !== undefined
-            ? '实付款'
-            : order.status === 'pendingPayment'
-              ? '需付款'
-              : '应付金额',
-        value: this.formatPrice(paid !== undefined ? paid : amounts.payable),
-        emphasis: true,
-      })
-      return rows
-    },
-    timelineSteps(): LingyunPurchaseOrderDetailTimelineStep[] {
-      return this.order?.timeline || []
-    },
-    /** 审核前没有物流进度：待审核 / 待付款不显示时间线 */
-    showTimeline(): boolean {
-      if (!this.order || !this.timelineSteps.length) return false
-      return (
-        this.order.status !== 'pendingReview' &&
-        this.order.status !== 'pendingPayment'
-      )
-    },
-    showLogistics(): boolean {
-      return (
-        this.showTimeline ||
-        !!this.order?.carrier ||
-        !!this.order?.trackingNumber
-      )
-    },
-    hasSubOrders(): boolean {
-      return !!(this.order?.subOrders && this.order.subOrders.length)
-    },
-    subOrders(): LingyunPurchaseOrderDetailSubOrder[] {
-      return this.order?.subOrders || []
-    },
-    orderInfoRows(): LingyunPurchaseOrderDetailInfoRow[] {
-      const order = this.order
-      if (!order) return []
-      const rows: LingyunPurchaseOrderDetailInfoRow[] = [
-        { label: '下单时间', value: order.createdAt },
-      ]
-      if (order.paidAt) rows.push({ label: '支付时间', value: order.paidAt })
-      if (order.paymentMethod) {
-        rows.push({ label: '支付方式', value: order.paymentMethod })
-      }
-      if (order.remark) rows.push({ label: '订货单备注', value: order.remark })
-      if (order.infoRows) rows.push(...order.infoRows)
-      return rows
-    },
-    displayActions(): LingyunPurchaseOrderDetailAction[] {
-      const order = this.order
-      if (!order) return []
-      if (Array.isArray(order.actions)) return order.actions
-      return DEFAULT_ACTIONS[order.status] || []
-    },
-    canToggleItems(): boolean {
-      return (this.order?.items?.length || 0) > 1
-    },
-    showItemPreview(): boolean {
-      return this.canToggleItems && !this.itemsExpanded
-    },
-    itemPreviewThumbs(): LingyunPurchaseOrderDetailItem[] {
-      return (this.order?.items || []).slice(0, this.thumbLimit())
-    },
-    itemExtraThumbCount(): number {
-      const total = this.order?.items?.length || 0
-      return Math.max(0, total - this.thumbLimit())
-    },
-    /** 这些进行中状态不显示底部操作栏；待付款例外，保留取消 / 去支付 */
-    isInProgress(): boolean {
-      const status = this.order?.status
-      return (
-        status === 'pendingShipment' ||
-        status === 'shipped' ||
-        status === 'refund'
-      )
-    },
-    showActions(): boolean {
-      return (
-        !!this.order &&
-        this.displayActions.length > 0 &&
-        !this.isInProgress
-      )
-    },
-  },
-  methods: {
-    startCountdown(): void {
-      this.stopCountdown()
-      this.paymentTimeoutNotified = false
-      if (!this.order || this.order.status !== 'pendingPayment') return
-      this.nowTs = Date.now()
-      if (!this.paymentDeadline) return
-      if (this.paymentRemainMs <= 0) {
-        this.notifyPaymentTimeout()
-        return
-      }
-      this.countdownTimer = setInterval(() => {
-        this.nowTs = Date.now()
-        if (this.paymentRemainMs <= 0) {
-          this.stopCountdown()
-          this.notifyPaymentTimeout()
-        }
-      }, 1000)
-    },
-    stopCountdown(): void {
-      if (!this.countdownTimer) return
-      clearInterval(this.countdownTimer)
-      this.countdownTimer = null
-    },
-    notifyPaymentTimeout(): void {
-      if (this.paymentTimeoutNotified || !this.order) return
-      this.paymentTimeoutNotified = true
-      const payload: LingyunPurchaseOrderDetailPaymentTimeoutPayload = {
-        order: this.order,
-      }
-      this.$emit('payment-timeout', payload)
-    },
-    onBack(): void {
-      this.$emit('back')
-      if (!this.autoBack) return
-      const pages =
-        typeof getCurrentPages === 'function' ? getCurrentPages() : []
-      if (pages.length > 1) uni.navigateBack()
-    },
-    /** 页面重新进入时回到顶部，避免 H5 恢复上一次的内部 scroll-view 位置 */
-    resetScroll(): void {
-      this.reportPageScroll(0)
-      this.scrollIntoView = ''
-      this.$nextTick(() => {
-        this.scrollIntoView = 'lingyun-purchase-order-detail-top'
-      })
-    },
-    reportPageScroll(top: number): void {
-      const report = (this as unknown as {
-        reportScroll?: (scrollTop: number) => void
-      }).reportScroll
-      if (typeof report === 'function') report(top)
-    },
-    onScroll(event: { detail?: { scrollTop?: number } }): void {
-      const top = Number(event?.detail?.scrollTop)
-      if (Number.isFinite(top) && top >= 0) {
-        this.reportPageScroll(top)
-        this.$emit('scroll', top)
-      }
-    },
-    onScrollToUpper(): void {
-      this.reportPageScroll(0)
-    },
-    formatAmount(amount: number | undefined): string {
-      const value = Number(amount)
-      if (!Number.isFinite(value)) return '0'
-      const decimals = Number(this.priceDecimals)
-      if (Number.isFinite(decimals) && decimals < 0) {
-        return String(Number(value.toFixed(2)))
-      }
-      const fixed = Number.isFinite(decimals)
-        ? Math.min(6, Math.max(0, Math.floor(decimals)))
-        : 2
-      return value.toFixed(fixed)
-    },
-    formatPrice(amount: number | undefined): string {
-      return `${this.currency}${this.formatAmount(amount)}`
-    },
-    firstChar(name: string): string {
-      return (name || '').trim().slice(0, 1) || '单'
-    },
-    isStepActive(step: LingyunPurchaseOrderDetailTimelineStep, index: number): boolean {
-      return step.active !== undefined ? step.active : index === 0
-    },
-    subOrderItems(subOrder: LingyunPurchaseOrderDetailSubOrder): LingyunPurchaseOrderDetailItem[] {
-      return subOrder.items || []
-    },
-    thumbLimit(): number {
-      const value = Number(this.maxThumbnails)
-      return Number.isFinite(value) ? Math.max(1, Math.floor(value)) : 3
-    },
-    subOrderVisibleThumbs(
-      subOrder: LingyunPurchaseOrderDetailSubOrder,
-    ): LingyunPurchaseOrderDetailItem[] {
-      return this.subOrderItems(subOrder).slice(0, this.thumbLimit())
-    },
-    subOrderExtraThumbCount(subOrder: LingyunPurchaseOrderDetailSubOrder): number {
-      return Math.max(
-        0,
-        this.subOrderItems(subOrder).length - this.thumbLimit(),
-      )
-    },
-    subOrderItemsCount(subOrder: LingyunPurchaseOrderDetailSubOrder): number {
-      return this.subOrderItems(subOrder).reduce(
-        (sum, item) => sum + (Number(item.quantity) || 0),
-        0,
-      )
-    },
-    subOrderHasAmounts(subOrder: LingyunPurchaseOrderDetailSubOrder): boolean {
-      return !!subOrder.amounts
-    },
-    subOrderTotal(subOrder: LingyunPurchaseOrderDetailSubOrder): number {
-      const amounts = subOrder.amounts
-      if (!amounts) return 0
-      return amounts.paid !== undefined ? amounts.paid : amounts.payable
-    },
-    subOrderMeta(subOrder: LingyunPurchaseOrderDetailSubOrder): StatusMeta {
-      const fallback = STATUS_META.pendingPayment
-      const meta = STATUS_META[subOrder.status] || fallback
-      return {
-        ...meta,
-        text: subOrder.statusText || meta.text,
-        hint: subOrder.statusHint || meta.hint,
-        icon: subOrder.statusIcon || meta.icon,
-        color: subOrder.statusColor || meta.color,
-      }
-    },
-    subOrderWarehouseLabel(subOrder: LingyunPurchaseOrderDetailSubOrder): string {
-      const name = subOrder.warehouse?.name || ''
-      return name ? `发货仓库：${name}` : ''
-    },
-    subOrderEstimateDate(subOrder: LingyunPurchaseOrderDetailSubOrder): string {
-      if (
-        subOrder.status !== 'pendingShipment' &&
-        subOrder.status !== 'shipped'
-      ) {
-        return ''
-      }
-      return this.dateToken(subOrder.deliveryTime || '')
-    },
-    subOrderEstimate(subOrder: LingyunPurchaseOrderDetailSubOrder): string {
-      const date = this.subOrderEstimateDate(subOrder)
-      if (!date) return ''
-      const label = subOrder.status === 'pendingShipment' ? '发货' : '送达'
-      return `预计 ${date} ${label}`
-    },
-    /** 从展示时间中只取日期，去掉时分；无法识别日期时返回空 */
-    dateToken(value: string): string {
-      const raw = String(value || '').trim().replace(/^预计\s*/, '')
-      const match = raw.match(
-        /^(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}|\d{1,2}月\d{1,2}日)/,
-      )
-      if (match) return match[1]
-      const relative = raw.match(/^(今天|昨天|明天|后天)/)
-      return relative ? relative[1] : ''
-    },
-    /** 把时间线里的展示时间补成可解析的完整日期，交给 lingyun-date-text */
-    subOrderLogTimeValue(subOrder: LingyunPurchaseOrderDetailSubOrder): string {
-      const raw = String(this.latestSubStep(subOrder)?.time || '').trim()
-      if (!raw) return ''
-      if (/^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}/.test(raw)) return raw
-      if (/^\d{1,2}[-/.]\d{1,2}/.test(raw)) {
-        return `${new Date().getFullYear()}-${raw}`
-      }
-      const relative = raw.match(/^(今天|昨天|明天)\s*(.*)$/)
-      if (relative) {
-        const offset =
-          relative[1] === '今天' ? 0 : relative[1] === '昨天' ? -1 : 1
-        const date = new Date()
-        date.setDate(date.getDate() + offset)
-        const ymd = `${date.getFullYear()}-${this.pad2(date.getMonth() + 1)}-${this.pad2(date.getDate())}`
-        return relative[2] ? `${ymd} ${relative[2]}` : ymd
-      }
-      return raw
-    },
-    /** 相对日期文案也显示月-日，保证始终是 MM-DD HH:mm */
-    subOrderLogMonthDay(subOrder: LingyunPurchaseOrderDetailSubOrder): string {
-      const match = this.subOrderLogTimeValue(subOrder).match(
-        /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/,
-      )
-      if (!match) return ''
-      return `${this.pad2(Number(match[2]))}-${this.pad2(Number(match[3]))}`
-    },
-    pad2(value: number): string {
-      return value < 10 ? `0${value}` : String(value)
-    },
-    latestSubStep(
-      subOrder: LingyunPurchaseOrderDetailSubOrder,
-    ): LingyunPurchaseOrderDetailTimelineStep | null {
-      /* 时间线按新到旧排列，只取最后一条（最新）日志 */
-      return (subOrder.timeline || [])[0] || null
-    },
-    actionVariantIn(
-      action: LingyunPurchaseOrderDetailAction,
-      index: number,
-      list: LingyunPurchaseOrderDetailAction[],
-    ): string {
-      if (action.variant) return action.variant
-      return index === list.length - 1 ? 'borderedProminent' : 'bordered'
-    },
-    actionVariant(
-      action: LingyunPurchaseOrderDetailAction,
-      index: number,
-    ): string {
-      return this.actionVariantIn(action, index, this.displayActions)
-    },
-    onSubPurchaseOrderClick(subOrder: LingyunPurchaseOrderDetailSubOrder): void {
-      if (!this.order) return
-      const payload: LingyunPurchaseOrderDetailSubOrderPayload = {
-        order: this.order,
-        subOrder,
-      }
-      this.$emit('sub-purchase-order-click', payload)
-    },
-    onAction(action: LingyunPurchaseOrderDetailAction): void {
-      if (!this.order || action.disabled) return
-      const payload: LingyunPurchaseOrderDetailActionPayload = {
-        key: action.key,
-        action,
-        order: this.order,
-      }
-      this.$emit('action', payload)
-    },
-    toggleItems(): void {
-      this.itemsExpanded = !this.itemsExpanded
-    },
-    onItemClick(item: LingyunPurchaseOrderDetailItem, index: number): void {
-      if (!this.order) return
-      const payload: LingyunPurchaseOrderDetailItemPayload = {
-        item,
-        index,
-        order: this.order,
-      }
-      this.$emit('item-click', payload)
-    },
-    copyTrackingNumber(): void {
-      this.copyText(this.order?.trackingNumber || '')
-    },
-    copyOrderNumber(): void {
-      this.copyText(this.order?.number || '')
-    },
-    copyText(text: string): void {
-      if (!text) return
-      const payload: LingyunPurchaseOrderDetailCopyPayload = { text }
-      try {
-        uni.setClipboardData({
-          data: text,
-          complete: () => this.$emit('copy', payload),
-        })
-      } catch {
-        this.$emit('copy', payload)
-      }
-    },
-  },
+)
+
+onMounted(() => {
+  resetScroll()
+  startCountdown()
+})
+
+onBeforeUnmount(() => {
+  stopCountdown()
 })
 </script>
 

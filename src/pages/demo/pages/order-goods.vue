@@ -16,6 +16,8 @@
     :toolbar-buttons="toolbarButtons"
     toolbar-menu-enabled
     :banner-height="bannerEnabled ? bannerHeight : 0"
+    :show-store="showStore"
+    :show-amount="showAmount"
     :auto-back="false"
     @back="goBack"
     @checkout="onCheckout"
@@ -44,6 +46,16 @@
           >
             <text class="order-toolbar-filter__chip-text">{{ option.text }}</text>
           </view>
+        </view>
+        <view class="order-toolbar-filter__sep" />
+        <text class="order-toolbar-filter__title">显示</text>
+        <view class="order-toolbar-filter__row">
+          <text class="order-toolbar-filter__row-label">门店卡片</text>
+          <lingyun-switch v-model="showStore" />
+        </view>
+        <view class="order-toolbar-filter__row">
+          <text class="order-toolbar-filter__row-label">商品金额</text>
+          <lingyun-switch v-model="showAmount" />
         </view>
         <view class="order-toolbar-filter__sep" />
         <text class="order-toolbar-filter__title">Banner</text>
@@ -617,6 +629,8 @@
   ]
   const renderMode = ref<RenderMode>('auto')
   const bannerEnabled = ref(true)
+  const showStore = ref(true)
+  const showAmount = ref(true)
   const bannerHeight = ref(150)
   const categoryLoading = ref(false)
   let lazyTimer: ReturnType<typeof setTimeout> | null = null

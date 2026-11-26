@@ -203,7 +203,7 @@
     LingyunTableGroupFields,
     LingyunTableQuery,
     LingyunTableRow,
-  } from '@/uni_modules/lingyun-ui/components/lingyun-table/lingyun-table.vue'
+  } from '@/uni_modules/lingyun-ui/components/lingyun-table/types'
   import { makeFilterTest } from '@/uni_modules/lingyun-ui/components/lingyun-table/table-filter'
 
   const columns: LingyunTableColumn[] = [

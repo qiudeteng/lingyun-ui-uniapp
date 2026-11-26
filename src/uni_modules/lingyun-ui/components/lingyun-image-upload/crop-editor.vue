@@ -113,10 +113,12 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { nextLingyunUid } from '../../utils/uid'
+import { type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
-import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
+import { syncLingyunMpOverlayHold } from '../../utils/mp-overlay-gate'
 import {
   LINGYUN_APP_PAGE_SCROLL_LOCK,
   type LingyunAppPageScrollLock,
@@ -159,7 +161,6 @@ interface TouchLike {
   pageY?: number
 }
 
-let canvasSequence = 0
 
 function touchesOf(event: TouchEvent): TouchLike[] {
   const list = event.touches as unknown as ArrayLike<TouchLike> | undefined
@@ -182,473 +183,487 @@ function clamp(value: number, min: number, max: number): number {
  * lingyun-image-upload 的裁剪编辑器。
  * 预览用 CSS transform，导出用同一套变换画到离屏 Canvas。
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunImageUploadEditor',
-  mixins: [mpOverlayHoldMixin],
-  emits: ['confirm', 'cancel'],
-  inject: {
-    appPageScrollLock: {
-      from: LINGYUN_APP_PAGE_SCROLL_LOCK,
-      default: null as LingyunAppPageScrollLock | null,
-    },
-  },
-  props: {
-    imagePath: { type: String, required: true },
-    imageWidth: { type: Number, required: true },
-    imageHeight: { type: Number, required: true },
-    /** null 表示自由裁剪；数字表示固定宽高比 */
-    aspect: { type: Number as PropType<number | null>, default: null },
-    index: { type: Number, default: 0 },
-    total: { type: Number, default: 1 },
-    zIndex: { type: Number, default: 1200 },
-    outputMaxSize: { type: Number, default: 2048 },
-    quality: { type: Number, default: 0.85 },
-    reduceMotion: { type: Boolean, default: false },
-  },
-  data(): {
-    mounted: boolean
-    phase: Phase
-    stage: StageSize
-    stageLeft: number
-    stageTop: number
-    crop: CropRect
-    scale: number
-    offsetX: number
-    offsetY: number
-    rotation: number
-    gesture: Gesture | null
-    exporting: boolean
-    canvasId: string
-    closeTimer: ReturnType<typeof setTimeout> | null
-    measureTimer: ReturnType<typeof setTimeout> | null
-    topInset: number
-    bottomInset: number
-    scrollLocked: boolean
-    appScrollLocked: boolean
-    prevBodyOverflow: string
-    prevBodyOverscroll: string
-    prevHtmlOverscroll: string
-  } {
-    return {
-      mounted: false,
-      phase: '',
-      stage: { width: 0, height: 0 },
-      stageLeft: 0,
-      stageTop: 0,
-      crop: { x: 0, y: 0, width: 0, height: 0 },
-      scale: 1,
-      offsetX: 0,
-      offsetY: 0,
-      rotation: 0,
-      gesture: null,
-      exporting: false,
-      canvasId: `lingyun-image-upload-canvas-${(canvasSequence += 1)}`,
-      closeTimer: null,
-      measureTimer: null,
-      topInset: 8,
-      bottomInset: 0,
-      scrollLocked: false,
-      appScrollLocked: false,
-      prevBodyOverflow: '',
-      prevBodyOverscroll: '',
-      prevHtmlOverscroll: '',
+})
+
+const props = defineProps({
+  imagePath: { type: String, required: true },
+  imageWidth: { type: Number, required: true },
+  imageHeight: { type: Number, required: true },
+  /** null 表示自由裁剪；数字表示固定宽高比 */
+  aspect: { type: Number as PropType<number | null>, default: null },
+  index: { type: Number, default: 0 },
+  total: { type: Number, default: 1 },
+  zIndex: { type: Number, default: 1200 },
+  outputMaxSize: { type: Number, default: 2048 },
+  quality: { type: Number, default: 0.85 },
+  reduceMotion: { type: Boolean, default: false },
+})
+
+const emit = defineEmits(['confirm', 'cancel'])
+
+const appPageScrollLock = inject(LINGYUN_APP_PAGE_SCROLL_LOCK, null) as LingyunAppPageScrollLock | null
+
+const instance = getCurrentInstance()
+
+const mounted = ref(false)
+const phase = ref<Phase>('')
+const stage = ref<StageSize>({ width: 0, height: 0 })
+const stageLeft = ref(0)
+const stageTop = ref(0)
+const crop = ref<CropRect>({ x: 0, y: 0, width: 0, height: 0 })
+const scale = ref(1)
+const offsetX = ref(0)
+const offsetY = ref(0)
+const rotation = ref(0)
+const gesture = ref<Gesture | null>(null)
+const exporting = ref(false)
+const canvasId = ref(`lingyun-image-upload-canvas-${nextLingyunUid('cropCanvas')}`)
+const closeTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const measureTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const topInset = ref(8)
+const bottomInset = ref(0)
+const scrollLocked = ref(false)
+const appScrollLocked = ref(false)
+const prevBodyOverflow = ref('')
+const prevBodyOverscroll = ref('')
+const prevHtmlOverscroll = ref('')
+const _lingyunMpOverlayHold = ref(false)
+
+const handles = computed((): CropHandle[] => {
+  return ['nw', 'ne', 'se', 'sw']
+})
+
+const freeCrop = computed((): boolean => {
+  return props.aspect === null
+})
+
+const rotatedWidth = computed((): number => {
+  return rotatedSize(props.imageWidth, props.imageHeight, rotation.value).width
+})
+
+const rotatedHeight = computed((): number => {
+  return rotatedSize(props.imageWidth, props.imageHeight, rotation.value).height
+})
+
+const minScaleValue = computed((): number => {
+  return coverScale(crop.value, rotatedWidth.value, rotatedHeight.value)
+})
+
+const maxScaleValue = computed((): number => {
+  return maxScale(crop.value, rotatedWidth.value, rotatedHeight.value)
+})
+
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* pinia 未就绪 */
+  }
+  return [
+    themeClass,
+    phase.value ? `lingyun-image-upload-editor--${phase.value}` : '',
+    props.reduceMotion ? 'lingyun-image-upload-editor--reduce-motion' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const rootStyle = computed((): Record<string, string> => {
+  return { zIndex: String(Number(props.zIndex) || 1200) }
+})
+
+const topbarStyle = computed((): Record<string, string> => {
+  return { paddingTop: `${topInset.value}px` }
+})
+
+const bottombarStyle = computed((): Record<string, string> => {
+  return { paddingBottom: `${10 + bottomInset.value}px` }
+})
+
+const imageStyle = computed((): Record<string, string> => {
+  const width = Math.max(1, props.imageWidth * scale.value)
+  const height = Math.max(1, props.imageHeight * scale.value)
+  return {
+    width: `${width}px`,
+    height: `${height}px`,
+    marginLeft: `${-width / 2}px`,
+    marginTop: `${-height / 2}px`,
+    transform: `translate3d(${offsetX.value}px, ${offsetY.value}px, 0) rotate(${rotation.value}deg)`,
+  }
+})
+
+const cropStyle = computed((): Record<string, string> => {
+  return {
+    left: `${crop.value.x}px`,
+    top: `${crop.value.y}px`,
+    width: `${crop.value.width}px`,
+    height: `${crop.value.height}px`,
+  }
+})
+
+function clearTimers(): void {
+  if (closeTimer.value) {
+    clearTimeout(closeTimer.value)
+    closeTimer.value = null
+  }
+  if (measureTimer.value) {
+    clearTimeout(measureTimer.value)
+    measureTimer.value = null
+  }
+}
+
+function initCrop(): void {
+  crop.value = defaultCropRect(stage.value, 24, props.aspect)
+  scale.value = minScaleValue.value
+  offsetX.value = 0
+  offsetY.value = 0
+}
+
+function measureStage(): void {
+  // 编辑器全屏且顶/底栏高度固定，直接用窗口信息算舞台；
+  // 微信端顶栏内容从胶囊下方开始，避免「完成」被胶囊/状态栏挡住。
+  const info = (
+    typeof uni.getWindowInfo === 'function'
+      ? uni.getWindowInfo()
+      : uni.getSystemInfoSync()
+  ) as {
+    windowWidth?: number
+    windowHeight?: number
+    statusBarHeight?: number
+    safeAreaInsets?: { top?: number; bottom?: number }
+  }
+  let width = Number(info.windowWidth) || 0
+  let height = Number(info.windowHeight) || 0
+  // #ifdef H5
+  if ((!width || !height) && typeof window !== 'undefined') {
+    width = width || window.innerWidth
+    height = height || window.innerHeight
+  }
+  // #endif
+  const safeTop =
+    Number(info.safeAreaInsets?.top) || Number(info.statusBarHeight) || 0
+  const safeBottom = Number(info.safeAreaInsets?.bottom) || 0
+  let nextTopInset = safeTop + 8
+  // #ifdef MP-WEIXIN
+  try {
+    const menu = (
+      uni as typeof uni & {
+        getMenuButtonBoundingClientRect?: () => { bottom?: number }
+      }
+    ).getMenuButtonBoundingClientRect?.()
+    if (menu && Number(menu.bottom) > 0) {
+      nextTopInset = Math.max(nextTopInset, Number(menu.bottom) + 8)
     }
-  },
-  computed: {
-    handles(): CropHandle[] {
-      return ['nw', 'ne', 'se', 'sw']
+  } catch {
+    /* 取不到胶囊时退回状态栏 */
+  }
+  // #endif
+  topInset.value = nextTopInset
+  bottomInset.value = safeBottom
+  const topbarHeight = nextTopInset + 44 + 8
+  const bottombarHeight = 10 + 64 + 10 + safeBottom
+  stageLeft.value = 0
+  stageTop.value = topbarHeight
+  stage.value = {
+    width: Math.max(1, width),
+    height: Math.max(1, height - topbarHeight - bottombarHeight),
+  }
+  initCrop()
+}
+
+function clampView(): void {
+  const min = minScaleValue.value
+  if (scale.value < min) scale.value = min
+  const offset = clampOffset(
+    offsetX.value,
+    offsetY.value,
+    stage.value,
+    crop.value,
+    rotatedWidth.value,
+    rotatedHeight.value,
+    scale.value,
+  )
+  offsetX.value = offset.x
+  offsetY.value = offset.y
+}
+
+function rotate(delta: number): void {
+  rotation.value = (rotation.value + delta + 360) % 360
+  scale.value = minScaleValue.value
+  offsetX.value = 0
+  offsetY.value = 0
+  clampView()
+}
+
+function reset(): void {
+  rotation.value = 0
+  initCrop()
+}
+
+function openAnim(): void {
+  mounted.value = true
+  phase.value = 'enter'
+  nextTick(() => {
+    measureTimer.value = setTimeout(() => {
+      measureTimer.value = null
+      measureStage()
+      phase.value = 'open'
+    }, props.reduceMotion ? 0 : 16)
+  })
+}
+
+function onStageTouchStart(event: TouchEvent): void {
+  const touches = touchesOf(event)
+  if (touches.length >= 2) {
+    const first = touches[0]
+    const second = touches[1]
+    const firstX = touchX(first) - stageLeft.value
+    const firstY = touchY(first) - stageTop.value
+    const secondX = touchX(second) - stageLeft.value
+    const secondY = touchY(second) - stageTop.value
+    gesture.value = {
+      type: 'pinch',
+      handle: 'move',
+      startX: 0,
+      startY: 0,
+      startOffsetX: offsetX.value,
+      startOffsetY: offsetY.value,
+      startScale: scale.value,
+      distance: Math.hypot(secondX - firstX, secondY - firstY),
+      anchorX: (firstX + secondX) / 2,
+      anchorY: (firstY + secondY) / 2,
+      crop: { ...crop.value },
+    }
+    return
+  }
+  if (touches.length !== 1) return
+  const touch = touches[0]
+  gesture.value = {
+    type: 'pan',
+    handle: 'move',
+    startX: touchX(touch),
+    startY: touchY(touch),
+    startOffsetX: offsetX.value,
+    startOffsetY: offsetY.value,
+    startScale: scale.value,
+    distance: 0,
+    anchorX: 0,
+    anchorY: 0,
+    crop: { ...crop.value },
+  }
+}
+
+function onStageTouchMove(event: TouchEvent): void {
+  const g = gesture.value
+  if (!g) return
+  const touches = touchesOf(event)
+
+  if (g.type === 'pan' && touches.length === 1) {
+    const touch = touches[0]
+    offsetX.value = g.startOffsetX + touchX(touch) - g.startX
+    offsetY.value = g.startOffsetY + touchY(touch) - g.startY
+    clampView()
+    return
+  }
+
+  if (g.type === 'pinch' && touches.length >= 2) {
+    const first = touches[0]
+    const second = touches[1]
+    const firstX = touchX(first) - stageLeft.value
+    const firstY = touchY(first) - stageTop.value
+    const secondX = touchX(second) - stageLeft.value
+    const secondY = touchY(second) - stageTop.value
+    const distance = Math.hypot(secondX - firstX, secondY - firstY)
+    const nextScale = clamp(
+      g.startScale * (distance / Math.max(1, g.distance)),
+      minScaleValue.value,
+      maxScaleValue.value,
+    )
+    const ratio = nextScale / Math.max(0.0001, g.startScale)
+    const offset = zoomOffset(
+      (firstX + secondX) / 2,
+      (firstY + secondY) / 2,
+      stage.value,
+      g.startOffsetX,
+      g.startOffsetY,
+      ratio,
+    )
+    scale.value = nextScale
+    offsetX.value = offset.x
+    offsetY.value = offset.y
+    clampView()
+    return
+  }
+
+  if (g.type === 'crop' && touches.length === 1) {
+    const touch = touches[0]
+    crop.value = resizeCropRect(
+      g.crop,
+      g.handle,
+      touchX(touch) - g.startX,
+      touchY(touch) - g.startY,
+      stage.value,
+      40,
+    )
+    clampView()
+  }
+}
+
+function onStageTouchEnd(): void {
+  gesture.value = null
+}
+
+function startCropGesture(
+  handle: CropHandle,
+  event: TouchEvent,
+): void {
+  if (!freeCrop.value) return
+  const touches = touchesOf(event)
+  if (touches.length !== 1) return
+  const touch = touches[0]
+  gesture.value = {
+    type: 'crop',
+    handle,
+    startX: touchX(touch),
+    startY: touchY(touch),
+    startOffsetX: offsetX.value,
+    startOffsetY: offsetY.value,
+    startScale: scale.value,
+    distance: 0,
+    anchorX: 0,
+    anchorY: 0,
+    crop: { ...crop.value },
+  }
+}
+
+function finish(type: 'confirm' | 'cancel', result?: { filePath: string; revoke?: () => void }): void {
+  phase.value = 'leave'
+  closeTimer.value = setTimeout(
+    () => {
+      closeTimer.value = null
+      if (type === 'confirm') emit('confirm', result)
+      else emit('cancel')
     },
-    freeCrop(): boolean {
-      return this.aspect === null
-    },
-    rotatedWidth(): number {
-      return rotatedSize(this.imageWidth, this.imageHeight, this.rotation).width
-    },
-    rotatedHeight(): number {
-      return rotatedSize(this.imageWidth, this.imageHeight, this.rotation).height
-    },
-    minScaleValue(): number {
-      return coverScale(this.crop, this.rotatedWidth, this.rotatedHeight)
-    },
-    maxScaleValue(): number {
-      return maxScale(this.crop, this.rotatedWidth, this.rotatedHeight)
-    },
-    rootClass(): string {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* pinia 未就绪 */
-      }
-      return [
-        themeClass,
-        this.phase ? `lingyun-image-upload-editor--${this.phase}` : '',
-        this.reduceMotion ? 'lingyun-image-upload-editor--reduce-motion' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    rootStyle(): Record<string, string> {
-      return { zIndex: String(Number(this.zIndex) || 1200) }
-    },
-    topbarStyle(): Record<string, string> {
-      return { paddingTop: `${this.topInset}px` }
-    },
-    bottombarStyle(): Record<string, string> {
-      return { paddingBottom: `${10 + this.bottomInset}px` }
-    },
-    imageStyle(): Record<string, string> {
-      const width = Math.max(1, this.imageWidth * this.scale)
-      const height = Math.max(1, this.imageHeight * this.scale)
-      return {
-        width: `${width}px`,
-        height: `${height}px`,
-        marginLeft: `${-width / 2}px`,
-        marginTop: `${-height / 2}px`,
-        transform: `translate3d(${this.offsetX}px, ${this.offsetY}px, 0) rotate(${this.rotation}deg)`,
-      }
-    },
-    cropStyle(): Record<string, string> {
-      return {
-        left: `${this.crop.x}px`,
-        top: `${this.crop.y}px`,
-        width: `${this.crop.width}px`,
-        height: `${this.crop.height}px`,
-      }
-    },
-  },
-  created() {
-    this.measureStage()
-  },
-  mounted() {
-    this.lockPageScroll()
-    this.openAnim()
-  },
-  beforeUnmount() {
-    this.clearTimers()
-    this.unlockPageScroll()
-  },
-  methods: {
-    clearTimers() {
-      if (this.closeTimer) {
-        clearTimeout(this.closeTimer)
-        this.closeTimer = null
-      }
-      if (this.measureTimer) {
-        clearTimeout(this.measureTimer)
-        this.measureTimer = null
-      }
-    },
-    openAnim() {
-      this.mounted = true
-      this.phase = 'enter'
-      this.$nextTick(() => {
-        this.measureTimer = setTimeout(() => {
-          this.measureTimer = null
-          this.measureStage()
-          this.phase = 'open'
-        }, this.reduceMotion ? 0 : 16)
+    props.reduceMotion ? 16 : 200,
+  )
+}
+
+function cancel(): void {
+  if (exporting.value) return
+  finish('cancel')
+}
+
+function confirm(): void {
+  if (exporting.value) return
+  exporting.value = true
+  nextTick(() => {
+    const params = buildExportParams(
+      stage.value,
+      crop.value,
+      {
+        imageWidth: props.imageWidth,
+        imageHeight: props.imageHeight,
+        rotation: rotation.value,
+        scale: scale.value,
+        offsetX: offsetX.value,
+        offsetY: offsetY.value,
+      },
+      props.outputMaxSize,
+    )
+    exportCroppedImage({
+      imagePath: props.imagePath,
+      params,
+      quality: props.quality,
+      canvasId: canvasId.value,
+      instance: instance?.proxy,
+    })
+      .then((result) => {
+        exporting.value = false
+        finish('confirm', result)
       })
-    },
-    measureStage() {
-      // 编辑器全屏且顶/底栏高度固定，直接用窗口信息算舞台；
-      // 微信端顶栏内容从胶囊下方开始，避免「完成」被胶囊/状态栏挡住。
-      const info = (
-        typeof uni.getWindowInfo === 'function'
-          ? uni.getWindowInfo()
-          : uni.getSystemInfoSync()
-      ) as {
-        windowWidth?: number
-        windowHeight?: number
-        statusBarHeight?: number
-        safeAreaInsets?: { top?: number; bottom?: number }
-      }
-      let width = Number(info.windowWidth) || 0
-      let height = Number(info.windowHeight) || 0
-      // #ifdef H5
-      if ((!width || !height) && typeof window !== 'undefined') {
-        width = width || window.innerWidth
-        height = height || window.innerHeight
-      }
-      // #endif
-      const safeTop =
-        Number(info.safeAreaInsets?.top) || Number(info.statusBarHeight) || 0
-      const safeBottom = Number(info.safeAreaInsets?.bottom) || 0
-      let topInset = safeTop + 8
-      // #ifdef MP-WEIXIN
-      try {
-        const menu = (
-          uni as typeof uni & {
-            getMenuButtonBoundingClientRect?: () => { bottom?: number }
-          }
-        ).getMenuButtonBoundingClientRect?.()
-        if (menu && Number(menu.bottom) > 0) {
-          topInset = Math.max(topInset, Number(menu.bottom) + 8)
-        }
-      } catch {
-        /* 取不到胶囊时退回状态栏 */
-      }
-      // #endif
-      this.topInset = topInset
-      this.bottomInset = safeBottom
-      const topbarHeight = topInset + 44 + 8
-      const bottombarHeight = 10 + 64 + 10 + safeBottom
-      this.stageLeft = 0
-      this.stageTop = topbarHeight
-      this.stage = {
-        width: Math.max(1, width),
-        height: Math.max(1, height - topbarHeight - bottombarHeight),
-      }
-      this.initCrop()
-    },
-    initCrop() {
-      this.crop = defaultCropRect(this.stage, 24, this.aspect)
-      this.scale = this.minScaleValue
-      this.offsetX = 0
-      this.offsetY = 0
-    },
-    clampView() {
-      const min = this.minScaleValue
-      if (this.scale < min) this.scale = min
-      const offset = clampOffset(
-        this.offsetX,
-        this.offsetY,
-        this.stage,
-        this.crop,
-        this.rotatedWidth,
-        this.rotatedHeight,
-        this.scale,
-      )
-      this.offsetX = offset.x
-      this.offsetY = offset.y
-    },
-    rotate(delta: number) {
-      this.rotation = (this.rotation + delta + 360) % 360
-      this.scale = this.minScaleValue
-      this.offsetX = 0
-      this.offsetY = 0
-      this.clampView()
-    },
-    reset() {
-      this.rotation = 0
-      this.initCrop()
-    },
-    onStageTouchStart(event: TouchEvent) {
-      const touches = touchesOf(event)
-      if (touches.length >= 2) {
-        const first = touches[0]
-        const second = touches[1]
-        const firstX = touchX(first) - this.stageLeft
-        const firstY = touchY(first) - this.stageTop
-        const secondX = touchX(second) - this.stageLeft
-        const secondY = touchY(second) - this.stageTop
-        this.gesture = {
-          type: 'pinch',
-          handle: 'move',
-          startX: 0,
-          startY: 0,
-          startOffsetX: this.offsetX,
-          startOffsetY: this.offsetY,
-          startScale: this.scale,
-          distance: Math.hypot(secondX - firstX, secondY - firstY),
-          anchorX: (firstX + secondX) / 2,
-          anchorY: (firstY + secondY) / 2,
-          crop: { ...this.crop },
-        }
-        return
-      }
-      if (touches.length !== 1) return
-      const touch = touches[0]
-      this.gesture = {
-        type: 'pan',
-        handle: 'move',
-        startX: touchX(touch),
-        startY: touchY(touch),
-        startOffsetX: this.offsetX,
-        startOffsetY: this.offsetY,
-        startScale: this.scale,
-        distance: 0,
-        anchorX: 0,
-        anchorY: 0,
-        crop: { ...this.crop },
-      }
-    },
-    onStageTouchMove(event: TouchEvent) {
-      const gesture = this.gesture
-      if (!gesture) return
-      const touches = touchesOf(event)
-
-      if (gesture.type === 'pan' && touches.length === 1) {
-        const touch = touches[0]
-        this.offsetX = gesture.startOffsetX + touchX(touch) - gesture.startX
-        this.offsetY = gesture.startOffsetY + touchY(touch) - gesture.startY
-        this.clampView()
-        return
-      }
-
-      if (gesture.type === 'pinch' && touches.length >= 2) {
-        const first = touches[0]
-        const second = touches[1]
-        const firstX = touchX(first) - this.stageLeft
-        const firstY = touchY(first) - this.stageTop
-        const secondX = touchX(second) - this.stageLeft
-        const secondY = touchY(second) - this.stageTop
-        const distance = Math.hypot(secondX - firstX, secondY - firstY)
-        const nextScale = clamp(
-          gesture.startScale * (distance / Math.max(1, gesture.distance)),
-          this.minScaleValue,
-          this.maxScaleValue,
-        )
-        const ratio = nextScale / Math.max(0.0001, gesture.startScale)
-        const offset = zoomOffset(
-          (firstX + secondX) / 2,
-          (firstY + secondY) / 2,
-          this.stage,
-          gesture.startOffsetX,
-          gesture.startOffsetY,
-          ratio,
-        )
-        this.scale = nextScale
-        this.offsetX = offset.x
-        this.offsetY = offset.y
-        this.clampView()
-        return
-      }
-
-      if (gesture.type === 'crop' && touches.length === 1) {
-        const touch = touches[0]
-        this.crop = resizeCropRect(
-          gesture.crop,
-          gesture.handle,
-          touchX(touch) - gesture.startX,
-          touchY(touch) - gesture.startY,
-          this.stage,
-          40,
-        )
-        this.clampView()
-      }
-    },
-    onStageTouchEnd() {
-      this.gesture = null
-    },
-    startCropGesture(
-      handle: CropHandle,
-      event: TouchEvent,
-    ) {
-      if (!this.freeCrop) return
-      const touches = touchesOf(event)
-      if (touches.length !== 1) return
-      const touch = touches[0]
-      this.gesture = {
-        type: 'crop',
-        handle,
-        startX: touchX(touch),
-        startY: touchY(touch),
-        startOffsetX: this.offsetX,
-        startOffsetY: this.offsetY,
-        startScale: this.scale,
-        distance: 0,
-        anchorX: 0,
-        anchorY: 0,
-        crop: { ...this.crop },
-      }
-    },
-    confirm() {
-      if (this.exporting) return
-      this.exporting = true
-      this.$nextTick(() => {
-        const params = buildExportParams(
-          this.stage,
-          this.crop,
-          {
-            imageWidth: this.imageWidth,
-            imageHeight: this.imageHeight,
-            rotation: this.rotation,
-            scale: this.scale,
-            offsetX: this.offsetX,
-            offsetY: this.offsetY,
-          },
-          this.outputMaxSize,
-        )
-        exportCroppedImage({
-          imagePath: this.imagePath,
-          params,
-          quality: this.quality,
-          canvasId: this.canvasId,
-          instance: this,
+      .catch((error: Error) => {
+        exporting.value = false
+        uni.showToast({
+          title: error?.message || '图片导出失败',
+          icon: 'none',
         })
-          .then((result) => {
-            this.exporting = false
-            this.finish('confirm', result)
-          })
-          .catch((error: Error) => {
-            this.exporting = false
-            uni.showToast({
-              title: error?.message || '图片导出失败',
-              icon: 'none',
-            })
-          })
       })
-    },
-    cancel() {
-      if (this.exporting) return
-      this.finish('cancel')
-    },
-    finish(type: 'confirm' | 'cancel', result?: { filePath: string; revoke?: () => void }) {
-      this.phase = 'leave'
-      this.closeTimer = setTimeout(
-        () => {
-          this.closeTimer = null
-          if (type === 'confirm') this.$emit('confirm', result)
-          else this.$emit('cancel')
-        },
-        this.reduceMotion ? 16 : 200,
-      )
-    },
-    lockPageScroll() {
-      try {
-        const lock = this.appPageScrollLock as LingyunAppPageScrollLock | null
-        if (lock && typeof lock.lock === 'function' && !this.appScrollLocked) {
-          lock.lock()
-          this.appScrollLocked = true
-        }
-      } catch {
-        /* 不在 app-page 内 */
-      }
-      // #ifdef H5
-      if (typeof document === 'undefined' || this.scrollLocked) return
-      const body = document.body
-      const html = document.documentElement
-      this.prevBodyOverflow = body.style.overflow
-      this.prevBodyOverscroll = body.style.overscrollBehavior
-      this.prevHtmlOverscroll = html.style.overscrollBehavior
-      body.style.overflow = 'hidden'
-      body.style.overscrollBehavior = 'none'
-      html.style.overscrollBehavior = 'none'
-      this.scrollLocked = true
-      // #endif
-    },
-    unlockPageScroll() {
-      try {
-        const lock = this.appPageScrollLock as LingyunAppPageScrollLock | null
-        if (lock && typeof lock.unlock === 'function' && this.appScrollLocked) {
-          lock.unlock()
-          this.appScrollLocked = false
-        }
-      } catch {
-        /* 不在 app-page 内 */
-      }
-      // #ifdef H5
-      if (typeof document === 'undefined' || !this.scrollLocked) return
-      const body = document.body
-      const html = document.documentElement
-      body.style.overflow = this.prevBodyOverflow
-      body.style.overscrollBehavior = this.prevBodyOverscroll
-      html.style.overscrollBehavior = this.prevHtmlOverscroll
-      this.scrollLocked = false
-      // #endif
-    },
+  })
+}
+
+function lockPageScroll(): void {
+  try {
+    const lock = appPageScrollLock as LingyunAppPageScrollLock | null
+    if (lock && typeof lock.lock === 'function' && !appScrollLocked.value) {
+      lock.lock()
+      appScrollLocked.value = true
+    }
+  } catch {
+    /* 不在 app-page 内 */
+  }
+  // #ifdef H5
+  if (typeof document === 'undefined' || scrollLocked.value) return
+  const body = document.body
+  const html = document.documentElement
+  prevBodyOverflow.value = body.style.overflow
+  prevBodyOverscroll.value = body.style.overscrollBehavior
+  prevHtmlOverscroll.value = html.style.overscrollBehavior
+  body.style.overflow = 'hidden'
+  body.style.overscrollBehavior = 'none'
+  html.style.overscrollBehavior = 'none'
+  scrollLocked.value = true
+  // #endif
+}
+
+function unlockPageScroll(): void {
+  try {
+    const lock = appPageScrollLock as LingyunAppPageScrollLock | null
+    if (lock && typeof lock.unlock === 'function' && appScrollLocked.value) {
+      lock.unlock()
+      appScrollLocked.value = false
+    }
+  } catch {
+    /* 不在 app-page 内 */
+  }
+  // #ifdef H5
+  if (typeof document === 'undefined' || !scrollLocked.value) return
+  const body = document.body
+  const html = document.documentElement
+  body.style.overflow = prevBodyOverflow.value
+  body.style.overscrollBehavior = prevBodyOverscroll.value
+  html.style.overscrollBehavior = prevHtmlOverscroll.value
+  scrollLocked.value = false
+  // #endif
+}
+
+measureStage()
+
+watch(
+  phase,
+  (value: string) => {
+    _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+      !!_lingyunMpOverlayHold.value,
+      !!value,
+    )
   },
+  { immediate: true },
+)
+
+onMounted(() => {
+  lockPageScroll()
+  openAnim()
+})
+
+onBeforeUnmount(() => {
+  _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+    !!_lingyunMpOverlayHold.value,
+    false,
+  )
+  clearTimers()
+  unlockPageScroll()
 })
 </script>
 

@@ -11,8 +11,9 @@
   </text>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed } from 'vue'
+import { type PropType } from 'vue'
 
 /**
  * lingyun-text
@@ -65,80 +66,88 @@ const VALID_TYPES: string[] = [
   'caption2',
 ]
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunText',
-  emits: ['click'],
-  props: {
-    text: { type: String, default: '' },
-    /** 字阶或别名 title / subtitle / caption / hint */
-    type: { type: String, default: 'body' },
-    /** 语义色或任意 CSS 色 */
-    color: { type: String, default: '' },
-    align: { type: String, default: 'left' },
-    /** 0 = 不限制；>0 省略 */
-    lines: { type: [Number, String] as PropType<number | string>, default: 0 },
-    emphasized: { type: Boolean, default: false },
-    bold: { type: Boolean, default: false },
-    block: { type: Boolean, default: false },
-    selectable: { type: Boolean, default: false },
-  },
-  computed: {
-    resolvedType(): string {
-      const raw = (this.type || 'body').trim()
-      const mapped = TYPE_ALIAS[raw] || raw
-      return VALID_TYPES.indexOf(mapped) >= 0 ? mapped : 'body'
-    },
-    isEmphasized(): boolean {
-      return !!(this.emphasized || this.bold)
-    },
-    lineClamp(): number {
-      const n = Number(this.lines)
-      return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0
-    },
-    resolvedAlign(): string {
-      const a = (this.align || 'left').trim()
-      if (a === 'center' || a === 'right') return a
-      return 'left'
-    },
-    colorValue(): string {
-      const raw = (this.color || '').trim()
-      if (raw) {
-        const key = raw.toLowerCase()
-        if (SEMANTIC_COLORS[key]) return SEMANTIC_COLORS[key]
-        return raw
-      }
-      const def = TYPE_DEFAULT_COLOR[this.type] || TYPE_DEFAULT_COLOR[this.resolvedType]
-      if (def && SEMANTIC_COLORS[def]) return SEMANTIC_COLORS[def]
-      return SEMANTIC_COLORS.label
-    },
-    rootClass(): string[] {
-      const list = [
-        `lingyun-text--${this.resolvedType}`,
-        `lingyun-text--align-${this.resolvedAlign}`,
-      ]
-      if (this.isEmphasized) list.push('lingyun-text--emphasized')
-      if (this.block) list.push('lingyun-text--block')
-      if (this.lineClamp === 1) list.push('lingyun-text--ellipsis')
-      if (this.lineClamp > 1) list.push('lingyun-text--clamp')
-      return list
-    },
-    rootStyle(): { color: string; WebkitLineClamp?: string; lineClamp?: string } {
-      const style: { color: string; WebkitLineClamp?: string; lineClamp?: string } = {
-        color: this.colorValue,
-      }
-      if (this.lineClamp > 1) {
-        style.WebkitLineClamp = String(this.lineClamp)
-        style.lineClamp = String(this.lineClamp)
-      }
-      return style
-    },
-  },
-  methods: {
-    onClick(event: Event) {
-      this.$emit('click', event)
-    },
-  },
 })
+
+const props = defineProps({
+  text: { type: String, default: '' },
+  /** 字阶或别名 title / subtitle / caption / hint */
+  type: { type: String, default: 'body' },
+  /** 语义色或任意 CSS 色 */
+  color: { type: String, default: '' },
+  align: { type: String, default: 'left' },
+  /** 0 = 不限制；>0 省略 */
+  lines: { type: [Number, String] as PropType<number | string>, default: 0 },
+  emphasized: { type: Boolean, default: false },
+  bold: { type: Boolean, default: false },
+  block: { type: Boolean, default: false },
+  selectable: { type: Boolean, default: false },
+})
+
+const emit = defineEmits(['click'])
+
+const resolvedType = computed((): string => {
+  const raw = (props.type || 'body').trim()
+  const mapped = TYPE_ALIAS[raw] || raw
+  return VALID_TYPES.indexOf(mapped) >= 0 ? mapped : 'body'
+})
+
+const isEmphasized = computed((): boolean => {
+  return !!(props.emphasized || props.bold)
+})
+
+const lineClamp = computed((): number => {
+  const n = Number(props.lines)
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0
+})
+
+const resolvedAlign = computed((): string => {
+  const a = (props.align || 'left').trim()
+  if (a === 'center' || a === 'right') return a
+  return 'left'
+})
+
+const colorValue = computed((): string => {
+  const raw = (props.color || '').trim()
+  if (raw) {
+    const key = raw.toLowerCase()
+    if (SEMANTIC_COLORS[key]) return SEMANTIC_COLORS[key]
+    return raw
+  }
+  const def = TYPE_DEFAULT_COLOR[props.type] || TYPE_DEFAULT_COLOR[resolvedType.value]
+  if (def && SEMANTIC_COLORS[def]) return SEMANTIC_COLORS[def]
+  return SEMANTIC_COLORS.label
+})
+
+const rootClass = computed((): string[] => {
+  const list = [
+    `lingyun-text--${resolvedType.value}`,
+    `lingyun-text--align-${resolvedAlign.value}`,
+  ]
+  if (isEmphasized.value) list.push('lingyun-text--emphasized')
+  if (props.block) list.push('lingyun-text--block')
+  if (lineClamp.value === 1) list.push('lingyun-text--ellipsis')
+  if (lineClamp.value > 1) list.push('lingyun-text--clamp')
+  return list
+})
+
+const rootStyle = computed(
+  (): { color: string; WebkitLineClamp?: string; lineClamp?: string } => {
+    const style: { color: string; WebkitLineClamp?: string; lineClamp?: string } = {
+      color: colorValue.value,
+    }
+    if (lineClamp.value > 1) {
+      style.WebkitLineClamp = String(lineClamp.value)
+      style.lineClamp = String(lineClamp.value)
+    }
+    return style
+  },
+)
+
+function onClick(event: Event) {
+  emit('click', event)
+}
 </script>
 
 <style lang="scss">

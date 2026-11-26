@@ -15,10 +15,11 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
-import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
+import { syncLingyunMpOverlayHold } from '../../utils/mp-overlay-gate'
 
 /**
  * lingyun-toast
@@ -30,118 +31,137 @@ const ENTER_KICK_MS = 32
 
 type ToastPhase = '' | 'enter' | 'open' | 'leave'
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunToast',
-  mixins: [mpOverlayHoldMixin],
-  emits: ['update:show', 'update:modelValue', 'close'],
-  props: {
-    show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    text: { type: String, default: '' },
-    type: { type: String, default: 'default' },
-    duration: { type: Number, default: 2000 },
-    zIndex: { type: [Number, String] as PropType<number | string>, default: 1200 },
-  },
-  data() {
-    return {
-      mounted: false,
-      phase: '' as ToastPhase,
-      leaveTimer: null as ReturnType<typeof setTimeout> | null,
-      enterTimer: null as ReturnType<typeof setTimeout> | null,
-      autoTimer: null as ReturnType<typeof setTimeout> | null,
+})
+
+const props = defineProps({
+  show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  text: { type: String, default: '' },
+  type: { type: String, default: 'default' },
+  duration: { type: Number, default: 2000 },
+  zIndex: { type: [Number, String] as PropType<number | string>, default: 1200 },
+})
+
+const emit = defineEmits(['update:show', 'update:modelValue', 'close'])
+
+const mounted = ref(false)
+const phase = ref<ToastPhase>('')
+const leaveTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const enterTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const autoTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _lingyunMpOverlayHold = ref(false)
+
+const visible = computed((): boolean => {
+  if (props.show !== undefined && props.show !== null) return !!props.show
+  if (props.modelValue !== undefined && props.modelValue !== null) return !!props.modelValue
+  return false
+})
+
+const typeKey = computed((): string => {
+  const t = props.type
+  if (t === 'success' || t === 'error' || t === 'loading') return t
+  return 'default'
+})
+
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* ignore */
+  }
+  return [themeClass, phase.value ? `lingyun-toast--${phase.value}` : ''].filter(Boolean).join(' ')
+})
+
+const rootStyle = computed((): { zIndex: number } => {
+  return { zIndex: Number(props.zIndex) || 1200 }
+})
+
+function clearTimers(): void {
+  const timers = [leaveTimer, enterTimer, autoTimer]
+  timers.forEach((timer) => {
+    if (!timer.value) return
+    clearTimeout(timer.value)
+    timer.value = null
+  })
+}
+
+function setVisible(next: boolean): void {
+  const val = !!next
+  emit('update:show', val)
+  emit('update:modelValue', val)
+  if (!val) emit('close')
+}
+
+function scheduleAutoClose(): void {
+  if (typeKey.value === 'loading') return
+  const d = Number(props.duration)
+  if (!d || d <= 0) return
+  autoTimer.value = setTimeout(() => {
+    autoTimer.value = null
+    setVisible(false)
+  }, d)
+}
+
+function openAnim(): void {
+  clearTimers()
+  mounted.value = true
+  phase.value = 'enter'
+  nextTick(() => {
+    const kick = () => {
+      enterTimer.value = setTimeout(() => {
+        phase.value = 'open'
+        enterTimer.value = null
+        scheduleAutoClose()
+      }, ENTER_KICK_MS)
     }
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => requestAnimationFrame(kick))
+    } else {
+      kick()
+    }
+  })
+}
+
+function closeAnim(): void {
+  clearTimers()
+  if (!mounted.value) return
+  phase.value = 'leave'
+  leaveTimer.value = setTimeout(() => {
+    mounted.value = false
+    phase.value = ''
+    leaveTimer.value = null
+  }, LEAVE_MS)
+}
+
+watch(
+  visible,
+  (val: boolean) => {
+    if (val) openAnim()
+    else closeAnim()
   },
-  computed: {
-    visible(): boolean {
-      if (this.show !== undefined && this.show !== null) return !!this.show
-      if (this.modelValue !== undefined && this.modelValue !== null) return !!this.modelValue
-      return false
-    },
-    typeKey(): string {
-      const t = this.type
-      if (t === 'success' || t === 'error' || t === 'loading') return t
-      return 'default'
-    },
-    rootClass(): string {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* ignore */
-      }
-      return [themeClass, this.phase ? `lingyun-toast--${this.phase}` : ''].filter(Boolean).join(' ')
-    },
-    rootStyle(): { zIndex: number } {
-      return { zIndex: Number(this.zIndex) || 1200 }
-    },
+  { immediate: true },
+)
+
+watch(
+  phase,
+  (value: string) => {
+    _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+      !!_lingyunMpOverlayHold.value,
+      !!value,
+    )
   },
-  watch: {
-    visible: {
-      immediate: true,
-      handler(val: boolean) {
-        if (val) this.openAnim()
-        else this.closeAnim()
-      },
-    },
-  },
-  beforeUnmount() {
-    this.clearTimers()
-  },
-  methods: {
-    clearTimers() {
-      const keys = ['leaveTimer', 'enterTimer', 'autoTimer'] as const
-      keys.forEach((key) => {
-        const timer = this[key]
-        if (!timer) return
-        clearTimeout(timer)
-        this[key] = null
-      })
-    },
-    openAnim() {
-      this.clearTimers()
-      this.mounted = true
-      this.phase = 'enter'
-      this.$nextTick(() => {
-        const kick = () => {
-          this.enterTimer = setTimeout(() => {
-            this.phase = 'open'
-            this.enterTimer = null
-            this.scheduleAutoClose()
-          }, ENTER_KICK_MS)
-        }
-        if (typeof requestAnimationFrame === 'function') {
-          requestAnimationFrame(() => requestAnimationFrame(kick))
-        } else {
-          kick()
-        }
-      })
-    },
-    scheduleAutoClose() {
-      if (this.typeKey === 'loading') return
-      const d = Number(this.duration)
-      if (!d || d <= 0) return
-      this.autoTimer = setTimeout(() => {
-        this.autoTimer = null
-        this.setVisible(false)
-      }, d)
-    },
-    closeAnim() {
-      this.clearTimers()
-      if (!this.mounted) return
-      this.phase = 'leave'
-      this.leaveTimer = setTimeout(() => {
-        this.mounted = false
-        this.phase = ''
-        this.leaveTimer = null
-      }, LEAVE_MS)
-    },
-    setVisible(next: boolean) {
-      const val = !!next
-      this.$emit('update:show', val)
-      this.$emit('update:modelValue', val)
-      if (!val) this.$emit('close')
-    },
-  },
+  { immediate: true },
+)
+
+onBeforeUnmount(() => {
+  _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+    !!_lingyunMpOverlayHold.value,
+    false,
+  )
+  clearTimers()
 })
 </script>
 

@@ -87,8 +87,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, inject, ref, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, inject, ref, watch } from 'vue'
+import { type PropType } from 'vue'
 import { LINGYUN_APP_PAGE_NAV_INSET } from '../lingyun-app-page/useLingyunAppPageScroll'
 import type {
   LingyunDateSwitcherChange,
@@ -186,437 +187,463 @@ function today(): Date {
   return atNoon(now.getFullYear(), now.getMonth(), now.getDate())
 }
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunDateSwitcher',
-  emits: ['update:modelValue', 'update:value', 'update:mode', 'mode-change', 'change', 'center'],
-  setup() {
-    return {
-      /** 宽屏左侧导航占位；固定底部时与 tabbar / 搜索栏一样让开这一列 */
-      pageNavInset: inject(LINGYUN_APP_PAGE_NAV_INSET, ref(0)),
-    }
-  },
-  props: {
-    /** date 单日 / week 周 / month 月 / range 自定义日期段 */
-    mode: {
-      type: String as PropType<LingyunDateSwitcherMode>,
-      default: 'date',
-    },
-    modelValue: {
-      type: [String, Array] as PropType<LingyunDateSwitcherValue | null | undefined>,
-      default: undefined,
-    },
-    value: {
-      type: [String, Array] as PropType<LingyunDateSwitcherValue | null | undefined>,
-      default: undefined,
-    },
-    /** 周起始：1 周一（默认）/ 0 周日 */
-    weekStartsOn: {
-      type: Number,
-      default: 1,
-    },
-    /** 右侧模式按钮；默认显示，可切换的模式由 modes 控制 */
-    showModeSwitch: {
-      type: Boolean,
-      default: true,
-    },
-    modes: {
-      type: Array as PropType<LingyunDateSwitcherMode[]>,
-      default: () => ['date', 'week', 'month', 'year', 'range'],
-    },
-    /** 快捷范围限制；和 min / max 同时存在时取更严格的一边 */
-    limit: {
-      type: String as PropType<LingyunDateSwitcherLimit | ''>,
-      default: '',
-    },
-    /** 可选范围，'YYYY-MM-DD'；到达边界后对应按钮禁用 */
-    min: {
-      type: String,
-      default: '',
-    },
-    max: {
-      type: String,
-      default: '',
-    },
-    /** 固定底部（tabbar 同款） */
-    fixed: {
-      type: Boolean,
-      default: true,
-    },
-    /** 固定底部时预留 Home Indicator */
-    safeArea: {
-      type: Boolean,
-      default: true,
-    },
-    zIndex: {
-      type: [Number, String] as PropType<number | string>,
-      default: 900,
-    },
-    /** 中间图标；空字符串时不显示 */
-    icon: {
-      type: String,
-      default: 'calendar',
-    },
-    showIcon: {
-      type: Boolean,
-      default: true,
-    },
-    /** 点击中间自动打开内置日期选择器；false 时只发 center，由页面自己接 */
-    picker: {
-      type: Boolean,
-      default: true,
-    },
-    pickerTitle: {
-      type: String,
-      default: '',
-    },
-    /** 自定义中间文案；不传按 mode 输出 */
-    formatter: {
-      type: Function as PropType<(payload: LingyunDateSwitcherPayload) => string>,
-      default: null,
-    },
-  },
-  data() {
-    return {
-      innerMode: this.mode as LingyunDateSwitcherMode,
-      modeMenuOpen: false,
-    }
-  },
-  watch: {
-    mode(value: LingyunDateSwitcherMode) {
-      const next = normalizeMode(value)
-      if (next !== this.innerMode) this.innerMode = next
-    },
-    modeKey() {
-      const { start, end } = this.period
-      this.$emit('change', this.buildChange(start, end))
-    },
-  },
-  computed: {
-    modeKey(): LingyunDateSwitcherMode {
-      return normalizeMode(this.innerMode)
-    },
-    rawValue(): LingyunDateSwitcherValue | null {
-      const value = this.modelValue !== undefined ? this.modelValue : this.value
-      return value == null ? null : value
-    },
-    period(): { start: Date; end: Date } {
-      const raw = this.rawValue
-      if (this.modeKey === 'range') {
-        const list = Array.isArray(raw) ? raw : []
-        let start = parseDate(list[0]) || today()
-        let end = parseDate(list[1]) || start
-        if (compareDate(end, start) < 0) {
-          const swap = start
-          start = end
-          end = swap
-        }
-        return { start, end }
-      }
-      const anchor = parseDate(raw as string) || today()
-      if (this.modeKey === 'week') {
-        const start = startOfWeek(anchor, this.weekStartsOn === 0 ? 0 : 1)
-        return { start, end: addDays(start, 6) }
-      }
-      if (this.modeKey === 'month') {
-        return { start: startOfMonth(anchor), end: endOfMonth(anchor) }
-      }
-      if (this.modeKey === 'year') {
-        return { start: atNoon(anchor.getFullYear(), 0, 1), end: atNoon(anchor.getFullYear(), 11, 31) }
-      }
-      return { start: anchor, end: anchor }
-    },
-    payload(): LingyunDateSwitcherPayload {
-      const { start, end } = this.period
-      return {
-        mode: this.modeKey,
-        start: formatDate(start),
-        end: formatDate(end),
-        value: this.valueOf(start, end),
-      }
-    },
-    label(): string {
-      if (this.formatter) return String(this.formatter(this.payload) || '')
-      const { start, end } = this.period
-      if (this.modeKey === 'month') {
-        return `${start.getFullYear()}年${start.getMonth() + 1}月`
-      }
-      if (this.modeKey === 'year') return `${start.getFullYear()}年`
-      if (this.modeKey === 'date') return formatDate(start)
-      const sameYear = start.getFullYear() === end.getFullYear()
-      const startText = sameYear
-        ? `${start.getFullYear()}-${pad2(start.getMonth() + 1)}-${pad2(start.getDate())}`
-        : formatDate(start)
-      const endText =
-        sameYear && start.getFullYear() === end.getFullYear()
-          ? `${pad2(end.getMonth() + 1)}-${pad2(end.getDate())}`
-          : formatDate(end)
-      return `${startText} 至 ${endText}`
-    },
-    prevPeriod(): { start: Date; end: Date } {
-      return this.shiftPeriod(-1)
-    },
-    nextPeriod(): { start: Date; end: Date } {
-      return this.shiftPeriod(1)
-    },
-    limitBounds(): { min: Date | null; max: Date | null } {
-      const now = today()
-      const startsOn = this.weekStartsOn === 0 ? 0 : 1
-      const weekStart = startOfWeek(now, startsOn)
-      const weekEnd = addDays(weekStart, 6)
-      const monthStart = startOfMonth(now)
-      const monthEnd = endOfMonth(now)
-      switch (this.limit) {
-        case 'past':
-          return { min: null, max: now }
-        case 'future':
-          return { min: now, max: null }
-        case 'today':
-          return { min: now, max: now }
-        case 'beforeToday':
-          return { min: null, max: addDays(now, -1) }
-        case 'afterToday':
-          return { min: addDays(now, 1), max: null }
-        case 'thisWeek':
-          return { min: weekStart, max: weekEnd }
-        case 'beforeThisWeek':
-          return { min: null, max: addDays(weekStart, -1) }
-        case 'afterThisWeek':
-          return { min: addDays(weekEnd, 1), max: null }
-        case 'thisMonth':
-          return { min: monthStart, max: monthEnd }
-        case 'beforeThisMonth':
-          return { min: null, max: addDays(monthStart, -1) }
-        case 'afterThisMonth':
-          return { min: addDays(monthEnd, 1), max: null }
-        default:
-          return { min: null, max: null }
-      }
-    },
-    minDate(): Date | null {
-      const explicit = parseDate(this.min)
-      const limit = this.limitBounds.min
-      if (!explicit) return limit
-      if (!limit) return explicit
-      return compareDate(explicit, limit) >= 0 ? explicit : limit
-    },
-    maxDate(): Date | null {
-      const explicit = parseDate(this.max)
-      const limit = this.limitBounds.max
-      if (!explicit) return limit
-      if (!limit) return explicit
-      return compareDate(explicit, limit) <= 0 ? explicit : limit
-    },
-    canPrev(): boolean {
-      const next = this.prevPeriod
-      const min = this.minDate
-      /* 上一段只要和限制区间有交集就允许：从 12 月回包含今天的 11 月不能被挡住 */
-      return !min || compareDate(next.end, min) >= 0
-    },
-    canNext(): boolean {
-      const next = this.nextPeriod
-      const max = this.maxDate
-      /* 下一段只要起点不越过上限就允许：从 10 月回包含今天的 11 月不能被挡住 */
-      return !max || compareDate(next.start, max) <= 0
-    },
-    pickerMode(): string {
-      if (this.modeKey === 'week') return 'week'
-      if (this.modeKey === 'range') return 'daterange'
-      return 'date'
-    },
-    pickerFields(): string {
-      if (this.modeKey === 'year') return 'year'
-      return this.modeKey === 'month' ? 'month' : 'day'
-    },
-    pickerValue(): string | [string, string] {
-      const { start, end } = this.period
-      if (this.modeKey === 'range' || this.modeKey === 'week') {
-        return [formatDate(start), formatDate(end)]
-      }
-      if (this.modeKey === 'month') return formatDate(start).slice(0, 7)
-      if (this.modeKey === 'year') return String(start.getFullYear())
-      return formatDate(start)
-    },
-    availableModes(): LingyunDateSwitcherMode[] {
-      const seen: LingyunDateSwitcherMode[] = []
-      ;(this.modes || []).forEach((mode) => {
-        const key = normalizeMode(mode)
-        if (seen.indexOf(key) < 0) seen.push(key)
-      })
-      return seen
-    },
-    modeButtonVisible(): boolean {
-      /* showModeSwitch=false 或所有模式都关闭时不渲染 */
-      return this.showModeSwitch && this.availableModes.length > 0
-    },
-    modeLabel(): string {
-      return MODE_LABELS[this.modeKey]
-    },
-    modeShortLabel(): string {
-      if (this.modeKey === 'week') return '周'
-      if (this.modeKey === 'month') return '月'
-      if (this.modeKey === 'year') return '年'
-      if (this.modeKey === 'range') return '自'
-      return '天'
-    },
-    modeActions(): { key: string; label: string; selected: boolean }[] {
-      return this.availableModes.map((mode) => ({
-        key: mode,
-        label: MODE_LABELS[mode],
-        selected: mode === this.modeKey,
-      }))
-    },
-    pickerStartText(): string {
-      return this.minDate ? formatDate(this.minDate) : ''
-    },
-    pickerEndText(): string {
-      return this.maxDate ? formatDate(this.maxDate) : ''
-    },
-    resolvedPickerTitle(): string {
-      if (this.pickerTitle) return this.pickerTitle
-      if (this.modeKey === 'week') return '选择一周'
-      if (this.modeKey === 'month') return '选择月份'
-      if (this.modeKey === 'year') return '选择年份'
-      if (this.modeKey === 'range') return '选择日期段'
-      return '选择日期'
-    },
-    rootClass(): Record<string, boolean> {
-      return {
-        'lingyun-date-switcher--fixed': this.fixed,
-        'lingyun-date-switcher--safe': this.fixed && this.safeArea,
-      }
-    },
-    rootStyle(): Record<string, string> {
-      const style: Record<string, string> = this.fixed
-        ? { zIndex: String(Number(this.zIndex) || 900) }
-        : {}
-      const inset = Math.max(0, Number(this.pageNavInset) || 0)
-      if (this.fixed && inset > 0) style.left = `${inset}px`
-      return style
-    },
-  },
-  methods: {
-    buildChange(start: Date, end: Date): LingyunDateSwitcherChange {
-      const range = `${formatDate(start)} - ${formatDate(end)}`
-      if (this.modeKey === 'week') {
-        const info = isoWeekInfo(start)
-        const week = `${info.year}-${pad2(info.week)}`
-        return { type: 'week', value: week, week, range }
-      }
-      if (this.modeKey === 'month') {
-        const month = `${start.getFullYear()}-${pad2(start.getMonth() + 1)}`
-        return { type: 'month', value: month, month, range }
-      }
-      if (this.modeKey === 'year') {
-        const year = String(start.getFullYear())
-        return { type: 'year', value: year, year, range }
-      }
-      if (this.modeKey === 'range') {
-        return { type: 'range', value: range, range }
-      }
-      const date = formatDate(start)
-      return { type: 'day', value: date, date, range }
-    },
-    valueOf(start: Date, end: Date): LingyunDateSwitcherValue {
-      if (this.modeKey === 'range') {
-        return [formatDate(start), formatDate(end)] as LingyunDateSwitcherRange
-      }
-      return formatDate(start)
-    },
-    shiftPeriod(direction: number): { start: Date; end: Date } {
-      const { start, end } = this.period
-      if (this.modeKey === 'month') {
-        const monthStart = atNoon(start.getFullYear(), start.getMonth() + direction, 1)
-        return { start: monthStart, end: endOfMonth(monthStart) }
-      }
-      if (this.modeKey === 'year') {
-        const yearStart = atNoon(start.getFullYear() + direction, 0, 1)
-        return { start: yearStart, end: atNoon(yearStart.getFullYear(), 11, 31) }
-      }
-      if (this.modeKey === 'week') {
-        const weekStart = addDays(start, direction * 7)
-        return { start: weekStart, end: addDays(weekStart, 6) }
-      }
-      if (this.modeKey === 'range') {
-        const length = daysBetween(start, end) + 1
-        const nextStart = addDays(start, direction * length)
-        return { start: nextStart, end: addDays(nextStart, length - 1) }
-      }
-      const day = addDays(start, direction)
-      return { start: day, end: day }
-    },
-    onStep(direction: number): void {
-      if (direction < 0 ? !this.canPrev : !this.canNext) return
-      const next = direction < 0 ? this.prevPeriod : this.nextPeriod
-      const value = this.valueOf(next.start, next.end)
-      this.$emit('update:modelValue', value)
-      this.$emit('update:value', value)
-      this.$emit('change', this.buildChange(next.start, next.end))
-    },
-    onModeSelect(payload: { key?: string }): void {
-      const key = normalizeMode(payload && payload.key)
-      if (this.availableModes.indexOf(key) < 0) return
-      if (key === this.modeKey) return
-      this.innerMode = key
-      this.$emit('update:mode', key)
-      this.$emit('mode-change', key)
-    },
-    onCenter(): void {
-      const { start, end } = this.period
-      this.$emit('center', this.buildChange(start, end))
-      if (!this.picker) return
-      const picker = this.$refs.pickerRef as { open?: () => void } | undefined
-      if (picker && typeof picker.open === 'function') picker.open()
-    },
-    onPickerValue(value: unknown): void {
-      const mode = this.modeKey
-      let start: Date | null = null
-      let end: Date | null = null
-      let nextValue: LingyunDateSwitcherValue
+})
 
-      if (mode === 'range') {
-        const list = Array.isArray(value) ? value : []
-        start = parseDate(list[0])
-        end = parseDate(list[1]) || start
-        if (!start || !end) return
-        if (compareDate(end, start) < 0) {
-          const swap = start
-          start = end
-          end = swap
-        }
-        nextValue = [formatDate(start), formatDate(end)] as LingyunDateSwitcherRange
-      } else if (mode === 'week') {
-        const list = Array.isArray(value) ? value : []
-        start = parseDate(list[0]) || parseDate(value as string)
-        if (!start) return
-        start = startOfWeek(start, this.weekStartsOn === 0 ? 0 : 1)
-        end = addDays(start, 6)
-        nextValue = formatDate(start)
-      } else if (mode === 'month') {
-        const text = String(value == null ? '' : value)
-        const date = parseDate(`${text}-01`) || parseDate(text)
-        if (!date) return
-        start = startOfMonth(date)
-        end = endOfMonth(date)
-        nextValue = formatDate(start)
-      } else if (mode === 'year') {
-        const year = Number(String(value == null ? '' : value).slice(0, 4))
-        if (!Number.isFinite(year)) return
-        start = atNoon(year, 0, 1)
-        end = atNoon(year, 11, 31)
-        nextValue = formatDate(start)
-      } else {
-        const date = parseDate(value as string)
-        if (!date) return
-        start = date
-        end = date
-        nextValue = formatDate(date)
-      }
-
-      this.$emit('update:modelValue', nextValue)
-      this.$emit('update:value', nextValue)
-      this.$emit('change', this.buildChange(start, end))
-    },
+const props = defineProps({
+  /** date 单日 / week 周 / month 月 / range 自定义日期段 */
+  mode: {
+    type: String as PropType<LingyunDateSwitcherMode>,
+    default: 'date',
   },
+  modelValue: {
+    type: [String, Array] as PropType<LingyunDateSwitcherValue | null | undefined>,
+    default: undefined,
+  },
+  value: {
+    type: [String, Array] as PropType<LingyunDateSwitcherValue | null | undefined>,
+    default: undefined,
+  },
+  /** 周起始：1 周一（默认）/ 0 周日 */
+  weekStartsOn: {
+    type: Number,
+    default: 1,
+  },
+  /** 右侧模式按钮；默认显示，可切换的模式由 modes 控制 */
+  showModeSwitch: {
+    type: Boolean,
+    default: true,
+  },
+  modes: {
+    type: Array as PropType<LingyunDateSwitcherMode[]>,
+    default: () => ['date', 'week', 'month', 'year', 'range'],
+  },
+  /** 快捷范围限制；和 min / max 同时存在时取更严格的一边 */
+  limit: {
+    type: String as PropType<LingyunDateSwitcherLimit | ''>,
+    default: '',
+  },
+  /** 可选范围，'YYYY-MM-DD'；到达边界后对应按钮禁用 */
+  min: {
+    type: String,
+    default: '',
+  },
+  max: {
+    type: String,
+    default: '',
+  },
+  /** 固定底部（tabbar 同款） */
+  fixed: {
+    type: Boolean,
+    default: true,
+  },
+  /** 固定底部时预留 Home Indicator */
+  safeArea: {
+    type: Boolean,
+    default: true,
+  },
+  zIndex: {
+    type: [Number, String] as PropType<number | string>,
+    default: 900,
+  },
+  /** 中间图标；空字符串时不显示 */
+  icon: {
+    type: String,
+    default: 'calendar',
+  },
+  showIcon: {
+    type: Boolean,
+    default: true,
+  },
+  /** 点击中间自动打开内置日期选择器；false 时只发 center，由页面自己接 */
+  picker: {
+    type: Boolean,
+    default: true,
+  },
+  pickerTitle: {
+    type: String,
+    default: '',
+  },
+  /** 自定义中间文案；不传按 mode 输出 */
+  formatter: {
+    type: Function as PropType<(payload: LingyunDateSwitcherPayload) => string>,
+    default: null,
+  },
+})
+
+const emit = defineEmits(['update:modelValue', 'update:value', 'update:mode', 'mode-change', 'change', 'center'])
+
+/** 宽屏左侧导航占位；固定底部时与 tabbar / 搜索栏一样让开这一列 */
+const pageNavInset = inject(LINGYUN_APP_PAGE_NAV_INSET, ref(0))
+
+const innerMode = ref<LingyunDateSwitcherMode>(props.mode as LingyunDateSwitcherMode)
+const modeMenuOpen = ref(false)
+const pickerRef = ref<unknown>(null)
+const modeKey = computed((): LingyunDateSwitcherMode => {
+  return normalizeMode(innerMode.value)
+})
+
+const rawValue = computed((): LingyunDateSwitcherValue | null => {
+  const value = props.modelValue !== undefined ? props.modelValue : props.value
+  return value == null ? null : value
+})
+
+const period = computed((): { start: Date; end: Date } => {
+  const raw = rawValue.value
+  if (modeKey.value === 'range') {
+    const list = Array.isArray(raw) ? raw : []
+    let start = parseDate(list[0]) || today()
+    let end = parseDate(list[1]) || start
+    if (compareDate(end, start) < 0) {
+      const swap = start
+      start = end
+      end = swap
+    }
+    return { start, end }
+  }
+  const anchor = parseDate(raw as string) || today()
+  if (modeKey.value === 'week') {
+    const start = startOfWeek(anchor, props.weekStartsOn === 0 ? 0 : 1)
+    return { start, end: addDays(start, 6) }
+  }
+  if (modeKey.value === 'month') {
+    return { start: startOfMonth(anchor), end: endOfMonth(anchor) }
+  }
+  if (modeKey.value === 'year') {
+    return { start: atNoon(anchor.getFullYear(), 0, 1), end: atNoon(anchor.getFullYear(), 11, 31) }
+  }
+  return { start: anchor, end: anchor }
+})
+
+function buildChange(start: Date, end: Date): LingyunDateSwitcherChange {
+  const range = `${formatDate(start)} - ${formatDate(end)}`
+  if (modeKey.value === 'week') {
+    const info = isoWeekInfo(start)
+    const week = `${info.year}-${pad2(info.week)}`
+    return { type: 'week', value: week, week, range }
+  }
+  if (modeKey.value === 'month') {
+    const month = `${start.getFullYear()}-${pad2(start.getMonth() + 1)}`
+    return { type: 'month', value: month, month, range }
+  }
+  if (modeKey.value === 'year') {
+    const year = String(start.getFullYear())
+    return { type: 'year', value: year, year, range }
+  }
+  if (modeKey.value === 'range') {
+    return { type: 'range', value: range, range }
+  }
+  const date = formatDate(start)
+  return { type: 'day', value: date, date, range }
+}
+
+function valueOf(start: Date, end: Date): LingyunDateSwitcherValue {
+  if (modeKey.value === 'range') {
+    return [formatDate(start), formatDate(end)] as LingyunDateSwitcherRange
+  }
+  return formatDate(start)
+}
+
+function shiftPeriod(direction: number): { start: Date; end: Date } {
+  const { start, end } = period.value
+  if (modeKey.value === 'month') {
+    const monthStart = atNoon(start.getFullYear(), start.getMonth() + direction, 1)
+    return { start: monthStart, end: endOfMonth(monthStart) }
+  }
+  if (modeKey.value === 'year') {
+    const yearStart = atNoon(start.getFullYear() + direction, 0, 1)
+    return { start: yearStart, end: atNoon(yearStart.getFullYear(), 11, 31) }
+  }
+  if (modeKey.value === 'week') {
+    const weekStart = addDays(start, direction * 7)
+    return { start: weekStart, end: addDays(weekStart, 6) }
+  }
+  if (modeKey.value === 'range') {
+    const length = daysBetween(start, end) + 1
+    const nextStart = addDays(start, direction * length)
+    return { start: nextStart, end: addDays(nextStart, length - 1) }
+  }
+  const day = addDays(start, direction)
+  return { start: day, end: day }
+}
+
+const payload = computed((): LingyunDateSwitcherPayload => {
+  const { start, end } = period.value
+  return {
+    mode: modeKey.value,
+    start: formatDate(start),
+    end: formatDate(end),
+    value: valueOf(start, end),
+  }
+})
+
+const label = computed((): string => {
+  if (props.formatter) return String(props.formatter(payload.value) || '')
+  const { start, end } = period.value
+  if (modeKey.value === 'month') {
+    return `${start.getFullYear()}年${start.getMonth() + 1}月`
+  }
+  if (modeKey.value === 'year') return `${start.getFullYear()}年`
+  if (modeKey.value === 'date') return formatDate(start)
+  const sameYear = start.getFullYear() === end.getFullYear()
+  const startText = sameYear
+    ? `${start.getFullYear()}-${pad2(start.getMonth() + 1)}-${pad2(start.getDate())}`
+    : formatDate(start)
+  const endText =
+    sameYear && start.getFullYear() === end.getFullYear()
+      ? `${pad2(end.getMonth() + 1)}-${pad2(end.getDate())}`
+      : formatDate(end)
+  return `${startText} 至 ${endText}`
+})
+
+const prevPeriod = computed((): { start: Date; end: Date } => {
+  return shiftPeriod(-1)
+})
+
+const nextPeriod = computed((): { start: Date; end: Date } => {
+  return shiftPeriod(1)
+})
+
+const limitBounds = computed((): { min: Date | null; max: Date | null } => {
+  const now = today()
+  const startsOn = props.weekStartsOn === 0 ? 0 : 1
+  const weekStart = startOfWeek(now, startsOn)
+  const weekEnd = addDays(weekStart, 6)
+  const monthStart = startOfMonth(now)
+  const monthEnd = endOfMonth(now)
+  switch (props.limit) {
+    case 'past':
+      return { min: null, max: now }
+    case 'future':
+      return { min: now, max: null }
+    case 'today':
+      return { min: now, max: now }
+    case 'beforeToday':
+      return { min: null, max: addDays(now, -1) }
+    case 'afterToday':
+      return { min: addDays(now, 1), max: null }
+    case 'thisWeek':
+      return { min: weekStart, max: weekEnd }
+    case 'beforeThisWeek':
+      return { min: null, max: addDays(weekStart, -1) }
+    case 'afterThisWeek':
+      return { min: addDays(weekEnd, 1), max: null }
+    case 'thisMonth':
+      return { min: monthStart, max: monthEnd }
+    case 'beforeThisMonth':
+      return { min: null, max: addDays(monthStart, -1) }
+    case 'afterThisMonth':
+      return { min: addDays(monthEnd, 1), max: null }
+    default:
+      return { min: null, max: null }
+  }
+})
+
+const minDate = computed((): Date | null => {
+  const explicit = parseDate(props.min)
+  const limit = limitBounds.value.min
+  if (!explicit) return limit
+  if (!limit) return explicit
+  return compareDate(explicit, limit) >= 0 ? explicit : limit
+})
+
+const maxDate = computed((): Date | null => {
+  const explicit = parseDate(props.max)
+  const limit = limitBounds.value.max
+  if (!explicit) return limit
+  if (!limit) return explicit
+  return compareDate(explicit, limit) <= 0 ? explicit : limit
+})
+
+const canPrev = computed((): boolean => {
+  const next = prevPeriod.value
+  const min = minDate.value
+  /* 上一段只要和限制区间有交集就允许：从 12 月回包含今天的 11 月不能被挡住 */
+  return !min || compareDate(next.end, min) >= 0
+})
+
+const canNext = computed((): boolean => {
+  const next = nextPeriod.value
+  const max = maxDate.value
+  /* 下一段只要起点不越过上限就允许：从 10 月回包含今天的 11 月不能被挡住 */
+  return !max || compareDate(next.start, max) <= 0
+})
+
+const pickerMode = computed((): string => {
+  if (modeKey.value === 'week') return 'week'
+  if (modeKey.value === 'range') return 'daterange'
+  return 'date'
+})
+
+const pickerFields = computed((): string => {
+  if (modeKey.value === 'year') return 'year'
+  return modeKey.value === 'month' ? 'month' : 'day'
+})
+
+const pickerValue = computed((): string | [string, string] => {
+  const { start, end } = period.value
+  if (modeKey.value === 'range' || modeKey.value === 'week') {
+    return [formatDate(start), formatDate(end)]
+  }
+  if (modeKey.value === 'month') return formatDate(start).slice(0, 7)
+  if (modeKey.value === 'year') return String(start.getFullYear())
+  return formatDate(start)
+})
+
+const availableModes = computed((): LingyunDateSwitcherMode[] => {
+  const seen: LingyunDateSwitcherMode[] = []
+  ;(props.modes || []).forEach((mode) => {
+    const key = normalizeMode(mode)
+    if (seen.indexOf(key) < 0) seen.push(key)
+  })
+  return seen
+})
+
+const modeButtonVisible = computed((): boolean => {
+  /* showModeSwitch=false 或所有模式都关闭时不渲染 */
+  return props.showModeSwitch && availableModes.value.length > 0
+})
+
+const modeLabel = computed((): string => {
+  return MODE_LABELS[modeKey.value]
+})
+
+const modeShortLabel = computed((): string => {
+  if (modeKey.value === 'week') return '周'
+  if (modeKey.value === 'month') return '月'
+  if (modeKey.value === 'year') return '年'
+  if (modeKey.value === 'range') return '自'
+  return '天'
+})
+
+const modeActions = computed((): { key: string; label: string; selected: boolean }[] => {
+  return availableModes.value.map((mode) => ({
+    key: mode,
+    label: MODE_LABELS[mode],
+    selected: mode === modeKey.value,
+  }))
+})
+
+const pickerStartText = computed((): string => {
+  return minDate.value ? formatDate(minDate.value) : ''
+})
+
+const pickerEndText = computed((): string => {
+  return maxDate.value ? formatDate(maxDate.value) : ''
+})
+
+const resolvedPickerTitle = computed((): string => {
+  if (props.pickerTitle) return props.pickerTitle
+  if (modeKey.value === 'week') return '选择一周'
+  if (modeKey.value === 'month') return '选择月份'
+  if (modeKey.value === 'year') return '选择年份'
+  if (modeKey.value === 'range') return '选择日期段'
+  return '选择日期'
+})
+
+const rootClass = computed((): Record<string, boolean> => {
+  return {
+    'lingyun-date-switcher--fixed': props.fixed,
+    'lingyun-date-switcher--safe': props.fixed && props.safeArea,
+  }
+})
+
+const rootStyle = computed((): Record<string, string> => {
+  const style: Record<string, string> = props.fixed
+    ? { zIndex: String(Number(props.zIndex) || 900) }
+    : {}
+  const inset = Math.max(0, Number(pageNavInset.value) || 0)
+  if (props.fixed && inset > 0) style.left = `${inset}px`
+  return style
+})
+function onStep(direction: number): void {
+  if (direction < 0 ? !canPrev.value : !canNext.value) return
+  const next = direction < 0 ? prevPeriod.value : nextPeriod.value
+  const value = valueOf(next.start, next.end)
+  emit('update:modelValue', value)
+  emit('update:value', value)
+  emit('change', buildChange(next.start, next.end))
+}
+
+function onModeSelect(payload: { key?: string }): void {
+  const key = normalizeMode(payload && payload.key)
+  if (availableModes.value.indexOf(key) < 0) return
+  if (key === modeKey.value) return
+  innerMode.value = key
+  emit('update:mode', key)
+  emit('mode-change', key)
+}
+
+function onCenter(): void {
+  const { start, end } = period.value
+  emit('center', buildChange(start, end))
+  if (!props.picker) return
+  const picker = pickerRef.value as { open?: () => void } | null
+  if (picker && typeof picker.open === 'function') picker.open()
+}
+
+function onPickerValue(value: unknown): void {
+  const mode = modeKey.value
+  let start: Date | null = null
+  let end: Date | null = null
+  let nextValue: LingyunDateSwitcherValue
+
+  if (mode === 'range') {
+    const list = Array.isArray(value) ? value : []
+    start = parseDate(list[0])
+    end = parseDate(list[1]) || start
+    if (!start || !end) return
+    if (compareDate(end, start) < 0) {
+      const swap = start
+      start = end
+      end = swap
+    }
+    nextValue = [formatDate(start), formatDate(end)] as LingyunDateSwitcherRange
+  } else if (mode === 'week') {
+    const list = Array.isArray(value) ? value : []
+    start = parseDate(list[0]) || parseDate(value as string)
+    if (!start) return
+    start = startOfWeek(start, props.weekStartsOn === 0 ? 0 : 1)
+    end = addDays(start, 6)
+    nextValue = formatDate(start)
+  } else if (mode === 'month') {
+    const text = String(value == null ? '' : value)
+    const date = parseDate(`${text}-01`) || parseDate(text)
+    if (!date) return
+    start = startOfMonth(date)
+    end = endOfMonth(date)
+    nextValue = formatDate(start)
+  } else if (mode === 'year') {
+    const year = Number(String(value == null ? '' : value).slice(0, 4))
+    if (!Number.isFinite(year)) return
+    start = atNoon(year, 0, 1)
+    end = atNoon(year, 11, 31)
+    nextValue = formatDate(start)
+  } else {
+    const date = parseDate(value as string)
+    if (!date) return
+    start = date
+    end = date
+    nextValue = formatDate(date)
+  }
+
+  emit('update:modelValue', nextValue)
+  emit('update:value', nextValue)
+  emit('change', buildChange(start, end))
+}
+
+watch(
+  () => props.mode,
+  (value: LingyunDateSwitcherMode) => {
+    const next = normalizeMode(value)
+    if (next !== innerMode.value) innerMode.value = next
+  },
+)
+
+watch(modeKey, () => {
+  const { start, end } = period.value
+  emit('change', buildChange(start, end))
 })
 </script>
 

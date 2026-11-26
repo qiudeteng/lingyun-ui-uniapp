@@ -196,10 +196,11 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
-import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
+import { syncLingyunMpOverlayHold } from '../../utils/mp-overlay-gate'
 import {
   LINGYUN_APP_PAGE_SCROLL_LOCK,
   type LingyunAppPageScrollLock,
@@ -329,454 +330,500 @@ function filterCascadeTree(tree: unknown, query: string, map?: DataPickerMap | n
   return walk(list)
 }
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunDataPicker',
-  mixins: [mpOverlayHoldMixin],
-  emits: ['update:modelValue', 'update:value', 'change', 'cancel'],
-  inject: {
-    appPageScrollLock: {
-      from: LINGYUN_APP_PAGE_SCROLL_LOCK,
-      default: null as LingyunAppPageScrollLock | null,
-    },
-    lingyunFormItem: { default: null as object | null },
-  },
-  props: {
-    modelValue: { type: Array as PropType<unknown[] | undefined>, default: undefined },
-    value: { type: Array as PropType<unknown[] | undefined>, default: undefined },
-    localdata: { type: Array as PropType<unknown[]>, default: () => [] },
-    map: {
-      type: Object as PropType<DataPickerMap>,
-      default: () => ({ text: 'text', value: 'value', children: 'children' }),
-    },
-    title: { type: String, default: '' },
-    placeholder: { type: String, default: '请选择' },
-    separator: { type: String, default: ' / ' },
-    disabled: { type: Boolean, default: false },
-    cancelText: { type: String, default: '取消' },
-    confirmText: { type: String, default: '完成' },
-    zIndex: { type: [Number, String] as PropType<number | string>, default: 1200 },
-    /** 滚轮下方搜索框。默认关闭 */
-    showSearch: { type: Boolean, default: false },
-    searchPlaceholder: { type: String, default: '搜索' },
-    /**
-     * field = 独立触发条；cell = form-item 行内嵌；auto = form-item 内默认 cell
-     */
-    variant: { type: String, default: 'auto' },
-  },
-  data() {
-    return {
-      sheetMounted: false,
-      phase: '' as '' | 'enter' | 'open' | 'leave',
-      leaveTimer: null as ReturnType<typeof setTimeout> | null,
-      enterTimer: null as ReturnType<typeof setTimeout> | null,
-      draftIndexes: [0] as number[],
-      draftColumns: [] as DataColumnItem[][],
-      colEpoch: 0,
-      safeBottom: 0,
-      dragStartY: 0,
-      dragDy: 0,
-      dragging: false,
-      _appScrollLocked: false,
-      _scrollLocked: false,
-      _prevBodyOverflow: '',
-      _prevBodyOverscroll: '',
-      _prevHtmlOverscroll: '',
-      searchQuery: '',
-      searchEmpty: false,
-      keyboardHeight: 0,
-      _onKeyboardHeight: null as ((res: { height?: number }) => void) | null,
-      _onVisualViewport: null as (() => void) | null,
-    }
-  },
-  computed: {
-    current() {
-      const raw = this.modelValue !== undefined ? this.modelValue : this.value
-      return Array.isArray(raw) ? raw.slice() : []
-    },
-    resolvedVariant() {
-      const v = this.variant
-      if (v === 'field' || v === 'cell') return v
-      const formItem = this.lingyunFormItem as object | null
-      return formItem ? 'cell' : 'field'
-    },
-    isCell() {
-      return this.resolvedVariant === 'cell'
-    },
-    showTriggerTitle() {
-      if (this.isCell) return false
-      return !!this.title
-    },
-    rootClass() {
-      return [
-        this.isCell ? 'lingyun-data-picker--cell' : 'lingyun-data-picker--field',
-        this.disabled ? 'lingyun-data-picker--disabled' : '',
-      ].filter(Boolean)
-    },
-    rowClass() {
-      return {
-        'lingyun-data-picker__row--disabled': this.disabled,
-        'lingyun-data-picker__row--cell': this.isCell,
-      }
-    },
-    isDark() {
-      try {
-        return (useLingyunTheme().resolved || 'light') === 'dark'
-      } catch {
-        return false
-      }
-    },
-    themeClass() {
-      try {
-        return useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        return 'theme-light'
-      }
-    },
-    reduceMotion() {
-      try {
-        if (typeof window !== 'undefined' && window.matchMedia) {
-          return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        }
-      } catch {
-        /* ignore */
-      }
-      return false
-    },
-    sheetClass() {
-      return [
-        this.themeClass,
-        this.phase ? `lingyun-data-picker-sheet--${this.phase}` : '',
-        this.reduceMotion ? 'lingyun-data-picker-sheet--reduce-motion' : '',
-        this.dragging ? 'lingyun-data-picker-sheet--dragging' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    sheetRootStyle() {
-      return { zIndex: Number(this.zIndex) || 1200 }
-    },
-    panelStyle() {
-      const style: Record<string, string> = {
-        left: `${INSET_MEDIUM}px`,
-        right: `${INSET_MEDIUM}px`,
-        borderTopLeftRadius: `${RADIUS}px`,
-        borderTopRightRadius: `${RADIUS}px`,
-        paddingBottom: `${this.panelBottom}px`,
-      }
-      if (this.dragging) {
-        style.transform = `translate3d(0, ${this.dragDy}px, 0)`
-        style.transition = 'none'
-      }
-      return style
-    },
-    indicatorStyle() {
-      return `height: ${ITEM_H}px; background: transparent; border: 0 solid transparent; border-top: none; border-bottom: none;`
-    },
-    indicatorClass() {
-      return 'lingyun-data-picker-sheet__indicator'
-    },
-    indicatorPillStyle() {
-      const bg = this.isDark ? 'rgba(120, 120, 128, 0.24)' : 'rgba(120, 120, 128, 0.12)'
-      const r = ITEM_H / 2
-      return {
-        height: `${ITEM_H}px`,
-        marginTop: `${-r}px`,
-        borderRadius: `${r}px`,
-        background: bg,
-      }
-    },
-    maskClass() {
-      return this.isDark
-        ? 'lingyun-data-picker-sheet__mask--dark'
-        : 'lingyun-data-picker-sheet__mask--light'
-    },
-    panelBottom() {
-      if (this.showSearch && this.keyboardHeight > 0) return this.keyboardHeight
-      return Number(this.safeBottom) || 0
-    },
-    searchTree(): unknown[] {
-      if (!this.showSearch) return this.localdata
-      return filterCascadeTree(this.localdata, this.searchQuery, this.map)
-    },
-    displayText() {
-      if (!this.current.length) return ''
-      const built = buildCascade(this.localdata, this.current, this.map)
-      if (!built.path.length) return ''
-      return built.path.map((p) => p.text).join(this.separator)
-    },
-  },
-  beforeUnmount() {
-    this.clearTimers()
-    this.unbindSearchKeyboard()
-    this.unlockPageScroll()
-  },
-  methods: {
-    colKey(colIndex: number) {
-      return `c-${this.colEpoch}-${colIndex}`
-    },
-    clearTimers() {
-      if (this.leaveTimer) {
-        clearTimeout(this.leaveTimer)
-        this.leaveTimer = null
-      }
-      if (this.enterTimer) {
-        clearTimeout(this.enterTimer)
-        this.enterTimer = null
-      }
-    },
-    syncSafe() {
-      try {
-        const info =
-          typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
-        const inset = info && info.safeAreaInsets
-        this.safeBottom = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
-      } catch {
-        this.safeBottom = 0
-      }
-    },
-    valuesFromDraft() {
-      const values = []
-      const texts = []
-      const path = []
-      for (let i = 0; i < this.draftColumns.length; i += 1) {
-        const col = this.draftColumns[i]
-        const idx = Math.min(
-          Math.max(0, Number(this.draftIndexes[i]) || 0),
-          Math.max(0, col.length - 1),
-        )
-        const item = col[idx]
-        if (!item) break
-        values.push(item.value)
-        texts.push(item.text)
-        path.push({ text: item.text, value: item.value })
-      }
-      return { values, texts, path }
-    },
-    applyDraftFromValues(selectedValues: unknown[]) {
-      const built = buildCascade(this.searchTree, selectedValues, this.map)
-      if (!built.columns.length) {
-        this.searchEmpty = true
-        this.draftColumns = [[{ text: '无匹配', value: '', children: [] }]]
-        this.draftIndexes = [0]
-      } else {
-        this.searchEmpty = false
-        this.draftColumns = built.columns
-        this.draftIndexes = built.indexes.length ? built.indexes : [0]
-      }
-      this.colEpoch += 1
-    },
-    onSearchQuery(value: unknown) {
-      this.searchQuery = value == null ? '' : String(value)
-      const selected = this.valuesFromDraft().values.filter((item) => item !== '' && item != null)
-      this.applyDraftFromValues(selected.length ? selected : this.current)
-    },
-    bindSearchKeyboard() {
-      if (!this.showSearch) return
-      if (typeof uni !== 'undefined' && typeof uni.onKeyboardHeightChange === 'function') {
-        const onKeyboardHeight = (res: { height?: number }) => {
-          this.keyboardHeight = Math.max(0, Number(res && res.height) || 0)
-        }
-        this._onKeyboardHeight = onKeyboardHeight
-        uni.onKeyboardHeightChange(onKeyboardHeight)
-      }
-      // #ifdef H5
-      const viewport = typeof window === 'undefined' ? null : window.visualViewport
-      if (viewport) {
-        const onVisualViewport = () => {
-          const vv = window.visualViewport
-          if (!vv) return
-          const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
-          this.keyboardHeight = covered > 80 ? covered : 0
-        }
-        this._onVisualViewport = onVisualViewport
-        viewport.addEventListener('resize', onVisualViewport)
-        viewport.addEventListener('scroll', onVisualViewport)
-      }
-      // #endif
-    },
-    unbindSearchKeyboard() {
-      const onKeyboardHeight = this._onKeyboardHeight
-      if (onKeyboardHeight && typeof uni !== 'undefined' && typeof uni.offKeyboardHeightChange === 'function') {
-        uni.offKeyboardHeightChange(onKeyboardHeight)
-      }
-      this._onKeyboardHeight = null
-      // #ifdef H5
-      const onVisualViewport = this._onVisualViewport
-      const viewport = typeof window === 'undefined' ? null : window.visualViewport
-      if (onVisualViewport && viewport) {
-        viewport.removeEventListener('resize', onVisualViewport)
-        viewport.removeEventListener('scroll', onVisualViewport)
-      }
-      this._onVisualViewport = null
-      // #endif
-      this.keyboardHeight = 0
-    },
-    open() {
-      if (this.disabled) return
-      this.searchQuery = ''
-      this.searchEmpty = false
-      this.applyDraftFromValues(this.current)
-      this.syncSafe()
-      this.bindSearchKeyboard()
-      this.lockPageScroll()
-      this.openAnim()
-    },
-    openAnim() {
-      this.clearTimers()
-      this.sheetMounted = true
-      this.dragDy = 0
-      this.dragging = false
-      this.phase = 'enter'
-      this.$nextTick(() => {
-        const kick = () => {
-          this.enterTimer = setTimeout(
-            () => {
-              this.phase = 'open'
-              this.enterTimer = null
-            },
-            this.reduceMotion ? 16 : ENTER_KICK_MS,
-          )
-        }
-        if (typeof requestAnimationFrame === 'function') {
-          requestAnimationFrame(() => {
-            requestAnimationFrame(kick)
-          })
-        } else {
-          kick()
-        }
-      })
-    },
-    closeSheet(after?: () => void) {
-      this.clearTimers()
-      if (!this.sheetMounted) {
-        this.unbindSearchKeyboard()
-        this.unlockPageScroll()
-        if (typeof after === 'function') after()
-        return
-      }
-      this.phase = 'leave'
-      this.leaveTimer = setTimeout(
-        () => {
-          this.sheetMounted = false
-          this.phase = ''
-          this.dragDy = 0
-          this.dragging = false
-          this.unbindSearchKeyboard()
-          this.unlockPageScroll()
-          this.leaveTimer = null
-          if (typeof after === 'function') after()
-        },
-        this.reduceMotion ? 16 : LEAVE_MS,
-      )
-    },
-    onPanelTouchMove() {},
-    onChromeTouchStart(e: TouchEvent) {
-      const t = e.touches && e.touches[0]
-      if (!t) return
-      this.dragStartY = t.clientY
-      this.dragDy = 0
-      this.dragging = true
-    },
-    onChromeTouchMove(e: TouchEvent) {
-      if (!this.dragging) return
-      const t = e.touches && e.touches[0]
-      if (!t) return
-      const dy = t.clientY - this.dragStartY
-      this.dragDy = dy > 0 ? dy : 0
-    },
-    onChromeTouchEnd() {
-      if (!this.dragging) return
-      const dy = this.dragDy
-      this.dragging = false
-      this.dragDy = 0
-      if (dy >= DISMISS_DY) this.onCancel()
-    },
-    onPickChange(e: DataPickerChangeEvent) {
-      const raw = (e && e.detail && e.detail.value) || []
-      const nextIndexes = raw.map((n) => Number(n) || 0)
-      // 找出变化的最左列，其后列按新节点重算
-      let changed = 0
-      const len = Math.max(nextIndexes.length, this.draftIndexes.length)
-      for (let i = 0; i < len; i += 1) {
-        if ((nextIndexes[i] || 0) !== (this.draftIndexes[i] || 0)) {
-          changed = i
-          break
-        }
-      }
+})
 
-      const selectedValues = []
-      for (let i = 0; i <= changed; i += 1) {
-        const col = this.draftColumns[i]
-        if (!col || !col.length) break
-        const idx = Math.min(Math.max(0, nextIndexes[i] || 0), col.length - 1)
-        selectedValues.push(col[idx].value)
-      }
-      this.applyDraftFromValues(selectedValues)
-    },
-    onCancel() {
-      this.$emit('cancel')
-      this.closeSheet()
-    },
-    onConfirm() {
-      if (this.searchEmpty) return
-      const { values, texts, path } = this.valuesFromDraft()
-      if (!values.length) return
-      this.$emit('update:modelValue', values)
-      this.$emit('update:value', values)
-      this.$emit('change', {
-        value: values,
-        text: texts,
-        path,
-        detail: { value: values, text: texts },
-      })
-      this.closeSheet()
-    },
-    lockPageScroll() {
-      try {
-        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
-        if (lockApi && typeof lockApi.lock === 'function' && !this._appScrollLocked) {
-          lockApi.lock()
-          this._appScrollLocked = true
-        }
-      } catch {
-        /* ignore */
-      }
-      // #ifdef H5
-      if (typeof document === 'undefined') return
-      if (this._scrollLocked) return
-      const body = document.body
-      const html = document.documentElement
-      this._prevBodyOverflow = body.style.overflow
-      this._prevBodyOverscroll = body.style.overscrollBehavior
-      this._prevHtmlOverscroll = html.style.overscrollBehavior
-      body.style.overflow = 'hidden'
-      body.style.overscrollBehavior = 'none'
-      html.style.overscrollBehavior = 'none'
-      this._scrollLocked = true
-      // #endif
-    },
-    unlockPageScroll() {
-      try {
-        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
-        if (this._appScrollLocked && lockApi && typeof lockApi.unlock === 'function') {
-          lockApi.unlock()
-        }
-        this._appScrollLocked = false
-      } catch {
-        this._appScrollLocked = false
-      }
-      // #ifdef H5
-      if (typeof document === 'undefined') return
-      if (!this._scrollLocked) return
-      const body = document.body
-      const html = document.documentElement
-      body.style.overflow = this._prevBodyOverflow || ''
-      body.style.overscrollBehavior = this._prevBodyOverscroll || ''
-      html.style.overscrollBehavior = this._prevHtmlOverscroll || ''
-      this._scrollLocked = false
-      // #endif
-    },
+const props = defineProps({
+  modelValue: { type: Array as PropType<unknown[] | undefined>, default: undefined },
+  value: { type: Array as PropType<unknown[] | undefined>, default: undefined },
+  localdata: { type: Array as PropType<unknown[]>, default: () => [] },
+  map: {
+    type: Object as PropType<DataPickerMap>,
+    default: () => ({ text: 'text', value: 'value', children: 'children' }),
   },
+  title: { type: String, default: '' },
+  placeholder: { type: String, default: '请选择' },
+  separator: { type: String, default: ' / ' },
+  disabled: { type: Boolean, default: false },
+  cancelText: { type: String, default: '取消' },
+  confirmText: { type: String, default: '完成' },
+  zIndex: { type: [Number, String] as PropType<number | string>, default: 1200 },
+  /** 滚轮下方搜索框。默认关闭 */
+  showSearch: { type: Boolean, default: false },
+  searchPlaceholder: { type: String, default: '搜索' },
+  /**
+   * field = 独立触发条；cell = form-item 行内嵌；auto = form-item 内默认 cell
+   */
+  variant: { type: String, default: 'auto' },
+})
+
+const emit = defineEmits(['update:modelValue', 'update:value', 'change', 'cancel'])
+
+const appPageScrollLock = inject(LINGYUN_APP_PAGE_SCROLL_LOCK, null) as LingyunAppPageScrollLock | null
+const lingyunFormItem = inject('lingyunFormItem', null) as object | null
+
+const sheetMounted = ref(false)
+const phase = ref<'' | 'enter' | 'open' | 'leave'>('')
+const leaveTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const enterTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const draftIndexes = ref<number[]>([0])
+const draftColumns = ref<DataColumnItem[][]>([])
+const colEpoch = ref(0)
+const safeBottom = ref(0)
+const dragStartY = ref(0)
+const dragDy = ref(0)
+const dragging = ref(false)
+const _appScrollLocked = ref(false)
+const _scrollLocked = ref(false)
+const _prevBodyOverflow = ref('')
+const _prevBodyOverscroll = ref('')
+const _prevHtmlOverscroll = ref('')
+const searchQuery = ref('')
+const searchEmpty = ref(false)
+const keyboardHeight = ref(0)
+const _onKeyboardHeight = ref<((res: { height?: number }) => void) | null>(null)
+const _onVisualViewport = ref<(() => void) | null>(null)
+const _lingyunMpOverlayHold = ref(false)
+
+const current = computed((): unknown[] => {
+  const raw = props.modelValue !== undefined ? props.modelValue : props.value
+  return Array.isArray(raw) ? raw.slice() : []
+})
+
+const resolvedVariant = computed((): string => {
+  const v = props.variant
+  if (v === 'field' || v === 'cell') return v
+  const formItem = lingyunFormItem as object | null
+  return formItem ? 'cell' : 'field'
+})
+
+const isCell = computed((): boolean => {
+  return resolvedVariant.value === 'cell'
+})
+
+const showTriggerTitle = computed((): boolean => {
+  if (isCell.value) return false
+  return !!props.title
+})
+
+const rootClass = computed((): string[] => {
+  return [
+    isCell.value ? 'lingyun-data-picker--cell' : 'lingyun-data-picker--field',
+    props.disabled ? 'lingyun-data-picker--disabled' : '',
+  ].filter(Boolean)
+})
+
+const rowClass = computed((): Record<string, boolean> => {
+  return {
+    'lingyun-data-picker__row--disabled': props.disabled,
+    'lingyun-data-picker__row--cell': isCell.value,
+  }
+})
+
+const isDark = computed((): boolean => {
+  try {
+    return (useLingyunTheme().resolved || 'light') === 'dark'
+  } catch {
+    return false
+  }
+})
+
+const themeClass = computed((): string => {
+  try {
+    return useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    return 'theme-light'
+  }
+})
+
+const reduceMotion = computed((): boolean => {
+  try {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    }
+  } catch {
+    /* ignore */
+  }
+  return false
+})
+
+const panelBottom = computed((): number => {
+  if (props.showSearch && keyboardHeight.value > 0) return keyboardHeight.value
+  return Number(safeBottom.value) || 0
+})
+
+const sheetClass = computed((): string => {
+  return [
+    themeClass.value,
+    phase.value ? `lingyun-data-picker-sheet--${phase.value}` : '',
+    reduceMotion.value ? 'lingyun-data-picker-sheet--reduce-motion' : '',
+    dragging.value ? 'lingyun-data-picker-sheet--dragging' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const sheetRootStyle = computed((): { zIndex: number } => {
+  return { zIndex: Number(props.zIndex) || 1200 }
+})
+
+const panelStyle = computed((): Record<string, string> => {
+  const style: Record<string, string> = {
+    left: `${INSET_MEDIUM}px`,
+    right: `${INSET_MEDIUM}px`,
+    borderTopLeftRadius: `${RADIUS}px`,
+    borderTopRightRadius: `${RADIUS}px`,
+    paddingBottom: `${panelBottom.value}px`,
+  }
+  if (dragging.value) {
+    style.transform = `translate3d(0, ${dragDy.value}px, 0)`
+    style.transition = 'none'
+  }
+  return style
+})
+
+const indicatorStyle = computed((): string => {
+  return `height: ${ITEM_H}px; background: transparent; border: 0 solid transparent; border-top: none; border-bottom: none;`
+})
+
+const indicatorClass = computed((): string => {
+  return 'lingyun-data-picker-sheet__indicator'
+})
+
+const indicatorPillStyle = computed((): Record<string, string> => {
+  const bg = isDark.value ? 'rgba(120, 120, 128, 0.24)' : 'rgba(120, 120, 128, 0.12)'
+  const r = ITEM_H / 2
+  return {
+    height: `${ITEM_H}px`,
+    marginTop: `${-r}px`,
+    borderRadius: `${r}px`,
+    background: bg,
+  }
+})
+
+const maskClass = computed((): string => {
+  return isDark.value
+    ? 'lingyun-data-picker-sheet__mask--dark'
+    : 'lingyun-data-picker-sheet__mask--light'
+})
+
+const searchTree = computed((): unknown[] => {
+  if (!props.showSearch) return props.localdata
+  return filterCascadeTree(props.localdata, searchQuery.value, props.map)
+})
+
+const displayText = computed((): string => {
+  if (!current.value.length) return ''
+  const built = buildCascade(props.localdata, current.value, props.map)
+  if (!built.path.length) return ''
+  return built.path.map((p) => p.text).join(props.separator)
+})
+
+function colKey(colIndex: number): string {
+  return `c-${colEpoch.value}-${colIndex}`
+}
+
+function clearTimers(): void {
+  if (leaveTimer.value) {
+    clearTimeout(leaveTimer.value)
+    leaveTimer.value = null
+  }
+  if (enterTimer.value) {
+    clearTimeout(enterTimer.value)
+    enterTimer.value = null
+  }
+}
+
+function syncSafe(): void {
+  try {
+    const info =
+      typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
+    const inset = info && info.safeAreaInsets
+    safeBottom.value = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
+  } catch {
+    safeBottom.value = 0
+  }
+}
+
+function valuesFromDraft() {
+  const values = []
+  const texts = []
+  const path = []
+  for (let i = 0; i < draftColumns.value.length; i += 1) {
+    const col = draftColumns.value[i]
+    const idx = Math.min(
+      Math.max(0, Number(draftIndexes.value[i]) || 0),
+      Math.max(0, col.length - 1),
+    )
+    const item = col[idx]
+    if (!item) break
+    values.push(item.value)
+    texts.push(item.text)
+    path.push({ text: item.text, value: item.value })
+  }
+  return { values, texts, path }
+}
+
+function applyDraftFromValues(selectedValues: unknown[]): void {
+  const built = buildCascade(searchTree.value, selectedValues, props.map)
+  if (!built.columns.length) {
+    searchEmpty.value = true
+    draftColumns.value = [[{ text: '无匹配', value: '', children: [] }]]
+    draftIndexes.value = [0]
+  } else {
+    searchEmpty.value = false
+    draftColumns.value = built.columns
+    draftIndexes.value = built.indexes.length ? built.indexes : [0]
+  }
+  colEpoch.value += 1
+}
+
+function lockPageScroll(): void {
+  try {
+    const lockApi = appPageScrollLock as LingyunAppPageScrollLock | null
+    if (lockApi && typeof lockApi.lock === 'function' && !_appScrollLocked.value) {
+      lockApi.lock()
+      _appScrollLocked.value = true
+    }
+  } catch {
+    /* ignore */
+  }
+  // #ifdef H5
+  if (typeof document === 'undefined') return
+  if (_scrollLocked.value) return
+  const body = document.body
+  const html = document.documentElement
+  _prevBodyOverflow.value = body.style.overflow
+  _prevBodyOverscroll.value = body.style.overscrollBehavior
+  _prevHtmlOverscroll.value = html.style.overscrollBehavior
+  body.style.overflow = 'hidden'
+  body.style.overscrollBehavior = 'none'
+  html.style.overscrollBehavior = 'none'
+  _scrollLocked.value = true
+  // #endif
+}
+
+function unlockPageScroll(): void {
+  try {
+    const lockApi = appPageScrollLock as LingyunAppPageScrollLock | null
+    if (_appScrollLocked.value && lockApi && typeof lockApi.unlock === 'function') {
+      lockApi.unlock()
+    }
+    _appScrollLocked.value = false
+  } catch {
+    _appScrollLocked.value = false
+  }
+  // #ifdef H5
+  if (typeof document === 'undefined') return
+  if (!_scrollLocked.value) return
+  const body = document.body
+  const html = document.documentElement
+  body.style.overflow = _prevBodyOverflow.value || ''
+  body.style.overscrollBehavior = _prevBodyOverscroll.value || ''
+  html.style.overscrollBehavior = _prevHtmlOverscroll.value || ''
+  _scrollLocked.value = false
+  // #endif
+}
+
+function bindSearchKeyboard(): void {
+  if (!props.showSearch) return
+  if (typeof uni !== 'undefined' && typeof uni.onKeyboardHeightChange === 'function') {
+    const onKeyboardHeight = (res: { height?: number }) => {
+      keyboardHeight.value = Math.max(0, Number(res && res.height) || 0)
+    }
+    _onKeyboardHeight.value = onKeyboardHeight
+    uni.onKeyboardHeightChange(onKeyboardHeight)
+  }
+  // #ifdef H5
+  const viewport = typeof window === 'undefined' ? null : window.visualViewport
+  if (viewport) {
+    const onVisualViewport = () => {
+      const vv = window.visualViewport
+      if (!vv) return
+      const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+      keyboardHeight.value = covered > 80 ? covered : 0
+    }
+    _onVisualViewport.value = onVisualViewport
+    viewport.addEventListener('resize', onVisualViewport)
+    viewport.addEventListener('scroll', onVisualViewport)
+  }
+  // #endif
+}
+
+function unbindSearchKeyboard(): void {
+  const onKeyboardHeight = _onKeyboardHeight.value
+  if (onKeyboardHeight && typeof uni !== 'undefined' && typeof uni.offKeyboardHeightChange === 'function') {
+    uni.offKeyboardHeightChange(onKeyboardHeight)
+  }
+  _onKeyboardHeight.value = null
+  // #ifdef H5
+  const onVisualViewport = _onVisualViewport.value
+  const viewport = typeof window === 'undefined' ? null : window.visualViewport
+  if (onVisualViewport && viewport) {
+    viewport.removeEventListener('resize', onVisualViewport)
+    viewport.removeEventListener('scroll', onVisualViewport)
+  }
+  _onVisualViewport.value = null
+  // #endif
+  keyboardHeight.value = 0
+}
+
+function openAnim(): void {
+  clearTimers()
+  sheetMounted.value = true
+  dragDy.value = 0
+  dragging.value = false
+  phase.value = 'enter'
+  nextTick(() => {
+    const kick = () => {
+      enterTimer.value = setTimeout(
+        () => {
+          phase.value = 'open'
+          enterTimer.value = null
+        },
+        reduceMotion.value ? 16 : ENTER_KICK_MS,
+      )
+    }
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(kick)
+      })
+    } else {
+      kick()
+    }
+  })
+}
+
+function closeSheet(after?: () => void): void {
+  clearTimers()
+  if (!sheetMounted.value) {
+    unbindSearchKeyboard()
+    unlockPageScroll()
+    if (typeof after === 'function') after()
+    return
+  }
+  phase.value = 'leave'
+  leaveTimer.value = setTimeout(
+    () => {
+      sheetMounted.value = false
+      phase.value = ''
+      dragDy.value = 0
+      dragging.value = false
+      unbindSearchKeyboard()
+      unlockPageScroll()
+      leaveTimer.value = null
+      if (typeof after === 'function') after()
+    },
+    reduceMotion.value ? 16 : LEAVE_MS,
+  )
+}
+
+function onSearchQuery(value: unknown): void {
+  searchQuery.value = value == null ? '' : String(value)
+  const selected = valuesFromDraft().values.filter((item) => item !== '' && item != null)
+  applyDraftFromValues(selected.length ? selected : current.value)
+}
+
+function onPanelTouchMove(): void {}
+
+function onChromeTouchStart(e: TouchEvent): void {
+  const t = e.touches && e.touches[0]
+  if (!t) return
+  dragStartY.value = t.clientY
+  dragDy.value = 0
+  dragging.value = true
+}
+
+function onChromeTouchMove(e: TouchEvent): void {
+  if (!dragging.value) return
+  const t = e.touches && e.touches[0]
+  if (!t) return
+  const dy = t.clientY - dragStartY.value
+  dragDy.value = dy > 0 ? dy : 0
+}
+
+function onCancel(): void {
+  emit('cancel')
+  closeSheet()
+}
+
+function onConfirm(): void {
+  if (searchEmpty.value) return
+  const { values, texts, path } = valuesFromDraft()
+  if (!values.length) return
+  emit('update:modelValue', values)
+  emit('update:value', values)
+  emit('change', {
+    value: values,
+    text: texts,
+    path,
+    detail: { value: values, text: texts },
+  })
+  closeSheet()
+}
+
+function onChromeTouchEnd(): void {
+  if (!dragging.value) return
+  const dy = dragDy.value
+  dragging.value = false
+  dragDy.value = 0
+  if (dy >= DISMISS_DY) onCancel()
+}
+
+function onPickChange(e: DataPickerChangeEvent): void {
+  const raw = (e && e.detail && e.detail.value) || []
+  const nextIndexes = raw.map((n) => Number(n) || 0)
+  // 找出变化的最左列，其后列按新节点重算
+  let changed = 0
+  const len = Math.max(nextIndexes.length, draftIndexes.value.length)
+  for (let i = 0; i < len; i += 1) {
+    if ((nextIndexes[i] || 0) !== (draftIndexes.value[i] || 0)) {
+      changed = i
+      break
+    }
+  }
+
+  const selectedValues = []
+  for (let i = 0; i <= changed; i += 1) {
+    const col = draftColumns.value[i]
+    if (!col || !col.length) break
+    const idx = Math.min(Math.max(0, nextIndexes[i] || 0), col.length - 1)
+    selectedValues.push(col[idx].value)
+  }
+  applyDraftFromValues(selectedValues)
+}
+
+function open(): void {
+  if (props.disabled) return
+  searchQuery.value = ''
+  searchEmpty.value = false
+  applyDraftFromValues(current.value)
+  syncSafe()
+  bindSearchKeyboard()
+  lockPageScroll()
+  openAnim()
+}
+
+watch(
+  phase,
+  (value: string) => {
+    _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+      !!_lingyunMpOverlayHold.value,
+      !!value,
+    )
+  },
+  { immediate: true },
+)
+
+onBeforeUnmount(() => {
+  _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+    !!_lingyunMpOverlayHold.value,
+    false,
+  )
+  clearTimers()
+  unbindSearchKeyboard()
+  unlockPageScroll()
 })
 </script>
 

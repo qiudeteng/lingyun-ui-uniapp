@@ -21,26 +21,11 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
 
-export type LingyunGridItemInput = {
-  /** lingyun-icon 字形。写成图片地址时按网络图标画 */
-  icon?: string
-  /** 网络或本地图片。有值时用 lingyun-image，不再用字形 */
-  iconSrc?: string
-  /** 图标边长，单位 px。不传则用宫格上的 iconSize */
-  iconSize?: number | string
-  /** 同 lingyun-image 的 shape，原样传给图片 */
-  shape?: string
-  /** 同 lingyun-image 的 radius，原样传给图片 */
-  radius?: number | string
-  text?: string
-  color?: string
-  info?: string | number | boolean
-  /** 页面路径。有值时点击后跳转 */
-  link?: string
-}
+<script setup lang="ts">
+import { computed, nextTick, onMounted, reactive, watch } from 'vue'
+import { provide, type PropType } from 'vue'
+import type { LingyunGridItemInput } from './types'
 
 /**
  * lingyun-grid
@@ -60,85 +45,110 @@ export type LingyunGridItemInput = {
  * @property {Array} items 有数据时按数组生成格子。不传或空数组仍用默认插槽
  * @event change { detail: { index } }
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunGrid',
-  options: {
-    // 去掉小程序宿主。否则宿主默认 inline，内部 width:100% 算出来是 0
-    virtualHost: true,
-  },
-  emits: ['change'],
-  props: {
-    column: { type: Number, default: 3 },
-    square: { type: Boolean, default: true },
-    showBorder: { type: Boolean, default: false },
-    borderColor: { type: String, default: '' },
-    highlight: { type: Boolean, default: true },
-    /** 空字符串保持分组底。可传 `transparent` 或任意 CSS 颜色 */
-    background: { type: String, default: '' },
-    /** 图标边长，单位 px。空则 28。可传数字或 `40` / `40px` */
-    iconSize: { type: [Number, String], default: '' },
-    /** 图片图标的 shape，原样传给 lingyun-image。空为 rounded */
-    shape: { type: String, default: '' },
-    /** 图片图标的 radius。有值才传给 lingyun-image；空则用图片自己的默认圆角 */
-    radius: { type: [Number, String], default: '' },
-    /**
-     * 有格子数据时自动生成。不传或空数组仍用默认插槽。
-     * 小程序未传的 Array 属性会变成 []，不能单凭「是不是数组」判断。
-     */
-    items: {
-      type: Array as PropType<LingyunGridItemInput[] | null>,
-      default: undefined,
-    },
-  },
-  provide() {
-    return { grid: this }
-  },
-  data() {
-    return {
-      childList: [] as object[],
-      epoch: 0,
-    }
-  },
-  computed: {
-    useItems(): boolean {
-      return Array.isArray(this.items) && this.items.length > 0
-    },
-    itemList(): LingyunGridItemInput[] {
-      return Array.isArray(this.items) ? this.items : []
-    },
-    gridStyle(): Record<string, string> {
-      const bg = String(this.background || '').trim()
-      if (!bg) return {}
-      return { backgroundColor: bg }
-    },
-  },
-  watch: {
-    column() {
-      this.epoch += 1
-    },
-  },
-  mounted() {
-    this.$nextTick(() => {
-      this.epoch += 1
-    })
-  },
-  methods: {
-    register(child: object) {
-      if (this.childList.indexOf(child) < 0) this.childList.push(child)
-    },
-    unregister(child: object) {
-      const index = this.childList.indexOf(child)
-      if (index >= 0) this.childList.splice(index, 1)
-      this.epoch += 1
-    },
-    change(event: { detail?: { index?: number } }) {
-      this.$emit('change', event)
-    },
-    itemKey(item: LingyunGridItemInput, index: number): string {
-      return `${index}-${item.link || ''}-${item.iconSrc || item.icon || ''}-${item.text || ''}`
-    },
+  // 去掉小程序宿主。否则宿主默认 inline，内部 width:100% 算出来是 0
+  virtualHost: true,
+})
+
+const props = defineProps({
+  column: { type: Number, default: 3 },
+  square: { type: Boolean, default: true },
+  showBorder: { type: Boolean, default: false },
+  borderColor: { type: String, default: '' },
+  highlight: { type: Boolean, default: true },
+  /** 空字符串保持分组底。可传 `transparent` 或任意 CSS 颜色 */
+  background: { type: String, default: '' },
+  /** 图标边长，单位 px。空则 28。可传数字或 `40` / `40px` */
+  iconSize: { type: [Number, String], default: '' },
+  /** 图片图标的 shape，原样传给 lingyun-image。空为 rounded */
+  shape: { type: String, default: '' },
+  /** 图片图标的 radius。有值才传给 lingyun-image；空则用图片自己的默认圆角 */
+  radius: { type: [Number, String], default: '' },
+  /**
+   * 有格子数据时自动生成。不传或空数组仍用默认插槽。
+   * 小程序未传的 Array 属性会变成 []，不能单凭「是不是数组」判断。
+   */
+  items: {
+    type: Array as PropType<LingyunGridItemInput[] | null>,
+    default: undefined,
   },
 })
+
+const emit = defineEmits(['change'])
+
+const gridState = reactive({
+  childList: [] as object[],
+  epoch: 0,
+  get column(): number {
+    return props.column
+  },
+  get square(): boolean {
+    return props.square
+  },
+  get showBorder(): boolean {
+    return props.showBorder
+  },
+  get highlight(): boolean {
+    return props.highlight
+  },
+  get iconSize(): number | string {
+    return props.iconSize
+  },
+  get shape(): string {
+    return props.shape
+  },
+  get radius(): number | string {
+    return props.radius
+  },
+  get borderColor(): string {
+    return props.borderColor
+  },
+  register(child: object) {
+    if (this.childList.indexOf(child) < 0) this.childList.push(child)
+  },
+  unregister(child: object) {
+    const index = this.childList.indexOf(child)
+    if (index >= 0) this.childList.splice(index, 1)
+    this.epoch += 1
+  },
+  change(event: { detail?: { index?: number } }) {
+    emit('change', event)
+  },
+})
+
+provide('grid', gridState)
+
+const useItems = computed((): boolean => {
+  return Array.isArray(props.items) && props.items.length > 0
+})
+
+const itemList = computed((): LingyunGridItemInput[] => {
+  return Array.isArray(props.items) ? props.items : []
+})
+
+const gridStyle = computed((): Record<string, string> => {
+  const bg = String(props.background || '').trim()
+  if (!bg) return {}
+  return { backgroundColor: bg }
+})
+
+watch(
+  (): number => props.column,
+  () => {
+    gridState.epoch += 1
+  },
+)
+
+onMounted(() => {
+  nextTick(() => {
+    gridState.epoch += 1
+  })
+})
+
+function itemKey(item: LingyunGridItemInput, index: number): string {
+  return `${index}-${item.link || ''}-${item.iconSrc || item.icon || ''}-${item.text || ''}`
+}
 </script>
 
 <style lang="scss">

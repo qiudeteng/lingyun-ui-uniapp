@@ -97,8 +97,9 @@
   </lingyun-popover>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed } from 'vue'
+import { type PropType } from 'vue'
 import {
   normalizeMenuActions,
   type MenuAction,
@@ -110,105 +111,117 @@ import {
  * lingyun-menu
  * @see design/MENUS.md
  */
-export default defineComponent({
+
+defineOptions({
   name: 'LingyunMenu',
-  emits: ['update:show', 'update:modelValue', 'select', 'close', 'closed'],
-  props: {
-    show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    actions: { type: Array as PropType<MenuActionInput[]>, default: () => [] },
-    placement: { type: String, default: 'bottom' },
-    maskClosable: { type: Boolean, default: true },
-    mask: { type: Boolean, default: true },
-    maskTransparent: { type: Boolean, default: false },
-    triggerBlock: { type: Boolean, default: false },
-    zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
-    /** 关闭时不播退场，用于菜单间直接切换 */
-    instantClose: { type: Boolean, default: false },
-    /** 全宽菜单：手机铺满可用宽度，PC / PAD 上限 400；定位仍跟随触发器 */
-    fullWidth: { type: Boolean, default: false },
-    /** 视口坐标锚点；传了就不再依赖 trigger 插槽，用于 toolbar 按钮等外部触发点 */
-    anchor: {
-      type: Object as PropType<
-        { top?: number; left?: number; width?: number; height?: number } | null
-      >,
-      default: null,
-    },
-  },
-  computed: {
-    innerShow: {
-      get(): boolean {
-        if (this.show !== undefined && this.show !== null) return !!this.show
-        if (this.modelValue !== undefined && this.modelValue !== null) return !!this.modelValue
-        return false
-      },
-      set(val: boolean) {
-        this.$emit('update:show', val)
-        this.$emit('update:modelValue', val)
-      },
-    },
-    normalizedActions(): MenuAction[] {
-      return normalizeMenuActions(this.actions)
-    },
-    hasActions(): boolean {
-      return this.normalizedActions.length > 0
-    },
-  },
-  methods: {
-    /** 供自定义默认插槽关闭菜单 */
-    closeMenu() {
-      this.innerShow = false
-    },
-    iconColor(action: Pick<MenuItem, 'disabled' | 'role'>): string {
-      if (action.disabled) return 'tertiary'
-      if (action.role === 'destructive') return 'red'
-      return 'label'
-    },
-    rowClass(action: MenuAction): string {
-      if (action.kind === 'separator') return 'lingyun-menu__sep'
-      if (action.kind === 'title') return 'lingyun-menu__heading'
-      if (action.kind === 'controls') return 'lingyun-menu__controls'
-      return [
-        'lingyun-menu__item',
-        action.subtitle ? 'lingyun-menu__item--sub' : '',
-        action.disabled ? 'lingyun-menu__item--disabled' : '',
-        action.role === 'destructive' ? 'lingyun-menu__item--destructive' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    controlClass(item: MenuItem): string {
-      return [
-        item.disabled ? 'lingyun-menu__control--disabled' : '',
-        item.role === 'destructive' ? 'lingyun-menu__control--destructive' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    hoverClass(action: MenuAction): string {
-      if (action.kind !== 'item' || action.disabled) return ''
-      return 'lingyun-menu__item--hover'
-    },
-    emitSelect(action: MenuItem, index: number) {
-      this.$emit('select', { action: action.raw || action, index, key: action.key })
-      this.innerShow = false
-    },
-    onRow(action: MenuAction, index: number) {
-      if (action.kind !== 'item' || action.disabled) return
-      this.emitSelect(action, index)
-    },
-    onControl(item: MenuItem) {
-      if (!item || item.disabled) return
-      this.emitSelect(item, 0)
-    },
-    onClose() {
-      this.$emit('close')
-    },
-    onClosed() {
-      this.$emit('closed')
-    },
+})
+
+const props = defineProps({
+  show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  actions: { type: Array as PropType<MenuActionInput[]>, default: () => [] },
+  placement: { type: String, default: 'bottom' },
+  maskClosable: { type: Boolean, default: true },
+  mask: { type: Boolean, default: true },
+  maskTransparent: { type: Boolean, default: false },
+  triggerBlock: { type: Boolean, default: false },
+  zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
+  /** 关闭时不播退场，用于菜单间直接切换 */
+  instantClose: { type: Boolean, default: false },
+  /** 全宽菜单：手机铺满可用宽度，PC / PAD 上限 400；定位仍跟随触发器 */
+  fullWidth: { type: Boolean, default: false },
+  /** 视口坐标锚点；传了就不再依赖 trigger 插槽，用于 toolbar 按钮等外部触发点 */
+  anchor: {
+    type: Object as PropType<
+      { top?: number; left?: number; width?: number; height?: number } | null
+    >,
+    default: null,
   },
 })
+
+const emit = defineEmits(['update:show', 'update:modelValue', 'select', 'close', 'closed'])
+
+const innerShow = computed({
+  get(): boolean {
+    if (props.show !== undefined && props.show !== null) return !!props.show
+    if (props.modelValue !== undefined && props.modelValue !== null) return !!props.modelValue
+    return false
+  },
+  set(val: boolean) {
+    emit('update:show', val)
+    emit('update:modelValue', val)
+  },
+})
+
+const normalizedActions = computed((): MenuAction[] => {
+  return normalizeMenuActions(props.actions)
+})
+
+const hasActions = computed((): boolean => {
+  return normalizedActions.value.length > 0
+})
+
+/** 供自定义默认插槽关闭菜单 */
+function closeMenu(): void {
+  innerShow.value = false
+}
+
+function iconColor(action: Pick<MenuItem, 'disabled' | 'role'>): string {
+  if (action.disabled) return 'tertiary'
+  if (action.role === 'destructive') return 'red'
+  return 'label'
+}
+
+function rowClass(action: MenuAction): string {
+  if (action.kind === 'separator') return 'lingyun-menu__sep'
+  if (action.kind === 'title') return 'lingyun-menu__heading'
+  if (action.kind === 'controls') return 'lingyun-menu__controls'
+  return [
+    'lingyun-menu__item',
+    action.subtitle ? 'lingyun-menu__item--sub' : '',
+    action.disabled ? 'lingyun-menu__item--disabled' : '',
+    action.role === 'destructive' ? 'lingyun-menu__item--destructive' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+function controlClass(item: MenuItem): string {
+  return [
+    item.disabled ? 'lingyun-menu__control--disabled' : '',
+    item.role === 'destructive' ? 'lingyun-menu__control--destructive' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+function hoverClass(action: MenuAction): string {
+  if (action.kind !== 'item' || action.disabled) return ''
+  return 'lingyun-menu__item--hover'
+}
+
+function emitSelect(action: MenuItem, index: number): void {
+  emit('select', { action: action.raw || action, index, key: action.key })
+  innerShow.value = false
+}
+
+function onRow(action: MenuAction, index: number): void {
+  if (action.kind !== 'item' || action.disabled) return
+  emitSelect(action, index)
+}
+
+function onControl(item: MenuItem): void {
+  if (!item || item.disabled) return
+  emitSelect(item, 0)
+}
+
+function onClose(): void {
+  emit('close')
+}
+
+function onClosed(): void {
+  emit('closed')
+}
 </script>
 
 <style lang="scss">

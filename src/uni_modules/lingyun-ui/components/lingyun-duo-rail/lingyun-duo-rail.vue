@@ -102,8 +102,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, nextTick, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
+import type { PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
 import {
   LINGYUN_DUO_SIDE_SELECTED_HEIGHT,
@@ -132,193 +133,214 @@ const TAB_LIMIT = 4
  * 官方尺寸：栏宽 84，padding 24/24/24/12，gap 8；工具组 48×164，Tab 组 48×210，搜索 48。
  * 独立页在摄像头 / 状态栏下方显示返回，并隐藏 Tab / 搜索；Tab 根页显示 Tab / 搜索、不显示返回。
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunDuoRail',
-  emits: ['change', 'update:modelValue', 'search', 'overflow', 'back'],
-  props: {
-    items: {
-      type: Array as PropType<Array<RailItem | null | undefined>>,
-      default: () => [],
-    },
-    modelValue: {
-      type: [String, Number] as PropType<string | number | undefined>,
-      default: undefined,
-    },
-    /** outer-portrait / outer-landscape / inner-landscape */
-    pose: { type: String, default: 'outer-portrait' },
-    /** 外屏横屏：工具收起为「…」 */
-    compactTools: { type: Boolean, default: false },
-    /** 页面是否真的提供了 duo-tools；小程序 slot 声明也会让 $slots 为真，必须显式传 */
-    toolsVisible: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
-    },
-    /** 仅一个工具项时收成 48×48 圆钮 */
-    toolsSingle: { type: Boolean, default: false },
-    /** 主题菜单打开期间隐去工具组，避免玻璃胶囊从菜单边缘漏出 */
-    toolsHidden: { type: Boolean, default: false },
-    /** 独立页（非一级 Tab 根页）在摄像头 / 状态栏下方显示返回 */
-    showBack: { type: Boolean, default: false },
-    /** 一级 Tab 根页显示搜索；普通子页只有返回 */
-    showSearch: { type: Boolean, default: false },
+})
+
+const props = defineProps({
+  items: {
+    type: Array as PropType<Array<RailItem | null | undefined>>,
+    default: () => [],
   },
-  data() {
-    return {
-      instanceId: `lyduorail-${Math.random().toString(36).slice(2, 8)}`,
-      selectionTop: 0,
-      selectionVisible: false,
-      selectionReady: false,
-      _mounted: false,
-    }
+  modelValue: {
+    type: [String, Number] as PropType<string | number | undefined>,
+    default: undefined,
   },
-  computed: {
-    themeRootClass() {
-      try {
-        return useLingyunTheme().rootClass
-      } catch {
-        return 'theme-light'
-      }
-    },
-    tabsId(): string {
-      return `${this.instanceId}-tabs`
-    },
-    toolsAllowed(): boolean {
-      return this.toolsVisible !== undefined
-        ? !!this.toolsVisible
-        : !!this.$slots.tools
-    },
-    tabItems(): RailItem[] {
-      return (this.items || [])
-        .filter((item): item is RailItem => !!item && item.role !== 'search')
-        .slice(0, TAB_LIMIT)
-    },
-    searchItem(): RailItem | null {
-      return (
-        (this.items || []).find(
-          (item): item is RailItem => !!item && item.role === 'search',
-        ) || null
-      )
-    },
-    selectionStyle(): Record<string, string> {
-      return {
-        top: `${this.selectionTop}px`,
-        width: `${LINGYUN_DUO_SIDE_SELECTED_WIDTH}px`,
-        height: `${LINGYUN_DUO_SIDE_SELECTED_HEIGHT}px`,
-      }
-    },
+  /** outer-portrait / outer-landscape / inner-landscape */
+  pose: { type: String, default: 'outer-portrait' },
+  /** 外屏横屏：工具收起为「…」 */
+  compactTools: { type: Boolean, default: false },
+  /** 页面是否真的提供了 duo-tools；小程序 slot 声明也会让 $slots 为真，必须显式传 */
+  toolsVisible: {
+    type: Boolean as PropType<boolean | undefined>,
+    default: undefined,
   },
-  watch: {
-    modelValue() {
-      this.syncSelection(true)
-    },
-    tabItems() {
-      this.syncSelection(false)
-    },
-  },
-  mounted() {
-    this._mounted = true
-    this.$nextTick(() => {
-      setTimeout(() => this.syncSelection(false), 30)
-    })
-  },
-  beforeUnmount() {
-    this._mounted = false
-  },
-  methods: {
-    itemId(item: RailItem | null | undefined): string {
-      return `${this.instanceId}-tab-${String(item && item.key)}`
-    },
-    isActive(item: RailItem): boolean {
-      return this.modelValue != null && String(this.modelValue) === String(item.key)
-    },
-    syncSelection(animate: boolean): void {
-      if (!this._mounted) return
-      const active = this.tabItems.find((item) => this.isActive(item))
-      if (!active) {
-        this.selectionVisible = false
-        this.selectionReady = false
-        return
-      }
-      this.$nextTick(() => {
-        uni
-          .createSelectorQuery()
-          .in(this)
-          .select(`#${this.tabsId}`)
-          .boundingClientRect()
-          .select(`#${this.itemId(active)}`)
-          .boundingClientRect()
-          .exec((res) => {
-            const group = res && res[0]
-            const item = res && res[1]
-            if (!group || !item || !item.height) {
-              setTimeout(() => this.syncSelection(animate), 50)
-              return
-            }
-            const top =
-              item.top -
-              group.top -
-              (LINGYUN_DUO_SIDE_SELECTED_HEIGHT - item.height) / 2
-            this.selectionTop = top
-            if (!this.selectionVisible) {
-              this.selectionVisible = true
-              this.selectionReady = false
-              this.$nextTick(() => {
-                setTimeout(() => {
-                  this.selectionReady = true
-                }, 20)
-              })
-              return
-            }
-            if (!animate) {
-              this.selectionReady = false
-              this.$nextTick(() => {
-                setTimeout(() => {
-                  this.selectionReady = true
-                }, 20)
-              })
-            }
+  /** 仅一个工具项时收成 48×48 圆钮 */
+  toolsSingle: { type: Boolean, default: false },
+  /** 主题菜单打开期间隐去工具组，避免玻璃胶囊从菜单边缘漏出 */
+  toolsHidden: { type: Boolean, default: false },
+  /** 独立页（非一级 Tab 根页）在摄像头 / 状态栏下方显示返回 */
+  showBack: { type: Boolean, default: false },
+  /** 一级 Tab 根页显示搜索；普通子页只有返回 */
+  showSearch: { type: Boolean, default: false },
+})
+
+const emit = defineEmits(['change', 'update:modelValue', 'search', 'overflow', 'back'])
+
+const instance = getCurrentInstance()
+const slots = useSlots()
+
+const instanceId = ref(`lyduorail-${Math.random().toString(36).slice(2, 8)}`)
+const selectionTop = ref(0)
+const selectionVisible = ref(false)
+const selectionReady = ref(false)
+const _mounted = ref(false)
+
+const themeRootClass = computed(() => {
+  try {
+    return useLingyunTheme().rootClass
+  } catch {
+    return 'theme-light'
+  }
+})
+
+const tabsId = computed((): string => {
+  return `${instanceId.value}-tabs`
+})
+
+const toolsAllowed = computed((): boolean => {
+  return props.toolsVisible !== undefined
+    ? !!props.toolsVisible
+    : !!slots.tools
+})
+
+const tabItems = computed((): RailItem[] => {
+  return (props.items || [])
+    .filter((item): item is RailItem => !!item && item.role !== 'search')
+    .slice(0, TAB_LIMIT)
+})
+
+const searchItem = computed((): RailItem | null => {
+  return (
+    (props.items || []).find(
+      (item): item is RailItem => !!item && item.role === 'search',
+    ) || null
+  )
+})
+
+const selectionStyle = computed((): Record<string, string> => {
+  return {
+    top: `${selectionTop.value}px`,
+    width: `${LINGYUN_DUO_SIDE_SELECTED_WIDTH}px`,
+    height: `${LINGYUN_DUO_SIDE_SELECTED_HEIGHT}px`,
+  }
+})
+
+function itemId(item: RailItem | null | undefined): string {
+  return `${instanceId.value}-tab-${String(item && item.key)}`
+}
+
+function isActive(item: RailItem): boolean {
+  return props.modelValue != null && String(props.modelValue) === String(item.key)
+}
+
+function hasBadge(item: RailItem): boolean {
+  const badge = item.badge
+  return badge !== undefined && badge !== null && badge !== false && badge !== ''
+}
+
+function badgeText(item: RailItem): string | number {
+  const badge = item.badge
+  if (badge && typeof badge === 'object') return badge.text != null ? badge.text : ''
+  return typeof badge === 'boolean' ? '' : (badge ?? '')
+}
+
+function badgeColor(item: RailItem): string | undefined {
+  const badge = item.badge
+  return badge && typeof badge === 'object' ? badge.color : undefined
+}
+
+function badgeDot(item: RailItem): boolean {
+  const badge = item.badge
+  return badge === true || (!!badge && typeof badge === 'object' && !!badge.dot)
+}
+
+function badgeMax(item: RailItem): number | string | undefined {
+  const badge = item.badge
+  return badge && typeof badge === 'object' ? badge.max : undefined
+}
+
+function syncSelection(animate: boolean): void {
+  if (!_mounted.value) return
+  const active = tabItems.value.find((item) => isActive(item))
+  if (!active) {
+    selectionVisible.value = false
+    selectionReady.value = false
+    return
+  }
+  nextTick(() => {
+    uni
+      .createSelectorQuery()
+      .in(instance?.proxy as never)
+      .select(`#${tabsId.value}`)
+      .boundingClientRect()
+      .select(`#${itemId(active)}`)
+      .boundingClientRect()
+      .exec((res) => {
+        const group = res && res[0]
+        const item = res && res[1]
+        if (!group || !item || !item.height) {
+          setTimeout(() => syncSelection(animate), 50)
+          return
+        }
+        const top =
+          item.top -
+          group.top -
+          (LINGYUN_DUO_SIDE_SELECTED_HEIGHT - item.height) / 2
+        selectionTop.value = top
+        if (!selectionVisible.value) {
+          selectionVisible.value = true
+          selectionReady.value = false
+          nextTick(() => {
+            setTimeout(() => {
+              selectionReady.value = true
+            }, 20)
           })
+          return
+        }
+        if (!animate) {
+          selectionReady.value = false
+          nextTick(() => {
+            setTimeout(() => {
+              selectionReady.value = true
+            }, 20)
+          })
+        }
       })
-    },
-    onSelect(item: RailItem): void {
-      this.$emit('change', item)
-      this.$emit('update:modelValue', item.key)
-    },
-    onSearch(): void {
-      if (this.searchItem) {
-        this.onSelect(this.searchItem)
-        return
-      }
-      this.$emit('search')
-    },
-    onOverflow(): void {
-      this.$emit('overflow')
-    },
-    onBack(): void {
-      this.$emit('back')
-    },
-    hasBadge(item: RailItem): boolean {
-      const badge = item.badge
-      return badge !== undefined && badge !== null && badge !== false && badge !== ''
-    },
-    badgeText(item: RailItem): string | number {
-      const badge = item.badge
-      if (badge && typeof badge === 'object') return badge.text != null ? badge.text : ''
-      return typeof badge === 'boolean' ? '' : (badge ?? '')
-    },
-    badgeColor(item: RailItem): string | undefined {
-      const badge = item.badge
-      return badge && typeof badge === 'object' ? badge.color : undefined
-    },
-    badgeDot(item: RailItem): boolean {
-      const badge = item.badge
-      return badge === true || (!!badge && typeof badge === 'object' && !!badge.dot)
-    },
-    badgeMax(item: RailItem): number | string | undefined {
-      const badge = item.badge
-      return badge && typeof badge === 'object' ? badge.max : undefined
-    },
+  })
+}
+
+function onSelect(item: RailItem): void {
+  emit('change', item)
+  emit('update:modelValue', item.key)
+}
+
+function onSearch(): void {
+  if (searchItem.value) {
+    onSelect(searchItem.value)
+    return
+  }
+  emit('search')
+}
+
+function onOverflow(): void {
+  emit('overflow')
+}
+
+function onBack(): void {
+  emit('back')
+}
+
+watch(
+  () => props.modelValue,
+  () => {
+    syncSelection(true)
   },
+)
+
+watch(tabItems, () => {
+  syncSelection(false)
+})
+
+onMounted(() => {
+  _mounted.value = true
+  nextTick(() => {
+    setTimeout(() => syncSelection(false), 30)
+  })
+})
+
+onBeforeUnmount(() => {
+  _mounted.value = false
 })
 </script>
 

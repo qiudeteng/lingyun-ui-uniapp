@@ -1,0 +1,345 @@
+/*
+ * Web 专用全局样式（普通 CSS，经 main.ts import 注入，不带 scoped 属性）。
+ * 原因：App.uvue 的 <style> 在 Web 端会被自动加 scoped，html 元素与
+ * JS 动态创建的节点（如自定义滚动条）因此匹配不到规则。
+ */
+
+/* 页面级滚动隐藏原生条，改用不占布局的 fixed 悬浮滑块；内部滚动条仍用系统样式。 */
+html.lingyun-h5-scrollbar-hidden,
+html.lingyun-h5-scrollbar-hidden body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html.lingyun-h5-scrollbar-hidden::-webkit-scrollbar,
+html.lingyun-h5-scrollbar-hidden body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.lingyun-h5-scrollbar {
+  position: fixed;
+  top: 4px;
+  right: 0;
+  bottom: 4px;
+  z-index: 900;
+  width: 12px;
+  pointer-events: auto;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+}
+
+.lingyun-h5-scrollbar__thumb {
+  position: absolute;
+  top: 0;
+  right: 2px;
+  width: 8px;
+  min-height: 40px;
+  border-radius: 999px;
+  background-color: rgba(60, 60, 67, 0.48);
+  pointer-events: none;
+  transition:
+    width 0.12s ease,
+    right 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.lingyun-h5-scrollbar:hover .lingyun-h5-scrollbar__thumb,
+.lingyun-h5-scrollbar.is-dragging .lingyun-h5-scrollbar__thumb {
+  right: 1px;
+  width: 10px;
+}
+
+html.theme-dark .lingyun-h5-scrollbar__thumb,
+body.theme-dark .lingyun-h5-scrollbar__thumb,
+.theme-dark .lingyun-h5-scrollbar__thumb {
+  background-color: rgba(235, 235, 245, 0.45);
+}
+
+/*
+ * Web 端统一使用系统滚动条，只改外观：
+ * - 10px 细轨道、透明背景、无上下按钮；
+ * - 圆角滑块，浅色 / 暗黑跟随主题；
+ * - table、picker 等保留自己的滚动条实现。
+ */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.uni-scroll-view::-webkit-scrollbar,
+.lingyun-menu::-webkit-scrollbar,
+[data-lingyun-scroll]::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+html::-webkit-scrollbar-button,
+body::-webkit-scrollbar-button,
+.uni-scroll-view::-webkit-scrollbar-button,
+.lingyun-menu::-webkit-scrollbar-button,
+[data-lingyun-scroll]::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+.uni-scroll-view::-webkit-scrollbar-track,
+.lingyun-menu::-webkit-scrollbar-track,
+[data-lingyun-scroll]::-webkit-scrollbar-track,
+html::-webkit-scrollbar-corner,
+body::-webkit-scrollbar-corner,
+.uni-scroll-view::-webkit-scrollbar-corner,
+.lingyun-menu::-webkit-scrollbar-corner,
+[data-lingyun-scroll]::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+.uni-scroll-view::-webkit-scrollbar-thumb,
+.lingyun-menu::-webkit-scrollbar-thumb,
+[data-lingyun-scroll]::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-color: rgba(60, 60, 67, 0.48);
+  background-clip: content-box;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+.uni-scroll-view::-webkit-scrollbar-thumb:hover,
+.lingyun-menu::-webkit-scrollbar-thumb:hover,
+[data-lingyun-scroll]::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(60, 60, 67, 0.66);
+  background-clip: content-box;
+}
+
+html.theme-dark::-webkit-scrollbar-thumb,
+body.theme-dark::-webkit-scrollbar-thumb,
+html.theme-dark .uni-scroll-view::-webkit-scrollbar-thumb,
+html.theme-dark .lingyun-menu::-webkit-scrollbar-thumb,
+html.theme-dark [data-lingyun-scroll]::-webkit-scrollbar-thumb,
+body.theme-dark .uni-scroll-view::-webkit-scrollbar-thumb,
+body.theme-dark .lingyun-menu::-webkit-scrollbar-thumb,
+body.theme-dark [data-lingyun-scroll]::-webkit-scrollbar-thumb {
+  background-color: rgba(235, 235, 245, 0.45);
+  background-clip: content-box;
+}
+
+/* table / picker / 横向控件保留自己的滚动条或隐藏，不套全局系统条外观 */
+.lingyun-table .uni-scroll-view,
+.lingyun-picker .uni-scroll-view,
+.lingyun-data-picker .uni-scroll-view,
+.lingyun-search-bar .uni-scroll-view,
+.lingyun-tabbars .uni-scroll-view {
+  scrollbar-width: none;
+}
+
+.lingyun-table .uni-scroll-view::-webkit-scrollbar,
+.lingyun-picker .uni-scroll-view::-webkit-scrollbar,
+.lingyun-data-picker .uni-scroll-view::-webkit-scrollbar,
+.lingyun-search-bar .uni-scroll-view::-webkit-scrollbar,
+.lingyun-tabbars .uni-scroll-view::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Firefox：标准属性只放在 Firefox 分支，避免覆盖 Chrome 的 ::-webkit-scrollbar */
+@supports (-moz-appearance: none) {
+  html,
+  body,
+  .uni-scroll-view,
+  .lingyun-menu,
+  [data-lingyun-scroll] {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(60, 60, 67, 0.48) transparent;
+  }
+
+  .lingyun-table .uni-scroll-view,
+  .lingyun-picker .uni-scroll-view,
+  .lingyun-data-picker .uni-scroll-view,
+  .lingyun-search-bar .uni-scroll-view,
+  .lingyun-tabbars .uni-scroll-view {
+    scrollbar-width: none;
+  }
+}
+
+/* uni-app x 蒸汽模式：view 默认 display:flex/column，传统 uni-app 为 block。
+ * 组件库样式按 block 默认编写，这里为 toolbar 根节点恢复 block 语义。 */
+.lingyun-toolbars {
+  display: block;
+}
+
+/* uni-app x 蒸汽模式：view 默认 overflow:hidden，传统 uni-app 为 visible。
+ * 组件库按 visible 编写（依赖负边距外溢），这里对分区容器恢复 visible。 */
+.lingyun-section__body {
+  overflow: visible;
+}
+
+/* 核心对齐：传统 uni-app 的 uni-view 默认 overflow:visible，
+ * uni-app x 蒸汽模式默认 overflow:hidden，导致阴影/负边距/浮层被裁。
+ * 仅在 Web 端恢复 visible，还原组件库的编写前提。 */
+uni-app uni-view {
+  overflow: visible;
+}
+
+/* uni-app x 蒸汽模式的 view 默认 display:flex（flex-direction:column），官方
+ * 传统 uni-app 为 block。flex 容器会改变行内文本的行盒计算（如文本框高度、
+ * 行内对齐），使文字与图标位置整体偏移。恢复 block 与原样式表假定一致。 */
+uni-app uni-view {
+  display: block;
+}
+
+/* 核心对齐：官方传统 uni-app 的 uni-text 默认 display:inline，框架默认 block。
+ * block 会让文本脱离父容器的行盒（strut），文本块高度偏小 6-12px，
+ * 进而挤压列表/卡片行高、使后续内容整体错位。恢复 inline 与官方一致。 */
+uni-app uni-text {
+  display: inline;
+}
+
+/* 框架把 uni-text 的字号强制为 16px，官方传统 uni-app 的 uni-text 是 inline
+ * 元素、继承父级字号。字号被放大后 line-height:normal 的行盒高多约 3px，
+ * 文本块与列表整体错位，这里恢复继承。 */
+uni-app uni-text {
+  font-size: inherit;
+}
+
+/* uni-app x 蒸汽模式的 view 默认 position:relative，而官方传统 uni-app 为
+ * static。这会让绝对定位元素（如顶栏标题层）错误地把最近的 relative 祖先当作
+ * 包含块，尺寸/位置整体偏移。恢复 static 与原样式表假定一致。 */
+uni-app uni-view {
+  position: static;
+}
+
+/* uni-app x 的 <switch> 用真实 .uni-switch-thumb 元素画滑块，传统 uni-app
+ * 用 ::after 伪元素，两者的边框宽度、滑块尺寸与阴影不同。这里按官方数值对齐。 */
+uni-switch .uni-switch-input {
+  border-width: 1px;
+  border-color: rgb(223, 223, 223);
+  background-color: rgb(223, 223, 223);
+}
+
+uni-switch .uni-switch-thumb {
+  width: 30px !important;
+  height: 30px !important;
+  box-shadow: rgba(0, 0, 0, 0.4) 0px 1px 3px !important;
+}
+
+/* Sheet 顶栏抓手的 margin-top:5px 在传统 uni-app（block 布局）里会与父级
+ * 发生外边距塌陷，使工具栏整体下移 5px、预览高度 +5px；uni-app x Web 的
+ * view 默认是 flex 布局，不会塌陷，导致 sheet 预览比官方矮 5px。这里补回。 */
+uni-app uni-view.lingyun-toolbars--grabber {
+  margin-top: 5px;
+}
+
+/* 上面补的是“塌陷到工具栏外侧”的 5px，因此抓手自身的 margin-top 需要清零，
+ * 否则抓手与栏身会整体再下移 5px，与官方错位。 */
+uni-app uni-view.lingyun-toolbars--grabber .lingyun-toolbars__grabber {
+  margin-top: 0;
+}
+
+/* uni-app x 蒸汽模式的 view / text 默认 flex-shrink:0（flex: 0 0 auto），
+ * 官方传统 uni-app 为 1。flex 容器内的文本块因此不收缩，内容溢出并撑高
+ * 卡片、挤压后续布局。恢复收缩行为，使文本按容器宽度折行。
+ * 注意：这里只用 (0,0,2) 特异性覆盖框架默认值，组件自身的类样式
+ * （如栅格的 flex: 0 0 xx%）仍应优先。带内联 height 的元素（占位块、
+ * canvas 等）必须保持固定高度，反向置 0。 */
+uni-app uni-view,
+uni-app uni-text {
+  flex-shrink: 1;
+}
+
+uni-app uni-view[style*="height"] {
+  flex-shrink: 0;
+}
+
+/* 官方传统 uni-app 的 flex 容器默认 flex-direction:row，uni-app x 默认
+ * column。组件库中只声明 display:flex 而未声明方向的容器，在 Web 端会
+ * 竖排，这里按官方默认恢复 row（如 24 栅格行）。 */
+.lingyun-row {
+  flex-direction: row;
+}
+
+/* 同上，作为全局兜底：仅对真正 display:flex 的元素生效（block 元素忽略该
+ * 属性），组件自身声明的 flex-direction（特异性更高）仍然优先。 */
+uni-app uni-view {
+  flex-direction: row;
+}
+
+/* uni-app x 的 scroll-view 内容容器是 flex(column) 布局，官方传统 uni-app
+ * 为 block。flex 会改变子项外边距折叠与高度分配（内容整体偏移/错位），
+ * 恢复 block 与官方一致。 */
+.uni-scroll-view-content {
+  display: block !important;
+}
+
+/* 表格与索引列表的列宽、行高按内容不收缩设计（内部样式以 0 为前提），
+ * 恢复收缩后会导致列宽被压缩、行内容错位，这里局部回退。 */
+.lingyun-table uni-view,
+.lingyun-table uni-text,
+.lingyun-indexed-list uni-view,
+.lingyun-indexed-list uni-text {
+  flex-shrink: 0;
+}
+
+/* 框架给 html/body 设了 -apple-system/HelveticaNeue；官方传统 uni-app 不设，
+ * 使用 lang=zh-CN 的系统默认中文字体（本机为 "Noto Sans SC"）。字体不同会让
+ * line-height:normal 的行盒高度相差约 3px，导致文本块与列表整体错位。 */
+html,
+body {
+  font-family: "Noto Sans SC";
+}
+
+/* uni-app x Web 运行时给 text/input/textarea/view/match-media 强设了
+ * text-align: left，覆盖了 text-align 的继承（官方传统 uni-app 不设，
+ * 文本会继承父级对齐）。这会让居中容器里的文本变成左对齐，例如
+ * lingyun-button__label、toast 文案等。恢复继承以对齐官方行为。 */
+uni-app uni-text,
+uni-app uni-input,
+uni-app uni-textarea,
+uni-app uni-match-media,
+uni-app uni-view {
+  text-align: inherit;
+}
+
+/* uni-app x Web 的 <input> 只按内容行高撑开，官方传统 uni-app 的输入框会撑满
+ * 外层控制区；高度不足会让输入文本与占位符整体上移约 7px。 */
+.lingyun-text-field__control {
+  height: 100% !important;
+  min-height: inherit;
+}
+
+/* uni-input 的高度来自 min-height（height 为 auto），内部 wrapper 的
+ * height:100% 无法解析；改用 min-height 继承，让输入区与官方同高、文本垂直居中。 */
+.lingyun-text-field__control .uni-input-wrapper {
+  min-height: inherit;
+}
+
+/* uni-app x 只支持 class 选择器，官方传统 uni-app 里这条「页面首屏子元素
+ * padding-top 由页面壳变量控制」的规则（含 child/伪类选择器）无法在 uvue 中
+ * 表达，导致页面内容整体下移一个默认 inset。此处按官方行为补齐。 */
+.lingyun-app-page__pad > uni-view:first-child {
+  padding-top: var(--lingyun-app-page-inset-top, 60px);
+}
+
+.lingyun-app-page--page-scroll .lingyun-app-page__pad > uni-view:first-child {
+  min-height: 100vh;
+}
+
+/* 官方传统 uni-app 的 .lingyun-section__body 是普通 block（无 padding），内部首个
+ * 子元素的 margin-top 会与父级发生外边距塌陷（视作 body 的外边距）；uni-app x Web
+ * 不会塌陷，导致内容整体下移该 margin（常见 12px）。按官方渲染结果取消该 margin。 */
+.lingyun-section__body > uni-view:first-child,
+.lingyun-section__body > uni-text:first-child {
+  margin-top: 0;
+}
+
+/* uni-app x Web 默认 box-sizing: border-box；官方传统 uni-app 沿用 content-box。
+ * 对「min-height + 上下 padding」的元素（如 sheets 页的 .mask-row），这会让总高
+ * 少 2*padding。此处按官方结果还原。 */
+.mask-row {
+  box-sizing: content-box;
+}

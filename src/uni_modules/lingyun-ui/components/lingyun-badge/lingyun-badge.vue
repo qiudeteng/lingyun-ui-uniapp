@@ -1,17 +1,35 @@
 <template>
+  <view v-if="isWrapper" class="lingyun-badge-anchor">
+    <slot />
+    <view
+      class="lingyun-badge lingyun-badge--floating"
+      :class="rootClass"
+      <!-- #ifndef APP -->
+      role="status"
+      :aria-label="ariaLabel"
+      <!-- #endif -->
+      @click="onClick"
+    >
+      <text v-if="!isDot" class="lingyun-badge__text">{{ displayText }}</text>
+    </view>
+  </view>
   <view
+    v-else
     class="lingyun-badge"
     :class="rootClass"
+    <!-- #ifndef APP -->
     role="status"
     :aria-label="ariaLabel"
+    <!-- #endif -->
     @click="onClick"
   >
     <text v-if="!isDot" class="lingyun-badge__text">{{ displayText }}</text>
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, useSlots } from 'vue'
+import { type PropType } from 'vue'
 
 /**
  * lingyun-badge
@@ -26,115 +44,143 @@ import { defineComponent, type PropType } from 'vue'
  * @property {String} size = [small|medium] 小号 / 默认
  * @event {Function} click
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunBadge',
-  emits: ['click'],
-  props: {
-    color: {
-      type: String,
-      default: 'red',
-    },
-    /** 兼容 type 别名（uni-badge 习惯） */
-    type: {
-      type: String,
-      default: '',
-    },
-    text: {
-      type: [String, Number] as PropType<string | number>,
-      default: '',
-    },
-    max: {
-      type: Number,
-      default: 99,
-    },
-    dot: {
-      type: Boolean,
-      default: false,
-    },
-    size: {
-      type: String,
-      default: 'medium',
-    },
+})
+
+const props = defineProps({
+  color: {
+    type: String,
+    default: 'red',
   },
-  computed: {
-    resolvedColor() {
-      const raw = (this.type || this.color || 'red').toLowerCase()
-      const map: Record<string, string> = {
-        red: 'red',
-        error: 'red',
-        danger: 'red',
-        green: 'green',
-        success: 'green',
-        orange: 'orange',
-        warning: 'orange',
-        gray: 'gray',
-        grey: 'gray',
-        info: 'gray',
-        default: 'gray',
-      }
-      return map[raw] || 'red'
-    },
-    isDot() {
-      return this.dot || this.text === 'dot'
-    },
-    resolvedSize() {
-      return String(this.size || '').toLowerCase() === 'small' ||
-        String(this.size || '').toLowerCase() === 'sm'
-        ? 'small'
-        : 'medium'
-    },
-    displayText() {
-      if (this.isDot) return ''
-      const slot = this.$slots.default
-      if (slot) {
-        try {
-          const nodes = slot()
-          if (Array.isArray(nodes) && nodes.length) {
-            const parts = nodes
-              .map((n) => (n && n.children != null ? String(n.children) : ''))
-              .join('')
-              .trim()
-            if (parts) return parts
-          }
-        } catch {
-          /* ignore */
-        }
-      }
-      const raw = this.text
-      if (raw === '' || raw == null) return ''
-      const n = Number(raw)
-      if (!Number.isNaN(n) && String(raw).trim() !== '' && this.max > 0 && n > this.max) {
-        return `${this.max}+`
-      }
-      return String(raw)
-    },
-    ariaLabel() {
-      if (this.isDot) return 'New'
-      return this.displayText ? `Badge ${this.displayText}` : 'Badge'
-    },
-    rootClass() {
-      return [
-        `lingyun-badge--${this.resolvedColor}`,
-        this.resolvedSize === 'small' ? 'lingyun-badge--small' : '',
-        this.isDot ? 'lingyun-badge--dot' : '',
-        !this.isDot && this.displayText.length <= 1 ? 'lingyun-badge--single' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
+  /** 兼容 type 别名（uni-badge 习惯） */
+  type: {
+    type: String,
+    default: '',
   },
-  methods: {
-    onClick(e: Event) {
-      this.$emit('click', e)
-    },
+  text: {
+    type: [String, Number] as PropType<string | number>,
+    default: '',
+  },
+  max: {
+    type: Number,
+    default: 99,
+  },
+  dot: {
+    type: Boolean,
+    default: false,
+  },
+  size: {
+    type: String,
+    default: 'medium',
   },
 })
+
+const emit = defineEmits(['click'])
+
+const slots = useSlots()
+
+/**
+ * 包裹模式：默认插槽放内容、自身带角标文案/dot 时，
+ * badge 浮到插槽内容右上角，避免覆盖内容或超出圆角容器被裁。
+ */
+const isWrapper = computed((): boolean => {
+  return !!slots.default && (String(props.text || '') !== '' || props.dot)
+})
+
+const resolvedColor = computed((): string => {
+  const raw = (props.type || props.color || 'red').toLowerCase()
+  const map: Record<string, string> = {
+    red: 'red',
+    error: 'red',
+    danger: 'red',
+    green: 'green',
+    success: 'green',
+    orange: 'orange',
+    warning: 'orange',
+    gray: 'gray',
+    grey: 'gray',
+    info: 'gray',
+    default: 'gray',
+  }
+  return map[raw] || 'red'
+})
+
+const isDot = computed((): boolean => {
+  return props.dot || props.text === 'dot'
+})
+
+const resolvedSize = computed((): string => {
+  return String(props.size || '').toLowerCase() === 'small' ||
+    String(props.size || '').toLowerCase() === 'sm'
+    ? 'small'
+    : 'medium'
+})
+
+const displayText = computed((): string => {
+  if (isDot.value) return ''
+  if (!isWrapper.value) {
+    const slot = slots.default
+    if (slot) {
+      try {
+        const nodes = slot()
+        if (Array.isArray(nodes) && nodes.length) {
+          const parts = nodes
+            .map((n) => (n && n.children != null ? String(n.children) : ''))
+            .join('')
+            .trim()
+          if (parts) return parts
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  const raw = props.text
+  if (raw === '' || raw == null) return ''
+  const n = Number(raw)
+  if (!Number.isNaN(n) && String(raw).trim() !== '' && props.max > 0 && n > props.max) {
+    return `${props.max}+`
+  }
+  return String(raw)
+})
+
+const ariaLabel = computed((): string => {
+  if (isDot.value) return 'New'
+  return displayText.value ? `Badge ${displayText.value}` : 'Badge'
+})
+
+const rootClass = computed((): string => {
+  return [
+    `lingyun-badge--${resolvedColor.value}`,
+    resolvedSize.value === 'small' ? 'lingyun-badge--small' : '',
+    isDot.value ? 'lingyun-badge--dot' : '',
+    !isDot.value && displayText.value.length <= 1 ? 'lingyun-badge--single' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+function onClick(e: Event): void {
+  emit('click', e)
+}
 </script>
 
 <style lang="scss" scoped>
 @import '../../styles/variables.scss';
 
 /* Sketch：App Icons / Badge · 24h · pad 8×2.5 · radius 100 · SF Regular 16 / LH 19 · 白字 */
+/* 包裹模式定位容器：本身无圆角，iPhone 微信不会把浮出的角标裁掉 */
+.lingyun-badge-anchor {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  box-sizing: border-box;
+  vertical-align: middle;
+  /* uni-app x 编译到小程序会给 view 注入 overflow: hidden，这里必须放开 */
+  overflow: visible;
+}
+
 .lingyun-badge {
   display: inline-flex;
   flex-direction: row;
@@ -150,6 +196,15 @@ export default defineComponent({
   cursor: default;
   user-select: none;
   /* #endif */
+
+  /* 包裹模式下浮到内容右上角 */
+  &--floating {
+    position: absolute;
+    top: 0;
+    right: 0;
+    transform: translate(50%, -50%);
+    z-index: 2;
+  }
 
   &__text {
     font-size: 16px;

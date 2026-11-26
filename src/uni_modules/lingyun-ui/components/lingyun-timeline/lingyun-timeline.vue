@@ -50,8 +50,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed } from 'vue'
+import { type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
 import type {
   LingyunTimelineItem,
@@ -86,79 +87,86 @@ function isStatus(value: unknown): value is LingyunTimelineStatus {
  * @description 纵向时间线 / 操作轨迹：时间、标题、说明、状态与图标
  * @see design/TIMELINE.md
  */
-export default defineComponent({
+
+defineOptions({
   name: 'LingyunTimeline',
-  emits: ['item-click'],
-  props: {
-    items: {
-      type: Array as PropType<LingyunTimelineItem[]>,
-      default: () => [],
-    },
-    clickable: { type: Boolean, default: false },
-    emptyText: { type: String, default: '暂无记录' },
-    accentColor: { type: String, default: '' },
-  },
-  computed: {
-    rootClass(): string {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* pinia 未就绪 */
-      }
-      return themeClass
-    },
-    normalizedItems(): NormalizedTimelineItem[] {
-      const list = Array.isArray(this.items) ? this.items : []
-      return list.map((item, index) => {
-        const raw = item as LingyunTimelineItem
-        return {
-          key: String(raw?.key ?? index),
-          title: String(raw?.title ?? raw?.key ?? ''),
-          description: String(raw?.description || ''),
-          time: String(raw?.time || ''),
-          icon: String(raw?.icon || ''),
-          color: String(raw?.color || ''),
-          status: isStatus(raw?.status) ? raw.status : 'default',
-          raw,
-        }
-      })
-    },
-    accentStyle(): Record<string, string> {
-      return {
-        '--ly-timeline-accent': this.accentColor || 'var(--lingyun-system-blue, #0088ff)',
-      }
-    },
-  },
-  methods: {
-    statusOf(item: NormalizedTimelineItem): LingyunTimelineStatus {
-      return item.status
-    },
-    itemClass(item: NormalizedTimelineItem): string {
-      return [
-        `lingyun-timeline__item--${item.status}`,
-        item.icon ? 'lingyun-timeline__item--with-icon' : '',
-        this.clickable ? 'lingyun-timeline__item--clickable' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    hoverClass(): string {
-      return this.clickable ? 'lingyun-timeline__item--hover' : 'none'
-    },
-    itemStyle(item: NormalizedTimelineItem): Record<string, string> {
-      return item.color ? { '--ly-timeline-color': item.color } : {}
-    },
-    onItemClick(item: NormalizedTimelineItem, index: number): void {
-      if (!this.clickable) return
-      this.$emit('item-click', {
-        key: item.key,
-        index,
-        item: item.raw,
-      })
-    },
-  },
 })
+
+const props = defineProps({
+  items: {
+    type: Array as PropType<LingyunTimelineItem[]>,
+    default: () => [],
+  },
+  clickable: { type: Boolean, default: false },
+  emptyText: { type: String, default: '暂无记录' },
+  accentColor: { type: String, default: '' },
+})
+
+const emit = defineEmits(['item-click'])
+
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* pinia 未就绪 */
+  }
+  return themeClass
+})
+
+const normalizedItems = computed((): NormalizedTimelineItem[] => {
+  const list = Array.isArray(props.items) ? props.items : []
+  return list.map((item, index) => {
+    const raw = item as LingyunTimelineItem
+    return {
+      key: String(raw?.key ?? index),
+      title: String(raw?.title ?? raw?.key ?? ''),
+      description: String(raw?.description || ''),
+      time: String(raw?.time || ''),
+      icon: String(raw?.icon || ''),
+      color: String(raw?.color || ''),
+      status: isStatus(raw?.status) ? raw.status : 'default',
+      raw,
+    }
+  })
+})
+
+const accentStyle = computed((): Record<string, string> => {
+  return {
+    '--ly-timeline-accent': props.accentColor || 'var(--lingyun-system-blue, #0088ff)',
+  }
+})
+
+function statusOf(item: NormalizedTimelineItem): LingyunTimelineStatus {
+  return item.status
+}
+
+function itemClass(item: NormalizedTimelineItem): string {
+  return [
+    `lingyun-timeline__item--${item.status}`,
+    item.icon ? 'lingyun-timeline__item--with-icon' : '',
+    props.clickable ? 'lingyun-timeline__item--clickable' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+function hoverClass(): string {
+  return props.clickable ? 'lingyun-timeline__item--hover' : 'none'
+}
+
+function itemStyle(item: NormalizedTimelineItem): Record<string, string> {
+  return item.color ? { '--ly-timeline-color': item.color } : {}
+}
+
+function onItemClick(item: NormalizedTimelineItem, index: number): void {
+  if (!props.clickable) return
+  emit('item-click', {
+    key: item.key,
+    index,
+    item: item.raw,
+  })
+}
 </script>
 
 <style lang="scss">

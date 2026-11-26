@@ -74,12 +74,12 @@ $lingyun-glass-frost-bg: rgba(255, 255, 255, 0.96) !default;
   border-radius: $lingyun-glass-radius;
   box-shadow: var(--lingyun-glass-highlight, #{$lingyun-glass-highlight}),
     var(--lingyun-glass-shadow, #{$lingyun-glass-shadow});
-  /* #ifdef H5 || APP-PLUS */
+  /* #ifdef H5 || WEB || APP-PLUS */
   background-color: var(--lingyun-glass-regular-bg, #{$lingyun-glass-regular-bg});
   backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
   -webkit-backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
   /* #endif */
-  /* #ifndef H5 || APP-PLUS */
+  /* #ifndef H5 || WEB || APP-PLUS */
   /* 历史实霜挡字 fallback。Alert/Sheet 已改走 surface + 全端 blur（对齐 Toolbar） */
   background-color: var(--lingyun-glass-fallback-bg, #{$lingyun-glass-fallback-bg});
   /* #endif */
@@ -97,7 +97,7 @@ $lingyun-glass-frost-bg: rgba(255, 255, 255, 0.96) !default;
   box-shadow: var(--lingyun-glass-highlight, #{$lingyun-glass-highlight}),
     var(--lingyun-glass-shadow, #{$lingyun-glass-shadow});
   background-color: var(--lingyun-glass-regular-bg, #{$lingyun-glass-regular-bg});
-  /* #ifdef H5 || APP-PLUS */
+  /* #ifdef H5 || WEB || APP-PLUS */
   backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
   -webkit-backdrop-filter: saturate($lingyun-glass-saturate) blur($lingyun-glass-blur);
   /* #endif */
@@ -125,12 +125,12 @@ $lingyun-glass-frost-bg: rgba(255, 255, 255, 0.96) !default;
   border-radius: $lingyun-glass-radius;
   box-shadow: var(--lingyun-glass-highlight, #{$lingyun-glass-highlight}),
     var(--lingyun-glass-shadow, #{$lingyun-glass-shadow});
-  /* #ifdef H5 || APP-PLUS */
+  /* #ifdef H5 || WEB || APP-PLUS */
   background-color: var(--lingyun-glass-clear-bg, #{$lingyun-glass-clear-bg});
   backdrop-filter: saturate($lingyun-glass-saturate) blur(12px);
   -webkit-backdrop-filter: saturate($lingyun-glass-saturate) blur(12px);
   /* #endif */
-  /* #ifndef H5 || APP-PLUS */
+  /* #ifndef H5 || WEB || APP-PLUS */
   background-color: var(--lingyun-glass-fallback-bg, #{$lingyun-glass-fallback-bg});
   /* #endif */
 }

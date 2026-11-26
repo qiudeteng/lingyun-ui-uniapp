@@ -48,8 +48,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
 import type { LingyunNoticeBarType } from './types'
 
@@ -82,58 +83,64 @@ const ICON_COLORS: Record<LingyunNoticeBarType, string> = {
  * @description 非模态通知条：信息 / 成功 / 警告 / 错误、操作与关闭
  * @see design/NOTICE_BARS.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunNoticeBar',
-  emits: ['close', 'action'],
-  props: {
-    text: { type: String, default: '' },
-    type: {
-      type: String as PropType<LingyunNoticeBarType>,
-      default: 'info',
-    },
-    icon: { type: String, default: '' },
-    showIcon: { type: Boolean, default: true },
-    closable: { type: Boolean, default: false },
-    actionText: { type: String, default: '' },
-    multiline: { type: Boolean, default: false },
-  },
-  data(): { visible: boolean } {
-    return { visible: true }
-  },
-  computed: {
-    rootClass(): string {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* pinia 未就绪 */
-      }
-      return themeClass
-    },
-    typeKey(): LingyunNoticeBarType {
-      return TYPES.includes(this.type) ? this.type : 'info'
-    },
-    resolvedIcon(): string {
-      return this.icon || DEFAULT_ICONS[this.typeKey]
-    },
-    iconColor(): string {
-      return ICON_COLORS[this.typeKey]
-    },
-  },
-  methods: {
-    onAction(): void {
-      this.$emit('action')
-    },
-    onClose(): void {
-      this.visible = false
-      this.$emit('close')
-    },
-    /** 重新显示（关闭后可手动调用） */
-    show(): void {
-      this.visible = true
-    },
-  },
 })
+
+const props = defineProps({
+  text: { type: String, default: '' },
+  type: {
+    type: String as PropType<LingyunNoticeBarType>,
+    default: 'info',
+  },
+  icon: { type: String, default: '' },
+  showIcon: { type: Boolean, default: true },
+  closable: { type: Boolean, default: false },
+  actionText: { type: String, default: '' },
+  multiline: { type: Boolean, default: false },
+})
+
+const emit = defineEmits(['close', 'action'])
+
+const visible = ref(true)
+
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* pinia 未就绪 */
+  }
+  return themeClass
+})
+
+const typeKey = computed((): LingyunNoticeBarType => {
+  return TYPES.includes(props.type) ? props.type : 'info'
+})
+
+const resolvedIcon = computed((): string => {
+  return props.icon || DEFAULT_ICONS[typeKey.value]
+})
+
+const iconColor = computed((): string => {
+  return ICON_COLORS[typeKey.value]
+})
+
+function onAction(): void {
+  emit('action')
+}
+
+function onClose(): void {
+  visible.value = false
+  emit('close')
+}
+
+/** 重新显示（关闭后可手动调用） */
+function show(): void {
+  visible.value = true
+}
+
+defineExpose({ show })
 </script>
 
 <style lang="scss">

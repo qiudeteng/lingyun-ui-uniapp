@@ -49,8 +49,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed } from 'vue'
+import { type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
 import type {
   LingyunAccordionChangePayload,
@@ -71,100 +72,104 @@ interface NormalizedAccordionItem {
  * @description 折叠分组：单开 / 多开、标题 / 副标题 / 自定义内容
  * @see design/ACCORDION.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunAccordion',
-  emits: ['update:modelValue', 'change'],
-  props: {
-    items: {
-      type: Array as PropType<LingyunAccordionItem[]>,
-      default: () => [],
-    },
-    modelValue: {
-      type: [String, Array] as PropType<string | string[]>,
-      default: '',
-    },
-    multiple: { type: Boolean, default: false },
-    showArrow: { type: Boolean, default: true },
-  },
-  computed: {
-    rootClass(): string {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* pinia 未就绪 */
-      }
-      return themeClass
-    },
-    normalizedItems(): NormalizedAccordionItem[] {
-      const list = Array.isArray(this.items) ? this.items : []
-      return list.map((item, index) => {
-        const raw = item as LingyunAccordionItem
-        return {
-          key: String(raw?.key ?? index),
-          title: String(raw?.title ?? raw?.key ?? ''),
-          subtitle: String(raw?.subtitle || ''),
-          content: String(raw?.content || ''),
-          disabled: raw?.disabled === true,
-          raw,
-        }
-      })
-    },
-    openKeys(): string[] {
-      if (this.multiple) {
-        if (Array.isArray(this.modelValue)) {
-          return this.modelValue.map((key) => String(key))
-        }
-        return this.modelValue ? [String(this.modelValue)] : []
-      }
-      if (Array.isArray(this.modelValue)) {
-        return this.modelValue.length ? [String(this.modelValue[0])] : []
-      }
-      return this.modelValue ? [String(this.modelValue)] : []
-    },
-  },
-  methods: {
-    isOpen(item: NormalizedAccordionItem): boolean {
-      return this.openKeys.includes(item.key)
-    },
-    toggle(item: NormalizedAccordionItem): void {
-      if (item.disabled) return
-      const open = !this.isOpen(item)
-      const next = this.nextOpenKeys(item.key, open)
-      const value = this.multiple ? next : next[0] || ''
-      this.$emit('update:modelValue', value)
-      const payload: LingyunAccordionChangePayload = {
-        key: item.key,
-        open,
-        openKeys: next,
-      }
-      this.$emit('change', payload)
-    },
-    nextOpenKeys(key: string, open: boolean): string[] {
-      const current = this.openKeys
-      if (this.multiple) {
-        if (open) {
-          return current.includes(key) ? current : current.concat(key)
-        }
-        return current.filter((item) => item !== key)
-      }
-      return open ? [key] : []
-    },
-    openAll(): void {
-      if (!this.multiple) return
-      const keys = this.normalizedItems
-        .filter((item) => !item.disabled)
-        .map((item) => item.key)
-      this.$emit('update:modelValue', keys)
-      this.$emit('change', { key: '', open: true, openKeys: keys })
-    },
-    closeAll(): void {
-      if (!this.multiple) return
-      this.$emit('update:modelValue', [])
-      this.$emit('change', { key: '', open: false, openKeys: [] })
-    },
-  },
 })
+
+const props = defineProps({
+  items: {
+    type: Array as PropType<LingyunAccordionItem[]>,
+    default: () => [],
+  },
+  modelValue: {
+    type: [String, Array] as PropType<string | string[]>,
+    default: '',
+  },
+  multiple: { type: Boolean, default: false },
+  showArrow: { type: Boolean, default: true },
+})
+
+const emit = defineEmits(['update:modelValue', 'change'])
+
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* pinia 未就绪 */
+  }
+  return themeClass
+})
+const normalizedItems = computed((): NormalizedAccordionItem[] => {
+  const list = Array.isArray(props.items) ? props.items : []
+  return list.map((item, index) => {
+    const raw = item as LingyunAccordionItem
+    return {
+      key: String(raw?.key ?? index),
+      title: String(raw?.title ?? raw?.key ?? ''),
+      subtitle: String(raw?.subtitle || ''),
+      content: String(raw?.content || ''),
+      disabled: raw?.disabled === true,
+      raw,
+    }
+  })
+})
+const openKeys = computed((): string[] => {
+  if (props.multiple) {
+    if (Array.isArray(props.modelValue)) {
+      return props.modelValue.map((key) => String(key))
+    }
+    return props.modelValue ? [String(props.modelValue)] : []
+  }
+  if (Array.isArray(props.modelValue)) {
+    return props.modelValue.length ? [String(props.modelValue[0])] : []
+  }
+  return props.modelValue ? [String(props.modelValue)] : []
+})
+
+function isOpen(item: NormalizedAccordionItem): boolean {
+  return openKeys.value.includes(item.key)
+}
+
+function nextOpenKeys(key: string, open: boolean): string[] {
+  const current = openKeys.value
+  if (props.multiple) {
+    if (open) {
+      return current.includes(key) ? current : current.concat(key)
+    }
+    return current.filter((item) => item !== key)
+  }
+  return open ? [key] : []
+}
+
+function toggle(item: NormalizedAccordionItem): void {
+  if (item.disabled) return
+  const open = !isOpen(item)
+  const next = nextOpenKeys(item.key, open)
+  const value = props.multiple ? next : next[0] || ''
+  emit('update:modelValue', value)
+  const payload: LingyunAccordionChangePayload = {
+    key: item.key,
+    open,
+    openKeys: next,
+  }
+  emit('change', payload)
+}
+
+function openAll(): void {
+  if (!props.multiple) return
+  const keys = normalizedItems.value
+    .filter((item) => !item.disabled)
+    .map((item) => item.key)
+  emit('update:modelValue', keys)
+  emit('change', { key: '', open: true, openKeys: keys })
+}
+
+function closeAll(): void {
+  if (!props.multiple) return
+  emit('update:modelValue', [])
+  emit('change', { key: '', open: false, openKeys: [] })
+}
 </script>
 
 <style lang="scss">

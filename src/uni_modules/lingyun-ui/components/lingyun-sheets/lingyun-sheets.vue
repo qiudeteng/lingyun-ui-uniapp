@@ -206,10 +206,11 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
+import { inject, type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
-import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
+import { syncLingyunMpOverlayHold } from '../../utils/mp-overlay-gate'
 import { getLingyunToolbarStackPx, LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
 import {
   LINGYUN_APP_PAGE_SCROLL_LOCK,
@@ -249,535 +250,579 @@ const REGULAR_MAX_HEIGHT = 770
 const REGULAR_INSET = 32
 const RADIUS_REGULAR = 32
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunSheets',
-  mixins: [mpOverlayHoldMixin],
-  emits: ['update:show', 'update:modelValue', 'close', 'update:detent', 'trailing'],
-  inject: {
-    appPageScrollLock: {
-      from: LINGYUN_APP_PAGE_SCROLL_LOCK,
-      default: null as LingyunAppPageScrollLock | null,
-    },
+})
+
+const props = defineProps({
+  show: {
+    type: Boolean as PropType<boolean | undefined>,
+    default: undefined,
   },
-  props: {
-    show: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
-    },
-    modelValue: {
-      type: Boolean as PropType<boolean | undefined>,
-      default: undefined,
-    },
-    title: {
-      type: String,
-      default: '',
-    },
-    detent: {
-      type: String,
-      default: 'medium',
-    },
-    maskClosable: {
-      type: Boolean,
-      default: true,
-    },
-    showClose: {
-      type: Boolean,
-      default: true,
-    },
-    showTrailing: {
-      type: Boolean,
-      default: false,
-    },
-    /** 顶栏右侧内置按钮：图标（lingyun-icon type），可单独使用 */
-    trailingIcon: {
-      type: String,
-      default: '',
-    },
-    /** 顶栏右侧内置按钮：最多 2 个字，可和 trailingIcon 组合；两者都空时回退 showTrailing */
-    trailingText: {
-      type: String,
-      default: '',
-    },
-    safeAreaBottom: {
-      type: Boolean,
-      default: true,
-    },
-    zIndex: {
-      type: [Number, String] as PropType<number | string>,
-      default: 1000,
-    },
-    /** 宽屏（≥690）居中卡片宽度 px；0 = 默认上限（≤936，且不超出视口 - 64） */
-    width: {
-      type: Number,
-      default: 0,
-    },
-    /** 宽屏（≥690）居中卡片高度 px；0 = 默认上限（≤770，且不超出视口 - 64） */
-    height: {
-      type: Number,
-      default: 0,
-    },
-    /**
-     * 内容从面板顶部开始，顶栏（关闭 / 标题）浮在内容上。
-     * 适合商品详情这类头图铺满的需求：隐藏 Grabber，body 去掉顶部内边距。
-     */
-    bleedTop: {
-      type: Boolean,
-      default: false,
-    },
-    /**
-     * body 不滚动，由内容自行填满 body 高度并在内部滚动（左右分栏、内部滚动详情）。
-     * 开启后 body 变成普通 view，高度 100%；内容需自己处理滚动。
-     */
-    contentFill: {
-      type: Boolean,
-      default: false,
-    },
+  modelValue: {
+    type: Boolean as PropType<boolean | undefined>,
+    default: undefined,
   },
-  data() {
-    return {
-      mounted: false,
-      /** enter | open | leave */
-      phase: '' as '' | 'enter' | 'open' | 'leave',
-      leaveTimer: null as ReturnType<typeof setTimeout> | null,
-      enterTimer: null as ReturnType<typeof setTimeout> | null,
-      windowHeight: 667,
-      windowWidth: 375,
-      /** large 顶部留白：状态栏 + 页顶 toolbars 栏身，避免挡住底层导航 */
-      largeTopGap: LARGE_TOP_GAP_MIN,
-      safeBottom: 0,
-      dragStartY: 0,
-      dragDy: 0,
-      dragging: false,
-      /** 点遮罩不可关闭时的拒绝反馈 */
-      rejectNudge: false,
-      nudgeTimer: null as ReturnType<typeof setTimeout> | null,
-      _onWindowResize: null as (() => void) | null,
-      _appScrollLocked: false,
-      _scrollLocked: false,
-      _prevBodyOverflow: '',
-      _prevBodyOverscroll: '',
-      _prevHtmlOverscroll: '',
+  title: {
+    type: String,
+    default: '',
+  },
+  detent: {
+    type: String,
+    default: 'medium',
+  },
+  maskClosable: {
+    type: Boolean,
+    default: true,
+  },
+  showClose: {
+    type: Boolean,
+    default: true,
+  },
+  showTrailing: {
+    type: Boolean,
+    default: false,
+  },
+  /** 顶栏右侧内置按钮：图标（lingyun-icon type），可单独使用 */
+  trailingIcon: {
+    type: String,
+    default: '',
+  },
+  /** 顶栏右侧内置按钮：最多 2 个字，可和 trailingIcon 组合；两者都空时回退 showTrailing */
+  trailingText: {
+    type: String,
+    default: '',
+  },
+  safeAreaBottom: {
+    type: Boolean,
+    default: true,
+  },
+  zIndex: {
+    type: [Number, String] as PropType<number | string>,
+    default: 1000,
+  },
+  /** 宽屏（≥690）居中卡片宽度 px；0 = 默认上限（≤936，且不超出视口 - 64） */
+  width: {
+    type: Number,
+    default: 0,
+  },
+  /** 宽屏（≥690）居中卡片高度 px；0 = 默认上限（≤770，且不超出视口 - 64） */
+  height: {
+    type: Number,
+    default: 0,
+  },
+  /**
+   * 内容从面板顶部开始，顶栏（关闭 / 标题）浮在内容上。
+   * 适合商品详情这类头图铺满的需求：隐藏 Grabber，body 去掉顶部内边距。
+   */
+  bleedTop: {
+    type: Boolean,
+    default: false,
+  },
+  /**
+   * body 不滚动，由内容自行填满 body 高度并在内部滚动（左右分栏、内部滚动详情）。
+   * 开启后 body 变成普通 view，高度 100%；内容需自己处理滚动。
+   */
+  contentFill: {
+    type: Boolean,
+    default: false,
+  },
+})
+
+const emit = defineEmits(['update:show', 'update:modelValue', 'close', 'update:detent', 'trailing'])
+
+const appPageScrollLock = inject(LINGYUN_APP_PAGE_SCROLL_LOCK, null)
+
+const slots = useSlots()
+
+const mounted = ref(false)
+/** enter | open | leave */
+const phase = ref<'' | 'enter' | 'open' | 'leave'>('')
+const leaveTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const enterTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const windowHeight = ref(667)
+const windowWidth = ref(375)
+/** large 顶部留白：状态栏 + 页顶 toolbars 栏身，避免挡住底层导航 */
+const largeTopGap = ref(LARGE_TOP_GAP_MIN)
+const safeBottom = ref(0)
+const dragStartY = ref(0)
+const dragDy = ref(0)
+const dragging = ref(false)
+/** 点遮罩不可关闭时的拒绝反馈 */
+const rejectNudge = ref(false)
+const nudgeTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _onWindowResize = ref<(() => void) | null>(null)
+const _appScrollLocked = ref(false)
+const _scrollLocked = ref(false)
+const _prevBodyOverflow = ref('')
+const _prevBodyOverscroll = ref('')
+const _prevHtmlOverscroll = ref('')
+const _lingyunMpOverlayHold = ref(false)
+
+const visible = computed((): boolean => {
+  if (props.show !== undefined && props.show !== null) return !!props.show
+  if (props.modelValue !== undefined && props.modelValue !== null) return !!props.modelValue
+  return false
+})
+
+/** 顶栏右侧文字最多 2 个字（按 Unicode 码点截断，避免拆开 emoji） */
+const trailingTextClipped = computed((): string => {
+  const text = String(props.trailingText || '').trim()
+  return Array.from(text).slice(0, 2).join('')
+})
+
+const hasBuiltInTrailing = computed((): boolean =>
+  !!(props.trailingIcon || trailingTextClipped.value),
+)
+
+/** 内置 trailing（icon / 文字）优先于 #trailing 插槽与默认分享圆钮；
+ *  小程序端插槽是否存在是静态的，不能用来判断“有没有内容” */
+const showTrailingEffective = computed((): boolean =>
+  props.showTrailing && !hasBuiltInTrailing.value,
+)
+
+const detentKey = computed((): string => (props.detent === 'large' ? 'large' : 'medium'))
+
+const reduceMotion = computed((): boolean => {
+  try {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    }
+  } catch {
+    /* ignore */
+  }
+  return false
+})
+
+const isLarge = computed((): boolean => detentKey.value === 'large')
+
+/** 宽屏（iPad / 桌面 H5）：走 Sketch iPad 居中卡片，档位不再影响形态 */
+const isRegular = computed((): boolean =>
+  (Number(windowWidth.value) || 375) >= REGULAR_MIN_WIDTH,
+)
+
+/** 宽屏卡片宽：props.width，夹在 [320, 视口 - 64]；0 用默认上限 936 */
+const regularWidthPx = computed((): number => {
+  const w = Math.max(320, Number(windowWidth.value) || 375)
+  const limit = Math.max(320, w - REGULAR_INSET * 2)
+  const requested = Number(props.width) || 0
+  const base = requested > 0 ? requested : Math.min(REGULAR_MAX_WIDTH, limit)
+  return Math.max(320, Math.min(base, limit))
+})
+
+/** 宽屏卡片高：props.height，夹在 [240, 视口 - 64]；0 用默认上限 770 */
+const regularHeightPx = computed((): number => {
+  const h = Math.max(320, Number(windowHeight.value) || 667)
+  const limit = Math.max(240, h - REGULAR_INSET * 2)
+  const requested = Number(props.height) || 0
+  const base = requested > 0 ? requested : Math.min(REGULAR_MAX_HEIGHT, limit)
+  return Math.max(240, Math.min(base, limit))
+})
+
+const panelHeightPx = computed((): number => {
+  const h = Math.max(320, Number(windowHeight.value) || 667)
+  if (isRegular.value) {
+    return regularHeightPx.value
+  }
+  if (isLarge.value) {
+    const gap = Math.max(LARGE_TOP_GAP_MIN, Number(largeTopGap.value) || LARGE_TOP_GAP_MIN)
+    return Math.max(280, Math.round(h - gap))
+  }
+  return Math.round(h * MEDIUM_RATIO)
+})
+
+/** 宽屏水平居中留白；窄屏 medium 内缩 8、large 贴边（Sketch 8 / 0） */
+const sideInsetPx = computed((): number => {
+  if (!isRegular.value) return isLarge.value ? 0 : INSET_MEDIUM
+  const w = Math.max(320, Number(windowWidth.value) || 375)
+  const panel = regularWidthPx.value
+  return Math.round((w - panel) / 2)
+})
+
+/** 宽屏垂直居中；窄屏见 sideInsetPx */
+const bottomInsetPx = computed((): number => {
+  if (!isRegular.value) return isLarge.value ? 0 : INSET_MEDIUM
+  const h = Math.max(320, Number(windowHeight.value) || 667)
+  return Math.round((h - panelHeightPx.value) / 2)
+})
+
+const panelRadiusPx = computed((): number => {
+  if (isRegular.value) return RADIUS_REGULAR
+  return isLarge.value ? RADIUS_LARGE : RADIUS_MEDIUM
+})
+
+/** iPad 卡片不可换档，不出 Grabber；头图模式顶栏浮在图片上，也不出 Grabber */
+const showGrabber = computed((): boolean => !isRegular.value && !props.bleedTop)
+
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* pinia 未就绪 */
+  }
+  return [
+    themeClass,
+    `lingyun-sheets--${detentKey.value}`,
+    props.bleedTop ? 'lingyun-sheets--bleed-top' : '',
+    phase.value ? `lingyun-sheets--${phase.value}` : '',
+    reduceMotion.value ? 'lingyun-sheets--reduce-motion' : '',
+    dragging.value ? 'lingyun-sheets--dragging' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const rootStyle = computed((): Record<string, number> => {
+  return {
+    zIndex: Number(props.zIndex) || 1000,
+  }
+})
+
+const panelClass = computed((): Record<string, boolean> => {
+  return {
+    'lingyun-sheets__panel--regular': isRegular.value,
+    'lingyun-sheets__panel--large': !isRegular.value && isLarge.value,
+    'lingyun-sheets__panel--medium': !isRegular.value && !isLarge.value,
+    'lingyun-sheets__panel--nudge': rejectNudge.value && !reduceMotion.value,
+  }
+})
+
+/** 屏外起点位移：面板高 + 底部留白，否则收起后残留露头 */
+const offsetOutPx = computed((): number => panelHeightPx.value + bottomInsetPx.value)
+
+const hasFooter = computed((): boolean => !!(slots && slots.footer))
+
+const panelStyle = computed((): Record<string, string> => {
+  const radius = panelRadiusPx.value
+  // large 贴边贴底：只圆顶角；medium / iPad 卡片四角同值
+  const bottomRadius = !isRegular.value && isLarge.value ? 0 : radius
+  const style: Record<string, string> = {
+    height: `${panelHeightPx.value}px`,
+    left: `${sideInsetPx.value}px`,
+    right: `${sideInsetPx.value}px`,
+    bottom: `${bottomInsetPx.value}px`,
+    borderTopLeftRadius: `${radius}px`,
+    borderTopRightRadius: `${radius}px`,
+    borderBottomLeftRadius: `${bottomRadius}px`,
+    borderBottomRightRadius: `${bottomRadius}px`,
+  }
+  if (dragging.value) {
+    style.transform = `translate3d(0, ${dragDy.value}px, 0)`
+    style.transition = 'none'
+  } else if (phase.value === 'open') {
+    style.transform = 'translate3d(0, 0, 0)'
+  } else {
+    style.transform = `translate3d(0, ${offsetOutPx.value}px, 0)`
+  }
+  return style
+})
+
+const bodyInnerStyle = computed((): Record<string, string> => {
+  const bottom = props.contentFill
+    ? 0
+    : 16 + (hasFooter.value || !props.safeAreaBottom ? 0 : safeBottom.value)
+  return {
+    paddingBottom: `${bottom}px`,
+  }
+})
+
+/** 底部操作区：贴面板底部，安全区由它承接 */
+const footerStyle = computed((): Record<string, string> => {
+  const bottom = hasFooter.value && props.safeAreaBottom ? safeBottom.value : 0
+  return {
+    paddingBottom: `${bottom}px`,
+  }
+})
+
+function syncWindow(): void {
+  try {
+    const info =
+      typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
+    windowHeight.value = Number(info && info.windowHeight) || 667
+    windowWidth.value = Number(info && info.windowWidth) || 375
+    const inset = info && info.safeAreaInsets
+    safeBottom.value = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
+  } catch {
+    windowHeight.value = 667
+    windowWidth.value = 375
+    safeBottom.value = 0
+  }
+  try {
+    // 全屏顶缘落在页面顶栏之下（状态栏 + 栏身），避开微信胶囊
+    largeTopGap.value = Math.max(LARGE_TOP_GAP_MIN, getLingyunToolbarStackPx())
+  } catch {
+    largeTopGap.value = LARGE_TOP_GAP_MIN
+  }
+}
+
+function bindResize(): void {
+  const onWindowResize = () => {
+    syncWindow()
+  }
+  _onWindowResize.value = onWindowResize
+  try {
+    if (typeof uni.onWindowResize === 'function') uni.onWindowResize(onWindowResize)
+  } catch {
+    /* 端不支持 */
+  }
+}
+
+function unbindResize(): void {
+  const onWindowResize = _onWindowResize.value
+  try {
+    if (onWindowResize && typeof uni.offWindowResize === 'function') {
+      uni.offWindowResize(onWindowResize)
+    }
+  } catch {
+    /* 端不支持 */
+  }
+  _onWindowResize.value = null
+}
+
+function clearTimers(): void {
+  if (leaveTimer.value) {
+    clearTimeout(leaveTimer.value)
+    leaveTimer.value = null
+  }
+  if (enterTimer.value) {
+    clearTimeout(enterTimer.value)
+    enterTimer.value = null
+  }
+  if (nudgeTimer.value) {
+    clearTimeout(nudgeTimer.value)
+    nudgeTimer.value = null
+  }
+  rejectNudge.value = false
+}
+
+function openAnim(): void {
+  clearTimers()
+  mounted.value = true
+  dragDy.value = 0
+  dragging.value = false
+  // enter = 屏外起点（须与 open 不同，否则无滑入动画）
+  phase.value = 'enter'
+  nextTick(() => {
+    const kick = () => {
+      enterTimer.value = setTimeout(
+        () => {
+          phase.value = 'open'
+          enterTimer.value = null
+        },
+        reduceMotion.value ? 16 : ENTER_KICK_MS,
+      )
+    }
+    // 双 rAF：保证先提交 enter 帧再切 open，H5/小程序都能播过渡
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(kick)
+      })
+    } else {
+      kick()
+    }
+  })
+}
+
+function closeAnim(): void {
+  clearTimers()
+  if (!mounted.value) {
+    unlockPageScroll()
+    return
+  }
+  phase.value = 'leave'
+  leaveTimer.value = setTimeout(
+    () => {
+      mounted.value = false
+      phase.value = ''
+      leaveTimer.value = null
+      dragDy.value = 0
+      dragging.value = false
+      unlockPageScroll()
+    },
+    reduceMotion.value ? 16 : LEAVE_MS,
+  )
+}
+
+function setVisible(next: boolean): void {
+  const val = !!next
+  emit('update:show', val)
+  emit('update:modelValue', val)
+  if (!val) emit('close')
+}
+
+function close(): void {
+  setVisible(false)
+}
+
+function onOverlayClick(): void {
+  if (props.maskClosable) {
+    close()
+    return
+  }
+  if (phase.value !== 'open') return
+  playRejectNudge()
+}
+
+/** 点遮罩不可关闭：短震动 + 面板水平轻抖（对齐 Alert 的拒绝反馈） */
+function playRejectNudge(): void {
+  const fireVibrate = (
+    options: UniNamespace.VibrateShortOptions & { type?: 'medium' },
+    retry = true,
+  ) => {
+    try {
+      const ret = uni.vibrateShort(options) as unknown
+      if (ret && typeof (ret as Promise<unknown>).catch === 'function') {
+        ;(ret as Promise<unknown>).catch(() => {})
+      }
+    } catch {
+      if (retry) fireVibrate({ fail: () => {} }, false)
+    }
+  }
+  fireVibrate({ type: 'medium', fail: () => {} })
+  if (reduceMotion.value) return
+  rejectNudge.value = false
+  nextTick(() => {
+    rejectNudge.value = true
+    if (nudgeTimer.value) clearTimeout(nudgeTimer.value)
+    nudgeTimer.value = setTimeout(() => {
+      rejectNudge.value = false
+      nudgeTimer.value = null
+    }, NUDGE_MS)
+  })
+}
+
+function onTrailing(): void {
+  emit('trailing')
+}
+
+/** 打开时锁住底层页面滚动（app-page scroll-view + H5 body），避免内容区滑动穿透 */
+function lockPageScroll(): void {
+  try {
+    const lockApi = appPageScrollLock as LingyunAppPageScrollLock | null
+    if (lockApi && typeof lockApi.lock === 'function' && !_appScrollLocked.value) {
+      lockApi.lock()
+      _appScrollLocked.value = true
+    }
+  } catch {
+    /* 不在 app-page 内 */
+  }
+  // #ifdef H5
+  if (typeof document === 'undefined') return
+  if (_scrollLocked.value) return
+  const body = document.body
+  const html = document.documentElement
+  _prevBodyOverflow.value = body.style.overflow
+  _prevBodyOverscroll.value = body.style.overscrollBehavior
+  _prevHtmlOverscroll.value = html.style.overscrollBehavior
+  body.style.overflow = 'hidden'
+  body.style.overscrollBehavior = 'none'
+  html.style.overscrollBehavior = 'none'
+  _scrollLocked.value = true
+  // #endif
+}
+
+function unlockPageScroll(): void {
+  try {
+    const lockApi = appPageScrollLock as LingyunAppPageScrollLock | null
+    if (_appScrollLocked.value && lockApi && typeof lockApi.unlock === 'function') {
+      lockApi.unlock()
+    }
+    _appScrollLocked.value = false
+  } catch {
+    _appScrollLocked.value = false
+  }
+  // #ifdef H5
+  if (typeof document === 'undefined') return
+  if (!_scrollLocked.value) return
+  const body = document.body
+  const html = document.documentElement
+  body.style.overflow = _prevBodyOverflow.value || ''
+  body.style.overscrollBehavior = _prevBodyOverscroll.value || ''
+  html.style.overscrollBehavior = _prevHtmlOverscroll.value || ''
+  _scrollLocked.value = false
+  // #endif
+}
+
+/**
+ * 面板 touchmove 仅 stop 冒泡，不 prevent —— 否则会掐死内部 scroll-view。
+ * 底层滚动靠 lockPageScroll（关 app-page scroll-y）。
+ */
+function onPanelTouchMove(): void {
+  /* stop 已在模板；占位避免空 handler 被优化掉 */
+}
+
+function onChromeTouchStart(e: TouchEvent): void {
+  const t = e.touches && e.touches[0]
+  if (!t) return
+  dragStartY.value = t.clientY
+  dragDy.value = 0
+  dragging.value = true
+}
+
+function onChromeTouchMove(e: TouchEvent): void {
+  if (!dragging.value) return
+  const t = e.touches && e.touches[0]
+  if (!t) return
+  const dy = t.clientY - dragStartY.value
+  dragDy.value = dy > 0 ? dy : 0
+}
+
+function onChromeTouchEnd(): void {
+  if (!dragging.value) return
+  const dy = dragDy.value
+  dragging.value = false
+  dragDy.value = 0
+  if (dy >= DISMISS_DY) {
+    close()
+  }
+}
+
+watch(
+  visible,
+  (val: boolean) => {
+    if (val) {
+      syncWindow()
+      lockPageScroll()
+      openAnim()
+    } else {
+      closeAnim()
     }
   },
-  computed: {
-    visible() {
-      if (this.show !== undefined && this.show !== null) return !!this.show
-      if (this.modelValue !== undefined && this.modelValue !== null) return !!this.modelValue
-      return false
-    },
-    /** 顶栏右侧文字最多 2 个字（按 Unicode 码点截断，避免拆开 emoji） */
-    trailingTextClipped(): string {
-      const text = String(this.trailingText || '').trim()
-      return Array.from(text).slice(0, 2).join('')
-    },
-    hasBuiltInTrailing(): boolean {
-      return !!(this.trailingIcon || this.trailingTextClipped)
-    },
-    /** 内置 trailing（icon / 文字）优先于 #trailing 插槽与默认分享圆钮；
-     *  小程序端插槽是否存在是静态的，不能用来判断“有没有内容” */
-    showTrailingEffective(): boolean {
-      return this.showTrailing && !this.hasBuiltInTrailing
-    },
-    detentKey() {
-      return this.detent === 'large' ? 'large' : 'medium'
-    },
-    reduceMotion() {
-      try {
-        if (typeof window !== 'undefined' && window.matchMedia) {
-          return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        }
-      } catch {
-        /* ignore */
-      }
-      return false
-    },
-    isLarge() {
-      return this.detentKey === 'large'
-    },
-    /** 宽屏（iPad / 桌面 H5）：走 Sketch iPad 居中卡片，档位不再影响形态 */
-    isRegular() {
-      return (Number(this.windowWidth) || 375) >= REGULAR_MIN_WIDTH
-    },
-    /** 宽屏卡片宽：props.width，夹在 [320, 视口 - 64]；0 用默认上限 936 */
-    regularWidthPx() {
-      const w = Math.max(320, Number(this.windowWidth) || 375)
-      const limit = Math.max(320, w - REGULAR_INSET * 2)
-      const requested = Number(this.width) || 0
-      const base = requested > 0 ? requested : Math.min(REGULAR_MAX_WIDTH, limit)
-      return Math.max(320, Math.min(base, limit))
-    },
-    /** 宽屏卡片高：props.height，夹在 [240, 视口 - 64]；0 用默认上限 770 */
-    regularHeightPx() {
-      const h = Math.max(320, Number(this.windowHeight) || 667)
-      const limit = Math.max(240, h - REGULAR_INSET * 2)
-      const requested = Number(this.height) || 0
-      const base = requested > 0 ? requested : Math.min(REGULAR_MAX_HEIGHT, limit)
-      return Math.max(240, Math.min(base, limit))
-    },
-    panelHeightPx() {
-      const h = Math.max(320, Number(this.windowHeight) || 667)
-      if (this.isRegular) {
-        return this.regularHeightPx
-      }
-      if (this.isLarge) {
-        const gap = Math.max(LARGE_TOP_GAP_MIN, Number(this.largeTopGap) || LARGE_TOP_GAP_MIN)
-        return Math.max(280, Math.round(h - gap))
-      }
-      return Math.round(h * MEDIUM_RATIO)
-    },
-    /** 宽屏水平居中留白；窄屏 medium 内缩 8、large 贴边（Sketch 8 / 0） */
-    sideInsetPx() {
-      if (!this.isRegular) return this.isLarge ? 0 : INSET_MEDIUM
-      const w = Math.max(320, Number(this.windowWidth) || 375)
-      const panel = this.regularWidthPx
-      return Math.round((w - panel) / 2)
-    },
-    /** 宽屏垂直居中；窄屏见 sideInsetPx */
-    bottomInsetPx() {
-      if (!this.isRegular) return this.isLarge ? 0 : INSET_MEDIUM
-      const h = Math.max(320, Number(this.windowHeight) || 667)
-      return Math.round((h - this.panelHeightPx) / 2)
-    },
-    panelRadiusPx() {
-      if (this.isRegular) return RADIUS_REGULAR
-      return this.isLarge ? RADIUS_LARGE : RADIUS_MEDIUM
-    },
-    /** iPad 卡片不可换档，不出 Grabber；头图模式顶栏浮在图片上，也不出 Grabber */
-    showGrabber() {
-      return !this.isRegular && !this.bleedTop
-    },
-    rootClass() {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* pinia 未就绪 */
-      }
-      return [
-        themeClass,
-        `lingyun-sheets--${this.detentKey}`,
-        this.bleedTop ? 'lingyun-sheets--bleed-top' : '',
-        this.phase ? `lingyun-sheets--${this.phase}` : '',
-        this.reduceMotion ? 'lingyun-sheets--reduce-motion' : '',
-        this.dragging ? 'lingyun-sheets--dragging' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    rootStyle() {
-      return {
-        zIndex: Number(this.zIndex) || 1000,
-      }
-    },
-    panelClass() {
-      return {
-        'lingyun-sheets__panel--regular': this.isRegular,
-        'lingyun-sheets__panel--large': !this.isRegular && this.isLarge,
-        'lingyun-sheets__panel--medium': !this.isRegular && !this.isLarge,
-        'lingyun-sheets__panel--nudge': this.rejectNudge && !this.reduceMotion,
-      }
-    },
-    /** 屏外起点位移：面板高 + 底部留白，否则收起后残留露头 */
-    offsetOutPx() {
-      return this.panelHeightPx + this.bottomInsetPx
-    },
-    panelStyle(): Record<string, string> {
-      const radius = this.panelRadiusPx
-      // large 贴边贴底：只圆顶角；medium / iPad 卡片四角同值
-      const bottomRadius = !this.isRegular && this.isLarge ? 0 : radius
-      const style: Record<string, string> = {
-        height: `${this.panelHeightPx}px`,
-        left: `${this.sideInsetPx}px`,
-        right: `${this.sideInsetPx}px`,
-        bottom: `${this.bottomInsetPx}px`,
-        borderTopLeftRadius: `${radius}px`,
-        borderTopRightRadius: `${radius}px`,
-        borderBottomLeftRadius: `${bottomRadius}px`,
-        borderBottomRightRadius: `${bottomRadius}px`,
-      }
-      if (this.dragging) {
-        style.transform = `translate3d(0, ${this.dragDy}px, 0)`
-        style.transition = 'none'
-      } else if (this.phase === 'open') {
-        style.transform = 'translate3d(0, 0, 0)'
-      } else {
-        style.transform = `translate3d(0, ${this.offsetOutPx}px, 0)`
-      }
-      return style
-    },
-    bodyInnerStyle() {
-      const bottom = this.contentFill
-        ? 0
-        : 16 + (this.hasFooter || !this.safeAreaBottom ? 0 : this.safeBottom)
-      return {
-        paddingBottom: `${bottom}px`,
-      }
-    },
-    hasFooter(): boolean {
-      return !!(this.$slots && this.$slots.footer)
-    },
-    /** 底部操作区：贴面板底部，安全区由它承接 */
-    footerStyle(): Record<string, string> {
-      const bottom = this.hasFooter && this.safeAreaBottom ? this.safeBottom : 0
-      return {
-        paddingBottom: `${bottom}px`,
-      }
-    },
+  { immediate: true },
+)
+
+watch(
+  () => props.detent,
+  () => {
+    syncWindow()
   },
-  watch: {
-    visible: {
-      immediate: true,
-      handler(val: boolean) {
-        if (val) {
-          this.syncWindow()
-          this.lockPageScroll()
-          this.openAnim()
-        } else {
-          this.closeAnim()
-        }
-      },
-    },
-    detent() {
-      this.syncWindow()
-    },
+)
+
+watch(
+  phase,
+  (value: string) => {
+    _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+      !!_lingyunMpOverlayHold.value,
+      !!value,
+    )
   },
-  mounted() {
-    this.syncWindow()
-    this.bindResize()
-  },
-  beforeUnmount() {
-    this.clearTimers()
-    this.unbindResize()
-    this.unlockPageScroll()
-  },
-  methods: {
-    syncWindow() {
-      try {
-        const info =
-          typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
-        this.windowHeight = Number(info && info.windowHeight) || 667
-        this.windowWidth = Number(info && info.windowWidth) || 375
-        const inset = info && info.safeAreaInsets
-        this.safeBottom = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
-      } catch {
-        this.windowHeight = 667
-        this.windowWidth = 375
-        this.safeBottom = 0
-      }
-      try {
-        // 全屏顶缘落在页面顶栏之下（状态栏 + 栏身），避开微信胶囊
-        this.largeTopGap = Math.max(LARGE_TOP_GAP_MIN, getLingyunToolbarStackPx())
-      } catch {
-        this.largeTopGap = LARGE_TOP_GAP_MIN
-      }
-    },
-    bindResize() {
-      const onWindowResize = () => {
-        this.syncWindow()
-      }
-      this._onWindowResize = onWindowResize
-      try {
-        if (typeof uni.onWindowResize === 'function') uni.onWindowResize(onWindowResize)
-      } catch {
-        /* 端不支持 */
-      }
-    },
-    unbindResize() {
-      const onWindowResize = this._onWindowResize
-      try {
-        if (onWindowResize && typeof uni.offWindowResize === 'function') {
-          uni.offWindowResize(onWindowResize)
-        }
-      } catch {
-        /* 端不支持 */
-      }
-      this._onWindowResize = null
-    },
-    clearTimers() {
-      if (this.leaveTimer) {
-        clearTimeout(this.leaveTimer)
-        this.leaveTimer = null
-      }
-      if (this.enterTimer) {
-        clearTimeout(this.enterTimer)
-        this.enterTimer = null
-      }
-      if (this.nudgeTimer) {
-        clearTimeout(this.nudgeTimer)
-        this.nudgeTimer = null
-      }
-      this.rejectNudge = false
-    },
-    openAnim() {
-      this.clearTimers()
-      this.mounted = true
-      this.dragDy = 0
-      this.dragging = false
-      // enter = 屏外起点（须与 open 不同，否则无滑入动画）
-      this.phase = 'enter'
-      this.$nextTick(() => {
-        const kick = () => {
-          this.enterTimer = setTimeout(
-            () => {
-              this.phase = 'open'
-              this.enterTimer = null
-            },
-            this.reduceMotion ? 16 : ENTER_KICK_MS,
-          )
-        }
-        // 双 rAF：保证先提交 enter 帧再切 open，H5/小程序都能播过渡
-        if (typeof requestAnimationFrame === 'function') {
-          requestAnimationFrame(() => {
-            requestAnimationFrame(kick)
-          })
-        } else {
-          kick()
-        }
-      })
-    },
-    closeAnim() {
-      this.clearTimers()
-      if (!this.mounted) {
-        this.unlockPageScroll()
-        return
-      }
-      this.phase = 'leave'
-      this.leaveTimer = setTimeout(
-        () => {
-          this.mounted = false
-          this.phase = ''
-          this.leaveTimer = null
-          this.dragDy = 0
-          this.dragging = false
-          this.unlockPageScroll()
-        },
-        this.reduceMotion ? 16 : LEAVE_MS,
-      )
-    },
-    setVisible(next: boolean) {
-      const val = !!next
-      this.$emit('update:show', val)
-      this.$emit('update:modelValue', val)
-      if (!val) this.$emit('close')
-    },
-    close() {
-      this.setVisible(false)
-    },
-    onOverlayClick() {
-      if (this.maskClosable) {
-        this.close()
-        return
-      }
-      if (this.phase !== 'open') return
-      this.playRejectNudge()
-    },
-    /** 点遮罩不可关闭：短震动 + 面板水平轻抖（对齐 Alert 的拒绝反馈） */
-    playRejectNudge() {
-      const fireVibrate = (
-        options: UniNamespace.VibrateShortOptions & { type?: 'medium' },
-        retry = true,
-      ) => {
-        try {
-          const ret = uni.vibrateShort(options) as unknown
-          if (ret && typeof (ret as Promise<unknown>).catch === 'function') {
-            ;(ret as Promise<unknown>).catch(() => {})
-          }
-        } catch {
-          if (retry) fireVibrate({ fail: () => {} }, false)
-        }
-      }
-      fireVibrate({ type: 'medium', fail: () => {} })
-      if (this.reduceMotion) return
-      this.rejectNudge = false
-      this.$nextTick(() => {
-        this.rejectNudge = true
-        if (this.nudgeTimer) clearTimeout(this.nudgeTimer)
-        this.nudgeTimer = setTimeout(() => {
-          this.rejectNudge = false
-          this.nudgeTimer = null
-        }, NUDGE_MS)
-      })
-    },
-    onTrailing() {
-      this.$emit('trailing')
-    },
-    /** 打开时锁住底层页面滚动（app-page scroll-view + H5 body），避免内容区滑动穿透 */
-    lockPageScroll() {
-      try {
-        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
-        if (lockApi && typeof lockApi.lock === 'function' && !this._appScrollLocked) {
-          lockApi.lock()
-          this._appScrollLocked = true
-        }
-      } catch {
-        /* 不在 app-page 内 */
-      }
-      // #ifdef H5
-      if (typeof document === 'undefined') return
-      if (this._scrollLocked) return
-      const body = document.body
-      const html = document.documentElement
-      this._prevBodyOverflow = body.style.overflow
-      this._prevBodyOverscroll = body.style.overscrollBehavior
-      this._prevHtmlOverscroll = html.style.overscrollBehavior
-      body.style.overflow = 'hidden'
-      body.style.overscrollBehavior = 'none'
-      html.style.overscrollBehavior = 'none'
-      this._scrollLocked = true
-      // #endif
-    },
-    unlockPageScroll() {
-      try {
-        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
-        if (this._appScrollLocked && lockApi && typeof lockApi.unlock === 'function') {
-          lockApi.unlock()
-        }
-        this._appScrollLocked = false
-      } catch {
-        this._appScrollLocked = false
-      }
-      // #ifdef H5
-      if (typeof document === 'undefined') return
-      if (!this._scrollLocked) return
-      const body = document.body
-      const html = document.documentElement
-      body.style.overflow = this._prevBodyOverflow || ''
-      body.style.overscrollBehavior = this._prevBodyOverscroll || ''
-      html.style.overscrollBehavior = this._prevHtmlOverscroll || ''
-      this._scrollLocked = false
-      // #endif
-    },
-    /**
-     * 面板 touchmove 仅 stop 冒泡，不 prevent —— 否则会掐死内部 scroll-view。
-     * 底层滚动靠 lockPageScroll（关 app-page scroll-y）。
-     */
-    onPanelTouchMove() {
-      /* stop 已在模板；占位避免空 handler 被优化掉 */
-    },
-    onChromeTouchStart(e: TouchEvent) {
-      const t = e.touches && e.touches[0]
-      if (!t) return
-      this.dragStartY = t.clientY
-      this.dragDy = 0
-      this.dragging = true
-    },
-    onChromeTouchMove(e: TouchEvent) {
-      if (!this.dragging) return
-      const t = e.touches && e.touches[0]
-      if (!t) return
-      const dy = t.clientY - this.dragStartY
-      this.dragDy = dy > 0 ? dy : 0
-    },
-    onChromeTouchEnd() {
-      if (!this.dragging) return
-      const dy = this.dragDy
-      this.dragging = false
-      this.dragDy = 0
-      if (dy >= DISMISS_DY) {
-        this.close()
-      }
-    },
-  },
+  { immediate: true },
+)
+
+onMounted(() => {
+  syncWindow()
+  bindResize()
+})
+
+onBeforeUnmount(() => {
+  _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+    !!_lingyunMpOverlayHold.value,
+    false,
+  )
+  clearTimers()
+  unbindResize()
+  unlockPageScroll()
 })
 </script>
 

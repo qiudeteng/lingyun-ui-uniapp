@@ -45,69 +45,69 @@
   </lingyun-app-page>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
 /**
  * lingyun-purchase-order-detail
  * 订货单详情标准页：页面壳（顶栏 / 导航 / 滚动上报）+ 详情面板。
  * 详情内容在 lingyun-purchase-order-detail-panel，分栏 demo 也直接复用该面板。
  */
-import { defineComponent, type PropType } from 'vue'
+import { type PropType } from 'vue'
 import LingyunPurchaseOrderDetailPanel from './lingyun-purchase-order-detail-panel.vue'
 import type {
   LingyunPurchaseOrderDetailOrder,
   LingyunPurchaseOrderDetailToolbarButtons,
 } from './types'
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunPurchaseOrderDetail',
-  components: { LingyunPurchaseOrderDetailPanel },
-  emits: [
-    'back',
-    'action',
-    'item-click',
-    'sub-purchase-order-click',
-    'copy',
-    'payment-timeout',
-    'scroll',
-  ],
-  props: {
-    order: {
-      type: Object as PropType<LingyunPurchaseOrderDetailOrder | null>,
-      default: null,
-    },
-    loading: { type: Boolean, default: false },
-    loadingText: { type: String, default: '加载中…' },
-    emptyText: { type: String, default: '订货单不存在' },
-    title: { type: String, default: '订货单详情' },
-    showToolbar: { type: Boolean, default: true },
-    showBack: { type: [Boolean, String], default: 'auto' },
-    showNav: { type: Boolean, default: true },
-    autoTopInset: { type: Boolean, default: true },
-    /** 返回钮默认返回上一页；false 时只抛 back，由页面处理 */
-    autoBack: { type: Boolean, default: true },
-    /** 内层滚动内容从顶栏下方穿过，滚动时顶栏呈现液态玻璃；false 用 app-page 顶栏留白 */
-    scrollUnderToolbar: { type: Boolean, default: true },
-    /** 页面级主题钮开关：auto 跟随全局，false 只隐藏当前页 */
-    showThemeSwitch: {
-      type: [Boolean, String] as PropType<boolean | string>,
-      default: 'auto',
-    },
-    toolbarButtons: {
-      type: Array as PropType<LingyunPurchaseOrderDetailToolbarButtons>,
-      default: () => [],
-    },
-    toolbarMenuEnabled: { type: Boolean, default: false },
-    currency: { type: String, default: '¥' },
-    priceDecimals: { type: Number, default: 2 },
-    /** 子订货单行横向最多展示的商品图数量，多出的显示 +N */
-    maxThumbnails: { type: Number, default: 3 },
-    /** 待付款倒计时，单位分钟，从 order.createdAt 起算 */
-    paymentTimeoutMinutes: { type: Number, default: 15 },
-  },
-  methods: {
-    onBack(): void {
-      this.$emit('back')
-    },
-  },
 })
+
+defineProps({
+  order: {
+    type: Object as PropType<LingyunPurchaseOrderDetailOrder | null>,
+    default: null,
+  },
+  loading: { type: Boolean, default: false },
+  loadingText: { type: String, default: '加载中…' },
+  emptyText: { type: String, default: '订货单不存在' },
+  title: { type: String, default: '订货单详情' },
+  showToolbar: { type: Boolean, default: true },
+  showBack: { type: [Boolean, String], default: 'auto' },
+  showNav: { type: Boolean, default: true },
+  autoTopInset: { type: Boolean, default: true },
+  /** 返回钮默认返回上一页；false 时只抛 back，由页面处理 */
+  autoBack: { type: Boolean, default: true },
+  /** 内层滚动内容从顶栏下方穿过，滚动时顶栏呈现液态玻璃；false 用 app-page 顶栏留白 */
+  scrollUnderToolbar: { type: Boolean, default: true },
+  /** 页面级主题钮开关：auto 跟随全局，false 只隐藏当前页 */
+  showThemeSwitch: {
+    type: [Boolean, String] as PropType<boolean | string>,
+    default: 'auto',
+  },
+  toolbarButtons: {
+    type: Array as PropType<LingyunPurchaseOrderDetailToolbarButtons>,
+    default: () => [],
+  },
+  toolbarMenuEnabled: { type: Boolean, default: false },
+  currency: { type: String, default: '¥' },
+  priceDecimals: { type: Number, default: 2 },
+  /** 子订货单行横向最多展示的商品图数量，多出的显示 +N */
+  maxThumbnails: { type: Number, default: 3 },
+  /** 待付款倒计时，单位分钟，从 order.createdAt 起算 */
+  paymentTimeoutMinutes: { type: Number, default: 15 },
+})
+
+const emit = defineEmits([
+  'back',
+  'action',
+  'item-click',
+  'sub-purchase-order-click',
+  'copy',
+  'payment-timeout',
+  'scroll',
+])
+
+function onBack(): void {
+  emit('back')
+}
 </script>

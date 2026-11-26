@@ -38,8 +38,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
 
 type SegmentObject = {
@@ -83,401 +84,435 @@ type ThumbRect = {
  * @property {Boolean} block 通栏（默认 true，对齐稿面等分）
  * @event {Function} change / update:modelValue
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunSegmentedControl',
-  emits: ['change', 'update:modelValue', 'update:value'],
-  props: {
-    items: {
-      type: Array as PropType<SegmentInput[]>,
-      default: () => [] as SegmentInput[],
-    },
-    modelValue: {
-      type: [String, Number] as PropType<string | number | undefined>,
-      default: undefined,
-    },
-    value: {
-      type: [String, Number] as PropType<string | number | undefined>,
-      default: undefined,
-    },
-    size: {
-      type: String,
-      default: 'large',
-    },
-    disabled: {
-      type: Boolean,
-      default: false,
-    },
-    block: {
-      type: Boolean,
-      default: true,
-    },
+})
+
+const props = defineProps({
+  items: {
+    type: Array as PropType<SegmentInput[]>,
+    default: () => [] as SegmentInput[],
   },
-  data() {
-    return {
-      instanceId: `lysc-${Math.random().toString(36).slice(2, 8)}`,
-      thumb: {
-        left: 0,
-        width: 0,
-        scaleY: 1,
-        ready: false,
-        visible: false,
-      },
-      _onResize: null as (() => void) | null,
-      _resizeRaf: null as number | null,
-      _settleTimers: [] as ReturnType<typeof setTimeout>[],
-      _onOverlayOpened: null as (() => void) | null,
-      _ro: null as ResizeObserver | null,
-      _lensRaf: null as number | null,
-      _lensLast: 0,
-      _edgeL: null as SpringState | null,
-      _edgeR: null as SpringState | null,
-      _targetL: 0,
-      _targetR: 0,
-    }
+  modelValue: {
+    type: [String, Number] as PropType<string | number | undefined>,
+    default: undefined,
   },
-  computed: {
-    current() {
-      return this.modelValue !== undefined ? this.modelValue : this.value
-    },
-    resolvedSize() {
-      return this.size === 'small' ? 'small' : 'large'
-    },
-    normalizedItems(): SegmentItem[] {
-      return (this.items || []).map((item, index): SegmentItem => {
-        if (item != null && typeof item === 'object') {
-          return {
-            key: item.key != null ? String(item.key) : String(index),
-            text: item.text != null ? String(item.text) : '',
-            icon: item.icon || '',
-            disabled: !!item.disabled,
-            raw: item,
-          }
-        }
-        const text = String(item)
-        return { key: text, text, icon: '', disabled: false, raw: item }
-      })
-    },
-    themeClass() {
-      try {
-        return useLingyunTheme().rootClass || 'theme-light'
-      } catch (e) {
-        return 'theme-light'
-      }
-    },
-    rootClass() {
-      return [
-        `lingyun-segmented-control--${this.resolvedSize}`,
-        this.themeClass,
-        this.block ? 'lingyun-segmented-control--block' : '',
-        this.disabled ? 'lingyun-segmented-control--disabled' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    trackId() {
-      return `${this.instanceId}-track`
-    },
-    thumbClass() {
-      return [
-        this.thumb.ready ? 'lingyun-segmented-control__thumb--ready' : '',
-        this.thumb.visible ? '' : 'lingyun-segmented-control__thumb--hidden',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    thumbStyle() {
-      const { left, width, scaleY } = this.thumb
+  value: {
+    type: [String, Number] as PropType<string | number | undefined>,
+    default: undefined,
+  },
+  size: {
+    type: String,
+    default: 'large',
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+  block: {
+    type: Boolean,
+    default: true,
+  },
+})
+
+const emit = defineEmits(['change', 'update:modelValue', 'update:value'])
+
+const instance = getCurrentInstance()
+
+const instanceId = ref(`lysc-${Math.random().toString(36).slice(2, 8)}`)
+const thumb = ref({
+  left: 0,
+  width: 0,
+  scaleY: 1,
+  ready: false,
+  visible: false,
+})
+const _onResize = ref<(() => void) | null>(null)
+const _resizeRaf = ref<number | null>(null)
+const _settleTimers = ref<ReturnType<typeof setTimeout>[]>([])
+const _onOverlayOpened = ref<(() => void) | null>(null)
+const _ro = ref<ResizeObserver | null>(null)
+const _lensRaf = ref<number | null>(null)
+const _lensLast = ref(0)
+const _edgeL = ref<SpringState | null>(null)
+const _edgeR = ref<SpringState | null>(null)
+const _targetL = ref(0)
+const _targetR = ref(0)
+
+const current = computed((): string | number | undefined => {
+  return props.modelValue !== undefined ? props.modelValue : props.value
+})
+
+const resolvedSize = computed((): string => {
+  return props.size === 'small' ? 'small' : 'large'
+})
+
+const normalizedItems = computed((): SegmentItem[] => {
+  return (props.items || []).map((item, index): SegmentItem => {
+    if (item != null && typeof item === 'object') {
       return {
-        left: `${left}px`,
-        width: `${width}px`,
-        transform: `scaleY(${scaleY})`,
+        key: item.key != null ? String(item.key) : String(index),
+        text: item.text != null ? String(item.text) : '',
+        icon: item.icon || '',
+        disabled: !!item.disabled,
+        raw: item,
       }
-    },
-  },
-  watch: {
-    current() {
-      this.syncThumb({ liquid: true })
-    },
-    items: {
-      deep: true,
-      handler() {
-        this.syncThumb({ liquid: false })
-      },
-    },
-    size() {
-      this.syncThumb({ liquid: false })
-    },
-  },
-  mounted() {
-    this.bindThumbResize()
-    this.bindOverlayOpened()
-    this.scheduleSettleThumbSync()
-    this.$nextTick(() => this.scheduleThumbSync())
-  },
-  beforeUnmount() {
-    this.unbindOverlayOpened()
-    this.clearSettleThumbSync()
-    this.stopLens()
-    this.unbindThumbResize()
-  },
-  methods: {
-    segmentId(index: number) {
-      return `${this.instanceId}-seg-${index}`
-    },
-    prefersReducedMotion() {
-      /* #ifdef H5 */
-      if (typeof window !== 'undefined' && window.matchMedia) {
-        return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    }
+    const text = String(item)
+    return { key: text, text, icon: '', disabled: false, raw: item }
+  })
+})
+
+const themeClass = computed((): string => {
+  try {
+    return useLingyunTheme().rootClass || 'theme-light'
+  } catch (e) {
+    return 'theme-light'
+  }
+})
+
+const rootClass = computed((): string => {
+  return [
+    `lingyun-segmented-control--${resolvedSize.value}`,
+    themeClass.value,
+    props.block ? 'lingyun-segmented-control--block' : '',
+    props.disabled ? 'lingyun-segmented-control--disabled' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const trackId = computed((): string => {
+  return `${instanceId.value}-track`
+})
+
+const thumbClass = computed((): string => {
+  return [
+    thumb.value.ready ? 'lingyun-segmented-control__thumb--ready' : '',
+    thumb.value.visible ? '' : 'lingyun-segmented-control__thumb--hidden',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const thumbStyle = computed((): { left: string; width: string; transform: string } => {
+  const { left, width, scaleY } = thumb.value
+  return {
+    left: `${left}px`,
+    width: `${width}px`,
+    transform: `scaleY(${scaleY})`,
+  }
+})
+
+function segmentId(index: number): string {
+  return `${instanceId.value}-seg-${index}`
+}
+
+function prefersReducedMotion(): boolean {
+  /* #ifdef H5 */
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  }
+  /* #endif */
+  return false
+}
+
+function scheduleFrame(fn: (time: number) => void): number {
+  /* #ifdef H5 */
+  return window.requestAnimationFrame(fn)
+  /* #endif */
+  /* #ifndef H5 */
+  return setTimeout(() => fn(Date.now()), 16)
+  /* #endif */
+}
+
+function cancelFrame(id?: number | null): void {
+  if (typeof id !== 'number') return
+  const frameId = id
+  /* #ifdef H5 */
+  window.cancelAnimationFrame(frameId)
+  /* #endif */
+  /* #ifndef H5 */
+  clearTimeout(frameId)
+  /* #endif */
+}
+
+function stepSpring(state: SpringState, target: number, stiffness: number, damping: number, dt: number): void {
+  const force = (target - state.pos) * stiffness
+  const damp = -state.vel * damping
+  state.vel += (force + damp) * dt
+  state.pos += state.vel * dt
+}
+
+function lensSettled(): boolean {
+  const near = (state: SpringState, target: number) => Math.abs(state.pos - target) < 0.35 && Math.abs(state.vel) < 12
+  const edgeL = _edgeL.value!
+  const edgeR = _edgeR.value!
+  return near(edgeL, _targetL.value) && near(edgeR, _targetR.value)
+}
+
+function paintLens(): void {
+  const edgeL = _edgeL.value!
+  const edgeR = _edgeR.value!
+  const left = edgeL.pos
+  const width = Math.max(edgeR.pos - edgeL.pos, 8)
+  const rest = Math.max(_targetR.value - _targetL.value, 8)
+  const stretch = width / rest
+  const scaleY = Math.max(0.78, Math.min(1, 1 / Math.sqrt(Math.max(stretch, 1))))
+  thumb.value.left = left
+  thumb.value.width = width
+  thumb.value.scaleY = scaleY
+}
+
+function tickLens(now: number): void {
+  const edgeL = _edgeL.value!
+  const edgeR = _edgeR.value!
+  const last = _lensLast.value || now
+  const dt = Math.min(0.032, Math.max(0.008, (now - last) / 1000))
+  _lensLast.value = now
+  const toCenter = (_targetL.value + _targetR.value) / 2
+  const curCenter = (edgeL.pos + edgeR.pos) / 2
+  const goingRight = toCenter >= curCenter
+  const lead = { k: 420, d: 28 }
+  const trail = { k: 155, d: 20 }
+  stepSpring(edgeL, _targetL.value, goingRight ? trail.k : lead.k, goingRight ? trail.d : lead.d, dt)
+  stepSpring(edgeR, _targetR.value, goingRight ? lead.k : trail.k, goingRight ? lead.d : trail.d, dt)
+  paintLens()
+  if (lensSettled()) {
+    _edgeL.value = { pos: _targetL.value, vel: 0 }
+    _edgeR.value = { pos: _targetR.value, vel: 0 }
+    paintLens()
+    _lensRaf.value = null
+    return
+  }
+  _lensRaf.value = scheduleFrame((t) => tickLens(t))
+}
+
+function stopLens(): void {
+  cancelFrame(_lensRaf.value)
+  _lensRaf.value = null
+}
+
+function snapLens(rect: ThumbRect): void {
+  stopLens()
+  _targetL.value = rect.left
+  _targetR.value = rect.left + rect.width
+  _edgeL.value = { pos: _targetL.value, vel: 0 }
+  _edgeR.value = { pos: _targetR.value, vel: 0 }
+  paintLens()
+}
+
+function flowLens(rect: ThumbRect): void {
+  if (!_edgeL.value || !_edgeR.value) {
+    snapLens(rect)
+    return
+  }
+  _targetL.value = rect.left
+  _targetR.value = rect.left + rect.width
+  thumb.value.visible = true
+  if (!_lensRaf.value) {
+    _lensLast.value = 0
+    _lensRaf.value = scheduleFrame((t) => tickLens(t))
+  }
+}
+
+function applyThumbRect(rect: ThumbRect, liquid: boolean): void {
+  const canFlow =
+    liquid &&
+    thumb.value.ready &&
+    thumb.value.visible &&
+    thumb.value.width > 0 &&
+    !prefersReducedMotion()
+  thumb.value.visible = true
+  if (canFlow) {
+    flowLens(rect)
+    return
+  }
+  snapLens(rect)
+  if (!thumb.value.ready) {
+    nextTick(() => {
+      thumb.value.ready = true
+    })
+  }
+}
+
+function isActive(item: SegmentItem | null | undefined): boolean {
+  if (!item) return false
+  if (current.value === undefined || current.value === null || current.value === '') {
+    return normalizedItems.value[0] && normalizedItems.value[0].key === item.key
+  }
+  return String(current.value) === String(item.key)
+}
+
+function syncThumb(options?: { liquid?: boolean }): void {
+  const liquid = !!(options && options.liquid)
+  const activeIndex = normalizedItems.value.findIndex((it) => isActive(it))
+  const active = activeIndex >= 0 ? normalizedItems.value[activeIndex] : null
+  if (!active) {
+    stopLens()
+    thumb.value.visible = false
+    return
+  }
+  nextTick(() => {
+    /* #ifdef H5 */
+    if (typeof document !== 'undefined') {
+      const trackEl = document.getElementById(trackId.value)
+      const segEl = document.getElementById(segmentId(activeIndex))
+      /* offsetLeft / offsetWidth 是布局尺寸，不受父级 transform 缩放影响 */
+      if (trackEl && segEl && segEl.offsetWidth > 0) {
+        applyThumbRect(
+          { left: Math.max(0, segEl.offsetLeft), width: segEl.offsetWidth },
+          liquid,
+        )
+        return
       }
-      /* #endif */
-      return false
-    },
-    scheduleFrame(fn: (time: number) => void): number {
-      /* #ifdef H5 */
-      return window.requestAnimationFrame(fn)
-      /* #endif */
-      /* #ifndef H5 */
-      return setTimeout(() => fn(Date.now()), 16)
-      /* #endif */
-    },
-    cancelFrame(id?: number | null) {
-      if (typeof id !== 'number') return
-      const frameId = id
-      /* #ifdef H5 */
-      window.cancelAnimationFrame(frameId)
-      /* #endif */
-      /* #ifndef H5 */
-      clearTimeout(frameId)
-      /* #endif */
-    },
-    /** 窗口或轨道尺寸变化后，等布局结束再量选中块，避免量到 flex 还没分完的宽度 */
-    scheduleThumbSync() {
-      this.cancelFrame(this._resizeRaf)
-      this._resizeRaf = this.scheduleFrame(() => {
-        this._resizeRaf = this.scheduleFrame(() => {
-          this._resizeRaf = null
-          this.syncThumb({ liquid: false })
-        })
-      })
-    },
-    /** 菜单 / Sheet 从缩放态展开时，布局宽度不变但测量到的 rect 会被 transform 缩小；多补几次落定后的测量 */
-    bindOverlayOpened() {
-      const handler = () => this.scheduleThumbSync()
-      this._onOverlayOpened = handler
-      if (typeof uni !== 'undefined' && typeof uni.$on === 'function') {
-        uni.$on('lingyun:overlay-opened', handler)
-      }
-    },
-    unbindOverlayOpened() {
-      const handler = this._onOverlayOpened
-      if (handler && typeof uni !== 'undefined' && typeof uni.$off === 'function') {
-        uni.$off('lingyun:overlay-opened', handler)
-      }
-      this._onOverlayOpened = null
-    },
-    scheduleSettleThumbSync() {
-      this.clearSettleThumbSync()
-      ;[120, 280, 520, 800].forEach((delay) => {
-        this._settleTimers.push(
-          setTimeout(() => {
-            this.scheduleThumbSync()
-          }, delay),
+    }
+    /* #endif */
+    uni
+      .createSelectorQuery()
+      .in(instance?.proxy as never)
+      .select(`#${trackId.value}`)
+      .boundingClientRect()
+      .select(`#${segmentId(activeIndex)}`)
+      .boundingClientRect()
+      .exec((res) => {
+        const track = res && res[0]
+        const seg = res && res[1]
+        if (!track || !seg || !seg.width) return
+        applyThumbRect(
+          {
+            left: Math.max(0, seg.left - track.left),
+            width: seg.width,
+          },
+          liquid,
         )
       })
-    },
-    clearSettleThumbSync() {
-      this._settleTimers.forEach((timer) => clearTimeout(timer))
-      this._settleTimers = []
-    },
-    bindThumbResize() {
-      const onResize = () => this.scheduleThumbSync()
-      this._onResize = onResize
-      if (typeof uni !== 'undefined' && typeof uni.onWindowResize === 'function') {
-        uni.onWindowResize(onResize)
-      }
-      /* #ifdef H5 */
-      if (typeof window !== 'undefined') {
-        window.addEventListener('resize', onResize)
-      }
-      this.$nextTick(() => {
-        const el = typeof document !== 'undefined' ? document.getElementById(this.trackId) : null
-        if (!el || typeof ResizeObserver === 'undefined') return
-        const ro = new ResizeObserver(() => this.scheduleThumbSync())
-        this._ro = ro
-        ro.observe(el)
-      })
-      /* #endif */
-    },
-    unbindThumbResize() {
-      this.cancelFrame(this._resizeRaf)
-      this._resizeRaf = null
-      const onResize = this._onResize
-      if (onResize && typeof uni !== 'undefined' && typeof uni.offWindowResize === 'function') {
-        uni.offWindowResize(onResize)
-      }
-      /* #ifdef H5 */
-      const ro = this._ro
-      if (ro) {
-        ro.disconnect()
-        this._ro = null
-      }
-      if (onResize && typeof window !== 'undefined') {
-        window.removeEventListener('resize', onResize)
-      }
-      /* #endif */
-      this._onResize = null
-    },
-    stopLens() {
-      this.cancelFrame(this._lensRaf)
-      this._lensRaf = null
-    },
-    stepSpring(state: SpringState, target: number, stiffness: number, damping: number, dt: number) {
-      const force = (target - state.pos) * stiffness
-      const damp = -state.vel * damping
-      state.vel += (force + damp) * dt
-      state.pos += state.vel * dt
-    },
-    lensSettled() {
-      const near = (state: SpringState, target: number) => Math.abs(state.pos - target) < 0.35 && Math.abs(state.vel) < 12
-      const edgeL = this._edgeL!
-      const edgeR = this._edgeR!
-      return near(edgeL, this._targetL) && near(edgeR, this._targetR)
-    },
-    paintLens() {
-      const edgeL = this._edgeL!
-      const edgeR = this._edgeR!
-      const left = edgeL.pos
-      const width = Math.max(edgeR.pos - edgeL.pos, 8)
-      const rest = Math.max(this._targetR - this._targetL, 8)
-      const stretch = width / rest
-      const scaleY = Math.max(0.78, Math.min(1, 1 / Math.sqrt(Math.max(stretch, 1))))
-      this.thumb.left = left
-      this.thumb.width = width
-      this.thumb.scaleY = scaleY
-    },
-    tickLens(now: number) {
-      const edgeL = this._edgeL!
-      const edgeR = this._edgeR!
-      const last = this._lensLast || now
-      const dt = Math.min(0.032, Math.max(0.008, (now - last) / 1000))
-      this._lensLast = now
-      const toCenter = (this._targetL + this._targetR) / 2
-      const curCenter = (edgeL.pos + edgeR.pos) / 2
-      const goingRight = toCenter >= curCenter
-      const lead = { k: 420, d: 28 }
-      const trail = { k: 155, d: 20 }
-      this.stepSpring(edgeL, this._targetL, goingRight ? trail.k : lead.k, goingRight ? trail.d : lead.d, dt)
-      this.stepSpring(edgeR, this._targetR, goingRight ? lead.k : trail.k, goingRight ? lead.d : trail.d, dt)
-      this.paintLens()
-      if (this.lensSettled()) {
-        this._edgeL = { pos: this._targetL, vel: 0 }
-        this._edgeR = { pos: this._targetR, vel: 0 }
-        this.paintLens()
-        this._lensRaf = null
-        return
-      }
-      this._lensRaf = this.scheduleFrame((t) => this.tickLens(t))
-    },
-    snapLens(rect: ThumbRect) {
-      this.stopLens()
-      this._targetL = rect.left
-      this._targetR = rect.left + rect.width
-      this._edgeL = { pos: this._targetL, vel: 0 }
-      this._edgeR = { pos: this._targetR, vel: 0 }
-      this.paintLens()
-    },
-    flowLens(rect: ThumbRect) {
-      if (!this._edgeL || !this._edgeR) {
-        this.snapLens(rect)
-        return
-      }
-      this._targetL = rect.left
-      this._targetR = rect.left + rect.width
-      this.thumb.visible = true
-      if (!this._lensRaf) {
-        this._lensLast = 0
-        this._lensRaf = this.scheduleFrame((t) => this.tickLens(t))
-      }
-    },
-    syncThumb(options?: { liquid?: boolean }) {
-      const liquid = !!(options && options.liquid)
-      const activeIndex = this.normalizedItems.findIndex((it) => this.isActive(it))
-      const active = activeIndex >= 0 ? this.normalizedItems[activeIndex] : null
-      if (!active) {
-        this.stopLens()
-        this.thumb.visible = false
-        return
-      }
-      this.$nextTick(() => {
-        /* #ifdef H5 */
-        if (typeof document !== 'undefined') {
-          const trackEl = document.getElementById(this.trackId)
-          const segEl = document.getElementById(this.segmentId(activeIndex))
-          /* offsetLeft / offsetWidth 是布局尺寸，不受父级 transform 缩放影响 */
-          if (trackEl && segEl && segEl.offsetWidth > 0) {
-            this.applyThumbRect(
-              { left: Math.max(0, segEl.offsetLeft), width: segEl.offsetWidth },
-              liquid,
-            )
-            return
-          }
-        }
-        /* #endif */
-        uni
-          .createSelectorQuery()
-          .in(this)
-          .select(`#${this.trackId}`)
-          .boundingClientRect()
-          .select(`#${this.segmentId(activeIndex)}`)
-          .boundingClientRect()
-          .exec((res) => {
-            const track = res && res[0]
-            const seg = res && res[1]
-            if (!track || !seg || !seg.width) return
-            this.applyThumbRect(
-              {
-                left: Math.max(0, seg.left - track.left),
-                width: seg.width,
-              },
-              liquid,
-            )
-          })
-      })
-    },
-    applyThumbRect(rect: ThumbRect, liquid: boolean) {
-      const canFlow =
-        liquid &&
-        this.thumb.ready &&
-        this.thumb.visible &&
-        this.thumb.width > 0 &&
-        !this.prefersReducedMotion()
-      this.thumb.visible = true
-      if (canFlow) {
-        this.flowLens(rect)
-        return
-      }
-      this.snapLens(rect)
-      if (!this.thumb.ready) {
-        this.$nextTick(() => {
-          this.thumb.ready = true
-        })
-      }
-    },
-    isActive(item: SegmentItem | null | undefined) {
-      if (!item) return false
-      if (this.current === undefined || this.current === null || this.current === '') {
-        return this.normalizedItems[0] && this.normalizedItems[0].key === item.key
-      }
-      return String(this.current) === String(item.key)
-    },
-    onSelect(item: SegmentItem | null, _index?: number) {
-      if (this.disabled || !item || item.disabled) return
-      this.$emit('update:modelValue', item.key)
-      this.$emit('update:value', item.key)
-      this.$emit('change', item.raw != null && typeof item.raw === 'object' ? item.raw : item)
-      this.$nextTick(() => this.syncThumb({ liquid: true }))
-    },
+  })
+}
+
+/** 窗口或轨道尺寸变化后，等布局结束再量选中块，避免量到 flex 还没分完的宽度 */
+function scheduleThumbSync(): void {
+  cancelFrame(_resizeRaf.value)
+  _resizeRaf.value = scheduleFrame(() => {
+    _resizeRaf.value = scheduleFrame(() => {
+      _resizeRaf.value = null
+      syncThumb({ liquid: false })
+    })
+  })
+}
+
+/** 菜单 / Sheet 从缩放态展开时，布局宽度不变但测量到的 rect 会被 transform 缩小；多补几次落定后的测量 */
+function bindOverlayOpened(): void {
+  const handler = () => scheduleThumbSync()
+  _onOverlayOpened.value = handler
+  if (typeof uni !== 'undefined' && typeof uni.$on === 'function') {
+    uni.$on('lingyun:overlay-opened', handler)
+  }
+}
+
+function unbindOverlayOpened(): void {
+  const handler = _onOverlayOpened.value
+  if (handler && typeof uni !== 'undefined' && typeof uni.$off === 'function') {
+    uni.$off('lingyun:overlay-opened', handler)
+  }
+  _onOverlayOpened.value = null
+}
+
+function clearSettleThumbSync(): void {
+  _settleTimers.value.forEach((timer) => clearTimeout(timer))
+  _settleTimers.value = []
+}
+
+function scheduleSettleThumbSync(): void {
+  clearSettleThumbSync()
+  ;[120, 280, 520, 800].forEach((delay) => {
+    _settleTimers.value.push(
+      setTimeout(() => {
+        scheduleThumbSync()
+      }, delay),
+    )
+  })
+}
+
+function bindThumbResize(): void {
+  const onResize = () => scheduleThumbSync()
+  _onResize.value = onResize
+  if (typeof uni !== 'undefined' && typeof uni.onWindowResize === 'function') {
+    uni.onWindowResize(onResize)
+  }
+  /* #ifdef H5 */
+  if (typeof window !== 'undefined') {
+    window.addEventListener('resize', onResize)
+  }
+  nextTick(() => {
+    const el = typeof document !== 'undefined' ? document.getElementById(trackId.value) : null
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => scheduleThumbSync())
+    _ro.value = ro
+    ro.observe(el)
+  })
+  /* #endif */
+}
+
+function unbindThumbResize(): void {
+  cancelFrame(_resizeRaf.value)
+  _resizeRaf.value = null
+  const onResize = _onResize.value
+  if (onResize && typeof uni !== 'undefined' && typeof uni.offWindowResize === 'function') {
+    uni.offWindowResize(onResize)
+  }
+  /* #ifdef H5 */
+  const ro = _ro.value
+  if (ro) {
+    ro.disconnect()
+    _ro.value = null
+  }
+  if (onResize && typeof window !== 'undefined') {
+    window.removeEventListener('resize', onResize)
+  }
+  /* #endif */
+  _onResize.value = null
+}
+
+function onSelect(item: SegmentItem | null, _index?: number): void {
+  if (props.disabled || !item || item.disabled) return
+  emit('update:modelValue', item.key)
+  emit('update:value', item.key)
+  emit('change', item.raw != null && typeof item.raw === 'object' ? item.raw : item)
+  nextTick(() => syncThumb({ liquid: true }))
+}
+
+watch(current, () => {
+  syncThumb({ liquid: true })
+})
+
+watch(
+  () => props.items,
+  () => {
+    syncThumb({ liquid: false })
   },
+  { deep: true },
+)
+
+watch(
+  () => props.size,
+  () => {
+    syncThumb({ liquid: false })
+  },
+)
+
+onMounted(() => {
+  bindThumbResize()
+  bindOverlayOpened()
+  scheduleSettleThumbSync()
+  nextTick(() => scheduleThumbSync())
+})
+
+onBeforeUnmount(() => {
+  unbindOverlayOpened()
+  clearSettleThumbSync()
+  stopLens()
+  unbindThumbResize()
 })
 </script>
 

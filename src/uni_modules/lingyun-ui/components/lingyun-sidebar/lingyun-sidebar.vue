@@ -114,10 +114,11 @@
   <!-- #endif -->
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType, type Ref } from 'vue'
+<script setup lang="ts">
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
+import { inject, type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
-import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
+import { syncLingyunMpOverlayHold } from '../../utils/mp-overlay-gate'
 import {
   LINGYUN_APP_PAGE_SCROLL_LOCK,
   LINGYUN_APP_PAGE_TOP_INSET,
@@ -166,305 +167,332 @@ const MAX_W = 320
 const MIN_W = 240
 const RADIUS = 34
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunSidebar',
-  mixins: [mpOverlayHoldMixin],
-  emits: ['update:show', 'update:modelValue', 'update:current', 'select', 'close'],
-  inject: {
-    appPageScrollLock: {
-      from: LINGYUN_APP_PAGE_SCROLL_LOCK,
-      default: null as LingyunAppPageScrollLock | null,
-    },
-    appPageTopInset: {
-      from: LINGYUN_APP_PAGE_TOP_INSET,
-      default: null as Ref<number> | null,
-    },
-  },
-  props: {
-    show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    current: { type: [String, Number] as PropType<string | number>, default: '' },
-    title: { type: String, default: '' },
-    sections: { type: Array as PropType<SidebarGroupInput[]>, default: () => [] as SidebarGroupInput[] },
-    items: { type: Array as PropType<SidebarItemInput[]>, default: () => [] as SidebarItemInput[] },
-    placement: { type: String, default: 'leading' },
-    maskClosable: { type: Boolean, default: true },
-    closeOnSelect: { type: Boolean, default: true },
-    zIndex: { type: [Number, String] as PropType<number | string>, default: 1300 },
-  },
-  data() {
+})
+
+const props = defineProps({
+  show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  current: { type: [String, Number] as PropType<string | number>, default: '' },
+  title: { type: String, default: '' },
+  sections: { type: Array as PropType<SidebarGroupInput[]>, default: () => [] as SidebarGroupInput[] },
+  items: { type: Array as PropType<SidebarItemInput[]>, default: () => [] as SidebarItemInput[] },
+  placement: { type: String, default: 'leading' },
+  maskClosable: { type: Boolean, default: true },
+  closeOnSelect: { type: Boolean, default: true },
+  zIndex: { type: [Number, String] as PropType<number | string>, default: 1300 },
+})
+
+const emit = defineEmits(['update:show', 'update:modelValue', 'update:current', 'select', 'close'])
+
+const appPageScrollLock = inject(LINGYUN_APP_PAGE_SCROLL_LOCK, null)
+const appPageTopInset = inject(LINGYUN_APP_PAGE_TOP_INSET, null)
+
+const slots = useSlots()
+
+const panelMounted = ref(false)
+const phase = ref<'' | 'enter' | 'open' | 'leave'>('')
+const leaveTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const enterTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const windowWidth = ref(375)
+const statusBar = ref(0)
+const safeBottom = ref(0)
+const _appScrollLocked = ref(false)
+const _scrollLocked = ref(false)
+const _prevBodyOverflow = ref('')
+const _prevBodyOverscroll = ref('')
+const _prevHtmlOverscroll = ref('')
+const _lingyunMpOverlayHold = ref(false)
+
+function normalizeItems(list: unknown, prefix: string): SidebarItem[] {
+  const raw: unknown[] = Array.isArray(list) ? list : []
+  return raw.map((item: unknown, index: number) => {
+    const rec = (item || {}) as SidebarItemInput
     return {
-      panelMounted: false,
-      phase: '' as '' | 'enter' | 'open' | 'leave',
-      leaveTimer: null as ReturnType<typeof setTimeout> | null,
-      enterTimer: null as ReturnType<typeof setTimeout> | null,
-      windowWidth: 375,
-      statusBar: 0,
-      safeBottom: 0,
-      _appScrollLocked: false,
-      _scrollLocked: false,
-      _prevBodyOverflow: '',
-      _prevBodyOverscroll: '',
-      _prevHtmlOverscroll: '',
+      key: item && rec.key != null ? String(rec.key) : `${prefix}-${index}`,
+      label: item && rec.label != null ? String(rec.label) : '',
+      icon: item && rec.icon != null ? String(rec.icon) : '',
+      badge: item && rec.badge != null && rec.badge !== '' ? String(rec.badge) : '',
+      disabled: !!(item && rec.disabled),
+      raw: item,
+      index,
+    }
+  })
+}
+
+const visible = computed((): boolean => {
+  if (props.show !== undefined && props.show !== null) return !!props.show
+  if (props.modelValue !== undefined && props.modelValue !== null) return !!props.modelValue
+  return false
+})
+
+const placementKey = computed((): string =>
+  props.placement === 'trailing' ? 'trailing' : 'leading',
+)
+
+const themeClass = computed((): string => {
+  try {
+    return useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    return 'theme-light'
+  }
+})
+
+const reduceMotion = computed((): boolean => {
+  try {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    }
+  } catch {
+    /* ignore */
+  }
+  return false
+})
+
+const showHeader = computed((): boolean => !!(props.title || slots.header))
+
+const rootClass = computed((): string => {
+  return [
+    themeClass.value,
+    `lingyun-sidebar--${placementKey.value}`,
+    phase.value ? `lingyun-sidebar--${phase.value}` : '',
+    reduceMotion.value ? 'lingyun-sidebar--reduce-motion' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const rootStyle = computed((): Record<string, number> => {
+  return { zIndex: Number(props.zIndex) || 1300 }
+})
+
+const panelStyle = computed((): Record<string, string> => {
+  const injected = appPageTopInset as { value: number } | number | null
+  const pageTop =
+    injected && typeof injected === 'object' && 'value' in injected
+      ? Number(injected.value)
+      : Number(injected)
+  const safeTop = Number.isFinite(pageTop) && pageTop > 0
+    ? pageTop
+    : Number(statusBar.value) || 0
+  const top = safeTop + INSET
+  const bottom = (Number(safeBottom.value) || 0) + INSET
+  const width = Math.min(
+    MAX_W,
+    Math.max(MIN_W, (Number(windowWidth.value) || 375) - INSET - PEEK),
+  )
+  const style: Record<string, string> = {
+    top: `${top}px`,
+    bottom: `${bottom}px`,
+    width: `${width}px`,
+    borderRadius: `${RADIUS}px`,
+  }
+  if (placementKey.value === 'trailing') style.right = `${INSET}px`
+  else style.left = `${INSET}px`
+  return style
+})
+
+const sectionList = computed((): SidebarSection[] => {
+  const out: SidebarSection[] = []
+  const groups = Array.isArray(props.sections) ? props.sections : []
+  groups.forEach((group, index) => {
+    const items = normalizeItems(group && group.items, `s${index}`)
+    if (!items.length) return
+    out.push({
+      key: `s${index}`,
+      title: group && group.title != null ? String(group.title) : '',
+      items,
+    })
+  })
+  const flat = normalizeItems(props.items, 'flat')
+  if (flat.length) {
+    out.push({ key: 'flat', title: '', items: flat })
+  }
+  return out
+})
+
+function itemClass(item: SidebarItem): Record<string, boolean> {
+  const selected = String(props.current) === String(item.key)
+  return {
+    'lingyun-sidebar__item--selected': selected,
+    'lingyun-sidebar__item--disabled': item.disabled,
+  }
+}
+
+function syncWindow(): void {
+  try {
+    const info =
+      typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
+    const inset = info && info.safeAreaInsets
+    windowWidth.value = Number(info && info.windowWidth) || 375
+    statusBar.value =
+      Number(info && info.statusBarHeight) || Number(inset && inset.top) || 0
+    safeBottom.value = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
+  } catch {
+    windowWidth.value = 375
+    statusBar.value = 0
+    safeBottom.value = 0
+  }
+}
+
+function clearTimers(): void {
+  if (leaveTimer.value) {
+    clearTimeout(leaveTimer.value)
+    leaveTimer.value = null
+  }
+  if (enterTimer.value) {
+    clearTimeout(enterTimer.value)
+    enterTimer.value = null
+  }
+}
+
+function openAnim(): void {
+  clearTimers()
+  panelMounted.value = true
+  phase.value = 'enter'
+  nextTick(() => {
+    const kick = () => {
+      enterTimer.value = setTimeout(
+        () => {
+          phase.value = 'open'
+          enterTimer.value = null
+        },
+        reduceMotion.value ? 16 : ENTER_KICK_MS,
+      )
+    }
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => requestAnimationFrame(kick))
+    } else {
+      kick()
+    }
+  })
+}
+
+function closeAnim(): void {
+  clearTimers()
+  if (!panelMounted.value) {
+    unlockPageScroll()
+    return
+  }
+  phase.value = 'leave'
+  leaveTimer.value = setTimeout(
+    () => {
+      panelMounted.value = false
+      phase.value = ''
+      leaveTimer.value = null
+      unlockPageScroll()
+    },
+    reduceMotion.value ? 16 : LEAVE_MS,
+  )
+}
+
+function setVisible(next: unknown): void {
+  const val = !!next
+  emit('update:show', val)
+  emit('update:modelValue', val)
+  if (!val) emit('close')
+}
+
+function close(): void {
+  setVisible(false)
+}
+
+function onOverlayClick(): void {
+  if (!props.maskClosable) return
+  close()
+}
+
+function onSelect(item: SidebarItem | null, _sIndex?: number, _iIndex?: number): void {
+  if (!item || item.disabled) return
+  emit('update:current', item.key)
+  emit('select', { key: item.key, item: item.raw || item, index: item.index })
+  if (props.closeOnSelect) close()
+}
+
+function lockPageScroll(): void {
+  try {
+    const lockApi = appPageScrollLock as LingyunAppPageScrollLock | null
+    if (lockApi && typeof lockApi.lock === 'function' && !_appScrollLocked.value) {
+      lockApi.lock()
+      _appScrollLocked.value = true
+    }
+  } catch {
+    /* ignore */
+  }
+  // #ifdef H5
+  if (typeof document === 'undefined') return
+  if (_scrollLocked.value) return
+  const body = document.body
+  const html = document.documentElement
+  _prevBodyOverflow.value = body.style.overflow
+  _prevBodyOverscroll.value = body.style.overscrollBehavior
+  _prevHtmlOverscroll.value = html.style.overscrollBehavior
+  body.style.overflow = 'hidden'
+  body.style.overscrollBehavior = 'none'
+  html.style.overscrollBehavior = 'none'
+  _scrollLocked.value = true
+  // #endif
+}
+
+function unlockPageScroll(): void {
+  try {
+    const lockApi = appPageScrollLock as LingyunAppPageScrollLock | null
+    if (_appScrollLocked.value && lockApi && typeof lockApi.unlock === 'function') {
+      lockApi.unlock()
+    }
+    _appScrollLocked.value = false
+  } catch {
+    _appScrollLocked.value = false
+  }
+  // #ifdef H5
+  if (typeof document === 'undefined') return
+  if (!_scrollLocked.value) return
+  const body = document.body
+  const html = document.documentElement
+  body.style.overflow = _prevBodyOverflow.value || ''
+  body.style.overscrollBehavior = _prevBodyOverscroll.value || ''
+  html.style.overscrollBehavior = _prevHtmlOverscroll.value || ''
+  _scrollLocked.value = false
+  // #endif
+}
+
+watch(
+  visible,
+  (val: boolean) => {
+    if (val) {
+      syncWindow()
+      lockPageScroll()
+      openAnim()
+    } else {
+      closeAnim()
     }
   },
-  computed: {
-    visible() {
-      if (this.show !== undefined && this.show !== null) return !!this.show
-      if (this.modelValue !== undefined && this.modelValue !== null) return !!this.modelValue
-      return false
-    },
-    placementKey() {
-      return this.placement === 'trailing' ? 'trailing' : 'leading'
-    },
-    themeClass() {
-      try {
-        return useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        return 'theme-light'
-      }
-    },
-    reduceMotion() {
-      try {
-        if (typeof window !== 'undefined' && window.matchMedia) {
-          return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        }
-      } catch {
-        /* ignore */
-      }
-      return false
-    },
-    showHeader() {
-      return !!(this.title || this.$slots.header)
-    },
-    rootClass() {
-      return [
-        this.themeClass,
-        `lingyun-sidebar--${this.placementKey}`,
-        this.phase ? `lingyun-sidebar--${this.phase}` : '',
-        this.reduceMotion ? 'lingyun-sidebar--reduce-motion' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    rootStyle() {
-      return { zIndex: Number(this.zIndex) || 1300 }
-    },
-    panelStyle() {
-      const injected = this.appPageTopInset as Ref<number> | number | null
-      const pageTop =
-        injected && typeof injected === 'object' && 'value' in injected
-          ? Number(injected.value)
-          : Number(injected)
-      const safeTop = Number.isFinite(pageTop) && pageTop > 0
-        ? pageTop
-        : Number(this.statusBar) || 0
-      const top = safeTop + INSET
-      const bottom = (Number(this.safeBottom) || 0) + INSET
-      const width = Math.min(
-        MAX_W,
-        Math.max(MIN_W, (Number(this.windowWidth) || 375) - INSET - PEEK),
-      )
-      const style: Record<string, string> = {
-        top: `${top}px`,
-        bottom: `${bottom}px`,
-        width: `${width}px`,
-        borderRadius: `${RADIUS}px`,
-      }
-      if (this.placementKey === 'trailing') style.right = `${INSET}px`
-      else style.left = `${INSET}px`
-      return style
-    },
-    sectionList(): SidebarSection[] {
-      const out: SidebarSection[] = []
-      const groups = Array.isArray(this.sections) ? this.sections : []
-      groups.forEach((group, index) => {
-        const items = this.normalizeItems(group && group.items, `s${index}`)
-        if (!items.length) return
-        out.push({
-          key: `s${index}`,
-          title: group && group.title != null ? String(group.title) : '',
-          items,
-        })
-      })
-      const flat = this.normalizeItems(this.items, 'flat')
-      if (flat.length) {
-        out.push({ key: 'flat', title: '', items: flat })
-      }
-      return out
-    },
+  { immediate: true },
+)
+
+watch(
+  phase,
+  (value: string) => {
+    _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+      !!_lingyunMpOverlayHold.value,
+      !!value,
+    )
   },
-  watch: {
-    visible: {
-      immediate: true,
-      handler(val: boolean) {
-        if (val) {
-          this.syncWindow()
-          this.lockPageScroll()
-          this.openAnim()
-        } else {
-          this.closeAnim()
-        }
-      },
-    },
-  },
-  mounted() {
-    this.syncWindow()
-  },
-  beforeUnmount() {
-    this.clearTimers()
-    this.unlockPageScroll()
-  },
-  methods: {
-    normalizeItems(list: unknown, prefix: string): SidebarItem[] {
-      const raw: unknown[] = Array.isArray(list) ? list : []
-      return raw.map((item: unknown, index: number) => {
-        const rec = (item || {}) as SidebarItemInput
-        return {
-          key: item && rec.key != null ? String(rec.key) : `${prefix}-${index}`,
-          label: item && rec.label != null ? String(rec.label) : '',
-          icon: item && rec.icon != null ? String(rec.icon) : '',
-          badge: item && rec.badge != null && rec.badge !== '' ? String(rec.badge) : '',
-          disabled: !!(item && rec.disabled),
-          raw: item,
-          index,
-        }
-      })
-    },
-    itemClass(item: SidebarItem) {
-      const selected = String(this.current) === String(item.key)
-      return {
-        'lingyun-sidebar__item--selected': selected,
-        'lingyun-sidebar__item--disabled': item.disabled,
-      }
-    },
-    syncWindow() {
-      try {
-        const info =
-          typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
-        this.windowWidth = Number(info && info.windowWidth) || 375
-        this.statusBar = Number(info && info.statusBarHeight) || 0
-        const inset = info && info.safeAreaInsets
-        this.safeBottom = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
-      } catch {
-        this.windowWidth = 375
-        this.statusBar = 0
-        this.safeBottom = 0
-      }
-    },
-    clearTimers() {
-      if (this.leaveTimer) {
-        clearTimeout(this.leaveTimer)
-        this.leaveTimer = null
-      }
-      if (this.enterTimer) {
-        clearTimeout(this.enterTimer)
-        this.enterTimer = null
-      }
-    },
-    openAnim() {
-      this.clearTimers()
-      this.panelMounted = true
-      this.phase = 'enter'
-      this.$nextTick(() => {
-        const kick = () => {
-          this.enterTimer = setTimeout(
-            () => {
-              this.phase = 'open'
-              this.enterTimer = null
-            },
-            this.reduceMotion ? 16 : ENTER_KICK_MS,
-          )
-        }
-        if (typeof requestAnimationFrame === 'function') {
-          requestAnimationFrame(() => requestAnimationFrame(kick))
-        } else {
-          kick()
-        }
-      })
-    },
-    closeAnim() {
-      this.clearTimers()
-      if (!this.panelMounted) {
-        this.unlockPageScroll()
-        return
-      }
-      this.phase = 'leave'
-      this.leaveTimer = setTimeout(
-        () => {
-          this.panelMounted = false
-          this.phase = ''
-          this.leaveTimer = null
-          this.unlockPageScroll()
-        },
-        this.reduceMotion ? 16 : LEAVE_MS,
-      )
-    },
-    setVisible(next: unknown) {
-      const val = !!next
-      this.$emit('update:show', val)
-      this.$emit('update:modelValue', val)
-      if (!val) this.$emit('close')
-    },
-    close() {
-      this.setVisible(false)
-    },
-    onOverlayClick() {
-      if (!this.maskClosable) return
-      this.close()
-    },
-    onSelect(item: SidebarItem | null, _sIndex?: number, _iIndex?: number) {
-      if (!item || item.disabled) return
-      this.$emit('update:current', item.key)
-      this.$emit('select', { key: item.key, item: item.raw || item, index: item.index })
-      if (this.closeOnSelect) this.close()
-    },
-    lockPageScroll() {
-      try {
-        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
-        if (lockApi && typeof lockApi.lock === 'function' && !this._appScrollLocked) {
-          lockApi.lock()
-          this._appScrollLocked = true
-        }
-      } catch {
-        /* ignore */
-      }
-      // #ifdef H5
-      if (typeof document === 'undefined') return
-      if (this._scrollLocked) return
-      const body = document.body
-      const html = document.documentElement
-      this._prevBodyOverflow = body.style.overflow
-      this._prevBodyOverscroll = body.style.overscrollBehavior
-      this._prevHtmlOverscroll = html.style.overscrollBehavior
-      body.style.overflow = 'hidden'
-      body.style.overscrollBehavior = 'none'
-      html.style.overscrollBehavior = 'none'
-      this._scrollLocked = true
-      // #endif
-    },
-    unlockPageScroll() {
-      try {
-        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
-        if (this._appScrollLocked && lockApi && typeof lockApi.unlock === 'function') {
-          lockApi.unlock()
-        }
-        this._appScrollLocked = false
-      } catch {
-        this._appScrollLocked = false
-      }
-      // #ifdef H5
-      if (typeof document === 'undefined') return
-      if (!this._scrollLocked) return
-      const body = document.body
-      const html = document.documentElement
-      body.style.overflow = this._prevBodyOverflow || ''
-      body.style.overscrollBehavior = this._prevBodyOverscroll || ''
-      html.style.overscrollBehavior = this._prevHtmlOverscroll || ''
-      this._scrollLocked = false
-      // #endif
-    },
-  },
+  { immediate: true },
+)
+
+onMounted(() => {
+  syncWindow()
+})
+
+onBeforeUnmount(() => {
+  _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+    !!_lingyunMpOverlayHold.value,
+    false,
+  )
+  clearTimers()
+  unlockPageScroll()
 })
 </script>
 

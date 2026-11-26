@@ -99,9 +99,12 @@ function readDevice(): Pick<
   }
 
   // #ifdef H5
-  if (typeof navigator !== 'undefined') {
-    const ua = navigator.userAgent || ''
-    const plat = navigator.platform || ''
+  const nav = (globalThis as {
+    navigator?: { userAgent?: string; platform?: string; maxTouchPoints?: number }
+  }).navigator
+  if (nav) {
+    const ua = nav.userAgent || ''
+    const plat = nav.platform || ''
     if (!empty.model) empty.model = ua
     /* 自定义 Duo UA 时 uni 仍可能回 android，以 UA 的 iPhone / iPad 为准 */
     if (/iphone|ipad|ipod|ios/i.test(ua)) {
@@ -109,11 +112,13 @@ function readDevice(): Pick<
       if (/duo/i.test(ua) && !/duo/i.test(empty.model)) empty.model = `${empty.model} ${ua}`.trim()
     } else if (!empty.osName && /android/i.test(ua)) {
       empty.osName = 'android'
+    } else if (!empty.osName && /harmony|openharmony/i.test(ua)) {
+      empty.osName = 'harmony'
     }
     if (!empty.platform) empty.platform = plat
     if (!empty.system) empty.system = ua
     if (!empty.deviceType && /iPad/.test(ua)) empty.deviceType = 'pad'
-    if (!empty.deviceType && /Mac/.test(plat) && navigator.maxTouchPoints > 1) {
+    if (!empty.deviceType && /Mac/.test(plat) && (nav.maxTouchPoints || 0) > 1) {
       empty.deviceType = 'pad'
       if (!empty.osName) empty.osName = 'ios'
     }

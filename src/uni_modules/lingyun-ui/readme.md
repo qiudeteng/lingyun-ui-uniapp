@@ -1,6 +1,6 @@
 # 凌云UI
 
-凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.81**，变更见 [`changelog.md`](./changelog.md)。
+凌云UI 组件库（`uni_modules` 单包多组件）。当前版本 **1.0.80**，变更见 [`changelog.md`](./changelog.md)。
 
 📖 [使用手册](https://lingyun.xinyicanyin.com/)（组件用法、属性、示例；右侧手机框实时预览）
 
@@ -165,7 +165,7 @@ configureLingyunUpload({ getAuthorization: () => formatToken(getToken()) })
 
 ```
 lingyun-ui/
-├── package.json          # 1.0.81
+├── package.json          # 1.0.80
 ├── readme.md
 ├── changelog.md
 ├── index.ts              # app.use(lingyunUi)
@@ -175,7 +175,7 @@ lingyun-ui/
     ├── lingyun-app-page/ # 页面壳；宽屏时为左侧导航留位
     ├── lingyun-split-layout/ # 列表 + 详情分栏布局（左列表 / 右详情，窄屏只显示左栏）
     ├── lingyun-split-toolbar/ # 分栏页统一浮动顶栏（固定展示样式，页面只传业务配置）
-    ├── lingyun-copy/     # 复制触发器（默认纯图标 SVG · 剪贴板）
+    ├── lingyun-copy/     # 复制触发器（文字 / 图标 · 剪贴板）
     ├── lingyun-save-image/ # 保存为图片（H5 元素 / 整页截图；小程序 canvas 导出）
     ├── lingyun-mobile/   # 窄屏才显示
     ├── lingyun-pc/       # 平板和电脑才显示

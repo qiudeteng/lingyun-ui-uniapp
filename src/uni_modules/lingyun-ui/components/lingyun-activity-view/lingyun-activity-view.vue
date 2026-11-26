@@ -430,10 +430,11 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { inject, type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
-import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
+import { syncLingyunMpOverlayHold } from '../../utils/mp-overlay-gate'
 import { getLingyunToolbarStackPx, LINGYUN_TOOLBAR_REGULAR_MIN_WIDTH } from '@/uni_modules/lingyun-ui/components/lingyun-toolbars/getLingyunNavSafeInset'
 import {
   LINGYUN_APP_PAGE_SCROLL_LOCK,
@@ -492,6 +493,8 @@ type ActivityGroup = {
 
 type ActivitySelectItem = {
   disabled?: boolean
+  /** 编辑入口等直接给文案的项；作为 select 载荷原样带出 */
+  text?: string
   raw?: unknown
 }
 
@@ -504,363 +507,393 @@ function fieldText(value: unknown): string {
   return (isFilled(value) ? value : '') as string
 }
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunActivityView',
-  mixins: [mpOverlayHoldMixin],
-  emits: ['update:show', 'update:modelValue', 'close', 'select', 'menu', 'permission'],
-  inject: {
-    appPageScrollLock: {
-      from: LINGYUN_APP_PAGE_SCROLL_LOCK,
-      default: null as LingyunAppPageScrollLock | null,
+})
+
+const props = defineProps({
+  show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  /** half | full。half 对齐 Sketch Card - Half Height（约 500 高） */
+  detent: { type: String, default: 'half' },
+  title: { type: String, default: '' },
+  subtitle: { type: String, default: '' },
+  thumbnail: { type: String, default: '' },
+  thumbnailSize: { type: [Number, String] as PropType<number | string>, default: 40 },
+  showClose: { type: Boolean, default: true },
+  /** 顶栏弹出按钮文案，如 Collaborate */
+  menuText: { type: String, default: '' },
+  menuIcon: { type: String, default: '' },
+  /** 权限 / drill-in 文案，如 Everyone can make changes */
+  permissionText: { type: String, default: '' },
+  /** { key, name, src, color, badge, badgeColor } */
+  contacts: { type: Array as PropType<ActivityRaw[]>, default: () => [] },
+  /** { key, name, icon, color } */
+  apps: { type: Array as PropType<ActivityRaw[]>, default: () => [] },
+  /** { key, text, icon, disabled } */
+  shortcuts: { type: Array as PropType<ActivityRaw[]>, default: () => [] },
+  /** [{ key, actions: [{ key, text, icon, disabled }] }] */
+  groups: { type: Array as PropType<ActivityGroupInput[]>, default: () => [] },
+  editText: { type: String, default: 'Edit Actions' },
+  showEdit: { type: Boolean, default: true },
+  maskClosable: { type: Boolean, default: true },
+  closeOnSelect: { type: Boolean, default: true },
+  zIndex: { type: [Number, String] as PropType<number | string>, default: 1120 },
+})
+
+const emit = defineEmits(['update:show', 'update:modelValue', 'close', 'select', 'menu', 'permission'])
+
+const appPageScrollLock = inject(LINGYUN_APP_PAGE_SCROLL_LOCK, null)
+
+const mounted = ref(false)
+const phase = ref<'' | 'enter' | 'open' | 'leave'>('')
+const leaveTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const enterTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const safeBottom = ref(0)
+/** 全屏顶缘：页面顶栏（状态栏 + 栏身），避开微信胶囊 */
+const fullTopGap = ref(104)
+const windowWidth = ref(375)
+const windowHeight = ref(667)
+const _appScrollLocked = ref(false)
+const _scrollLocked = ref(false)
+const _prevBodyOverflow = ref('')
+const _prevBodyOverscroll = ref('')
+const _prevHtmlOverscroll = ref('')
+const _lingyunMpOverlayHold = ref(false)
+
+function normalizeTiles(list: unknown, labelKey: string): ActivityTile[] {
+  const items = (Array.isArray(list) ? list : []) as ActivityRaw[]
+  return items
+    .filter((item) => !!item && (isFilled(item[labelKey]) || isFilled(item.name) || isFilled(item.text)))
+    .map((item, index) => ({
+      key: item.key != null ? String(item.key) : `${labelKey}-${index}`,
+      name: item.name != null ? String(item.name) : '',
+      text: item.text != null ? String(item.text) : item.name != null ? String(item.name) : '',
+      src: fieldText(item.src),
+      icon: fieldText(item.icon),
+      color: fieldText(item.color),
+      badge: fieldText(item.badge),
+      badgeColor: fieldText(item.badgeColor),
+      disabled: item.disabled === true,
+      raw: item,
+    }))
+}
+
+const visible = computed((): boolean => {
+  if (props.show !== undefined && props.show !== null) return !!props.show
+  if (props.modelValue !== undefined && props.modelValue !== null) return !!props.modelValue
+  return false
+})
+
+const isFull = computed((): boolean => props.detent === 'full')
+
+const isRegular = computed((): boolean => (Number(windowWidth.value) || 375) >= REGULAR_MIN_WIDTH)
+
+const reduceMotion = computed((): boolean => {
+  try {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    }
+  } catch {
+    /* ignore */
+  }
+  return false
+})
+
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* pinia 未就绪 */
+  }
+  return [
+    themeClass,
+    phase.value ? `lingyun-activity-view--${phase.value}` : '',
+    reduceMotion.value ? 'lingyun-activity-view--reduce-motion' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const rootStyle = computed((): Record<string, number> => {
+  return { zIndex: Number(props.zIndex) || 1120 }
+})
+
+const panelHeightPx = computed((): number => {
+  const h = Math.max(320, Number(windowHeight.value) || 667)
+  if (isFull.value) {
+    const gap = isRegular.value ? REGULAR_INSET * 2 : fullTopGap.value
+    return Math.max(HALF_HEIGHT, Math.round(h - gap))
+  }
+  return Math.min(HALF_HEIGHT, Math.round(h - 24))
+})
+
+const sideInsetPx = computed((): number => {
+  if (isRegular.value) {
+    const w = Math.max(320, Number(windowWidth.value) || 375)
+    const panel = Math.min(CARD_WIDTH, w - REGULAR_INSET * 2)
+    return Math.round((w - panel) / 2)
+  }
+  return isFull.value ? 0 : INSET_MEDIUM
+})
+
+const bottomInsetPx = computed((): number => {
+  if (isRegular.value) return REGULAR_INSET
+  return isFull.value ? 0 : INSET_MEDIUM
+})
+
+const panelClass = computed((): Record<string, boolean> => {
+  return {
+    'lingyun-activity-view__panel--regular': isRegular.value,
+    'lingyun-activity-view__panel--full': !isRegular.value && isFull.value,
+    'lingyun-activity-view__panel--half': !isRegular.value && !isFull.value,
+  }
+})
+
+const panelStyle = computed((): Record<string, string> => {
+  const radius = isRegular.value ? RADIUS_REGULAR : isFull.value ? RADIUS_LARGE : RADIUS_MEDIUM
+  const bottomRadius = !isRegular.value && isFull.value ? 0 : radius
+  return {
+    left: `${sideInsetPx.value}px`,
+    right: `${sideInsetPx.value}px`,
+    bottom: `${bottomInsetPx.value}px`,
+    height: `${panelHeightPx.value}px`,
+    borderTopLeftRadius: `${radius}px`,
+    borderTopRightRadius: `${radius}px`,
+    borderBottomLeftRadius: `${bottomRadius}px`,
+    borderBottomRightRadius: `${bottomRadius}px`,
+  }
+})
+
+const bodyStyle = computed((): Record<string, string> => {
+  const bottom = 16 + (Number(safeBottom.value) || 0)
+  return { paddingBottom: `${bottom}px` }
+})
+
+const thumbStyle = computed((): Record<string, string> => {
+  const size = Math.max(24, Number(props.thumbnailSize) || THUMB)
+  return {
+    width: `${size}px`,
+    height: `${size}px`,
+    borderRadius: `${Math.round(size * 0.22)}px`,
+  }
+})
+
+const contactItems = computed((): ActivityTile[] => normalizeTiles(props.contacts, 'name'))
+
+const appItems = computed((): ActivityTile[] => normalizeTiles(props.apps, 'name'))
+
+const shortcutItems = computed((): ActivityTile[] => normalizeTiles(props.shortcuts, 'text'))
+
+const actionGroups = computed((): ActivityGroup[] => {
+  const list = Array.isArray(props.groups) ? props.groups : []
+  return list
+    .map((group, index) => {
+      const actions = normalizeTiles(group && group.actions, 'text')
+      const rawKey = group ? group.key : ''
+      return {
+        key: rawKey ? rawKey : `g-${index}`,
+        actions,
+      }
+    })
+    .filter((group) => group.actions.length)
+})
+
+function badgeStyle(item: ActivityTile): Record<string, string> {
+  if (!item.badgeColor) return {}
+  return { backgroundColor: item.badgeColor }
+}
+
+function appIconStyle(item: ActivityTile): Record<string, string> {
+  return { backgroundColor: item.color || 'var(--lingyun-primary, #0088ff)' }
+}
+
+function syncWindow(): void {
+  try {
+    const info =
+      typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
+    const inset = info && info.safeAreaInsets
+    safeBottom.value = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
+    windowWidth.value = info && info.windowWidth ? Number(info.windowWidth) || 375 : 375
+    windowHeight.value = info && info.windowHeight ? Number(info.windowHeight) || 667 : 667
+    fullTopGap.value = Math.max(44, getLingyunToolbarStackPx())
+  } catch {
+    safeBottom.value = 0
+  }
+}
+
+function clearTimers(): void {
+  if (leaveTimer.value) {
+    clearTimeout(leaveTimer.value)
+    leaveTimer.value = null
+  }
+  if (enterTimer.value) {
+    clearTimeout(enterTimer.value)
+    enterTimer.value = null
+  }
+}
+
+function lockPageScroll(): void {
+  try {
+    const lockApi = appPageScrollLock as LingyunAppPageScrollLock | null
+    if (lockApi && typeof lockApi.lock === 'function' && !_appScrollLocked.value) {
+      lockApi.lock()
+      _appScrollLocked.value = true
+    }
+  } catch {
+    /* 不在 app-page 内 */
+  }
+  // #ifdef H5
+  if (typeof document === 'undefined') return
+  if (_scrollLocked.value) return
+  const body = document.body
+  const html = document.documentElement
+  _prevBodyOverflow.value = body.style.overflow
+  _prevBodyOverscroll.value = body.style.overscrollBehavior
+  _prevHtmlOverscroll.value = html.style.overscrollBehavior
+  body.style.overflow = 'hidden'
+  body.style.overscrollBehavior = 'none'
+  html.style.overscrollBehavior = 'none'
+  _scrollLocked.value = true
+  // #endif
+}
+
+function unlockPageScroll(): void {
+  try {
+    const lockApi = appPageScrollLock as LingyunAppPageScrollLock | null
+    if (_appScrollLocked.value && lockApi && typeof lockApi.unlock === 'function') {
+      lockApi.unlock()
+    }
+    _appScrollLocked.value = false
+  } catch {
+    _appScrollLocked.value = false
+  }
+  // #ifdef H5
+  if (typeof document === 'undefined') return
+  if (!_scrollLocked.value) return
+  const body = document.body
+  const html = document.documentElement
+  body.style.overflow = _prevBodyOverflow.value || ''
+  body.style.overscrollBehavior = _prevBodyOverscroll.value || ''
+  html.style.overscrollBehavior = _prevHtmlOverscroll.value || ''
+  _scrollLocked.value = false
+  // #endif
+}
+
+function openAnim(): void {
+  clearTimers()
+  mounted.value = true
+  phase.value = 'enter'
+  nextTick(() => {
+    const kick = () => {
+      enterTimer.value = setTimeout(
+        () => {
+          phase.value = 'open'
+          enterTimer.value = null
+        },
+        reduceMotion.value ? 16 : ENTER_KICK_MS,
+      )
+    }
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => requestAnimationFrame(kick))
+    } else {
+      kick()
+    }
+  })
+}
+
+function closeAnim(): void {
+  clearTimers()
+  if (!mounted.value) {
+    unlockPageScroll()
+    return
+  }
+  phase.value = 'leave'
+  leaveTimer.value = setTimeout(
+    () => {
+      mounted.value = false
+      phase.value = ''
+      leaveTimer.value = null
+      unlockPageScroll()
     },
-  },
-  props: {
-    show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    /** half | full。half 对齐 Sketch Card - Half Height（约 500 高） */
-    detent: { type: String, default: 'half' },
-    title: { type: String, default: '' },
-    subtitle: { type: String, default: '' },
-    thumbnail: { type: String, default: '' },
-    thumbnailSize: { type: [Number, String] as PropType<number | string>, default: THUMB },
-    showClose: { type: Boolean, default: true },
-    /** 顶栏弹出按钮文案，如 Collaborate */
-    menuText: { type: String, default: '' },
-    menuIcon: { type: String, default: '' },
-    /** 权限 / drill-in 文案，如 Everyone can make changes */
-    permissionText: { type: String, default: '' },
-    /** { key, name, src, color, badge, badgeColor } */
-    contacts: { type: Array as PropType<ActivityRaw[]>, default: () => [] },
-    /** { key, name, icon, color } */
-    apps: { type: Array as PropType<ActivityRaw[]>, default: () => [] },
-    /** { key, text, icon, disabled } */
-    shortcuts: { type: Array as PropType<ActivityRaw[]>, default: () => [] },
-    /** [{ key, actions: [{ key, text, icon, disabled }] }] */
-    groups: { type: Array as PropType<ActivityGroupInput[]>, default: () => [] },
-    editText: { type: String, default: 'Edit Actions' },
-    showEdit: { type: Boolean, default: true },
-    maskClosable: { type: Boolean, default: true },
-    closeOnSelect: { type: Boolean, default: true },
-    zIndex: { type: [Number, String] as PropType<number | string>, default: 1120 },
-  },
-  data() {
-    return {
-      mounted: false,
-      phase: '' as '' | 'enter' | 'open' | 'leave',
-      leaveTimer: null as ReturnType<typeof setTimeout> | null,
-      enterTimer: null as ReturnType<typeof setTimeout> | null,
-      safeBottom: 0,
-      /** 全屏顶缘：页面顶栏（状态栏 + 栏身），避开微信胶囊 */
-      fullTopGap: 104,
-      windowWidth: 375,
-      windowHeight: 667,
-      _appScrollLocked: false,
-      _scrollLocked: false,
-      _prevBodyOverflow: '',
-      _prevBodyOverscroll: '',
-      _prevHtmlOverscroll: '',
+    reduceMotion.value ? 16 : LEAVE_MS,
+  )
+}
+
+function setVisible(next: boolean): void {
+  const val = !!next
+  emit('update:show', val)
+  emit('update:modelValue', val)
+  if (!val) emit('close')
+}
+
+function close(): void {
+  setVisible(false)
+}
+
+function onOverlayClick(): void {
+  if (!props.maskClosable) return
+  close()
+}
+
+function onMenu(): void {
+  emit('menu')
+}
+
+function onPermission(): void {
+  emit('permission')
+}
+
+function onSelect(kind: string, item: ActivitySelectItem | null | undefined, index: number, groupIndex?: number): void {
+  if (!item || item.disabled) return
+  const payload = {
+    kind,
+    item: isFilled(item.raw) ? item.raw : item,
+    index,
+    groupIndex: groupIndex == null ? -1 : groupIndex,
+  }
+  emit('select', payload)
+  if (kind === 'edit' || kind === 'menu' || kind === 'permission') return
+  if (props.closeOnSelect) close()
+}
+
+watch(
+  visible,
+  (val: boolean) => {
+    if (val) {
+      syncWindow()
+      lockPageScroll()
+      openAnim()
+    } else {
+      closeAnim()
     }
   },
-  computed: {
-    visible() {
-      if (this.show !== undefined && this.show !== null) return !!this.show
-      if (this.modelValue !== undefined && this.modelValue !== null) return !!this.modelValue
-      return false
-    },
-    isFull() {
-      return this.detent === 'full'
-    },
-    isRegular() {
-      return (Number(this.windowWidth) || 375) >= REGULAR_MIN_WIDTH
-    },
-    reduceMotion() {
-      try {
-        if (typeof window !== 'undefined' && window.matchMedia) {
-          return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        }
-      } catch {
-        /* ignore */
-      }
-      return false
-    },
-    rootClass() {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* pinia 未就绪 */
-      }
-      return [
-        themeClass,
-        this.phase ? `lingyun-activity-view--${this.phase}` : '',
-        this.reduceMotion ? 'lingyun-activity-view--reduce-motion' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    rootStyle() {
-      return { zIndex: Number(this.zIndex) || 1120 }
-    },
-    panelHeightPx() {
-      const h = Math.max(320, Number(this.windowHeight) || 667)
-      if (this.isFull) {
-        const gap = this.isRegular ? REGULAR_INSET * 2 : this.fullTopGap
-        return Math.max(HALF_HEIGHT, Math.round(h - gap))
-      }
-      return Math.min(HALF_HEIGHT, Math.round(h - 24))
-    },
-    sideInsetPx() {
-      if (this.isRegular) {
-        const w = Math.max(320, Number(this.windowWidth) || 375)
-        const panel = Math.min(CARD_WIDTH, w - REGULAR_INSET * 2)
-        return Math.round((w - panel) / 2)
-      }
-      return this.isFull ? 0 : INSET_MEDIUM
-    },
-    bottomInsetPx() {
-      if (this.isRegular) return REGULAR_INSET
-      return this.isFull ? 0 : INSET_MEDIUM
-    },
-    panelClass() {
-      return {
-        'lingyun-activity-view__panel--regular': this.isRegular,
-        'lingyun-activity-view__panel--full': !this.isRegular && this.isFull,
-        'lingyun-activity-view__panel--half': !this.isRegular && !this.isFull,
-      }
-    },
-    panelStyle() {
-      const radius = this.isRegular ? RADIUS_REGULAR : this.isFull ? RADIUS_LARGE : RADIUS_MEDIUM
-      const bottomRadius = !this.isRegular && this.isFull ? 0 : radius
-      return {
-        left: `${this.sideInsetPx}px`,
-        right: `${this.sideInsetPx}px`,
-        bottom: `${this.bottomInsetPx}px`,
-        height: `${this.panelHeightPx}px`,
-        borderTopLeftRadius: `${radius}px`,
-        borderTopRightRadius: `${radius}px`,
-        borderBottomLeftRadius: `${bottomRadius}px`,
-        borderBottomRightRadius: `${bottomRadius}px`,
-      }
-    },
-    bodyStyle() {
-      const bottom = 16 + (Number(this.safeBottom) || 0)
-      return { paddingBottom: `${bottom}px` }
-    },
-    thumbStyle() {
-      const size = Math.max(24, Number(this.thumbnailSize) || THUMB)
-      return {
-        width: `${size}px`,
-        height: `${size}px`,
-        borderRadius: `${Math.round(size * 0.22)}px`,
-      }
-    },
-    contactItems() {
-      return this.normalizeTiles(this.contacts, 'name')
-    },
-    appItems() {
-      return this.normalizeTiles(this.apps, 'name')
-    },
-    shortcutItems() {
-      return this.normalizeTiles(this.shortcuts, 'text')
-    },
-    actionGroups(): ActivityGroup[] {
-      const list = Array.isArray(this.groups) ? this.groups : []
-      return list
-        .map((group, index) => {
-          const actions = this.normalizeTiles(group && group.actions, 'text')
-          const rawKey = group ? group.key : ''
-          return {
-            key: rawKey ? rawKey : `g-${index}`,
-            actions,
-          }
-        })
-        .filter((group) => group.actions.length)
-    },
+  { immediate: true },
+)
+
+watch(
+  phase,
+  (value: string) => {
+    _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+      !!_lingyunMpOverlayHold.value,
+      !!value,
+    )
   },
-  watch: {
-    visible: {
-      immediate: true,
-      handler(val: boolean) {
-        if (val) {
-          this.syncWindow()
-          this.lockPageScroll()
-          this.openAnim()
-        } else {
-          this.closeAnim()
-        }
-      },
-    },
-  },
-  mounted() {
-    this.syncWindow()
-  },
-  beforeUnmount() {
-    this.clearTimers()
-    this.unlockPageScroll()
-  },
-  methods: {
-    normalizeTiles(list: unknown, labelKey: string): ActivityTile[] {
-      const items = (Array.isArray(list) ? list : []) as ActivityRaw[]
-      return items
-        .filter((item) => !!item && (isFilled(item[labelKey]) || isFilled(item.name) || isFilled(item.text)))
-        .map((item, index) => ({
-          key: item.key != null ? String(item.key) : `${labelKey}-${index}`,
-          name: item.name != null ? String(item.name) : '',
-          text: item.text != null ? String(item.text) : item.name != null ? String(item.name) : '',
-          src: fieldText(item.src),
-          icon: fieldText(item.icon),
-          color: fieldText(item.color),
-          badge: fieldText(item.badge),
-          badgeColor: fieldText(item.badgeColor),
-          disabled: item.disabled === true,
-          raw: item,
-        }))
-    },
-    badgeStyle(item: ActivityTile): Record<string, string> {
-      if (!item.badgeColor) return {}
-      return { backgroundColor: item.badgeColor }
-    },
-    appIconStyle(item: ActivityTile): Record<string, string> {
-      return { backgroundColor: item.color || 'var(--lingyun-primary, #0088ff)' }
-    },
-    syncWindow() {
-      try {
-        const info =
-          typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
-        const inset = info && info.safeAreaInsets
-        this.safeBottom = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
-        this.windowWidth = info && info.windowWidth ? Number(info.windowWidth) || 375 : 375
-        this.windowHeight = info && info.windowHeight ? Number(info.windowHeight) || 667 : 667
-        this.fullTopGap = Math.max(44, getLingyunToolbarStackPx())
-      } catch {
-        this.safeBottom = 0
-      }
-    },
-    clearTimers() {
-      if (this.leaveTimer) {
-        clearTimeout(this.leaveTimer)
-        this.leaveTimer = null
-      }
-      if (this.enterTimer) {
-        clearTimeout(this.enterTimer)
-        this.enterTimer = null
-      }
-    },
-    openAnim() {
-      this.clearTimers()
-      this.mounted = true
-      this.phase = 'enter'
-      this.$nextTick(() => {
-        const kick = () => {
-          this.enterTimer = setTimeout(
-            () => {
-              this.phase = 'open'
-              this.enterTimer = null
-            },
-            this.reduceMotion ? 16 : ENTER_KICK_MS,
-          )
-        }
-        if (typeof requestAnimationFrame === 'function') {
-          requestAnimationFrame(() => requestAnimationFrame(kick))
-        } else {
-          kick()
-        }
-      })
-    },
-    closeAnim() {
-      this.clearTimers()
-      if (!this.mounted) {
-        this.unlockPageScroll()
-        return
-      }
-      this.phase = 'leave'
-      this.leaveTimer = setTimeout(
-        () => {
-          this.mounted = false
-          this.phase = ''
-          this.leaveTimer = null
-          this.unlockPageScroll()
-        },
-        this.reduceMotion ? 16 : LEAVE_MS,
-      )
-    },
-    setVisible(next: boolean) {
-      const val = !!next
-      this.$emit('update:show', val)
-      this.$emit('update:modelValue', val)
-      if (!val) this.$emit('close')
-    },
-    close() {
-      this.setVisible(false)
-    },
-    onOverlayClick() {
-      if (!this.maskClosable) return
-      this.close()
-    },
-    onMenu() {
-      this.$emit('menu')
-    },
-    onPermission() {
-      this.$emit('permission')
-    },
-    onSelect(kind: string, item: ActivitySelectItem | null | undefined, index: number, groupIndex?: number) {
-      if (!item || item.disabled) return
-      const payload = {
-        kind,
-        item: isFilled(item.raw) ? item.raw : item,
-        index,
-        groupIndex: groupIndex == null ? -1 : groupIndex,
-      }
-      this.$emit('select', payload)
-      if (kind === 'edit' || kind === 'menu' || kind === 'permission') return
-      if (this.closeOnSelect) this.close()
-    },
-    lockPageScroll() {
-      try {
-        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
-        if (lockApi && typeof lockApi.lock === 'function' && !this._appScrollLocked) {
-          lockApi.lock()
-          this._appScrollLocked = true
-        }
-      } catch {
-        /* 不在 app-page 内 */
-      }
-      // #ifdef H5
-      if (typeof document === 'undefined') return
-      if (this._scrollLocked) return
-      const body = document.body
-      const html = document.documentElement
-      this._prevBodyOverflow = body.style.overflow
-      this._prevBodyOverscroll = body.style.overscrollBehavior
-      this._prevHtmlOverscroll = html.style.overscrollBehavior
-      body.style.overflow = 'hidden'
-      body.style.overscrollBehavior = 'none'
-      html.style.overscrollBehavior = 'none'
-      this._scrollLocked = true
-      // #endif
-    },
-    unlockPageScroll() {
-      try {
-        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
-        if (this._appScrollLocked && lockApi && typeof lockApi.unlock === 'function') {
-          lockApi.unlock()
-        }
-        this._appScrollLocked = false
-      } catch {
-        this._appScrollLocked = false
-      }
-      // #ifdef H5
-      if (typeof document === 'undefined') return
-      if (!this._scrollLocked) return
-      const body = document.body
-      const html = document.documentElement
-      body.style.overflow = this._prevBodyOverflow || ''
-      body.style.overscrollBehavior = this._prevBodyOverscroll || ''
-      html.style.overscrollBehavior = this._prevHtmlOverscroll || ''
-      this._scrollLocked = false
-      // #endif
-    },
-  },
+  { immediate: true },
+)
+
+onMounted(() => {
+  syncWindow()
+})
+
+onBeforeUnmount(() => {
+  _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+    !!_lingyunMpOverlayHold.value,
+    false,
+  )
+  clearTimers()
+  unlockPageScroll()
 })
 </script>
 

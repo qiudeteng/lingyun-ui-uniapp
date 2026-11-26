@@ -19,8 +19,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { computed, onBeforeUnmount, reactive, ref } from 'vue'
+import { inject, provide } from 'vue'
 
 type LingyunFormLike = {
   fieldErrors?: Record<string, string>
@@ -37,93 +38,92 @@ type LingyunFormGroupLike = {
  * lingyun-form-item
  * @see design/FORMS.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunFormItem',
-  inject: {
-    lingyunForm: { default: null as LingyunFormLike | null },
-    lingyunFormGroup: { default: null as LingyunFormGroupLike | null },
+})
+
+const props = defineProps({
+  name: { type: String, default: '' },
+  label: { type: String, default: '' },
+  required: { type: Boolean, default: false },
+  error: { type: String, default: '' },
+  layout: { type: String, default: 'row' },
+})
+
+const lingyunForm = inject<LingyunFormLike | null>('lingyunForm', null)
+const lingyunFormGroup = inject<LingyunFormGroupLike | null>('lingyunFormGroup', null)
+
+const isFirstChild = ref(true)
+
+const layoutKey = computed((): string => {
+  return props.layout === 'stack' ? 'stack' : 'row'
+})
+
+const showLabel = computed((): boolean => {
+  return !!props.label
+})
+
+const formError = computed((): string => {
+  const form = lingyunForm as LingyunFormLike | null | undefined
+  if (!form || !props.name) return ''
+  const map = form.fieldErrors || {}
+  return map[props.name] || ''
+})
+
+const resolvedError = computed((): string => {
+  if (props.error) return props.error
+  return formError.value
+})
+
+const rootClass = computed((): string[] => {
+  return [
+    `lingyun-form-item--${layoutKey.value}`,
+    resolvedError.value ? 'lingyun-form-item--error' : '',
+  ].filter(Boolean)
+})
+
+const rowClass = computed((): Record<string, boolean> => {
+  return {
+    'lingyun-form-item__row--stack': layoutKey.value === 'stack',
+  }
+})
+
+const itemState = reactive({
+  /** 供子控件判断：stack 时 cell 输入通栏左对齐 */
+  get isStackLayout(): boolean {
+    return props.layout === 'stack'
   },
-  provide() {
-    return {
-      lingyunFormItem: this,
+  /** 供外部 / 控件侧触发单字段校验 */
+  validate(): Promise<unknown> {
+    const form = lingyunForm as LingyunFormLike | null | undefined
+    if (form && props.name && typeof form.validateField === 'function') {
+      return form.validateField(props.name)
     }
+    return Promise.resolve()
   },
-  props: {
-    name: { type: String, default: '' },
-    label: { type: String, default: '' },
-    required: { type: Boolean, default: false },
-    error: { type: String, default: '' },
-    layout: { type: String, default: 'row' },
-  },
-  data() {
-    return {
-      isFirstChild: true,
-    }
-  },
-  computed: {
-    layoutKey() {
-      return this.layout === 'stack' ? 'stack' : 'row'
-    },
-    /** 供子控件判断：stack 时 cell 输入通栏左对齐 */
-    isStackLayout() {
-      return this.layoutKey === 'stack'
-    },
-    showLabel() {
-      return !!this.label
-    },
-    formError(): string {
-      const form = this.lingyunForm as LingyunFormLike | null | undefined
-      if (!form || !this.name) return ''
-      const map = form.fieldErrors || {}
-      return map[this.name] || ''
-    },
-    resolvedError() {
-      if (this.error) return this.error
-      return this.formError
-    },
-    rootClass() {
-      return [
-        `lingyun-form-item--${this.layoutKey}`,
-        this.resolvedError ? 'lingyun-form-item--error' : '',
-      ].filter(Boolean)
-    },
-    rowClass() {
-      return {
-        'lingyun-form-item__row--stack': this.layoutKey === 'stack',
-      }
-    },
-  },
-  created() {
-    const group = this.lingyunFormGroup as LingyunFormGroupLike | null | undefined
-    if (!group) {
-      this.isFirstChild = true
-    } else if (!group.firstChildAppend) {
-      group.firstChildAppend = true
-      this.isFirstChild = true
-    } else {
-      this.isFirstChild = false
-    }
-    const form = this.lingyunForm as LingyunFormLike | null | undefined
-    if (form && this.name && typeof form.registerField === 'function') {
-      form.registerField(this.name, this)
-    }
-  },
-  beforeUnmount() {
-    const form = this.lingyunForm as LingyunFormLike | null | undefined
-    if (form && this.name && typeof form.unregisterField === 'function') {
-      form.unregisterField(this.name)
-    }
-  },
-  methods: {
-    /** 供外部 / 控件侧触发单字段校验 */
-    validate(): Promise<unknown> {
-      const form = this.lingyunForm as LingyunFormLike | null | undefined
-      if (form && this.name && typeof form.validateField === 'function') {
-        return form.validateField(this.name)
-      }
-      return Promise.resolve()
-    },
-  },
+})
+
+provide('lingyunFormItem', itemState)
+
+const group = lingyunFormGroup as LingyunFormGroupLike | null | undefined
+if (!group) {
+  isFirstChild.value = true
+} else if (!group.firstChildAppend) {
+  group.firstChildAppend = true
+  isFirstChild.value = true
+} else {
+  isFirstChild.value = false
+}
+const form = lingyunForm as LingyunFormLike | null | undefined
+if (form && props.name && typeof form.registerField === 'function') {
+  form.registerField(props.name, itemState)
+}
+
+onBeforeUnmount(() => {
+  const formRef = lingyunForm as LingyunFormLike | null | undefined
+  if (formRef && props.name && typeof formRef.unregisterField === 'function') {
+    formRef.unregisterField(props.name)
+  }
 })
 </script>
 

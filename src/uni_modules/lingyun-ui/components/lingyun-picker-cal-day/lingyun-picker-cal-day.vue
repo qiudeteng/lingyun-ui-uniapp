@@ -14,51 +14,51 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed } from 'vue'
+import { type PropType } from 'vue'
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunPickerCalDay',
-  options: {
-    virtualHost: true,
-    styleIsolation: 'shared',
-  },
-  props: {
-    day: { type: [Number, String] as PropType<number | string>, required: true },
-    /** 右上角小字，如「班」「休」 */
-    badgeText: { type: String, default: '' },
-    /** 数字下方农历 */
-    lunar: { type: String, default: '' },
-    /** 底部圆点色：red | orange | green；空则不显示 */
-    dotTone: { type: String, default: '' },
-    selected: { type: Boolean, default: false },
-    today: { type: Boolean, default: false },
-    disabled: { type: Boolean, default: false },
-    /** 相邻月补位日：灰显且不可点，仅用于衔接周 / 区间高亮 */
-    outside: { type: Boolean, default: false },
-    compact: { type: Boolean, default: false },
-    /** label（Sketch 默认）| red（农历/标记态） */
-    selectTone: { type: String, default: 'label' },
-  },
-  computed: {
-    stackClass() {
-      return {
-        'lingyun-picker-cal__day-stack--compact': this.compact,
-        'lingyun-picker-cal__day-stack--selected': this.selected,
-        'lingyun-picker-cal__day-stack--today': this.today && !this.selected,
-        'lingyun-picker-cal__day-stack--disabled': this.disabled,
-        'lingyun-picker-cal__day-stack--outside': this.outside,
-        'lingyun-picker-cal__day-stack--has-dot': !!this.dotTone,
-      }
-    },
-    coreClass() {
-      return {
-        'lingyun-picker-cal__core--selected': this.selected,
-        'lingyun-picker-cal__core--selected-red': this.selected && this.selectTone === 'red',
-        'lingyun-picker-cal__core--today': this.today && !this.selected,
-      }
-    },
-  },
+  virtualHost: true,
+  styleIsolation: 'shared',
+})
+
+const props = defineProps({
+  day: { type: [Number, String] as PropType<number | string>, required: true },
+  /** 右上角小字，如「班」「休」 */
+  badgeText: { type: String, default: '' },
+  /** 数字下方农历 */
+  lunar: { type: String, default: '' },
+  /** 底部圆点色：red | orange | green；空则不显示 */
+  dotTone: { type: String, default: '' },
+  selected: { type: Boolean, default: false },
+  today: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
+  /** 相邻月补位日：灰显且不可点，仅用于衔接周 / 区间高亮 */
+  outside: { type: Boolean, default: false },
+  compact: { type: Boolean, default: false },
+  /** label（Sketch 默认）| red（农历/标记态） */
+  selectTone: { type: String, default: 'label' },
+})
+
+const stackClass = computed((): Record<string, boolean> => {
+  return {
+    'lingyun-picker-cal__day-stack--compact': props.compact,
+    'lingyun-picker-cal__day-stack--selected': props.selected,
+    'lingyun-picker-cal__day-stack--today': props.today && !props.selected,
+    'lingyun-picker-cal__day-stack--disabled': props.disabled,
+    'lingyun-picker-cal__day-stack--outside': props.outside,
+    'lingyun-picker-cal__day-stack--has-dot': !!props.dotTone,
+  }
+})
+
+const coreClass = computed((): Record<string, boolean> => {
+  return {
+    'lingyun-picker-cal__core--selected': props.selected,
+    'lingyun-picker-cal__core--selected-red': props.selected && props.selectTone === 'red',
+    'lingyun-picker-cal__core--today': props.today && !props.selected,
+  }
 })
 </script>
 

@@ -76,10 +76,11 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
-import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
+import { syncLingyunMpOverlayHold } from '../../utils/mp-overlay-gate'
 
 /**
  * lingyun-popover
@@ -129,584 +130,628 @@ function toDom(ref: unknown): DomLike | null {
   return null
 }
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunPopover',
-  mixins: [mpOverlayHoldMixin],
-  emits: ['update:show', 'update:modelValue', 'close', 'closed'],
-  props: {
-    show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    /** top | bottom | left | right；空间不够会翻到对侧 */
-    placement: { type: String, default: 'bottom' },
-    /** 箭头；Sketch Popover 每档都有 Arrow */
-    showArrow: { type: Boolean, default: true },
-    /** 面板宽（px）。0 表示跟触发器，并限制在 160–280 */
-    width: { type: [Number, String] as PropType<number | string>, default: 0 },
-    /** 全宽面板：手机铺满可用宽度，PC / PAD 上限 400 */
-    fullWidth: { type: Boolean, default: false },
-    /** 箭头落在面板哪一侧（面板随之偏移），箭头始终指向触发器：auto / middle 居中，leading 靠前，trailing 靠后 */
-    arrowAlign: { type: String, default: 'auto' },
-    maskClosable: { type: Boolean, default: true },
-    /** 是否显示遮罩；hover 子菜单等场景关闭，避免挡住鼠标 */
-    mask: { type: Boolean, default: true },
-    /** 遮罩透明但仍拦截点击；用于点击外部关闭、不加暗色 */
-    maskTransparent: { type: Boolean, default: false },
-    /** 触发器撑满父级；侧栏菜单等需要整宽触发的场景 */
-    triggerBlock: { type: Boolean, default: false },
-    zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
-    /** menu：Sketch Menus 面板（圆角 32、内边距 10），给 lingyun-menu 用 */
-    variant: { type: String, default: '' },
-    /**
-     * 锚点矩形（视口坐标 { left, top, width, height }）。传了就指向它，不再测 trigger 插槽；
-     * 用于触发点不在本组件里的场景（如表格表头的筛选图标）。
-     */
-    anchor: { type: Object as PropType<AnchorBox | null>, default: null },
-    /** 面板预估高度，用于判断下方放不下时翻到上方。0 用默认值 */
-    estimateHeight: { type: Number, default: 0 },
-    /** 视口底部安全内缩（px），例如小程序键盘高度；定位时按扣减后的可用高度计算 */
-    bottomInset: { type: Number, default: 0 },
-    /** 关闭时不播放退场动画，用于菜单之间直接切换，避免两个面板重叠 */
-    instantClose: { type: Boolean, default: false },
-  },
-  data() {
-    return {
-      mounted: false,
-      phase: '' as PopoverPhase,
-      resolvedPlace: 'bottom',
-      noTrans: false,
-      leaveTimer: null as ReturnType<typeof setTimeout> | null,
-      enterTimer: null as ReturnType<typeof setTimeout> | null,
-      openSettleTimer: null as ReturnType<typeof setTimeout> | null,
-      openNotified: false,
-      panelTop: 0,
-      panelLeft: 16,
-      panelWidth: 200,
-      arrowOffset: 80,
-      openSeq: 0,
-      panelH: 0,
-      followRaf: 0,
-      anchorCenterX: 0,
-      anchorCenterY: 0,
-      anchorW: 0,
-      anchorH: 0,
+})
+
+const props = defineProps({
+  show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  /** top | bottom | left | right；空间不够会翻到对侧 */
+  placement: { type: String, default: 'bottom' },
+  /** 箭头；Sketch Popover 每档都有 Arrow */
+  showArrow: { type: Boolean, default: true },
+  /** 面板宽（px）。0 表示跟触发器，并限制在 160–280 */
+  width: { type: [Number, String] as PropType<number | string>, default: 0 },
+  /** 全宽面板：手机铺满可用宽度，PC / PAD 上限 400 */
+  fullWidth: { type: Boolean, default: false },
+  /** 箭头落在面板哪一侧（面板随之偏移），箭头始终指向触发器：auto / middle 居中，leading 靠前，trailing 靠后 */
+  arrowAlign: { type: String, default: 'auto' },
+  maskClosable: { type: Boolean, default: true },
+  /** 是否显示遮罩；hover 子菜单等场景关闭，避免挡住鼠标 */
+  mask: { type: Boolean, default: true },
+  /** 遮罩透明但仍拦截点击；用于点击外部关闭、不加暗色 */
+  maskTransparent: { type: Boolean, default: false },
+  /** 触发器撑满父级；侧栏菜单等需要整宽触发的场景 */
+  triggerBlock: { type: Boolean, default: false },
+  zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
+  /** menu：Sketch Menus 面板（圆角 32、内边距 10），给 lingyun-menu 用 */
+  variant: { type: String, default: '' },
+  /**
+   * 锚点矩形（视口坐标 { left, top, width, height }）。传了就指向它，不再测 trigger 插槽；
+   * 用于触发点不在本组件里的场景（如表格表头的筛选图标）。
+   */
+  anchor: { type: Object as PropType<AnchorBox | null>, default: null },
+  /** 面板预估高度，用于判断下方放不下时翻到上方。0 用默认值 */
+  estimateHeight: { type: Number, default: 0 },
+  /** 视口底部安全内缩（px），例如小程序键盘高度；定位时按扣减后的可用高度计算 */
+  bottomInset: { type: Number, default: 0 },
+  /** 关闭时不播放退场动画，用于菜单之间直接切换，避免两个面板重叠 */
+  instantClose: { type: Boolean, default: false },
+})
+
+const emit = defineEmits(['update:show', 'update:modelValue', 'close', 'closed'])
+
+const instance = getCurrentInstance()
+
+const mounted = ref(false)
+const phase = ref<PopoverPhase>('')
+const resolvedPlace = ref('bottom')
+const noTrans = ref(false)
+const leaveTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const enterTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const openSettleTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const openNotified = ref(false)
+const panelTop = ref(0)
+const panelLeft = ref(16)
+const panelWidth = ref(200)
+const arrowOffset = ref(80)
+const openSeq = ref(0)
+const panelH = ref(0)
+const followRaf = ref(0)
+const anchorCenterX = ref(0)
+const anchorCenterY = ref(0)
+const anchorW = ref(0)
+const anchorH = ref(0)
+const panel = ref<unknown>(null)
+const _lingyunMpOverlayHold = ref(false)
+const visible = computed((): boolean => {
+  if (props.show !== undefined && props.show !== null) return !!props.show
+  if (props.modelValue !== undefined && props.modelValue !== null) return !!props.modelValue
+  return false
+})
+
+const rootStyle = computed((): { zIndex: number } => {
+  return { zIndex: Number(props.zIndex) || 1100 }
+})
+
+const arrowStyle = computed((): Record<string, string> => {
+  const o = `${arrowOffset.value}px`
+  /* 压进面板 1px，斜边描边接上面板描边；fill 在底边截掉 1px，不与面板底色叠加 */
+  const edge = `${-(ARROW_H - 1)}px`
+  if (resolvedPlace.value === 'top') return { left: o, bottom: edge }
+  if (resolvedPlace.value === 'left') return { top: o, right: edge }
+  if (resolvedPlace.value === 'right') return { top: o, left: edge }
+  return { left: o, top: edge }
+})
+
+/** 菜单水滴：起始缩放按面板短边折算，让不同长宽的面板都从近似正圆长出来 */
+function menuScale(base: number): { x: number; y: number } {
+  const w = panelWidth.value
+  const h = panelH.value
+  if (!(w > 0) || !(h > 0)) return { x: base, y: base }
+  const short = Math.min(w, h)
+  return { x: (base * short) / w, y: (base * short) / h }
+}
+
+const liftStyle = computed((): Record<string, string> => {
+  /*
+   * 普通浮层对齐 Alert：缩放在 lift，勿对玻璃 panel 做 opacity。
+   * 菜单有锚点矩形时，把面板起始帧直接映射成按钮中心的一颗圆：
+   * translate 到按钮中心 + scale(d/面板宽高)，再回到 translate(0,0) scale(1,1)。
+   */
+  const menu = props.variant === 'menu'
+  const menuAnchor = menu && anchorW.value > 0 && anchorH.value > 0
+  const leaving = phase.value === 'leave'
+  const active = phase.value === 'enter' || leaving
+  const tip = `${arrowOffset.value + ARROW_W / 2}px`
+  const place = resolvedPlace.value
+  let transform = 'scale(1, 1)'
+  let transformOrigin =
+    place === 'top'
+      ? `${tip} 100%`
+      : place === 'left'
+        ? `100% ${tip}`
+        : place === 'right'
+          ? `0 ${tip}`
+          : `${tip} 0`
+
+  if (menuAnchor) {
+    const d = Math.max(48, Math.min(72, Math.max(anchorW.value, anchorH.value)))
+    const sx = active && panelWidth.value > 0 ? d / panelWidth.value : 1
+    const sy = active ? (panelH.value > 0 ? d / panelH.value : sx) : 1
+    const tx = active ? anchorCenterX.value - panelLeft.value - d / 2 : 0
+    const ty = active ? anchorCenterY.value - panelTop.value - d / 2 : 0
+    transform = `translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`
+    transformOrigin = '0 0'
+  } else {
+    let scaleX = 1
+    let scaleY = 1
+    if (menu) {
+      if (phase.value === 'enter') {
+        const scale = menuScale(MENU_ENTER_SCALE)
+        scaleX = scale.x
+        scaleY = scale.y
+      } else if (leaving) {
+        const scale = menuScale(MENU_LEAVE_SCALE)
+        scaleX = scale.x
+        scaleY = scale.y
+      }
+    } else if (phase.value === 'enter') {
+      scaleX = 1.16
+      scaleY = 1.16
+    } else if (leaving) {
+      scaleX = 0.92
+      scaleY = 0.92
     }
-  },
-  computed: {
-    visible() {
-      if (this.show !== undefined && this.show !== null) return !!this.show
-      if (this.modelValue !== undefined && this.modelValue !== null) return !!this.modelValue
-      return false
-    },
-    rootClass() {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* ignore */
-      }
-      return [
-        themeClass,
-        this.phase ? `lingyun-popover--${this.phase}` : '',
-        `lingyun-popover--place-${this.resolvedPlace}`,
-        this.variant === 'menu' ? 'lingyun-popover--menu' : '',
-        this.showArrow ? 'lingyun-popover--arrow' : '',
-        !this.mask ? 'lingyun-popover--no-mask' : '',
-        this.maskTransparent ? 'lingyun-popover--mask-transparent' : '',
-        this.triggerBlock ? 'lingyun-popover--trigger-block' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    rootStyle() {
-      return { zIndex: Number(this.zIndex) || 1100 }
-    },
-    arrowStyle() {
-      const o = `${this.arrowOffset}px`
-      /* 压进面板 1px，斜边描边接上面板描边；fill 在底边截掉 1px，不与面板底色叠加 */
-      const edge = `${-(ARROW_H - 1)}px`
-      if (this.resolvedPlace === 'top') return { left: o, bottom: edge }
-      if (this.resolvedPlace === 'left') return { top: o, right: edge }
-      if (this.resolvedPlace === 'right') return { top: o, left: edge }
-      return { left: o, top: edge }
-    },
-    liftStyle() {
-      /*
-       * 普通浮层对齐 Alert：缩放在 lift，勿对玻璃 panel 做 opacity。
-       * 菜单有锚点矩形时，把面板起始帧直接映射成按钮中心的一颗圆：
-       * translate 到按钮中心 + scale(d/面板宽高)，再回到 translate(0,0) scale(1,1)。
-       */
-      const menu = this.variant === 'menu'
-      const menuAnchor = menu && this.anchorW > 0 && this.anchorH > 0
-      const leaving = this.phase === 'leave'
-      const active = this.phase === 'enter' || leaving
-      const tip = `${this.arrowOffset + ARROW_W / 2}px`
-      const place = this.resolvedPlace
-      let transform = 'scale(1, 1)'
-      let transformOrigin =
-        place === 'top'
-          ? `${tip} 100%`
-          : place === 'left'
-            ? `100% ${tip}`
-            : place === 'right'
-              ? `0 ${tip}`
-              : `${tip} 0`
+    transform = `scale(${scaleX}, ${scaleY})`
+  }
 
-      if (menuAnchor) {
-        const d = Math.max(48, Math.min(72, Math.max(this.anchorW, this.anchorH)))
-        const sx = active && this.panelWidth > 0 ? d / this.panelWidth : 1
-        const sy = active ? (this.panelH > 0 ? d / this.panelH : sx) : 1
-        const tx = active ? this.anchorCenterX - this.panelLeft - d / 2 : 0
-        const ty = active ? this.anchorCenterY - this.panelTop - d / 2 : 0
-        transform = `translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`
-        transformOrigin = '0 0'
-      } else {
-        let scaleX = 1
-        let scaleY = 1
-        if (menu) {
-          if (this.phase === 'enter') {
-            const scale = this.menuScale(MENU_ENTER_SCALE)
-            scaleX = scale.x
-            scaleY = scale.y
-          } else if (leaving) {
-            const scale = this.menuScale(MENU_LEAVE_SCALE)
-            scaleX = scale.x
-            scaleY = scale.y
-          }
-        } else if (this.phase === 'enter') {
-          scaleX = 1.16
-          scaleY = 1.16
-        } else if (leaving) {
-          scaleX = 0.92
-          scaleY = 0.92
-        }
-        transform = `scale(${scaleX}, ${scaleY})`
-      }
+  const transition = noTrans.value
+    ? 'none'
+    : leaving
+      ? menu
+        ? 'transform 0.2s cubic-bezier(0.4, 0, 0.8, 0.6), opacity 0.08s ease-in 0.18s'
+        : 'transform 0.22s cubic-bezier(0.4, 0, 1, 1)'
+      : menu
+        ? 'transform 0.46s cubic-bezier(0.22, 1.32, 0.36, 1)'
+        : 'transform 0.42s cubic-bezier(0.32, 0.72, 0, 1)'
+  const style: Record<string, string> = {
+    top: `${panelTop.value}px`,
+    left: `${panelLeft.value}px`,
+    width: `${panelWidth.value}px`,
+    '--ax': `${arrowOffset.value}px`,
+    /* 水滴起始帧用椭圆圆角补偿非等比缩放，视觉上仍是正圆 */
+    '--menu-rx': `${panelWidth.value / 2}px`,
+    '--menu-ry': `${(panelH.value > 0 ? panelH.value : panelWidth.value) / 2}px`,
+    transform,
+    transformOrigin,
+    transition,
+  }
+  if (menu) style.opacity = leaving ? '0' : '1'
+  return style
+})
 
-      const transition = this.noTrans
-        ? 'none'
-        : leaving
-          ? menu
-            ? 'transform 0.2s cubic-bezier(0.4, 0, 0.8, 0.6), opacity 0.08s ease-in 0.18s'
-            : 'transform 0.22s cubic-bezier(0.4, 0, 1, 1)'
-          : menu
-            ? 'transform 0.46s cubic-bezier(0.22, 1.32, 0.36, 1)'
-            : 'transform 0.42s cubic-bezier(0.32, 0.72, 0, 1)'
-      const style: Record<string, string> = {
-        top: `${this.panelTop}px`,
-        left: `${this.panelLeft}px`,
-        width: `${this.panelWidth}px`,
-        '--ax': `${this.arrowOffset}px`,
-        /* 水滴起始帧用椭圆圆角补偿非等比缩放，视觉上仍是正圆 */
-        '--menu-rx': `${this.panelWidth / 2}px`,
-        '--menu-ry': `${(this.panelH > 0 ? this.panelH : this.panelWidth) / 2}px`,
-        transform,
-        transformOrigin,
-        transition,
-      }
-      if (menu) style.opacity = leaving ? '0' : '1'
-      return style
-    },
-  },
-  watch: {
-    visible: {
-      immediate: true,
-      handler(val: boolean) {
-        if (val) this.openAnim()
-        else this.closeAnim()
-      },
-    },
-    bottomInset() {
-      this.$nextTick(() => this.refreshLayout())
-    },
-  },
-  beforeUnmount() {
-    this.clearTimers()
-    this.unbindFollow()
-  },
-  methods: {
-    /** 菜单水滴：起始缩放按面板短边折算，让不同长宽的面板都从近似正圆长出来 */
-    menuScale(base: number): { x: number; y: number } {
-      const w = this.panelWidth
-      const h = this.panelH
-      if (!(w > 0) || !(h > 0)) return { x: base, y: base }
-      const short = Math.min(w, h)
-      return { x: (base * short) / w, y: (base * short) / h }
-    },
-    /** H5：遮罩挡不住滚轮 / 惯性滚动，打开期间页面或任意容器滚动、窗口缩放时重新贴锚点 */
-    bindFollow() {
-      // #ifdef H5
-      window.addEventListener('scroll', this.onFollow, true)
-      window.addEventListener('resize', this.onFollow)
-      // #endif
-    },
-    unbindFollow() {
-      // #ifdef H5
-      window.removeEventListener('scroll', this.onFollow, true)
-      window.removeEventListener('resize', this.onFollow)
-      if (this.followRaf) cancelAnimationFrame(this.followRaf)
-      this.followRaf = 0
-      // #endif
-    },
-    onFollow() {
-      // #ifdef H5
-      if (this.followRaf) return
-      this.followRaf = requestAnimationFrame(() => {
-        this.followRaf = 0
-        if (!this.mounted || this.phase === 'leave' || this.phase === 'measure') return
-        const seq = this.openSeq
-        this.queryAnchor().then((rect) => {
-          if (seq !== this.openSeq || !this.visible) return
-          const h = this.panelH || (this.estimateHeight > 0 ? this.estimateHeight : EST_PANEL_H)
-          this.applyAnchor(rect, h, this.readViewport())
-        })
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* ignore */
+  }
+  return [
+    themeClass,
+    phase.value ? `lingyun-popover--${phase.value}` : '',
+    `lingyun-popover--place-${resolvedPlace.value}`,
+    props.variant === 'menu' ? 'lingyun-popover--menu' : '',
+    props.showArrow ? 'lingyun-popover--arrow' : '',
+    !props.mask ? 'lingyun-popover--no-mask' : '',
+    props.maskTransparent ? 'lingyun-popover--mask-transparent' : '',
+    props.triggerBlock ? 'lingyun-popover--trigger-block' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+function clearTimers(): void {
+  if (leaveTimer.value) {
+    clearTimeout(leaveTimer.value)
+    leaveTimer.value = null
+  }
+  if (enterTimer.value) {
+    clearTimeout(enterTimer.value)
+    enterTimer.value = null
+  }
+  if (openSettleTimer.value) {
+    clearTimeout(openSettleTimer.value)
+    openSettleTimer.value = null
+  }
+}
+
+function notifyOverlayOpened(): void {
+  if (openNotified.value) return
+  openNotified.value = true
+  if (typeof uni !== 'undefined' && typeof uni.$emit === 'function') {
+    uni.$emit('lingyun:overlay-opened')
+  }
+}
+
+function setVisible(val: boolean): void {
+  emit('update:show', val)
+  emit('update:modelValue', val)
+  if (!val) emit('close')
+}
+
+function onTriggerClick(): void {
+  setVisible(!visible.value)
+}
+
+function onMask(): void {
+  if (!props.maskClosable) return
+  setVisible(false)
+}
+
+function readViewport(): Viewport {
+  let width = 0
+  let height = 0
+  // #ifdef H5
+  /* 浮层根 fixed 铺满时不含滚动条，用 clientWidth 而非 innerWidth */
+  width = document.documentElement.clientWidth
+  height = document.documentElement.clientHeight
+  // #endif
+  if (!(width > 0) || !(height > 0)) {
+    const info = uni.getWindowInfo()
+    width = info.windowWidth
+    height = info.windowHeight
+  }
+  return { width: width || 375, height: height || 667 }
+}
+
+function normalizeRect(rect: AnchorBox | null, dy = 0): AnchorBox | null {
+  if (!rect || rect.top == null) return null
+  return {
+    left: rect.left ?? 0,
+    top: rect.top + dy,
+    width: rect.width ?? 0,
+    height: rect.height ?? 0,
+  }
+}
+
+/** H5：uni boundingClientRect 减掉的顶部偏移（同 uni-h5 getWindowOffset），用于还原 anchor 到视口坐标 */
+function h5WindowTop(): number {
+  let top = 0
+  // #ifdef H5
+  const style = document.documentElement.style
+  const read = (name: string) => parseInt((style.getPropertyValue(name).match(/\d+/) || ['0'])[0], 10) || 0
+  top = read('--window-top') + read('--top-window-height')
+  // #endif
+  return top
+}
+
+function resolvePanelWidth(triggerWidth: number, vw: number): number {
+  const raw = Number(props.width)
+  const cap = Math.max(PANEL_MIN_W, vw - 24)
+  if (props.fullWidth) return Math.round(Math.min(FULL_PANEL_MAX_W, cap))
+  if (raw > 0) return Math.round(Math.min(Math.max(raw, 120), cap))
+  const basis = Math.max(Number(triggerWidth) || 0, PANEL_MIN_W)
+  return Math.round(Math.min(PANEL_MAX_W, Math.max(PANEL_MIN_W, Math.min(basis, cap))))
+}
+
+/** 箭头在面板上的理想位置（沿边距离）；面板据此相对锚点偏移，箭头始终指向锚点 */
+/** 箭头尖离面板边缘的最小距离：圆角 + 半个箭头宽 */
+function arrowInset(): number {
+  return (props.variant === 'menu' ? PANEL_RADIUS_MENU : PANEL_RADIUS) + ARROW_W / 2
+}
+
+function alignTip(span: number): number {
+  const align = String(props.arrowAlign || 'auto').toLowerCase()
+  const inset = arrowInset()
+  if (align === 'leading' || align === 'start') return Math.min(inset, span / 2)
+  if (align === 'trailing' || align === 'end') return Math.max(span / 2, span - inset)
+  return span / 2
+}
+
+function resolveArrowOffset(anchorCenter: number, span: number): number {
+  let center = anchorCenter
+  const min = Math.min(arrowInset(), span / 2)
+  const max = Math.max(min, span - min)
+  center = Math.max(min, Math.min(center, max))
+  return Math.round(center - ARROW_W / 2)
+}
+
+/** measure 阶段（scale 1）量面板真实高度；量不到返回 0 */
+function queryPanelHeight(): Promise<number> {
+  // #ifndef MP-WEIXIN
+  const el = toDom(panel.value)
+  if (el && el.getBoundingClientRect) {
+    return Promise.resolve(el.getBoundingClientRect().height || 0)
+  }
+  // #endif
+  return new Promise((resolve) => {
+    let settled = false
+    const finish = (h: number) => {
+      if (settled) return
+      settled = true
+      resolve(h)
+    }
+    const timer = setTimeout(() => finish(0), QUERY_TIMEOUT_MS)
+    try {
+      const q = uni.createSelectorQuery().in(instance?.proxy as never)
+      q.select('.lingyun-popover__panel').boundingClientRect()
+      q.exec((res) => {
+        clearTimeout(timer)
+        const rect = (Array.isArray(res) ? res[0] : null) as AnchorBox | null
+        finish((rect && rect.height) || 0)
       })
-      // #endif
-    },
-    /** 视口底边变化（如小程序键盘抬起）后重新量面板并贴锚点 */
-    refreshLayout() {
-      if (!this.mounted || this.phase === 'leave' || this.phase === 'measure') return
-      const seq = this.openSeq
-      this.queryAnchor().then((rect) => {
-        if (seq !== this.openSeq || !this.visible) return
-        this.queryPanelHeight().then((h) => {
-          if (seq !== this.openSeq || !this.visible) return
-          if (h > 0) this.panelH = h
-          const height =
-            h > 0
-              ? h
-              : this.panelH || (this.estimateHeight > 0 ? this.estimateHeight : EST_PANEL_H)
-          this.applyAnchor(rect, height, this.readViewport())
-        })
+    } catch {
+      clearTimeout(timer)
+      finish(0)
+    }
+  })
+}
+
+function queryAnchor(): Promise<AnchorBox | null> {
+  // #ifdef H5
+  if (props.anchor) return Promise.resolve(normalizeRect(props.anchor, h5WindowTop()))
+  const host = instance?.proxy?.$el as { querySelector?: (s: string) => unknown } | null
+  const trigger = host && host.querySelector ? toDom(host.querySelector('.lingyun-popover__trigger')) : null
+  if (trigger && trigger.getBoundingClientRect) {
+    const b = trigger.getBoundingClientRect()
+    return Promise.resolve({ left: b.left, top: b.top, width: b.width, height: b.height })
+  }
+  // #endif
+  if (props.anchor) return Promise.resolve(normalizeRect(props.anchor))
+  return new Promise((resolve) => {
+    let settled = false
+    const finish = (rect: AnchorBox | null) => {
+      if (settled) return
+      settled = true
+      resolve(normalizeRect(rect))
+    }
+    const timer = setTimeout(() => finish(null), QUERY_TIMEOUT_MS)
+    try {
+      const q = uni.createSelectorQuery().in(instance?.proxy as never)
+      q.select('.lingyun-popover__trigger').boundingClientRect()
+      q.exec((res) => {
+        clearTimeout(timer)
+        finish((Array.isArray(res) ? res[0] : null) as AnchorBox | null)
       })
-    },
-    clearTimers() {
-      if (this.leaveTimer) {
-        clearTimeout(this.leaveTimer)
-        this.leaveTimer = null
-      }
-      if (this.enterTimer) {
-        clearTimeout(this.enterTimer)
-        this.enterTimer = null
-      }
-      if (this.openSettleTimer) {
-        clearTimeout(this.openSettleTimer)
-        this.openSettleTimer = null
-      }
-    },
-    notifyOverlayOpened() {
-      if (this.openNotified) return
-      this.openNotified = true
-      if (typeof uni !== 'undefined' && typeof uni.$emit === 'function') {
-        uni.$emit('lingyun:overlay-opened')
-      }
-    },
-    onPanelTransitionEnd(event?: { propertyName?: string; detail?: { propertyName?: string } }) {
-      if (!this.visible || this.phase !== 'open') return
-      const property = event?.propertyName || event?.detail?.propertyName
-      if (property && property !== 'border-radius' && property !== 'borderRadius') return
-      this.notifyOverlayOpened()
-    },
-    setVisible(val: boolean) {
-      this.$emit('update:show', val)
-      this.$emit('update:modelValue', val)
-      if (!val) this.$emit('close')
-    },
-    onTriggerClick() {
-      this.setVisible(!this.visible)
-    },
-    onMask() {
-      if (!this.maskClosable) return
-      this.setVisible(false)
-    },
-    readViewport(): Viewport {
-      let width = 0
-      let height = 0
-      // #ifdef H5
-      /* 浮层根 fixed 铺满时不含滚动条，用 clientWidth 而非 innerWidth */
-      width = document.documentElement.clientWidth
-      height = document.documentElement.clientHeight
-      // #endif
-      if (!(width > 0) || !(height > 0)) {
-        const info = uni.getWindowInfo()
-        width = info.windowWidth
-        height = info.windowHeight
-      }
-      return { width: width || 375, height: height || 667 }
-    },
-    normalizeRect(rect: AnchorBox | null, dy = 0): AnchorBox | null {
-      if (!rect || rect.top == null) return null
-      return {
-        left: rect.left ?? 0,
-        top: rect.top + dy,
-        width: rect.width ?? 0,
-        height: rect.height ?? 0,
-      }
-    },
-    /** H5：uni boundingClientRect 减掉的顶部偏移（同 uni-h5 getWindowOffset），用于还原 anchor 到视口坐标 */
-    h5WindowTop(): number {
-      let top = 0
-      // #ifdef H5
-      const style = document.documentElement.style
-      const read = (name: string) => parseInt((style.getPropertyValue(name).match(/\d+/) || ['0'])[0], 10) || 0
-      top = read('--window-top') + read('--top-window-height')
-      // #endif
-      return top
-    },
-    queryAnchor(): Promise<AnchorBox | null> {
-      // #ifdef H5
-      if (this.anchor) return Promise.resolve(this.normalizeRect(this.anchor, this.h5WindowTop()))
-      const host = this.$el as { querySelector?: (s: string) => unknown } | null
-      const trigger = host && host.querySelector ? toDom(host.querySelector('.lingyun-popover__trigger')) : null
-      if (trigger && trigger.getBoundingClientRect) {
-        const b = trigger.getBoundingClientRect()
-        return Promise.resolve({ left: b.left, top: b.top, width: b.width, height: b.height })
-      }
-      // #endif
-      if (this.anchor) return Promise.resolve(this.normalizeRect(this.anchor))
-      return new Promise((resolve) => {
-        let settled = false
-        const finish = (rect: AnchorBox | null) => {
-          if (settled) return
-          settled = true
-          resolve(this.normalizeRect(rect))
-        }
-        const timer = setTimeout(() => finish(null), QUERY_TIMEOUT_MS)
-        try {
-          const q = uni.createSelectorQuery().in(this)
-          q.select('.lingyun-popover__trigger').boundingClientRect()
-          q.exec((res) => {
-            clearTimeout(timer)
-            finish((Array.isArray(res) ? res[0] : null) as AnchorBox | null)
-          })
-        } catch {
-          clearTimeout(timer)
-          finish(null)
-        }
-      })
-    },
-    /** measure 阶段（scale 1）量面板真实高度；量不到返回 0 */
-    queryPanelHeight(): Promise<number> {
-      // #ifndef MP-WEIXIN
-      const el = toDom(this.$refs.panel)
-      if (el && el.getBoundingClientRect) {
-        return Promise.resolve(el.getBoundingClientRect().height || 0)
-      }
-      // #endif
-      return new Promise((resolve) => {
-        let settled = false
-        const finish = (h: number) => {
-          if (settled) return
-          settled = true
-          resolve(h)
-        }
-        const timer = setTimeout(() => finish(0), QUERY_TIMEOUT_MS)
-        try {
-          const q = uni.createSelectorQuery().in(this)
-          q.select('.lingyun-popover__panel').boundingClientRect()
-          q.exec((res) => {
-            clearTimeout(timer)
-            const rect = (Array.isArray(res) ? res[0] : null) as AnchorBox | null
-            finish((rect && rect.height) || 0)
-          })
-        } catch {
-          clearTimeout(timer)
-          finish(0)
-        }
-      })
-    },
-    applyAnchor(trigger: AnchorBox | null, panelH: number, viewport: Viewport) {
-      const vw = viewport.width
-      const inset = Math.max(0, Number(this.bottomInset) || 0)
-      const vh = Math.max(0, viewport.height - inset)
-      const height = panelH > 0 ? panelH : EST_PANEL_H
-      const along = this.showArrow ? ARROW_H + TIP_GAP : GAP
+    } catch {
+      clearTimeout(timer)
+      finish(null)
+    }
+  })
+}
 
-      if (!trigger || typeof trigger.width !== 'number' || !(trigger.width > 0) || trigger.top == null) {
-        this.anchorCenterX = 0
-        this.anchorCenterY = 0
-        this.anchorW = 0
-        this.anchorH = 0
-        this.resolvedPlace = 'bottom'
-        this.panelTop = Math.round(vh * 0.28)
-        this.panelLeft = 16
-        this.panelWidth = this.resolvePanelWidth(0, vw)
-        this.arrowOffset = this.resolveArrowOffset(this.panelWidth / 2, this.panelWidth)
-        return
-      }
+function applyAnchor(trigger: AnchorBox | null, panelH: number, viewport: Viewport): void {
+  const vw = viewport.width
+  const inset = Math.max(0, Number(props.bottomInset) || 0)
+  const vh = Math.max(0, viewport.height - inset)
+  const height = panelH > 0 ? panelH : EST_PANEL_H
+  const along = props.showArrow ? ARROW_H + TIP_GAP : GAP
 
-      const anchorLeft = trigger.left ?? 0
-      const anchorTop = trigger.top
-      const anchorWidth = trigger.width
-      const anchorHeight = trigger.height ?? 0
+  if (!trigger || typeof trigger.width !== 'number' || !(trigger.width > 0) || trigger.top == null) {
+    anchorCenterX.value = 0
+    anchorCenterY.value = 0
+    anchorW.value = 0
+    anchorH.value = 0
+    resolvedPlace.value = 'bottom'
+    panelTop.value = Math.round(vh * 0.28)
+    panelLeft.value = 16
+    panelWidth.value = resolvePanelWidth(0, vw)
+    arrowOffset.value = resolveArrowOffset(panelWidth.value / 2, panelWidth.value)
+    return
+  }
 
-      this.anchorCenterX = anchorLeft + anchorWidth / 2
-      this.anchorCenterY = anchorTop + anchorHeight / 2
-      this.anchorW = anchorWidth
-      this.anchorH = anchorHeight
-      /* 菜单最终面板覆盖触发按钮：按钮被菜单“吃掉”，不再留一条空位 */
-      const verticalAlong =
-        !this.showArrow && this.variant === 'menu' ? -anchorHeight : along
+  const anchorLeft = trigger.left ?? 0
+  const anchorTop = trigger.top
+  const anchorWidth = trigger.width
+  const anchorHeight = trigger.height ?? 0
 
-      const width = this.resolvePanelWidth(anchorWidth, vw)
-      const allowed: string[] = ['top', 'bottom', 'left', 'right']
-      let place = allowed.indexOf(this.placement) >= 0 ? this.placement : 'bottom'
+  anchorCenterX.value = anchorLeft + anchorWidth / 2
+  anchorCenterY.value = anchorTop + anchorHeight / 2
+  anchorW.value = anchorWidth
+  anchorH.value = anchorHeight
+  /* 菜单最终面板覆盖触发按钮：按钮被菜单“吃掉”，不再留一条空位 */
+  const verticalAlong =
+    !props.showArrow && props.variant === 'menu' ? -anchorHeight : along
 
-      if (place === 'left' || place === 'right') {
-        const roomRight = vw - (anchorLeft + anchorWidth) - along - width
-        const roomLeft = anchorLeft - along - width
-        if (place === 'right' && roomRight < 12 && roomLeft > roomRight) place = 'left'
-        if (place === 'left' && roomLeft < 12 && roomRight > roomLeft) place = 'right'
+  const width = resolvePanelWidth(anchorWidth, vw)
+  const allowed: string[] = ['top', 'bottom', 'left', 'right']
+  let place = allowed.indexOf(props.placement) >= 0 ? props.placement : 'bottom'
 
-        let left =
-          place === 'right'
-            ? anchorLeft + anchorWidth + along
-            : anchorLeft - width - along
-        left = Math.max(12, Math.min(left, vw - width - 12))
+  if (place === 'left' || place === 'right') {
+    const roomRight = vw - (anchorLeft + anchorWidth) - along - width
+    const roomLeft = anchorLeft - along - width
+    if (place === 'right' && roomRight < 12 && roomLeft > roomRight) place = 'left'
+    if (place === 'left' && roomLeft < 12 && roomRight > roomLeft) place = 'right'
 
-        let top = anchorTop + anchorHeight / 2 - this.alignTip(height)
-        top = Math.max(12, Math.min(top, vh - height - 12))
+    let left =
+      place === 'right'
+        ? anchorLeft + anchorWidth + along
+        : anchorLeft - width - along
+    left = Math.max(12, Math.min(left, vw - width - 12))
 
-        this.resolvedPlace = place
-        this.panelTop = Math.round(top)
-        this.panelLeft = Math.round(left)
-        this.panelWidth = Math.round(width)
-        this.arrowOffset = this.resolveArrowOffset(
-          anchorTop + anchorHeight / 2 - top,
-          height,
-        )
-        return
-      }
+    let top = anchorTop + anchorHeight / 2 - alignTip(height)
+    top = Math.max(12, Math.min(top, vh - height - 12))
 
-      let left: number
-      if (this.variant === 'menu' && !this.showArrow) {
-        /* 菜单贴按钮的左上角或右上角：按钮偏左时左对齐，偏右时右对齐 */
-        const roomRight = vw - (anchorLeft + anchorWidth)
-        left =
-          roomRight >= anchorLeft
-            ? anchorLeft
-            : anchorLeft + anchorWidth - width
-      } else {
-        left = anchorLeft + anchorWidth / 2 - this.alignTip(width)
-      }
-      left = Math.max(12, Math.min(left, vw - width - 12))
+    resolvedPlace.value = place
+    panelTop.value = Math.round(top)
+    panelLeft.value = Math.round(left)
+    panelWidth.value = Math.round(width)
+    arrowOffset.value = resolveArrowOffset(
+      anchorTop + anchorHeight / 2 - top,
+      height,
+    )
+    return
+  }
 
-      const below = anchorTop + anchorHeight + verticalAlong
-      const above = anchorTop - verticalAlong - height
-      const roomBelow = vh - 12 - (below + height)
-      const roomAbove = above - 12
-      if (place === 'bottom' && roomBelow < 0 && roomAbove > roomBelow) place = 'top'
-      if (place === 'top' && roomAbove < 0 && roomBelow > roomAbove) place = 'bottom'
+  let left: number
+  if (props.variant === 'menu' && !props.showArrow) {
+    /* 菜单贴按钮的左上角或右上角：按钮偏左时左对齐，偏右时右对齐 */
+    const roomRight = vw - (anchorLeft + anchorWidth)
+    left =
+      roomRight >= anchorLeft
+        ? anchorLeft
+        : anchorLeft + anchorWidth - width
+  } else {
+    left = anchorLeft + anchorWidth / 2 - alignTip(width)
+  }
+  left = Math.max(12, Math.min(left, vw - width - 12))
 
-      let top = place === 'top' ? above : below
-      top = Math.max(12, Math.min(top, vh - height - 12))
+  const below = anchorTop + anchorHeight + verticalAlong
+  const above = anchorTop - verticalAlong - height
+  const roomBelow = vh - 12 - (below + height)
+  const roomAbove = above - 12
+  if (place === 'bottom' && roomBelow < 0 && roomAbove > roomBelow) place = 'top'
+  if (place === 'top' && roomAbove < 0 && roomBelow > roomAbove) place = 'bottom'
 
-      this.resolvedPlace = place
-      this.panelTop = Math.round(top)
-      this.panelLeft = Math.round(left)
-      this.panelWidth = Math.round(width)
-      this.arrowOffset = this.resolveArrowOffset(
-        anchorLeft + anchorWidth / 2 - left,
-        width,
-      )
-    },
-    resolvePanelWidth(triggerWidth: number, vw: number): number {
-      const raw = Number(this.width)
-      const cap = Math.max(PANEL_MIN_W, vw - 24)
-      if (this.fullWidth) return Math.round(Math.min(FULL_PANEL_MAX_W, cap))
-      if (raw > 0) return Math.round(Math.min(Math.max(raw, 120), cap))
-      const basis = Math.max(Number(triggerWidth) || 0, PANEL_MIN_W)
-      return Math.round(Math.min(PANEL_MAX_W, Math.max(PANEL_MIN_W, Math.min(basis, cap))))
-    },
-    /** 箭头在面板上的理想位置（沿边距离）；面板据此相对锚点偏移，箭头始终指向锚点 */
-    /** 箭头尖离面板边缘的最小距离：圆角 + 半个箭头宽 */
-    arrowInset(): number {
-      return (this.variant === 'menu' ? PANEL_RADIUS_MENU : PANEL_RADIUS) + ARROW_W / 2
-    },
-    alignTip(span: number): number {
-      const align = String(this.arrowAlign || 'auto').toLowerCase()
-      const inset = this.arrowInset()
-      if (align === 'leading' || align === 'start') return Math.min(inset, span / 2)
-      if (align === 'trailing' || align === 'end') return Math.max(span / 2, span - inset)
-      return span / 2
-    },
-    resolveArrowOffset(anchorCenter: number, span: number): number {
-      let center = anchorCenter
-      const min = Math.min(this.arrowInset(), span / 2)
-      const max = Math.max(min, span - min)
-      center = Math.max(min, Math.min(center, max))
-      return Math.round(center - ARROW_W / 2)
-    },
-    openAnim() {
-      this.clearTimers()
-      this.openNotified = false
-      const seq = ++this.openSeq
-      const alive = () => seq === this.openSeq && this.visible
-      const estimate = this.estimateHeight > 0 ? this.estimateHeight : EST_PANEL_H
-      // 测锚点 → measure 挂载（隐藏、scale 1）量面板高 → 定位 → enter（无过渡）→ open
-      this.queryAnchor().then((rect) => {
+  let top = place === 'top' ? above : below
+  top = Math.max(12, Math.min(top, vh - height - 12))
+
+  resolvedPlace.value = place
+  panelTop.value = Math.round(top)
+  panelLeft.value = Math.round(left)
+  panelWidth.value = Math.round(width)
+  arrowOffset.value = resolveArrowOffset(
+    anchorLeft + anchorWidth / 2 - left,
+    width,
+  )
+}
+
+function onFollow(): void {
+  // #ifdef H5
+  if (followRaf.value) return
+  followRaf.value = requestAnimationFrame(() => {
+    followRaf.value = 0
+    if (!mounted.value || phase.value === 'leave' || phase.value === 'measure') return
+    const seq = openSeq.value
+    queryAnchor().then((rect) => {
+      if (seq !== openSeq.value || !visible.value) return
+      const h = panelH.value || (props.estimateHeight > 0 ? props.estimateHeight : EST_PANEL_H)
+      applyAnchor(rect, h, readViewport())
+    })
+  })
+  // #endif
+}
+
+/** H5：遮罩挡不住滚轮 / 惯性滚动，打开期间页面或任意容器滚动、窗口缩放时重新贴锚点 */
+function bindFollow(): void {
+  // #ifdef H5
+  window.addEventListener('scroll', onFollow, true)
+  window.addEventListener('resize', onFollow)
+  // #endif
+}
+
+function unbindFollow(): void {
+  // #ifdef H5
+  window.removeEventListener('scroll', onFollow, true)
+  window.removeEventListener('resize', onFollow)
+  if (followRaf.value) cancelAnimationFrame(followRaf.value)
+  followRaf.value = 0
+  // #endif
+}
+
+/** 视口底边变化（如小程序键盘抬起）后重新量面板并贴锚点 */
+function refreshLayout(): void {
+  if (!mounted.value || phase.value === 'leave' || phase.value === 'measure') return
+  const seq = openSeq.value
+  queryAnchor().then((rect) => {
+    if (seq !== openSeq.value || !visible.value) return
+    queryPanelHeight().then((h) => {
+      if (seq !== openSeq.value || !visible.value) return
+      if (h > 0) panelH.value = h
+      const height =
+        h > 0
+          ? h
+          : panelH.value || (props.estimateHeight > 0 ? props.estimateHeight : EST_PANEL_H)
+      applyAnchor(rect, height, readViewport())
+    })
+  })
+}
+
+function onPanelTransitionEnd(event?: { propertyName?: string; detail?: { propertyName?: string } }): void {
+  if (!visible.value || phase.value !== 'open') return
+  const property = event?.propertyName || event?.detail?.propertyName
+  if (property && property !== 'border-radius' && property !== 'borderRadius') return
+  notifyOverlayOpened()
+}
+
+function openAnim(): void {
+  clearTimers()
+  openNotified.value = false
+  const seq = ++openSeq.value
+  const alive = () => seq === openSeq.value && visible.value
+  const estimate = props.estimateHeight > 0 ? props.estimateHeight : EST_PANEL_H
+  // 测锚点 → measure 挂载（隐藏、scale 1）量面板高 → 定位 → enter（无过渡）→ open
+  queryAnchor().then((rect) => {
+    if (!alive()) return
+    const viewport = readViewport()
+    applyAnchor(rect, estimate, viewport)
+    noTrans.value = true
+    phase.value = 'measure'
+    mounted.value = true
+    nextTick(() => {
+      enterTimer.value = setTimeout(() => {
+        enterTimer.value = null
         if (!alive()) return
-        const viewport = this.readViewport()
-        this.applyAnchor(rect, estimate, viewport)
-        this.noTrans = true
-        this.phase = 'measure'
-        this.mounted = true
-        this.$nextTick(() => {
-          this.enterTimer = setTimeout(() => {
-            this.enterTimer = null
-            if (!alive()) return
-            this.queryPanelHeight().then((h) => {
+        queryPanelHeight().then((h) => {
+          if (!alive()) return
+          panelH.value = h
+          applyAnchor(rect, h > 0 ? h : estimate, viewport)
+          phase.value = 'enter'
+          bindFollow()
+          nextTick(() => {
+            enterTimer.value = setTimeout(() => {
+              enterTimer.value = null
               if (!alive()) return
-              this.panelH = h
-              this.applyAnchor(rect, h > 0 ? h : estimate, viewport)
-              this.phase = 'enter'
-              this.bindFollow()
-              this.$nextTick(() => {
-                this.enterTimer = setTimeout(() => {
-                  this.enterTimer = null
-                  if (!alive()) return
-                  this.noTrans = false
-                  this.phase = 'open'
-                  /* transitionend 不可用时兜底通知内容已完成展开 */
-                  this.openSettleTimer = setTimeout(() => {
-                    this.openSettleTimer = null
-                    this.notifyOverlayOpened()
-                  }, 900)
-                }, 48)
-              })
-            })
-          }, 16)
+              noTrans.value = false
+              phase.value = 'open'
+              /* transitionend 不可用时兜底通知内容已完成展开 */
+              openSettleTimer.value = setTimeout(() => {
+                openSettleTimer.value = null
+                notifyOverlayOpened()
+              }, 900)
+            }, 48)
+          })
         })
-      })
-    },
-    closeAnim() {
-      this.clearTimers()
-      this.unbindFollow()
-      this.openSeq++
-      const wasMounted = this.mounted
-      if (!this.mounted || this.phase === 'measure') {
-        this.mounted = false
-        this.phase = ''
-        if (wasMounted) this.$emit('closed')
-        return
-      }
-      if (this.instantClose) {
-        this.mounted = false
-        this.phase = ''
-        this.panelH = 0
-        this.$emit('closed')
-        return
-      }
-      /* 进场途中被关掉也走退场过渡，避免水滴从起始尺寸直接跳走 */
-      this.noTrans = false
-      this.phase = 'leave'
-      this.leaveTimer = setTimeout(() => {
-        this.mounted = false
-        this.phase = ''
-        this.leaveTimer = null
-        this.$emit('closed')
-      }, this.variant === 'menu' ? MENU_LEAVE_MS : LEAVE_MS)
-    },
+      }, 16)
+    })
+  })
+}
+
+function closeAnim(): void {
+  clearTimers()
+  unbindFollow()
+  openSeq.value++
+  const wasMounted = mounted.value
+  if (!mounted.value || phase.value === 'measure') {
+    mounted.value = false
+    phase.value = ''
+    if (wasMounted) emit('closed')
+    return
+  }
+  if (props.instantClose) {
+    mounted.value = false
+    phase.value = ''
+    panelH.value = 0
+    emit('closed')
+    return
+  }
+  /* 进场途中被关掉也走退场过渡，避免水滴从起始尺寸直接跳走 */
+  noTrans.value = false
+  phase.value = 'leave'
+  leaveTimer.value = setTimeout(() => {
+    mounted.value = false
+    phase.value = ''
+    leaveTimer.value = null
+    emit('closed')
+  }, props.variant === 'menu' ? MENU_LEAVE_MS : LEAVE_MS)
+}
+
+watch(
+  visible,
+  (val: boolean) => {
+    if (val) openAnim()
+    else closeAnim()
   },
+  { immediate: true },
+)
+
+watch(
+  () => props.bottomInset,
+  () => {
+    nextTick(() => refreshLayout())
+  },
+)
+
+watch(
+  phase,
+  (value: string) => {
+    _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+      !!_lingyunMpOverlayHold.value,
+      !!value,
+    )
+  },
+  { immediate: true },
+)
+
+onBeforeUnmount(() => {
+  _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+    !!_lingyunMpOverlayHold.value,
+    false,
+  )
+  clearTimers()
+  unbindFollow()
 })
 </script>
 

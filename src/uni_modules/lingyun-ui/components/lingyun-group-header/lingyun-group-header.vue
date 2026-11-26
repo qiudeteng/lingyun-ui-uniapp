@@ -27,50 +27,53 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-
+<script setup lang="ts">
+import { computed, useSlots } from 'vue'
 /**
  * lingyun-group-header
  * 分组卡片上方的分组标题（List Header · Nested / Prominent / Extra Prominent）。
  * 统一高度、字阶、次级色与右侧操作；lingyun-list 的 header 也走这里。
  * @see design/LISTS.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunGroupHeader',
-  emits: ['action'],
-  props: {
-    title: { type: String, default: '' },
-    /** nested / prominent / extraProminent（也接受 extra-prominent） */
-    type: { type: String, default: 'nested' },
-    action: { type: String, default: '' },
-    /** 左右 16px 页边内距；放进已有 16px 容器的页面可设 false */
-    inset: { type: Boolean, default: true },
-  },
-  computed: {
-    resolvedType(): string {
-      const raw = String(this.type || '').trim()
-      const map: Record<string, string> = {
-        extraProminent: 'extra-prominent',
-        'extra-prominent': 'extra-prominent',
-        prominent: 'prominent',
-        nested: 'nested',
-      }
-      return map[raw] || 'nested'
-    },
-    hasTitle(): boolean {
-      return !!(this.title || this.$slots.title || this.$slots.default)
-    },
-    hasAction(): boolean {
-      return !!(this.action || this.$slots.action)
-    },
-  },
-  methods: {
-    onAction(): void {
-      this.$emit('action')
-    },
-  },
 })
+
+const props = defineProps({
+  title: { type: String, default: '' },
+  /** nested / prominent / extraProminent（也接受 extra-prominent） */
+  type: { type: String, default: 'nested' },
+  action: { type: String, default: '' },
+  /** 左右 16px 页边内距；放进已有 16px 容器的页面可设 false */
+  inset: { type: Boolean, default: true },
+})
+
+const emit = defineEmits(['action'])
+
+const slots = useSlots()
+
+const resolvedType = computed((): string => {
+  const raw = String(props.type || '').trim()
+  const map: Record<string, string> = {
+    extraProminent: 'extra-prominent',
+    'extra-prominent': 'extra-prominent',
+    prominent: 'prominent',
+    nested: 'nested',
+  }
+  return map[raw] || 'nested'
+})
+
+const hasTitle = computed((): boolean => {
+  return !!(props.title || slots.title || slots.default)
+})
+
+const hasAction = computed((): boolean => {
+  return !!(props.action || slots.action)
+})
+
+function onAction(): void {
+  emit('action')
+}
 </script>
 
 <style lang="scss" scoped>

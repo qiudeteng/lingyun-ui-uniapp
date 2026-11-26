@@ -4,34 +4,33 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-
+<script setup lang="ts">
+import { computed } from 'vue'
 /**
  * lingyun-tag
  * @see design/TAGS.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunTag',
-  emits: ['click'],
-  props: {
-    text: { type: String, default: '' },
-    variant: { type: String, default: 'fill' }, // fill | outline
-    color: { type: String, default: 'blue' }, // blue | green | orange | red | gray
-  },
-  computed: {
-    rootClass() {
-      const v = this.variant === 'outline' ? 'outline' : 'fill'
-      const c = ['blue', 'green', 'orange', 'red', 'gray'].indexOf(this.color) >= 0 ? this.color : 'blue'
-      return [`lingyun-tag--${v}`, `lingyun-tag--${c}`]
-    },
-  },
-  methods: {
-    onClick(e: Event) {
-      this.$emit('click', e)
-    },
-  },
 })
+
+const props = defineProps({
+  text: { type: String, default: '' },
+  variant: { type: String, default: 'fill' }, // fill | outline
+  color: { type: String, default: 'blue' }, // blue | green | orange | red | gray
+})
+
+const emit = defineEmits(['click'])
+
+const rootClass = computed(() => {
+  const v = props.variant === 'outline' ? 'outline' : 'fill'
+  const c = ['blue', 'green', 'orange', 'red', 'gray'].indexOf(props.color) >= 0 ? props.color : 'blue'
+  return [`lingyun-tag--${v}`, `lingyun-tag--${c}`]
+})
+
+function onClick(e: Event): void {
+  emit('click', e)
+}
 </script>
 
 <style lang="scss">

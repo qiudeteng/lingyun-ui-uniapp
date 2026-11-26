@@ -9,6 +9,7 @@
       v-if="showImage"
       class="lingyun-image__img"
       :class="{ 'lingyun-image__img--ready': loaded && !failed }"
+      :style="imgStyle"
       :src="displaySrc"
       :mode="resolvedMode"
       :lazy-load="resolvedLazy"
@@ -19,6 +20,7 @@
     <view
       v-if="showPlaceholderLayer"
       class="lingyun-image__placeholder"
+      :style="imgStyle"
     >
       <slot v-if="failed" name="error">
         <text class="lingyun-image__placeholder-text">{{ errorText }}</text>
@@ -36,8 +38,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
+import type { PropType } from 'vue'
 
 /**
  * lingyun-image
@@ -102,254 +105,289 @@ function hasExplicitSize(v: string | number | null | undefined): boolean {
   return v !== undefined && v !== null && v !== ''
 }
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunImage',
-  emits: ['load', 'error', 'click'],
-  props: {
-    src: { type: String, default: '' },
-    mode: { type: String, default: 'aspectFill' },
-    lazy: { type: Boolean, default: true },
-    lazyLoad: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    /**
-     * 显示尺寸档（控制宽高，非圆角）
-     * xs=32 / sm=48 / md=72 / lg=96 / xl=120；也可传数字 px
-     * 若同时传 width/height，以 width/height 为准
-     */
-    size: { type: [String, Number] as PropType<string | number>, default: '' },
-    width: { type: [String, Number] as PropType<string | number>, default: '' },
-    height: { type: [String, Number] as PropType<string | number>, default: '' },
-    /**
-     * 显示形式：square 直角 · rounded 圆角 · circle 圆形
-     */
-    shape: { type: String, default: 'rounded' },
-    /** @deprecated 请用 shape="circle" */
-    circle: { type: Boolean, default: false },
-    /** 圆角幅度，仅 shape=rounded 生效；none/sm/md/lg/xl/2xl 或数字 px。默认 2xl（26） */
-    radius: { type: [String, Number] as PropType<string | number>, default: '2xl' },
-    errorSrc: { type: String, default: '' },
-    errorText: { type: String, default: '加载失败' },
-    showErrorPlaceholder: { type: Boolean, default: true },
-    showLoading: { type: Boolean, default: true },
-    fade: { type: Boolean, default: true },
-    preview: { type: Boolean, default: false },
-    previewUrls: { type: Array as PropType<string[]>, default: () => [] as string[] },
-  },
-  data() {
-    return {
-      loaded: false,
-      failed: false,
-      useErrorSrc: false,
-      /**
-       * 小程序默认 true：src 照常挂上，由 image 的 lazy-load 在滚进视口（含 scroll-view）时再拉取。
-       * H5 在 created 里按 lazy 改成 false，等 IntersectionObserver 进视口再挂 src。
-       */
-      inView: true,
-      _lazyObserver: null as IntersectionObserver | null,
+})
+
+const props = defineProps({
+  src: { type: String, default: '' },
+  mode: { type: String, default: 'aspectFill' },
+  lazy: { type: Boolean, default: true },
+  lazyLoad: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  /**
+   * 显示尺寸档（控制宽高，非圆角）
+   * xs=32 / sm=48 / md=72 / lg=96 / xl=120；也可传数字 px
+   * 若同时传 width/height，以 width/height 为准
+   */
+  size: { type: [String, Number] as PropType<string | number>, default: '' },
+  width: { type: [String, Number] as PropType<string | number>, default: '' },
+  height: { type: [String, Number] as PropType<string | number>, default: '' },
+  /**
+   * 显示形式：square 直角 · rounded 圆角 · circle 圆形
+   */
+  shape: { type: String, default: 'rounded' },
+  /** @deprecated 请用 shape="circle" */
+  circle: { type: Boolean, default: false },
+  /** 圆角幅度，仅 shape=rounded 生效；none/sm/md/lg/xl/2xl 或数字 px。默认 2xl（26） */
+  radius: { type: [String, Number] as PropType<string | number>, default: '2xl' },
+  errorSrc: { type: String, default: '' },
+  errorText: { type: String, default: '加载失败' },
+  showErrorPlaceholder: { type: Boolean, default: true },
+  showLoading: { type: Boolean, default: true },
+  fade: { type: Boolean, default: true },
+  preview: { type: Boolean, default: false },
+  previewUrls: { type: Array as PropType<string[]>, default: () => [] as string[] },
+})
+
+const emit = defineEmits(['load', 'error', 'click'])
+
+const instance = getCurrentInstance()
+const slots = useSlots()
+
+const loaded = ref(false)
+const failed = ref(false)
+const useErrorSrc = ref(false)
+/**
+ * 小程序默认 true：src 照常挂上，由 image 的 lazy-load 在滚进视口（含 scroll-view）时再拉取。
+ * H5 在 created 里按 lazy 改成 false，等 IntersectionObserver 进视口再挂 src。
+ */
+const inView = ref(true)
+const _lazyObserver = ref<IntersectionObserver | null>(null)
+
+const resolvedShape = computed(() => {
+  if (props.circle) return 'circle'
+  const s = String(props.shape || 'rounded').trim().toLowerCase()
+  if (s === 'square' || s === 'rect' || s === 'circle' || s === 'rounded') {
+    return s === 'rect' ? 'square' : s
+  }
+  return 'rounded'
+})
+
+const isCircle = computed(() => {
+  return resolvedShape.value === 'circle'
+})
+
+const isSquare = computed(() => {
+  return resolvedShape.value === 'square'
+})
+
+const resolvedMode = computed((): ImageMode => {
+  const raw = (props.mode || 'aspectFill').trim()
+  const mapped = MODE_ALIAS[raw] || raw
+  const modes: readonly string[] = VALID_MODES
+  return modes.indexOf(mapped) >= 0 ? (mapped as ImageMode) : 'aspectFill'
+})
+
+const resolvedLazy = computed(() => {
+  if (props.lazyLoad !== undefined && props.lazyLoad !== null) return !!props.lazyLoad
+  return !!props.lazy
+})
+
+const sizePx = computed(() => {
+  const s = props.size
+  if (!hasExplicitSize(s)) return null
+  if (typeof s === 'number' && Number.isFinite(s)) return Math.max(0, s)
+  const key = String(s).trim().toLowerCase()
+  if (Object.prototype.hasOwnProperty.call(SIZE_PRESET, key)) {
+    const preset = SIZE_PRESET[key]
+    if (preset != null) return preset
+  }
+  const n = Number(s)
+  if (Number.isFinite(n)) return Math.max(0, n)
+  return null
+})
+
+const radiusPx = computed(() => {
+  if (isCircle.value || isSquare.value) return 0
+  const r = props.radius
+  if (typeof r === 'number' && Number.isFinite(r)) return Math.max(0, r)
+  const key = String(r || '2xl').trim().toLowerCase()
+  if (Object.prototype.hasOwnProperty.call(RADIUS_PRESET, key)) {
+    const preset = RADIUS_PRESET[key]
+    if (preset != null) return preset
+  }
+  const n = Number(r)
+  if (Number.isFinite(n)) return Math.max(0, n)
+  return RADIUS_PRESET['2xl']
+})
+
+const boxWidth = computed(() => {
+  if (hasExplicitSize(props.width)) return toCssSize(props.width, '100%')
+  if (sizePx.value !== null) return `${sizePx.value}px`
+  return '100%'
+})
+
+const boxHeight = computed(() => {
+  if (hasExplicitSize(props.height)) return toCssSize(props.height, 'auto')
+  if (sizePx.value !== null) return `${sizePx.value}px`
+  if (isCircle.value) return boxWidth.value
+  if (resolvedMode.value === 'widthFix') return 'auto'
+  return '100%'
+})
+
+const displaySrc = computed(() => {
+  if (useErrorSrc.value && props.errorSrc) return props.errorSrc
+  const s = (props.src || '').trim()
+  return s
+})
+
+const showImage = computed(() => {
+  if (!displaySrc.value) return false
+  if (failed.value) return false
+  /* H5 的 image 不理会 lazy-load，未进视口前不挂 src；小程序仍交给原生 lazy-load */
+  if (resolvedLazy.value && !inView.value) return false
+  return true
+})
+
+const showPlaceholderLayer = computed(() => {
+  if (failed.value) {
+    if (useErrorSrc.value && props.errorSrc) return false
+    return props.showErrorPlaceholder || !!(slots && slots.error)
+  }
+  if (!loaded.value && props.showLoading) return true
+  return false
+})
+
+const rootClass = computed(() => {
+  return [
+    `lingyun-image--${resolvedShape.value}`,
+    props.fade ? 'lingyun-image--fade' : '',
+    resolvedMode.value === 'widthFix' || resolvedMode.value === 'heightFix'
+      ? 'lingyun-image--auto-size'
+      : '',
+  ]
+})
+
+const rootStyle = computed((): Record<string, string> => {
+  const style: Record<string, string> = {
+    width: boxWidth.value,
+    height: boxHeight.value,
+  }
+  if (isCircle.value) {
+    style.borderRadius = '50%'
+  } else if (isSquare.value) {
+    style.borderRadius = '0'
+  } else {
+    style.borderRadius = `${radiusPx.value}px`
+  }
+  return style
+})
+
+/** 圆角直接作用在 image 自身，不依赖父级 overflow 裁剪（小程序端更稳） */
+const imgStyle = computed((): Record<string, string> => {
+  const style: Record<string, string> = {}
+  if (isCircle.value) {
+    style.borderRadius = '50%'
+  } else if (isSquare.value) {
+    style.borderRadius = '0'
+  } else {
+    style.borderRadius = `${radiusPx.value}px`
+  }
+  return style
+})
+
+function unbindLazy(): void {
+  // #ifdef H5
+  const observer = _lazyObserver.value
+  if (observer) {
+    observer.disconnect()
+    _lazyObserver.value = null
+  }
+  // #endif
+}
+
+function bindLazy(): void {
+  // #ifndef H5
+  inView.value = true
+  // #endif
+  // #ifdef H5
+  unbindLazy()
+  if (!resolvedLazy.value) {
+    inView.value = true
+    return
+  }
+  inView.value = false
+  nextTick(() => {
+    const el = instance?.proxy?.$el as Element | undefined
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      inView.value = true
+      return
     }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return
+        inView.value = true
+        unbindLazy()
+      },
+      { root: null, rootMargin: '200px 0px', threshold: 0.01 },
+    )
+    observer.observe(el)
+    _lazyObserver.value = observer
+  })
+  // #endif
+}
+
+function resetState(): void {
+  loaded.value = false
+  failed.value = false
+  useErrorSrc.value = false
+}
+
+function onLoad(e: Event): void {
+  loaded.value = true
+  failed.value = false
+  emit('load', e)
+}
+
+function onError(e: Event): void {
+  if (!useErrorSrc.value && props.errorSrc) {
+    useErrorSrc.value = true
+    loaded.value = false
+    failed.value = false
+    return
+  }
+  failed.value = true
+  loaded.value = false
+  emit('error', e)
+}
+
+function onClick(e: Event): void {
+  emit('click', e)
+  if (!props.preview) return
+  const current = displaySrc.value
+  if (!current || failed.value) return
+  const urls =
+    Array.isArray(props.previewUrls) && props.previewUrls.length
+      ? props.previewUrls.filter((url) => Boolean(url))
+      : [current]
+  try {
+    uni.previewImage({ urls, current })
+  } catch {
+    /* ignore */
+  }
+}
+
+watch(
+  () => props.src,
+  () => {
+    resetState()
   },
-  computed: {
-    resolvedShape() {
-      if (this.circle) return 'circle'
-      const s = String(this.shape || 'rounded').trim().toLowerCase()
-      if (s === 'square' || s === 'rect' || s === 'circle' || s === 'rounded') {
-        return s === 'rect' ? 'square' : s
-      }
-      return 'rounded'
-    },
-    isCircle() {
-      return this.resolvedShape === 'circle'
-    },
-    isSquare() {
-      return this.resolvedShape === 'square'
-    },
-    resolvedMode(): ImageMode {
-      const raw = (this.mode || 'aspectFill').trim()
-      const mapped = MODE_ALIAS[raw] || raw
-      const modes: readonly string[] = VALID_MODES
-      return modes.indexOf(mapped) >= 0 ? (mapped as ImageMode) : 'aspectFill'
-    },
-    resolvedLazy() {
-      if (this.lazyLoad !== undefined && this.lazyLoad !== null) return !!this.lazyLoad
-      return !!this.lazy
-    },
-    sizePx() {
-      const s = this.size
-      if (!hasExplicitSize(s)) return null
-      if (typeof s === 'number' && Number.isFinite(s)) return Math.max(0, s)
-      const key = String(s).trim().toLowerCase()
-      if (Object.prototype.hasOwnProperty.call(SIZE_PRESET, key)) {
-        const preset = SIZE_PRESET[key]
-        if (preset != null) return preset
-      }
-      const n = Number(s)
-      if (Number.isFinite(n)) return Math.max(0, n)
-      return null
-    },
-    radiusPx() {
-      if (this.isCircle || this.isSquare) return 0
-      const r = this.radius
-      if (typeof r === 'number' && Number.isFinite(r)) return Math.max(0, r)
-      const key = String(r || '2xl').trim().toLowerCase()
-      if (Object.prototype.hasOwnProperty.call(RADIUS_PRESET, key)) {
-        const preset = RADIUS_PRESET[key]
-        if (preset != null) return preset
-      }
-      const n = Number(r)
-      if (Number.isFinite(n)) return Math.max(0, n)
-      return RADIUS_PRESET['2xl']
-    },
-    boxWidth() {
-      if (hasExplicitSize(this.width)) return toCssSize(this.width, '100%')
-      if (this.sizePx !== null) return `${this.sizePx}px`
-      return '100%'
-    },
-    boxHeight() {
-      if (hasExplicitSize(this.height)) return toCssSize(this.height, 'auto')
-      if (this.sizePx !== null) return `${this.sizePx}px`
-      if (this.isCircle) return this.boxWidth
-      if (this.resolvedMode === 'widthFix') return 'auto'
-      return '100%'
-    },
-    displaySrc() {
-      if (this.useErrorSrc && this.errorSrc) return this.errorSrc
-      const s = (this.src || '').trim()
-      return s
-    },
-    showImage() {
-      if (!this.displaySrc) return false
-      if (this.failed) return false
-      /* H5 的 image 不理会 lazy-load，未进视口前不挂 src；小程序仍交给原生 lazy-load */
-      if (this.resolvedLazy && !this.inView) return false
-      return true
-    },
-    showPlaceholderLayer() {
-      if (this.failed) {
-        if (this.useErrorSrc && this.errorSrc) return false
-        return this.showErrorPlaceholder || !!(this.$slots && this.$slots.error)
-      }
-      if (!this.loaded && this.showLoading) return true
-      return false
-    },
-    rootClass() {
-      return [
-        `lingyun-image--${this.resolvedShape}`,
-        this.fade ? 'lingyun-image--fade' : '',
-        this.resolvedMode === 'widthFix' || this.resolvedMode === 'heightFix'
-          ? 'lingyun-image--auto-size'
-          : '',
-      ]
-    },
-    rootStyle(): Record<string, string> {
-      const style: Record<string, string> = {
-        width: this.boxWidth,
-        height: this.boxHeight,
-      }
-      if (this.isCircle) {
-        style.borderRadius = '50%'
-      } else if (this.isSquare) {
-        style.borderRadius = '0'
-      } else {
-        style.borderRadius = `${this.radiusPx}px`
-      }
-      return style
-    },
-  },
-  watch: {
-    src() {
-      this.resetState()
-    },
-    resolvedLazy() {
-      this.bindLazy()
-    },
-  },
-  created() {
-    // #ifdef H5
-    if (this.resolvedLazy) this.inView = false
-    // #endif
-  },
-  mounted() {
-    this.bindLazy()
-  },
-  beforeUnmount() {
-    this.unbindLazy()
-  },
-  methods: {
-    bindLazy(): void {
-      // #ifndef H5
-      this.inView = true
-      // #endif
-      // #ifdef H5
-      this.unbindLazy()
-      if (!this.resolvedLazy) {
-        this.inView = true
-        return
-      }
-      this.inView = false
-      this.$nextTick(() => {
-        const el = this.$el as Element | undefined
-        if (!el || typeof IntersectionObserver === 'undefined') {
-          this.inView = true
-          return
-        }
-        const observer = new IntersectionObserver(
-          (entries) => {
-            if (!entries.some((entry) => entry.isIntersecting)) return
-            this.inView = true
-            this.unbindLazy()
-          },
-          { root: null, rootMargin: '200px 0px', threshold: 0.01 },
-        )
-        observer.observe(el)
-        this._lazyObserver = observer
-      })
-      // #endif
-    },
-    unbindLazy(): void {
-      // #ifdef H5
-      const observer = this._lazyObserver
-      if (observer) {
-        observer.disconnect()
-        this._lazyObserver = null
-      }
-      // #endif
-    },
-    resetState() {
-      this.loaded = false
-      this.failed = false
-      this.useErrorSrc = false
-    },
-    onLoad(e: { detail?: unknown }) {
-      this.loaded = true
-      this.failed = false
-      this.$emit('load', e)
-    },
-    onError(e: { detail?: unknown }) {
-      if (!this.useErrorSrc && this.errorSrc) {
-        this.useErrorSrc = true
-        this.loaded = false
-        this.failed = false
-        return
-      }
-      this.failed = true
-      this.loaded = false
-      this.$emit('error', e)
-    },
-    onClick(e: TouchEvent) {
-      this.$emit('click', e)
-      if (!this.preview) return
-      const current = this.displaySrc
-      if (!current || this.failed) return
-      const urls =
-        Array.isArray(this.previewUrls) && this.previewUrls.length
-          ? this.previewUrls.filter((url) => Boolean(url))
-          : [current]
-      try {
-        uni.previewImage({ urls, current })
-      } catch {
-        /* ignore */
-      }
-    },
-  },
+)
+
+watch(resolvedLazy, () => {
+  bindLazy()
+})
+
+// #ifdef H5
+if (resolvedLazy.value) inView.value = false
+// #endif
+
+onMounted(() => {
+  bindLazy()
+})
+
+onBeforeUnmount(() => {
+  unbindLazy()
 })
 </script>
 
@@ -359,7 +397,6 @@ export default defineComponent({
 .lingyun-image {
   position: relative;
   box-sizing: border-box;
-  overflow: hidden;
   background-color: var(--lingyun-fill-tertiary, #{$lingyun-fill-tertiary});
   flex-shrink: 0;
 }

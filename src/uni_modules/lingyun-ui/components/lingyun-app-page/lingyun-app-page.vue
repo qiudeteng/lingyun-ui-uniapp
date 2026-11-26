@@ -138,7 +138,7 @@
     <view
       v-if="!embedded && usePageScroll"
       class="lingyun-app-page__pad"
-      :style="bottomInsetStyle"
+      :style="padStyle"
     >
       <view v-if="hostedMiss" class="lingyun-app-page__hosted">
         <lingyun-page-miss :from="hostedFrom" @home="onHostHome" />
@@ -167,7 +167,7 @@
       @scroll="onBodyScroll"
       @scrolltoupper="onScrollToUpper"
     >
-      <view class="lingyun-app-page__pad" :style="bottomInsetStyle">
+      <view class="lingyun-app-page__pad" :style="padStyle">
         <view v-if="hostedMiss" class="lingyun-app-page__hosted">
           <lingyun-page-miss :from="hostedFrom" @home="onHostHome" />
         </view>
@@ -189,7 +189,7 @@
     <view
       v-if="!embedded && !bodyScroll"
       class="lingyun-app-page__body"
-      :style="bottomInsetStyle"
+      :style="padStyle"
     >
       <view class="lingyun-app-page__pad">
         <view v-if="hostedMiss" class="lingyun-app-page__hosted">
@@ -313,8 +313,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, getCurrentInstance, inject, provide, ref, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
+import { inject, provide, type PropType } from 'vue'
 import { onResize, onShow } from '@dcloudio/uni-app'
 import {
   LINGYUN_APP_PAGE_BIND_SCROLL,
@@ -438,1272 +439,1275 @@ type MpComponentScope = {
   createIntersectionObserver?: (options: object) => MpGlassObserver
 }
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunAppPage',
-  components: { ContentCoverFrame },
-  emits: [
-    'back',
-    'close',
-    'trailing',
-    'trailing-action',
-    'scroll',
-    'tab-change',
-    'duo-search',
-    'duo-overflow',
-    'update:searching',
-    'update:searchValue',
-    'search-open',
-    'search-cancel',
-    'search-input',
-    'search',
-    'update:segmentValue',
-    'segment-click',
-    'segment-change',
-    'picker-value',
-  ],
-  props: {
-    title: { type: String, default: '' },
-    subtitle: { type: String, default: '' },
-    /** 副标题位置显示全局选择器。默认关，需要的页面设为 true */
-    subtitlePicker: { type: Boolean, default: false },
-    titleStyle: { type: String, default: 'title' },
-    placement: { type: String, default: 'standard' },
-    showBack: { default: 'auto' },
-    /** 返回钮默认自己返回上一页；false 时只抛 back，由使用方返回（避免重复返回两层） */
-    autoBack: { type: Boolean, default: true },
-    showClose: { default: false },
-    showGrabber: { default: false },
-    showTrailing: { type: Boolean, default: false },
-    safeArea: { type: Boolean, default: true },
-    bodyScroll: { type: Boolean, default: true },
-    /**
-     * 页面级滚动（默认）。关掉则退回内层 scroll-view。
-     * 只有需要 scroll-y 锁（横向 swipe）这类场景才关；
-     * **含文本输入的页面必须保持默认**：微信安卓在整屏 scroll-view 里聚焦
-     * 会把原生输入层与 WXSS 外壳错开（详见 design/TEXTFIELDS.md §5）。
-     */
-    pageScroll: { type: Boolean, default: true },
-    /** 宽屏（≥690，含折叠屏展开）左侧停靠导航。false 关闭。Sheet 形态永不显示。 */
-    showNav: { default: true },
-    /** 头部顶栏。false 时不渲染，也不再为顶栏预留高度 */
-    showToolbar: { type: Boolean, default: true },
-    /** 覆盖默认目录；null 使用全局 tabs 或 LINGYUN_PAGE_NAV */
-    navSections: {
-      type: Array as PropType<LingyunPageNavSection[] | null>,
-      default: null,
-    },
-    /** 全局 tabs 的底部 Tab 栏。'auto' 时窄屏显示；显式 false 永远隐藏 */
-    showTabbar: { default: 'auto' },
-    /** auto / tabbar / sidebar / none。页面级优先级最高 */
-    navMode: { type: String, default: 'auto' },
-    /** 关掉后壳不加底部留白，但 CSS 变量与注入仍给出真实值 */
-    autoBottomInset: { type: Boolean, default: true },
-    /** 关掉后壳不加顶部留白；仅被宿主页嵌入的页面使用 */
-    autoTopInset: { type: Boolean, default: true },
-    /** 顶栏右侧按钮组；一维为一组，二维按组渲染多个玻璃胶囊；点击发 trailing-action */
-    trailingButtons: {
-      type: Array as PropType<
-        | Array<{ key: string; icon?: string; label?: string; disabled?: boolean }>
-        | Array<Array<{ key: string; icon?: string; label?: string; disabled?: boolean }>>
-      >,
-      default: () => [],
-    },
-    /** 外部浮层打开期间隐藏顶栏按钮组，避免按钮从菜单边缘露出 */
-    trailingButtonsHidden: { type: Boolean, default: false },
-    /** 显式启用 #trailing-menu 浮层；小程序插槽检测不可靠，需手动开启 */
-    trailingMenuEnabled: { type: Boolean, default: false },
-    /** 页面级主题钮开关：auto 跟随全局；false 只隐藏当前页，不改进程全局状态 */
-    showThemeSwitch: {
-      type: [Boolean, String] as PropType<boolean | string>,
-      default: 'auto',
-    },
-    /** 开启顶部搜索：右侧多一个独立搜索按钮；搜索模式用输入框替换顶部内容 */
-    searchable: { type: Boolean, default: false },
-    /** 搜索模式开关；支持 v-model:searching */
-    searching: { type: Boolean, default: false },
-    searchValue: { type: String, default: '' },
-    searchPlaceholder: { type: String, default: '搜索' },
-    /** 顶栏下方数据驱动控件；数据为空时不占高度 */
-    segments: {
-      type: Array as PropType<
-        Array<{
-          key: string
-          text?: string
-          icon?: string
-          badge?: string | number
-          disabled?: boolean
-        }>
-      >,
-      default: () => [],
-    },
-    segmentValue: { type: [String, Number] as PropType<string | number>, default: '' },
-    /** 同一份 segments 数据渲染成哪种控件：分段控件 / 顶部 Tabs */
-    segmentControl: {
-      type: String as PropType<'segmented' | 'tabs'>,
-      default: 'segmented',
-    },
-    glassDistance: { type: Number, default: 56 },
+})
+
+const props = defineProps({
+  title: { type: String, default: '' },
+  subtitle: { type: String, default: '' },
+  /** 副标题位置显示全局选择器。默认关，需要的页面设为 true */
+  subtitlePicker: { type: Boolean, default: false },
+  titleStyle: { type: String, default: 'title' },
+  placement: { type: String, default: 'standard' },
+  showBack: { default: 'auto' },
+  /** 返回钮默认自己返回上一页；false 时只抛 back，由使用方返回（避免重复返回两层） */
+  autoBack: { type: Boolean, default: true },
+  showClose: { default: false },
+  showGrabber: { default: false },
+  showTrailing: { type: Boolean, default: false },
+  safeArea: { type: Boolean, default: true },
+  bodyScroll: { type: Boolean, default: true },
+  /**
+   * 页面级滚动（默认）。关掉则退回内层 scroll-view。
+   * 只有需要 scroll-y 锁（横向 swipe）这类场景才关；
+   * **含文本输入的页面必须保持默认**：微信安卓在整屏 scroll-view 里聚焦
+   * 会把原生输入层与 WXSS 外壳错开（详见 design/TEXTFIELDS.md §5）。
+   */
+  pageScroll: { type: Boolean, default: true },
+  /** 宽屏（≥690，含折叠屏展开）左侧停靠导航。false 关闭。Sheet 形态永不显示。 */
+  showNav: { default: true },
+  /** 头部顶栏。false 时不渲染，也不再为顶栏预留高度 */
+  showToolbar: { type: Boolean, default: true },
+  /** 覆盖默认目录；null 使用全局 tabs 或 LINGYUN_PAGE_NAV */
+  navSections: {
+    type: Array as PropType<LingyunPageNavSection[] | null>,
+    default: null,
   },
-  data() {
-    return {
-      glassProgress: 0,
-      statusBarPx: 0,
-      barHeightPx: LINGYUN_TOOLBAR_BAR_DESIGN_PX,
-      largeExtraPx: LINGYUN_TOOLBAR_LARGE_EXTRA_PX,
-      title2LineLargeExtraPx: LINGYUN_TOOLBAR_2LINE_LARGE_EXTRA_PX,
-      /** 页面壳布局的唯一宽度来源（来自自身 resize 监听） */
-      windowWidth: readLingyunWindowWidth(),
-      /** 当前真实页面路径，用于推导 Tab 选中态 */
-      currentPagePath: '',
-      /** 跨页切换时 Tab 指示器的起始 key */
-      tabbarFromKey: '',
-      /** Tab / 左侧菜单换页后内容淡入 */
-      pageEntering: false,
-      /** 横向 swipe 确认后临时关 scroll-y，避免 iOS 斜滑带动页面上下晃 */
-      bodyScrollY: true,
-      /** Duo 顶部 / 右侧工具栏的主题菜单打开期间隐去工具组，避免玻璃胶囊从菜单边缘漏出 */
-      duoToolsMenuMounted: false,
-      duoRailToolsMenuMounted: false,
-      /** 顶部搜索：内部状态兼容未绑定 v-model 的页面 */
-      searchActive: false,
-      searchText: '',
-      /** H5：顶部插槽目标节点出现后再传送 */
-      navHeaderReady: false,
-      _scrollSettleTimer: null as ReturnType<typeof setTimeout> | null,
-      _scrollLockCount: 0,
-      /** 页面级滚动下驱动玻璃渐变的哨兵观察器 */
-      _glassObserver: null as MpGlassObserver | null,
-      _navSlotClaim: 0,
-      _lastReportedTop: undefined as number | undefined,
-      _navSlotTimer: null as ReturnType<typeof setTimeout> | null,
-      _onWindowResize: null as ((res?: unknown) => void) | null,
-      _onWindowScroll: null as ((event?: Event) => void) | null,
-      _stopRouteChange: null as (() => void) | null,
-      _onHashChange: null as (() => void) | null,
-      _pageEnterTimer: null as ReturnType<typeof setTimeout> | null,
-      /** 须在 data 里分配。导航监听会在 created 之前同步跑，那时再分配就对不上宿主。 */
-      coverUid: nextLingyunContentCoverUid(),
-      coverEntered: {} as Record<number, boolean>,
-      _coverEnterTimer: null as ReturnType<typeof setTimeout> | null,
+  /** 全局 tabs 的底部 Tab 栏。'auto' 时窄屏显示；显式 false 永远隐藏 */
+  showTabbar: { default: 'auto' },
+  /** auto / tabbar / sidebar / none。页面级优先级最高 */
+  navMode: { type: String, default: 'auto' },
+  /** 关掉后壳不加底部留白，但 CSS 变量与注入仍给出真实值 */
+  autoBottomInset: { type: Boolean, default: true },
+  /** 关掉后壳不加顶部留白；仅被宿主页嵌入的页面使用 */
+  autoTopInset: { type: Boolean, default: true },
+  /** 顶栏右侧按钮组；一维为一组，二维按组渲染多个玻璃胶囊；点击发 trailing-action */
+  trailingButtons: {
+    type: Array as PropType<
+      | Array<{ key: string; icon?: string; label?: string; disabled?: boolean }>
+      | Array<Array<{ key: string; icon?: string; label?: string; disabled?: boolean }>>
+    >,
+    default: () => [],
+  },
+  /** 外部浮层打开期间隐藏顶栏按钮组，避免按钮从菜单边缘露出 */
+  trailingButtonsHidden: { type: Boolean, default: false },
+  /** 显式启用 #trailing-menu 浮层；小程序插槽检测不可靠，需手动开启 */
+  trailingMenuEnabled: { type: Boolean, default: false },
+  /** 页面级主题钮开关：auto 跟随全局；false 只隐藏当前页，不改进程全局状态 */
+  showThemeSwitch: {
+    type: [Boolean, String] as PropType<boolean | string>,
+    default: 'auto',
+  },
+  /** 开启顶部搜索：右侧多一个独立搜索按钮；搜索模式用输入框替换顶部内容 */
+  searchable: { type: Boolean, default: false },
+  /** 搜索模式开关；支持 v-model:searching */
+  searching: { type: Boolean, default: false },
+  searchValue: { type: String, default: '' },
+  searchPlaceholder: { type: String, default: '搜索' },
+  /** 顶栏下方数据驱动控件；数据为空时不占高度 */
+  segments: {
+    type: Array as PropType<
+      Array<{
+        key: string
+        text?: string
+        icon?: string
+        badge?: string | number
+        disabled?: boolean
+      }>
+    >,
+    default: () => [],
+  },
+  segmentValue: { type: [String, Number] as PropType<string | number>, default: '' },
+  /** 同一份 segments 数据渲染成哪种控件：分段控件 / 顶部 Tabs */
+  segmentControl: {
+    type: String as PropType<'segmented' | 'tabs'>,
+    default: 'segmented',
+  },
+  glassDistance: { type: Number, default: 56 },
+})
+
+const emit = defineEmits([
+  'back',
+  'close',
+  'trailing',
+  'trailing-action',
+  'scroll',
+  'tab-change',
+  'duo-search',
+  'duo-overflow',
+  'update:searching',
+  'update:searchValue',
+  'search-open',
+  'search-cancel',
+  'search-input',
+  'search',
+  'update:segmentValue',
+  'segment-click',
+  'segment-change',
+  'picker-value',
+])
+
+const instance = getCurrentInstance()
+const embedded = inject<boolean>(LINGYUN_APP_PAGE_EMBEDDED, false)
+provide(LINGYUN_APP_PAGE_EMBEDDED, true)
+const inContentCover = inject(LINGYUN_IN_CONTENT_COVER, false)
+const contentCoverPath = inject(LINGYUN_CONTENT_COVER_PATH, '')
+/* 只有直接放进盖层的那一层页面读到标记，它内部再嵌的壳不再当成盖层页 */
+provide(LINGYUN_IN_CONTENT_COVER, false)
+provide(LINGYUN_CONTENT_COVER_PATH, '')
+const inheritedScrollLocked = inject(LINGYUN_APP_PAGE_SCROLL_LOCKED, null)
+const inheritedNavInset = inject(LINGYUN_APP_PAGE_NAV_INSET, null)
+const inheritedTopInset = inject(LINGYUN_APP_PAGE_TOP_INSET, null)
+const inheritedBottomInset = inject(LINGYUN_APP_PAGE_BOTTOM_INSET, null)
+const inheritedScrollReport = inject(LINGYUN_APP_PAGE_REPORT_SCROLL, null)
+const inheritedScrollLock = inject<LingyunAppPageScrollLock | null>(
+  LINGYUN_APP_PAGE_SCROLL_LOCK,
+  null,
+)
+const scrollLocked = embedded && inheritedScrollLocked ? inheritedScrollLocked : ref(false)
+const navInsetPx = embedded && inheritedNavInset ? inheritedNavInset : ref(0)
+const topInsetPx = embedded && inheritedTopInset ? inheritedTopInset : ref(0)
+const bottomInsetPx = embedded && inheritedBottomInset ? inheritedBottomInset : ref(0)
+provide(LINGYUN_APP_PAGE_SCROLL_LOCKED, scrollLocked)
+provide(LINGYUN_APP_PAGE_NAV_INSET, navInsetPx)
+provide(LINGYUN_APP_PAGE_TOP_INSET, topInsetPx)
+provide(LINGYUN_APP_PAGE_BOTTOM_INSET, bottomInsetPx)
+const bindScroll = inject(LINGYUN_APP_PAGE_BIND_SCROLL, null)
+const themeSwitchVisible = useLingyunThemeSwitchVisible()
+const hostedPathRef = useLingyunHostedPath()
+const pageIntentRef = useLingyunPageNavIntent()
+
+const glassProgress = ref(0)
+const statusBarPx = ref(0)
+const barHeightPx = ref(LINGYUN_TOOLBAR_BAR_DESIGN_PX)
+const largeExtraPx = ref(LINGYUN_TOOLBAR_LARGE_EXTRA_PX)
+const title2LineLargeExtraPx = ref(LINGYUN_TOOLBAR_2LINE_LARGE_EXTRA_PX)
+/** 页面壳布局的唯一宽度来源（来自自身 resize 监听） */
+const windowWidth = ref(readLingyunWindowWidth())
+/** 当前真实页面路径，用于推导 Tab 选中态 */
+const currentPagePath = ref('')
+/** 跨页切换时 Tab 指示器的起始 key */
+const tabbarFromKey = ref('')
+/** Tab / 左侧菜单换页后内容淡入 */
+const pageEntering = ref(false)
+/** 横向 swipe 确认后临时关 scroll-y，避免 iOS 斜滑带动页面上下晃 */
+const bodyScrollY = ref(true)
+/** Duo 顶部 / 右侧工具栏的主题菜单打开期间隐去工具组，避免玻璃胶囊从菜单边缘漏出 */
+const duoToolsMenuMounted = ref(false)
+const duoRailToolsMenuMounted = ref(false)
+/** 顶部搜索：内部状态兼容未绑定 v-model 的页面 */
+const searchActive = ref(false)
+const searchText = ref('')
+/** H5：顶部插槽目标节点出现后再传送 */
+const navHeaderReady = ref(false)
+const _scrollSettleTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _scrollLockCount = ref(0)
+/** 页面级滚动下驱动玻璃渐变的哨兵观察器 */
+const _glassObserver = ref<MpGlassObserver | null>(null)
+const _navSlotClaim = ref(0)
+const _lastReportedTop = ref<number | undefined>(undefined)
+const _navSlotTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _onWindowResize = ref<((res?: unknown) => void) | null>(null)
+const _onWindowScroll = ref<((event?: Event) => void) | null>(null)
+const _stopRouteChange = ref<(() => void) | null>(null)
+const _onHashChange = ref<(() => void) | null>(null)
+const _pageEnterTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+/** 须在 data 里分配。导航监听会在 created 之前同步跑，那时再分配就对不上宿主。 */
+const coverUid = ref(nextLingyunContentCoverUid())
+const coverEntered = ref<Record<number, boolean>>({})
+const _coverEnterTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+
+const slots = useSlots()
+
+const themeRootClass = computed(() => {
+  try {
+    return useLingyunTheme().rootClass
+  } catch {
+    return 'theme-light'
+  }
+})
+const themeSwitchEffective = computed((): boolean => {
+  if (props.showThemeSwitch === false) return false
+  if (props.showThemeSwitch === true) return true
+  return !!themeSwitchVisible.value
+})
+const pageConfig = computed(() => {
+  return getLingyunPageConfig()
+})
+/** 小程序宽屏右侧内容路径优先，其次导航意图，最后真实路由 */
+const effectivePagePath = computed(() => {
+  if (inContentCover && contentCoverPath) {
+    return normalizeLingyunPagePath(contentCoverPath)
+  }
+  const real = normalizeLingyunPagePath(
+    currentPagePath.value || readLingyunCurrentPagePath(),
+  )
+  const hosted = hostedPathRef?.value ?? ''
+  /* 宿主路径只属于承载它的首页/目录页，子页仍按自己的真实路由判断 */
+  if (hosted && isLingyunTabHostPage(real)) {
+    return normalizeLingyunPagePath(hosted)
+  }
+  const intent = pageIntentRef.value
+  if (intent) return normalizeLingyunPagePath(intent)
+  return real
+})
+const pageOverride = computed(() => {
+  return getLingyunPageOverride(effectivePagePath.value)
+})
+/** 未登录的受保护页先藏起来，避免冷启动先画出首页和侧栏再跳登录 */
+const authHold = computed(() => {
+  return lingyunPageRequiresLogin()
+})
+const showGrabberEffective = computed(() => {
+  return coerceTriFlag(props.showGrabber, false)
+})
+const pageLayout = computed((): LingyunPageLayoutResult => {
+  const env = resolveLingyunFormFactor(lingyun)
+  const input = {
+    width: windowWidth.value,
+    config: pageConfig.value,
+    pageOverride: pageOverride.value,
+    embedded,
+    placement: props.placement,
+    grabber: showGrabberEffective.value,
+    authHold: authHold.value,
+    showNav: props.showNav,
+    showTabbar: props.showTabbar,
+    navMode: props.navMode,
+    safeArea: props.safeArea,
+    formFactor: env.formFactor,
+    duoPose: env.duoPose,
+  }
+  const plan = resolveLingyunPageLayout(input)
+  return plan
+})
+const isDuoTopBottom = computed(() => {
+  return pageLayout.value.chrome === 'duo-top-bottom'
+})
+const isDuoSplit = computed(() => {
+  return pageLayout.value.chrome === 'duo-split'
+})
+const toolbarStackPx = computed(() => {
+  let h = barHeightPx.value
+  if (!searchActive.value) {
+    const style = props.titleStyle || 'title'
+    if (style === 'large') {
+      h +=
+        props.subtitlePicker && lingyunToolbarPicker.enabled
+          ? title2LineLargeExtraPx.value
+          : largeExtraPx.value
     }
-  },
-  setup() {
-    const instance = getCurrentInstance()
-    const embedded = inject<boolean>(LINGYUN_APP_PAGE_EMBEDDED, false)
-    provide(LINGYUN_APP_PAGE_EMBEDDED, true)
-    const inContentCover = inject(LINGYUN_IN_CONTENT_COVER, false)
-    const contentCoverPath = inject(LINGYUN_CONTENT_COVER_PATH, '')
-    /* 只有直接放进盖层的那一层页面读到标记，它内部再嵌的壳不再当成盖层页 */
-    provide(LINGYUN_IN_CONTENT_COVER, false)
-    provide(LINGYUN_CONTENT_COVER_PATH, '')
-    const inheritedScrollLocked = inject(LINGYUN_APP_PAGE_SCROLL_LOCKED, null)
-    const inheritedNavInset = inject(LINGYUN_APP_PAGE_NAV_INSET, null)
-    const inheritedTopInset = inject(LINGYUN_APP_PAGE_TOP_INSET, null)
-    const inheritedBottomInset = inject(LINGYUN_APP_PAGE_BOTTOM_INSET, null)
-    const inheritedScrollReport = inject(LINGYUN_APP_PAGE_REPORT_SCROLL, null)
-    const inheritedScrollLock = inject<LingyunAppPageScrollLock | null>(
-      LINGYUN_APP_PAGE_SCROLL_LOCK,
-      null,
+    if (style === 'title2LineLarge') h += title2LineLargeExtraPx.value
+  }
+  if (props.placement === 'sheet' || showGrabberEffective.value) h += 16
+  if (props.segments && props.segments.length && !isDuoTopBottom.value && !isDuoSplit.value) {
+    h +=
+      props.segmentControl === 'tabs'
+        ? LINGYUN_TOOLBAR_TABS_ROW_PX
+        : LINGYUN_TOOLBAR_SEGMENT_ROW_PX
+  }
+  return h
+})
+const duoRailVisible = computed(() => {
+  return (
+    !embedded &&
+    pageLayout.value.chrome === 'duo-right-rail' &&
+    pageLayout.value.sidebarVisible
+  )
+})
+const tabbarItems = computed(() => {
+  return (pageConfig.value.tabs || []).map((tab: LingyunPageTab) => ({
+    key: tab.key,
+    text: tab.text,
+    icon: tab.icon,
+    iconSrc: tab.iconSrc,
+    activeIconSrc: tab.activeIconSrc,
+    badge: tab.badge,
+  }))
+})
+const isTabRoot = computed(() => {
+  if (isLingyunWorkspacePath(effectivePagePath.value)) {
+    const key = getLingyunWorkspaceTabKey()
+    if (!key) return false
+    return (pageConfig.value.tabs || []).some(
+      (tab) =>
+        tab.key === key &&
+        Array.isArray(tab.children) &&
+        tab.children.length > 0,
     )
-    const scrollLocked = embedded && inheritedScrollLocked ? inheritedScrollLocked : ref(false)
-    const navInsetPx = embedded && inheritedNavInset ? inheritedNavInset : ref(0)
-    const topInsetPx = embedded && inheritedTopInset ? inheritedTopInset : ref(0)
-    const bottomInsetPx = embedded && inheritedBottomInset ? inheritedBottomInset : ref(0)
-    provide(LINGYUN_APP_PAGE_SCROLL_LOCKED, scrollLocked)
-    provide(LINGYUN_APP_PAGE_NAV_INSET, navInsetPx)
-    provide(LINGYUN_APP_PAGE_TOP_INSET, topInsetPx)
-    provide(LINGYUN_APP_PAGE_BOTTOM_INSET, bottomInsetPx)
-    onResize((res) => {
-      const proxy = (instance && instance.proxy) as
-        | { syncNavLayout?: (windowWidth?: number) => void }
-        | null
-      if (proxy && typeof proxy.syncNavLayout === 'function') {
-        proxy.syncNavLayout(readLingyunResizeWidth(res))
-      }
+  }
+  const tab = matchLingyunPageTab(pageConfig.value.tabs || [], effectivePagePath.value)
+  if (!tab) return false
+  /* 有 children 时，Tab 根是工作台；子页面不是根（即使子页 url 与 Tab url 相同） */
+  if (Array.isArray(tab.children) && tab.children.length) {
+    if (buildLingyunPageTabWorkspaceUrl(tab)) return false
+    return (
+      normalizeLingyunPagePath(tab.url) ===
+      normalizeLingyunPagePath(effectivePagePath.value)
+    )
+  }
+  return (
+    normalizeLingyunPagePath(tab.url) ===
+    normalizeLingyunPagePath(effectivePagePath.value)
+  )
+})
+/** 一级 Tab 根页才在右侧栏显示 Tab / 搜索；独立页只有返回 */
+const duoRailItems = computed(() => {
+  return isTabRoot.value ? tabbarItems.value : []
+})
+const duoRailShowBack = computed(() => {
+  return coerceTriFlag(props.showBack, !isTabRoot.value)
+})
+/** 搜索是可选入口：只有 tabbar.search=true 的 Tab 根页才显示 */
+const duoRailShowSearch = computed(() => {
+  return isTabRoot.value && pageConfig.value.tabbar?.search === true
+})
+const duoPoseKey = computed(() => {
+  return pageLayout.value.layoutClass.replace(/^duo-/, '')
+})
+const duoCompactTools = computed(() => {
+  return pageLayout.value.layoutClass === 'duo-outer-landscape'
+})
+const tabbarSize = computed(() => {
+  return isDuoTopBottom.value ? 'duo' : 'default'
+})
+const duoTopRightInset = computed(() => {
+  return isDuoSplit.value
+    ? LINGYUN_DUO_RAIL_WIDTH
+    : LINGYUN_DUO_TOP_RIGHT_RESERVED
+})
+const foldBandStyle = computed(() => {
+  const size = pageLayout.value.foldBandSize
+  if (pageLayout.value.foldBand === 'horizontal') {
+    return { height: `${size}px` }
+  }
+  if (pageLayout.value.foldBand === 'vertical') {
+    return { width: `${size}px` }
+  }
+  return null
+})
+const tabbarVisible = computed(() => {
+  return (
+    !embedded &&
+    pageLayout.value.tabbarVisible &&
+    tabbarItems.value.length > 0 &&
+    /* 页面壳默认不接管 Tab：只有一级 Tab 的根页/工作台才显示 */
+    isTabRoot.value
+  )
+})
+const activeTabKey = computed(() => {
+  if (isLingyunWorkspacePath(effectivePagePath.value)) {
+    const workspaceKey = getLingyunWorkspaceTabKey()
+    if (workspaceKey) return workspaceKey
+  }
+  const tab = matchLingyunPageTab(pageConfig.value.tabs || [], effectivePagePath.value)
+  return tab ? tab.key : ''
+})
+const tabbarSafeArea = computed(() => {
+  return (
+    pageConfig.value.tabbar?.safeArea !== false &&
+    pageOverride.value?.tabbarSafeArea !== false &&
+    props.safeArea !== false
+  )
+})
+const tabbarVariant = computed(() => {
+  return pageConfig.value.tabbar?.variant || 'default'
+})
+/** 只有当前页真的渲染 Tab 时才给内容留底部空间 */
+const effectiveBottomInsetPx = computed(() => {
+  return tabbarVisible.value ? pageLayout.value.bottomInsetPx : 0
+})
+/** 壳实际加到内容上的底部留白 */
+const bottomInsetStyle = computed(() => {
+  const inset = props.autoBottomInset ? effectiveBottomInsetPx.value : 0
+  return inset > 0 ? { paddingBottom: `${inset}px` } : null
+})
+/**
+ * 内容容器内联样式。
+ * 小程序端 slot 内容上 CSS 变量的继承不可靠（见 styles/setting/_app-page-layout.scss
+ * 注释），`> view:first-child` 选择器也匹配不到插槽首子，所以顶栏占位直接写进
+ * 内联 style，避免顶栏压住系统状态栏。Web/H5 仍走全局首子规则，不加这里，
+ * 否则会出现双份留白。
+ */
+const padStyle = computed(() => {
+  const style: Record<string, string> = {}
+  // #ifdef MP
+  style.paddingTop = insetTop.value
+  // #endif
+  if (props.autoBottomInset) {
+    const inset = effectiveBottomInsetPx.value
+    if (inset > 0) style.paddingBottom = `${inset}px`
+  }
+  return Object.keys(style).length > 0 ? style : null
+})
+/** 宽屏需要为顶栏让出左侧。H5 的列在 body 上，这里只留宽度。 */
+const navDocked = computed(() => {
+  if (inContentCover) return false
+  return (
+    !embedded &&
+    pageLayout.value.sidebarVisible &&
+    pageLayout.value.navSide === 'left'
+  )
+})
+/** 全局 tabs 驱动的窄栏；目录模式仍是完整侧栏 */
+const pageNavRail = computed(() => {
+  return pageLayout.value.railVariant === 'rail'
+})
+const pageNavInline = computed(() => {
+  return pageLayout.value.inlineNavMenu
+})
+const pageNavWidth = computed(() => {
+  if (inContentCover || pageLayout.value.navSide !== 'left') return 0
+  /* PC 三栏：一级 Tab 没有二级菜单时菜单列收起，只让出 84 窄栏 */
+  if (pageLayout.value.inlineNavMenu && !lingyunPageNavInlineMenu.value) {
+    return pageLayout.value.railWidth - LINGYUN_PAGE_NAV_RAIL_MENU_WIDTH
+  }
+  return pageLayout.value.railWidth
+})
+/** 宽屏侧栏点到未注册页面：留在本页，只换右侧。 */
+const hostedMiss = computed(() => {
+  // #ifdef H5
+  return false
+  // #endif
+  // #ifndef H5
+  return navDocked.value && hostedPagePath() === 'pages/404/404'
+  // #endif
+})
+const hostedFrom = computed(() => {
+  return hostedFromText()
+})
+const displayTitle = computed(() => {
+  return hostedMiss.value ? '404' : props.title
+})
+const showPageNav = computed(() => {
+  // #ifdef H5
+  return false
+  // #endif
+  // #ifndef H5
+  return navDocked.value
+  // #endif
+})
+const insetTop = computed(() => {
+  if (!props.showToolbar || !props.autoTopInset) return '0px'
+  if (duoRailVisible.value) {
+    return `${props.safeArea ? statusBarPx.value : 0}px`
+  }
+  if (isDuoTopBottom.value || isDuoSplit.value) {
+    return `${LINGYUN_DUO_TOP_BAR_HEIGHT}px`
+  }
+  const total = toolbarStackPx.value + (props.safeArea ? statusBarPx.value : 0)
+  return `${total}px`
+})
+/** 页面级滚动仅在本组件负责 body 滚动时才成立 */
+const usePageScroll = computed(() => {
+  if (inContentCover) return false
+  return props.bodyScroll && props.pageScroll
+})
+const coverLayers = computed(() => {
+  return lingyunContentCover.layers
+})
+const coverLeaving = computed(() => {
+  return lingyunContentCover.leaving
+})
+const coverLayerMark = computed(() => {
+  return coverLayers.value.map((layer) => layer.key).join(',')
+})
+const showContentCover = computed(() => {
+  if (embedded || inContentCover || !coverLayers.value.length) return false
+  if (coverUid.value === lingyunContentCover.hostUid) return true
+  /* 监听跑得太早、宿主编号仍是 0 时，由当前停靠导航的这一页来画 */
+  return navDocked.value && !lingyunContentCover.hostUid
+})
+const useInnerScroll = computed(() => {
+  if (inContentCover) return props.bodyScroll
+  return props.bodyScroll && !props.pageScroll
+})
+/** 哨兵高 = 满玻璃距离：露出比例即滚动进度 */
+const sentinelStyle = computed(() => {
+  return { height: `${Math.max(1, Number(props.glassDistance) || 56)}px` }
+})
+const showBackEffective = computed(() => {
+  /* 盖层里必须能返回，用来关掉这一层。
+     宽屏停靠左侧导航时用侧栏切页，auto 不再显示返回；
+     一级 Tab 根页也不显示返回；显式 true 仍可开 */
+  if (inContentCover) return true
+  const auto = !navDocked.value && !(tabbarVisible.value && isTabRoot.value)
+  return coerceTriFlag(props.showBack, auto)
+})
+const showCloseEffective = computed(() => {
+  return coerceTriFlag(props.showClose, false)
+})
+const rootClass = computed(() => {
+  return [
+    themeRootClass.value,
+    `lingyun-app-page--${props.titleStyle || 'title'}`,
+    {
+      'lingyun-app-page--embedded': embedded,
+      'lingyun-app-page--safe': props.safeArea,
+      'lingyun-app-page--sheet': props.placement === 'sheet' || showGrabberEffective.value,
+      'lingyun-app-page--page-scroll': usePageScroll.value,
+      'lingyun-app-page--nav': navDocked.value,
+      'lingyun-app-page--nav-rail': navDocked.value && pageNavRail.value,
+      'lingyun-app-page--tabbar': tabbarVisible.value,
+      'lingyun-app-page--page-enter': pageEntering.value,
+      'lingyun-app-page--duo-top-bottom': isDuoTopBottom.value,
+      'lingyun-app-page--duo-right-rail': duoRailVisible.value,
+      'lingyun-app-page--duo-split': isDuoSplit.value,          'lingyun-app-page--fold-horizontal': pageLayout.value.foldBand === 'horizontal',
+      'lingyun-app-page--fold-vertical': pageLayout.value.foldBand === 'vertical',
+      'lingyun-app-page--auth-hold': authHold.value,
+      'lingyun-app-page--in-cover': inContentCover,
+    },
+  ]
+})
+const pageVars = computed(() => {
+  const navWidth = pageNavWidth.value
+  return {
+    '--lingyun-app-page-bar': `${toolbarStackPx.value}px`,
+    '--lingyun-app-page-inset-top': insetTop.value,
+    '--lingyun-page-nav-width': `${navWidth}px`,
+    '--lingyun-page-nav-safe-top': `${statusBarPx.value}px`,
+    '--lingyun-app-page-inset-right': isDuoSplit.value
+      ? `${LINGYUN_DUO_RAIL_WIDTH}px`
+      : duoRailVisible.value
+        ? `${pageLayout.value.railWidth}px`
+        : '0px',
+    '--lingyun-app-page-inset-bottom': `${effectiveBottomInsetPx.value}px`,
+    '--lingyun-app-page-tabbar-height': `${pageLayout.value.tabbarHeightPx}px`,
+  }
+})
+
+/**
+ * 页面级滚动没有 @scroll 可用：观察顶部哨兵的露出比例换算玻璃进度。
+ * 哨兵高 = glassDistance，滚过 y 时露出 (dist - y)/dist。
+ */
+function setupGlassObserver(): void {
+  teardownGlassObserver()
+  const dist = Math.max(1, Number(props.glassDistance) || 56)
+  const steps = 40
+  const thresholds: number[] = []
+  for (let i = 0; i <= steps; i += 1) thresholds.push(i / steps)
+  try {
+    const options = { thresholds, nativeMode: true }
+    // 微信会对传入的组件实例枚举键，Vue 代理会告警。用小程序组件实例创建观察器。
+    const scope = (instance?.proxy as unknown as { $scope?: MpComponentScope } | null | undefined)?.$scope
+    const observer: MpGlassObserver =
+      scope && typeof scope.createIntersectionObserver === 'function'
+        ? scope.createIntersectionObserver(options)
+        : (uni.createIntersectionObserver(scope, options) as MpGlassObserver)
+    observer.relativeToViewport().observe('.lingyun-app-page__sentinel', (res: { intersectionRatio?: number }) => {
+      const ratio = Number(res && res.intersectionRatio)
+      if (!Number.isFinite(ratio)) return
+      const progress = Math.min(1, Math.max(0, 1 - ratio))
+      glassProgress.value = progress
+      emit('scroll', progress * dist)
     })
-    onShow(() => {
-      if (embedded) return
-      const proxy = (instance && instance.proxy) as
-        | { syncPageChrome?: () => void; syncSharedNavChrome?: () => void }
-        | null
-      proxy?.syncPageChrome?.()
-      /* 上一页还在栈里，协议页曾把共用窄栏标记关掉时，这里按当前窗口写回去 */
-      proxy?.syncSharedNavChrome?.()
-    })
-    return {
-      bindScroll: inject(LINGYUN_APP_PAGE_BIND_SCROLL, null),
-      embedded,
-      inContentCover,
-      contentCoverPath,
-      inheritedScrollLock,
-      inheritedScrollReport,
-      navInsetPx,
-      bottomInsetPx,
-      scrollLocked,
-      topInsetPx,
-      themeSwitchVisible: useLingyunThemeSwitchVisible(),
-      hostedPathRef: useLingyunHostedPath(),
-      pageIntentRef: useLingyunPageNavIntent(),
-    }
-  },
-  created() {
-    if (typeof this.bindScroll === 'function') {
-      this.bindScroll((scrollTop: number) => {
-        this.applyScrollTop(scrollTop)
-        this.scheduleScrollSettle(scrollTop)
-      })
-    }
-    this.syncPageChrome()
-    this.applyPageTransition()
-    this.syncNavLayout()
-    this._scrollSettleTimer = null
-    this._scrollLockCount = 0
-    this._glassObserver = null
-    this._navSlotClaim = 0
-  },
-  mounted() {
-    if (this.pageEntering) {
-      this._pageEnterTimer = setTimeout(() => {
-        this.pageEntering = false
-        this._pageEnterTimer = null
-      }, 300)
-    }
-    if (this.embedded) return
-    if (!this.inContentCover && ensureLingyunWidePageHost()) return
-    this.syncNavLayout()
-    this.syncNavHeaderSlots()
-    this.syncH5PageNavHost()
-    this.bindResize()
-    this.bindPageRoute()
-    if (this.usePageScroll) {
-      this.bindWindowScroll()
-      // #ifndef H5
-      this.$nextTick(() => this.setupGlassObserver())
-      // #endif
-      // #ifdef H5
-      this.$nextTick(() => this.syncWindowScrollTop())
-      // #endif
-    }
+    _glassObserver.value = observer
+  } catch {
+    /* 端不支持时顶栏保持透明 */
+  }
+}
+function teardownGlassObserver(): void {
+  const observer = _glassObserver.value
+  if (observer) {
     try {
-      useLingyunTheme().apply()
+      observer.disconnect?.()
     } catch {
-      /* pinia 未就绪时忽略 */
+      /* ignore */
     }
-  },
-  beforeUnmount() {
-    this.releaseNavHeaderSlots()
-    this.clearScrollSettle()
-    this.teardownGlassObserver()
-    this.unbindResize()
-    this.unbindPageRoute()
-    this.unbindWindowScroll()
-    if (this._pageEnterTimer) {
-      clearTimeout(this._pageEnterTimer)
-      this._pageEnterTimer = null
+    _glassObserver.value = null
+  }
+}
+function lockBodyScroll(): void {
+  _scrollLockCount.value = (_scrollLockCount.value || 0) + 1
+  if (bodyScrollY.value) bodyScrollY.value = false
+  scrollLocked.value = true
+  applyMpPageOverflow(true)
+}
+function unlockBodyScroll(): void {
+  _scrollLockCount.value = Math.max(0, (_scrollLockCount.value || 0) - 1)
+  if (_scrollLockCount.value === 0 && !bodyScrollY.value) bodyScrollY.value = true
+  if (_scrollLockCount.value === 0) {
+    scrollLocked.value = false
+    applyMpPageOverflow(false)
+  }
+}
+function applyMpPageOverflow(locked: boolean): void {
+  // #ifdef MP-WEIXIN
+  try {
+    const api = uni as unknown as {
+      setPageStyle?: (options: { style?: { overflow?: string } }) => void
     }
-    if (this._coverEnterTimer) {
-      clearTimeout(this._coverEnterTimer)
-      this._coverEnterTimer = null
+    if (typeof api.setPageStyle === 'function') {
+      api.setPageStyle({ style: { overflow: locked ? 'hidden' : 'visible' } })
     }
-  },
-  watch: {
-    searching: {
-      immediate: true,
-      handler(val: boolean) {
-        const wasActive = this.searchActive
-        this.searchActive = !!val
-        if (wasActive && !this.searchActive) this.clearSearchValue()
-      },
-    },
-    searchValue: {
-      immediate: true,
-      handler(val: string) {
-        this.searchText = String(val == null ? '' : val)
-      },
-    },
-    segments: {
-      deep: true,
-      handler() {
-        this.syncTopInset()
-      },
-    },
-    segmentControl() {
-      this.syncTopInset()
-    },
-    searchActive() {
-      this.syncTopInset()
-    },
-    safeArea() {
-      this.syncNavLayout()
-    },
-    showToolbar() {
-      this.syncTopInset()
-    },
-    titleStyle() {
-      this.syncTopInset()
-    },
-    placement() {
-      this.syncTopInset()
-    },
-    showGrabber() {
-      this.syncTopInset()
-    },
-    navDocked() {
-      this.syncSharedNavChrome()
-    },
-    pageLayout() {
-      this.applyPageLayout()
-    },
-    tabbarVisible() {
-      /* 当前页是否属于一级 Tab 会随工作台 key / 路由变化 */
-      this.applyPageLayout()
-    },
-    autoBottomInset() {
-      this.applyPageLayout()
-    },
-    pageNavWidth() {
-      /* PC 内联菜单列展开 / 收起时，同步注入的导航占位给 tabbar、日期切换器等固定底栏 */
-      this.applyPageLayout()
-    },
-    pageNavRail: {
-      immediate: true,
-      handler() {
-        this.syncSharedNavChrome()
-      },
-    },
-    pageNavInline: {
-      immediate: true,
-      handler() {
-        this.syncSharedNavChrome()
-      },
-    },
-    coverLayerMark() {
-      this.scheduleCoverEnter()
-    },
-    usePageScroll(enabled: boolean) {
-      this.$nextTick(() => {
-        if (enabled) {
-          this.bindWindowScroll()
-          // #ifndef H5
-          this.setupGlassObserver()
-          // #endif
-        } else {
-          this.unbindWindowScroll()
-          this.teardownGlassObserver()
-        }
-      })
-    },
-  },
-  computed: {
-    themeRootClass() {
-      try {
-        return useLingyunTheme().rootClass
-      } catch {
-        return 'theme-light'
-      }
-    },
-    themeSwitchEffective(): boolean {
-      if (this.showThemeSwitch === false) return false
-      if (this.showThemeSwitch === true) return true
-      return !!this.themeSwitchVisible
-    },
-    toolbarStackPx() {
-      let h = this.barHeightPx
-      if (!this.searchActive) {
-        const style = this.titleStyle || 'title'
-        if (style === 'large') {
-          h +=
-            this.subtitlePicker && lingyunToolbarPicker.enabled
-              ? this.title2LineLargeExtraPx
-              : this.largeExtraPx
-        }
-        if (style === 'title2LineLarge') h += this.title2LineLargeExtraPx
-      }
-      if (this.placement === 'sheet' || this.showGrabberEffective) h += 16
-      if (this.segments && this.segments.length && !this.isDuoTopBottom && !this.isDuoSplit) {
-        h +=
-          this.segmentControl === 'tabs'
-            ? LINGYUN_TOOLBAR_TABS_ROW_PX
-            : LINGYUN_TOOLBAR_SEGMENT_ROW_PX
-      }
-      return h
-    },
-    pageVars() {
-      const navWidth = this.pageNavWidth
-      return {
-        '--lingyun-app-page-bar': `${this.toolbarStackPx}px`,
-        '--lingyun-app-page-inset-top': this.insetTop,
-        '--lingyun-page-nav-width': `${navWidth}px`,
-        '--lingyun-page-nav-safe-top': `${this.statusBarPx}px`,
-        '--lingyun-app-page-inset-right': this.isDuoSplit
-          ? `${LINGYUN_DUO_RAIL_WIDTH}px`
-          : this.duoRailVisible
-            ? `${this.pageLayout.railWidth}px`
-            : '0px',
-        '--lingyun-app-page-inset-bottom': `${this.effectiveBottomInsetPx}px`,
-        '--lingyun-app-page-tabbar-height': `${this.pageLayout.tabbarHeightPx}px`,
-      }
-    },
-    pageConfig() {
-      return getLingyunPageConfig()
-    },
-    pageOverride() {
-      return getLingyunPageOverride(this.effectivePagePath)
-    },
-    /** 小程序宽屏右侧内容路径优先，其次导航意图，最后真实路由 */
-    effectivePagePath() {
-      if (this.inContentCover && this.contentCoverPath) {
-        return normalizeLingyunPagePath(this.contentCoverPath)
-      }
-      const real = normalizeLingyunPagePath(
-        this.currentPagePath || readLingyunCurrentPagePath(),
-      )
-      const hosted = this.hostedPathRef
-      /* 宿主路径只属于承载它的首页/目录页，子页仍按自己的真实路由判断 */
-      if (hosted && isLingyunTabHostPage(real)) {
-        return normalizeLingyunPagePath(hosted)
-      }
-      const intent = this.pageIntentRef
-      if (intent) return normalizeLingyunPagePath(intent)
-      return real
-    },
-    pageLayout(): LingyunPageLayoutResult {
-      const env = resolveLingyunFormFactor(lingyun)
-      const input = {
-        width: this.windowWidth,
-        config: this.pageConfig,
-        pageOverride: this.pageOverride,
-        embedded: this.embedded,
-        placement: this.placement,
-        grabber: this.showGrabberEffective,
-        authHold: this.authHold,
-        showNav: this.showNav,
-        showTabbar: this.showTabbar,
-        navMode: this.navMode,
-        safeArea: this.safeArea,
-        formFactor: env.formFactor,
-        duoPose: env.duoPose,
-      }
-      const plan = resolveLingyunPageLayout(input)
-      return plan
-    },
-    isDuoTopBottom() {
-      return this.pageLayout.chrome === 'duo-top-bottom'
-    },
-    duoRailVisible() {
-      return (
-        !this.embedded &&
-        this.pageLayout.chrome === 'duo-right-rail' &&
-        this.pageLayout.sidebarVisible
-      )
-    },
-    /** 一级 Tab 根页才在右侧栏显示 Tab / 搜索；独立页只有返回 */
-    duoRailItems() {
-      return this.isTabRoot ? this.tabbarItems : []
-    },
-    duoRailShowBack() {
-      return coerceTriFlag(this.showBack, !this.isTabRoot)
-    },
-    /** 搜索是可选入口：只有 tabbar.search=true 的 Tab 根页才显示 */
-    duoRailShowSearch() {
-      return this.isTabRoot && this.pageConfig.tabbar?.search === true
-    },
-    duoPoseKey() {
-      return this.pageLayout.layoutClass.replace(/^duo-/, '')
-    },
-    duoCompactTools() {
-      return this.pageLayout.layoutClass === 'duo-outer-landscape'
-    },
-    isDuoSplit() {
-      return this.pageLayout.chrome === 'duo-split'
-    },
-    tabbarSize() {
-      return this.isDuoTopBottom ? 'duo' : 'default'
-    },
-    duoTopRightInset() {
-      return this.isDuoSplit
-        ? LINGYUN_DUO_RAIL_WIDTH
-        : LINGYUN_DUO_TOP_RIGHT_RESERVED
-    },
-    foldBandStyle() {
-      const size = this.pageLayout.foldBandSize
-      if (this.pageLayout.foldBand === 'horizontal') {
-        return { height: `${size}px` }
-      }
-      if (this.pageLayout.foldBand === 'vertical') {
-        return { width: `${size}px` }
-      }
-      return null
-    },
-    tabbarItems() {
-      return (this.pageConfig.tabs || []).map((tab: LingyunPageTab) => ({
-        key: tab.key,
-        text: tab.text,
-        icon: tab.icon,
-        iconSrc: tab.iconSrc,
-        activeIconSrc: tab.activeIconSrc,
-        badge: tab.badge,
-      }))
-    },
-    tabbarVisible() {
-      return (
-        !this.embedded &&
-        this.pageLayout.tabbarVisible &&
-        this.tabbarItems.length > 0 &&
-        /* 页面壳默认不接管 Tab：只有一级 Tab 的根页/工作台才显示 */
-        this.isTabRoot
-      )
-    },
-    activeTabKey() {
-      if (isLingyunWorkspacePath(this.effectivePagePath)) {
-        const workspaceKey = getLingyunWorkspaceTabKey()
-        if (workspaceKey) return workspaceKey
-      }
-      const tab = matchLingyunPageTab(this.pageConfig.tabs || [], this.effectivePagePath)
-      return tab ? tab.key : ''
-    },
-    isTabRoot() {
-      if (isLingyunWorkspacePath(this.effectivePagePath)) {
-        const key = getLingyunWorkspaceTabKey()
-        if (!key) return false
-        return (this.pageConfig.tabs || []).some(
-          (tab) =>
-            tab.key === key &&
-            Array.isArray(tab.children) &&
-            tab.children.length > 0,
-        )
-      }
-      const tab = matchLingyunPageTab(this.pageConfig.tabs || [], this.effectivePagePath)
-      if (!tab) return false
-      /* 有 children 时，Tab 根是工作台；子页面不是根（即使子页 url 与 Tab url 相同） */
-      if (Array.isArray(tab.children) && tab.children.length) {
-        if (buildLingyunPageTabWorkspaceUrl(tab)) return false
-        return (
-          normalizeLingyunPagePath(tab.url) ===
-          normalizeLingyunPagePath(this.effectivePagePath)
-        )
-      }
-      return (
-        normalizeLingyunPagePath(tab.url) ===
-        normalizeLingyunPagePath(this.effectivePagePath)
-      )
-    },
-    tabbarSafeArea() {
-      return (
-        this.pageConfig.tabbar?.safeArea !== false &&
-        this.pageOverride?.tabbarSafeArea !== false &&
-        this.safeArea !== false
-      )
-    },
-    tabbarVariant() {
-      return this.pageConfig.tabbar?.variant || 'default'
-    },
-    /** 只有当前页真的渲染 Tab 时才给内容留底部空间 */
-    effectiveBottomInsetPx() {
-      return this.tabbarVisible ? this.pageLayout.bottomInsetPx : 0
-    },
-    /** 壳实际加到内容上的底部留白 */
-    bottomInsetStyle() {
-      const inset = this.autoBottomInset ? this.effectiveBottomInsetPx : 0
-      return inset > 0 ? { paddingBottom: `${inset}px` } : null
-    },
-    /** 宽屏需要为顶栏让出左侧。H5 的列在 body 上，这里只留宽度。 */
-    navDocked() {
-      if (this.inContentCover) return false
-      return (
-        !this.embedded &&
-        this.pageLayout.sidebarVisible &&
-        this.pageLayout.navSide === 'left'
-      )
-    },
-    /** 全局 tabs 驱动的窄栏；目录模式仍是完整侧栏 */
-    pageNavRail() {
-      return this.pageLayout.railVariant === 'rail'
-    },
-    pageNavInline() {
-      return this.pageLayout.inlineNavMenu
-    },
-    pageNavWidth() {
-      if (this.inContentCover || this.pageLayout.navSide !== 'left') return 0
-      /* PC 三栏：一级 Tab 没有二级菜单时菜单列收起，只让出 84 窄栏 */
-      if (this.pageLayout.inlineNavMenu && !lingyunPageNavInlineMenu.value) {
-        return this.pageLayout.railWidth - LINGYUN_PAGE_NAV_RAIL_MENU_WIDTH
-      }
-      return this.pageLayout.railWidth
-    },
-    /** 未登录的受保护页先藏起来，避免冷启动先画出首页和侧栏再跳登录 */
-    authHold() {
-      return lingyunPageRequiresLogin()
-    },
-    /** 宽屏侧栏点到未注册页面：留在本页，只换右侧。 */
-    hostedMiss() {
-      // #ifdef H5
-      return false
-      // #endif
-      // #ifndef H5
-      return this.navDocked && hostedPagePath() === 'pages/404/404'
-      // #endif
-    },
-    hostedFrom() {
-      return hostedFromText()
-    },
-    displayTitle() {
-      return this.hostedMiss ? '404' : this.title
-    },
-    showPageNav() {
-      // #ifdef H5
-      return false
-      // #endif
-      // #ifndef H5
-      return this.navDocked
-      // #endif
-    },
-    insetTop() {
-      if (!this.showToolbar || !this.autoTopInset) return '0px'
-      if (this.duoRailVisible) {
-        return `${this.safeArea ? this.statusBarPx : 0}px`
-      }
-      if (this.isDuoTopBottom || this.isDuoSplit) {
-        return `${LINGYUN_DUO_TOP_BAR_HEIGHT}px`
-      }
-      const total = this.toolbarStackPx + (this.safeArea ? this.statusBarPx : 0)
-      return `${total}px`
-    },
-    /** 页面级滚动仅在本组件负责 body 滚动时才成立 */
-    usePageScroll() {
-      if (this.inContentCover) return false
-      return this.bodyScroll && this.pageScroll
-    },
-    coverLayers() {
-      return lingyunContentCover.layers
-    },
-    coverLeaving() {
-      return lingyunContentCover.leaving
-    },
-    coverLayerMark() {
-      return this.coverLayers.map((layer) => layer.key).join(',')
-    },
-    showContentCover() {
-      if (this.embedded || this.inContentCover || !this.coverLayers.length) return false
-      if (this.coverUid === lingyunContentCover.hostUid) return true
-      /* 监听跑得太早、宿主编号仍是 0 时，由当前停靠导航的这一页来画 */
-      return this.navDocked && !lingyunContentCover.hostUid
-    },
-    useInnerScroll() {
-      if (this.inContentCover) return this.bodyScroll
-      return this.bodyScroll && !this.pageScroll
-    },
-    /** 哨兵高 = 满玻璃距离：露出比例即滚动进度 */
-    sentinelStyle() {
-      return { height: `${Math.max(1, Number(this.glassDistance) || 56)}px` }
-    },
-    showBackEffective() {
-      /* 盖层里必须能返回，用来关掉这一层。
-         宽屏停靠左侧导航时用侧栏切页，auto 不再显示返回；
-         一级 Tab 根页也不显示返回；显式 true 仍可开 */
-      if (this.inContentCover) return true
-      const auto = !this.navDocked && !(this.tabbarVisible && this.isTabRoot)
-      return coerceTriFlag(this.showBack, auto)
-    },
-    showCloseEffective() {
-      return coerceTriFlag(this.showClose, false)
-    },
-    showGrabberEffective() {
-      return coerceTriFlag(this.showGrabber, false)
-    },
-    rootClass() {
-      return [
-        this.themeRootClass,
-        `lingyun-app-page--${this.titleStyle || 'title'}`,
-        {
-          'lingyun-app-page--embedded': this.embedded,
-          'lingyun-app-page--safe': this.safeArea,
-          'lingyun-app-page--sheet': this.placement === 'sheet' || this.showGrabberEffective,
-          'lingyun-app-page--page-scroll': this.usePageScroll,
-          'lingyun-app-page--nav': this.navDocked,
-          'lingyun-app-page--nav-rail': this.navDocked && this.pageNavRail,
-          'lingyun-app-page--tabbar': this.tabbarVisible,
-          'lingyun-app-page--page-enter': this.pageEntering,
-          'lingyun-app-page--duo-top-bottom': this.isDuoTopBottom,
-          'lingyun-app-page--duo-right-rail': this.duoRailVisible,
-          'lingyun-app-page--duo-split': this.isDuoSplit,          'lingyun-app-page--fold-horizontal': this.pageLayout.foldBand === 'horizontal',
-          'lingyun-app-page--fold-vertical': this.pageLayout.foldBand === 'vertical',
-          'lingyun-app-page--auth-hold': this.authHold,
-          'lingyun-app-page--in-cover': this.inContentCover,
-        },
-      ]
-    },
-  },
-  provide() {
-    return {
-      [LINGYUN_APP_PAGE_REPORT_SCROLL]:
-        this.embedded && this.inheritedScrollReport
-          ? this.inheritedScrollReport
-          : (scrollTop: number) => {
-              this.applyScrollTop(scrollTop)
-              this.scheduleScrollSettle(scrollTop)
-            },
-      [LINGYUN_APP_PAGE_SCROLL_LOCK]:
-        this.embedded && this.inheritedScrollLock
-          ? this.inheritedScrollLock
-          : {
-              lock: () => this.lockBodyScroll(),
-              unlock: () => this.unlockBodyScroll(),
-            },
-    }
-  },
-  methods: {
-    /**
-     * 页面级滚动没有 @scroll 可用：观察顶部哨兵的露出比例换算玻璃进度。
-     * 哨兵高 = glassDistance，滚过 y 时露出 (dist - y)/dist。
-     */
-    setupGlassObserver() {
-      this.teardownGlassObserver()
-      const dist = Math.max(1, Number(this.glassDistance) || 56)
-      const steps = 40
-      const thresholds: number[] = []
-      for (let i = 0; i <= steps; i += 1) thresholds.push(i / steps)
-      try {
-        const options = { thresholds, nativeMode: true }
-        // 微信会对传入的组件实例枚举键，Vue 代理会告警。用小程序组件实例创建观察器。
-        const scope = (this as unknown as { $scope?: MpComponentScope }).$scope
-        const observer: MpGlassObserver =
-          scope && typeof scope.createIntersectionObserver === 'function'
-            ? scope.createIntersectionObserver(options)
-            : (uni.createIntersectionObserver(scope, options) as MpGlassObserver)
-        observer.relativeToViewport().observe('.lingyun-app-page__sentinel', (res: { intersectionRatio?: number }) => {
-          const ratio = Number(res && res.intersectionRatio)
-          if (!Number.isFinite(ratio)) return
-          const progress = Math.min(1, Math.max(0, 1 - ratio))
-          this.glassProgress = progress
-          this.$emit('scroll', progress * dist)
-        })
-        this._glassObserver = observer
-      } catch {
-        /* 端不支持时顶栏保持透明 */
-      }
-    },
-    teardownGlassObserver() {
-      const observer = this._glassObserver
-      if (observer) {
-        try {
-          observer.disconnect?.()
-        } catch {
-          /* ignore */
-        }
-        this._glassObserver = null
-      }
-    },
-    lockBodyScroll() {
-      this._scrollLockCount = (this._scrollLockCount || 0) + 1
-      if (this.bodyScrollY) this.bodyScrollY = false
-      this.scrollLocked = true
-      this.applyMpPageOverflow(true)
-    },
-    unlockBodyScroll() {
-      this._scrollLockCount = Math.max(0, (this._scrollLockCount || 0) - 1)
-      if (this._scrollLockCount === 0 && !this.bodyScrollY) this.bodyScrollY = true
-      if (this._scrollLockCount === 0) {
-        this.scrollLocked = false
-        this.applyMpPageOverflow(false)
-      }
-    },
-    applyMpPageOverflow(locked: boolean) {
-      // #ifdef MP-WEIXIN
-      try {
-        const api = uni as unknown as {
-          setPageStyle?: (options: { style?: { overflow?: string } }) => void
-        }
-        if (typeof api.setPageStyle === 'function') {
-          api.setPageStyle({ style: { overflow: locked ? 'hidden' : 'visible' } })
-        }
-      } catch {
-        /* 低版本基础库没有 setPageStyle 时不锁页面滚轮 */
-      }
-      // #endif
-    },
-    syncNavLayout(windowWidth?: number) {
-      const width = Number(windowWidth)
-      const hasWidth = Number.isFinite(width) && width > 0
-      const actualWidth = hasWidth ? width : readLingyunWindowWidth()
-      this.windowWidth = actualWidth
-      const layout = getLingyunNavLayout(
-        LINGYUN_TOOLBAR_BAR_DESIGN_PX,
-        actualWidth > 0 ? actualWidth : undefined,
-      )
-      this.statusBarPx = this.safeArea ? layout.statusBarHeight : 0
-      this.barHeightPx = layout.barHeight
-      this.largeExtraPx = layout.largeExtra
-      this.title2LineLargeExtraPx = layout.title2LineLargeExtra
-      this.syncTopInset()
-      this.applyPageLayout()
-    },
-    applyPageLayout() {
-      if (this.embedded) return
-      this.navInsetPx = this.pageNavWidth
-      this.bottomInsetPx = this.effectiveBottomInsetPx
-      this.syncH5PageNavHost()
-    },
-    syncPageChrome() {
-      if (this.embedded) return
-      this.currentPagePath = readLingyunCurrentPagePath()
-      this.settlePageIntent()
-      this.syncWindowScrollTop()
-    },
-    /** 导航意图与真实路径一致后清掉，避免侧栏高亮一直停在旧项 */
-    settlePageIntent() {
-      const intent = normalizeLingyunPagePath(getLingyunPageNavIntent())
-      if (!intent) return
-      const current = normalizeLingyunPagePath(
-        this.hostedPathRef || this.currentPagePath,
-      )
-      if (intent === current) clearLingyunPageNavIntent()
-    },
-    onPageRouteChange(path: string) {
-      const next = normalizeLingyunPagePath(path)
-      if (next) this.currentPagePath = next
-      this.settlePageIntent()
-    },
-    bindPageRoute() {
-      this._stopRouteChange = subscribeLingyunPageRoute(this.onPageRouteChange)
-      // #ifdef H5
-      this._onHashChange = () => {
-        this.syncPageChrome()
-      }
-      if (typeof window !== 'undefined') {
-        window.addEventListener('hashchange', this._onHashChange)
-      }
-      // #endif
-    },
-    unbindPageRoute() {
-      if (this._stopRouteChange) {
-        this._stopRouteChange()
-        this._stopRouteChange = null
-      }
-      // #ifdef H5
-      if (this._onHashChange && typeof window !== 'undefined') {
-        window.removeEventListener('hashchange', this._onHashChange)
-      }
-      this._onHashChange = null
-      // #endif
-    },
-    /** 消费一次换页过渡：Tab 指示器滑入，或左侧菜单换页后内容淡入 */
-    applyPageTransition() {
-      const reduce = this.prefersReducedMotion()
-      const tabTransition = consumeLingyunTabTransition(this.activeTabKey)
-      if (tabTransition) {
-        this.tabbarFromKey = tabTransition.fromKey
-        this.pageEntering = !reduce
-        return
-      }
-      const navTransition = consumeLingyunNavTransition(this.effectivePagePath)
-      this.tabbarFromKey = ''
-      this.pageEntering = !!navTransition && !reduce
-    },
-    prefersReducedMotion(): boolean {
-      // #ifdef H5
-      if (typeof window !== 'undefined' && window.matchMedia) {
-        return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      }
-      // #endif
-      return false
-    },
-    onTabbarChange(item: { key?: string | number }) {
-      const key = item && item.key != null ? String(item.key) : ''
-      if (!key) return
-      const tab = (this.pageConfig.tabs || []).find(
-        (entry: LingyunPageTab) => entry.key === key,
-      )
-      if (!tab) return
-      const workspaceUrl =
-        Array.isArray(tab.children) && tab.children.length
-          ? buildLingyunPageTabWorkspaceUrl(tab)
-          : ''
-      const targetUrl = workspaceUrl || tab.url
-      const raw = normalizeLingyunPagePath(targetUrl)
-      const currentPath = normalizeLingyunPagePath(this.effectivePagePath)
-      if (!raw) return
-      /*
-       * 已在工作台时所有带 children 的 Tab 共用这一页：
-       * 只换全局 key，内容和 Tab 指示器原地更新，不再 reLaunch 造成白屏。
-       */
-      if (workspaceUrl && isLingyunWorkspacePath(currentPath)) {
-        if (getLingyunWorkspaceTabKey() === tab.key) return
-        this.$emit('tab-change', { key: tab.key, tab })
-        setLingyunWorkspaceTabKey(tab.key)
-        /* 宿主页内切换时同步宿主 URL；独立工作台由下面的 sync 处理 */
-        openLingyunTabPage(workspaceUrl, raw)
-        syncLingyunWorkspaceUrl(tab.key)
-        return
-      }
-      if (workspaceUrl) {
-        if (raw === currentPath && getLingyunWorkspaceTabKey() === tab.key) return
-      } else if (raw === currentPath) {
-        return
-      }
-      /* 必须在 setLingyunPageNavIntent 之前记录，否则意图会先把 activeTabKey 改成目标项 */
-      const fromKey = this.activeTabKey
-      this.$emit('tab-change', { key: tab.key, tab })
-      if (workspaceUrl) setLingyunWorkspaceTabKey(tab.key)
-      if (openLingyunTabPage(targetUrl, raw)) return
-      if (openLingyunHostedPage(targetUrl, raw)) return
-      setLingyunPageNavIntent(raw)
-      const next = resolveLingyunPageUrl(targetUrl)
-      if (!next) return
-      beginLingyunTabTransition(fromKey, tab.key)
-      uni.reLaunch({
+  } catch {
+    /* 低版本基础库没有 setPageStyle 时不锁页面滚轮 */
+  }
+  // #endif
+}
+function syncNavLayout(widthArg?: number): void {
+  const width = Number(widthArg)
+  const hasWidth = Number.isFinite(width) && width > 0
+  const actualWidth = hasWidth ? width : readLingyunWindowWidth()
+  windowWidth.value = actualWidth
+  const layout = getLingyunNavLayout(
+    LINGYUN_TOOLBAR_BAR_DESIGN_PX,
+    actualWidth > 0 ? actualWidth : undefined,
+  )
+  statusBarPx.value = props.safeArea ? layout.statusBarHeight : 0
+  barHeightPx.value = layout.barHeight
+  largeExtraPx.value = layout.largeExtra
+  title2LineLargeExtraPx.value = layout.title2LineLargeExtra
+  syncTopInset()
+  applyPageLayout()
+}
+function applyPageLayout(): void {
+  if (embedded) return
+  navInsetPx.value = pageNavWidth.value
+  bottomInsetPx.value = effectiveBottomInsetPx.value
+  syncH5PageNavHost()
+}
+function syncPageChrome(): void {
+  if (embedded) return
+  currentPagePath.value = readLingyunCurrentPagePath()
+  settlePageIntent()
+  syncWindowScrollTop()
+}
+/** 导航意图与真实路径一致后清掉，避免侧栏高亮一直停在旧项 */
+function settlePageIntent(): void {
+  const intent = normalizeLingyunPagePath(getLingyunPageNavIntent())
+  if (!intent) return
+  const current = normalizeLingyunPagePath(
+    hostedPathRef?.value || currentPagePath.value,
+  )
+  if (intent === current) clearLingyunPageNavIntent()
+}
+function onPageRouteChange(path: string): void {
+  const next = normalizeLingyunPagePath(path)
+  if (next) currentPagePath.value = next
+  settlePageIntent()
+}
+function bindPageRoute(): void {
+  _stopRouteChange.value = subscribeLingyunPageRoute(onPageRouteChange)
+  // #ifdef H5
+  _onHashChange.value = () => {
+    syncPageChrome()
+  }
+  if (typeof window !== 'undefined') {
+    window.addEventListener('hashchange', _onHashChange.value)
+  }
+  // #endif
+}
+function unbindPageRoute(): void {
+  if (_stopRouteChange.value) {
+    _stopRouteChange.value()
+    _stopRouteChange.value = null
+  }
+  // #ifdef H5
+  if (_onHashChange.value && typeof window !== 'undefined') {
+    window.removeEventListener('hashchange', _onHashChange.value)
+  }
+  _onHashChange.value = null
+  // #endif
+}
+/** 消费一次换页过渡：Tab 指示器滑入，或左侧菜单换页后内容淡入 */
+function applyPageTransition(): void {
+  const reduce = prefersReducedMotion()
+  const tabTransition = consumeLingyunTabTransition(activeTabKey.value)
+  if (tabTransition) {
+    tabbarFromKey.value = tabTransition.fromKey
+    pageEntering.value = !reduce
+    return
+  }
+  const navTransition = consumeLingyunNavTransition(effectivePagePath.value)
+  tabbarFromKey.value = ''
+  pageEntering.value = !!navTransition && !reduce
+}
+function prefersReducedMotion(): boolean {
+  // #ifdef H5
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  }
+  // #endif
+  return false
+}
+function onTabbarChange(item: { key?: string | number }): void {
+  const key = item && item.key != null ? String(item.key) : ''
+  if (!key) return
+  const tab = (pageConfig.value.tabs || []).find(
+    (entry: LingyunPageTab) => entry.key === key,
+  )
+  if (!tab) return
+  const workspaceUrl =
+    Array.isArray(tab.children) && tab.children.length
+      ? buildLingyunPageTabWorkspaceUrl(tab)
+      : ''
+  const targetUrl = workspaceUrl || tab.url
+  const raw = normalizeLingyunPagePath(targetUrl)
+  const currentPath = normalizeLingyunPagePath(effectivePagePath.value)
+  if (!raw) return
+  /*
+   * 已在工作台时所有带 children 的 Tab 共用这一页：
+   * 只换全局 key，内容和 Tab 指示器原地更新，不再 reLaunch 造成白屏。
+   */
+  if (workspaceUrl && isLingyunWorkspacePath(currentPath)) {
+    if (getLingyunWorkspaceTabKey() === tab.key) return
+    emit('tab-change', { key: tab.key, tab })
+    setLingyunWorkspaceTabKey(tab.key)
+    /* 宿主页内切换时同步宿主 URL；独立工作台由下面的 sync 处理 */
+    openLingyunTabPage(workspaceUrl, raw)
+    syncLingyunWorkspaceUrl(tab.key)
+    return
+  }
+  if (workspaceUrl) {
+    if (raw === currentPath && getLingyunWorkspaceTabKey() === tab.key) return
+  } else if (raw === currentPath) {
+    return
+  }
+  /* 必须在 setLingyunPageNavIntent 之前记录，否则意图会先把 activeTabKey 改成目标项 */
+  const fromKey = activeTabKey.value
+  emit('tab-change', { key: tab.key, tab })
+  if (workspaceUrl) setLingyunWorkspaceTabKey(tab.key)
+  if (openLingyunTabPage(targetUrl, raw)) return
+  if (openLingyunHostedPage(targetUrl, raw)) return
+  setLingyunPageNavIntent(raw)
+  const next = resolveLingyunPageUrl(targetUrl)
+  if (!next) return
+  beginLingyunTabTransition(fromKey, tab.key)
+  uni.reLaunch({
+    url: next,
+    fail: () => {
+      clearLingyunTabTransition()
+      uni.redirectTo({
         url: next,
-        fail: () => {
-          clearLingyunTabTransition()
-          uni.redirectTo({
-            url: next,
-            fail: () => clearLingyunTabTransition(),
-          })
-        },
+        fail: () => clearLingyunTabTransition(),
       })
     },
-    onDuoSearch() {
-      this.$emit('duo-search')
-    },
-    onDuoOverflow() {
-      this.$emit('duo-overflow')
-    },
-    syncTopInset() {
-      if (this.duoRailVisible) {
-        this.topInsetPx = this.safeArea ? this.statusBarPx : 0
-        return
-      }
-      if (this.isDuoTopBottom || this.isDuoSplit) {
-        this.topInsetPx = this.showToolbar ? LINGYUN_DUO_TOP_BAR_HEIGHT : 0
-        return
-      }
-      const status = this.safeArea ? this.statusBarPx : 0
-      this.topInsetPx = this.showToolbar ? status + this.toolbarStackPx : status
-    },
-    syncNavHeaderSlots() {
-      const slots = this.$slots || {}
-      this._navSlotClaim = claimLingyunPageNavHeaderSlots({
-        avatar: !!slots['nav-avatar'],
-        name: !!slots['nav-name'],
-        subtitle: !!slots['nav-subtitle'],
+  })
+}
+function onDuoSearch(): void {
+  emit('duo-search')
+}
+function onDuoOverflow(): void {
+  emit('duo-overflow')
+}
+function syncTopInset(): void {
+  if (duoRailVisible.value) {
+    topInsetPx.value = props.safeArea ? statusBarPx.value : 0
+    return
+  }
+  if (isDuoTopBottom.value || isDuoSplit.value) {
+    topInsetPx.value = props.showToolbar ? LINGYUN_DUO_TOP_BAR_HEIGHT : 0
+    return
+  }
+  const status = props.safeArea ? statusBarPx.value : 0
+  topInsetPx.value = props.showToolbar ? status + toolbarStackPx.value : status
+}
+function syncNavHeaderSlots(): void {
+  const slotMap = slots ?? {}
+  _navSlotClaim.value = claimLingyunPageNavHeaderSlots({
+    avatar: !!slotMap['nav-avatar'],
+    name: !!slotMap['nav-name'],
+    subtitle: !!slotMap['nav-subtitle'],
+  })
+  armNavHeader()
+}
+function armNavHeader(left: number = 30): void {
+  const slotMap = slots ?? {}
+  const need: string[] = []
+  if (slotMap['nav-avatar']) need.push('ly-nav-slot-avatar')
+  if (slotMap['nav-name']) need.push('ly-nav-slot-name')
+  if (slotMap['nav-subtitle']) need.push('ly-nav-slot-subtitle')
+  if (!need.length) return
+  // #ifdef H5
+  const ready =
+    typeof document !== 'undefined' && need.every((id) => document.getElementById(id))
+  if (!ready) {
+    if (left <= 0) return
+    _navSlotTimer.value = setTimeout(() => armNavHeader(left - 1), 16)
+    return
+  }
+  // #endif
+  navHeaderReady.value = true
+}
+function releaseNavHeaderSlots(): void {
+  navHeaderReady.value = false
+  if (_navSlotTimer.value) clearTimeout(_navSlotTimer.value)
+  releaseLingyunPageNavHeaderSlots(_navSlotClaim.value)
+}
+function syncH5PageNavHost(): void {
+  if (embedded || inContentCover) return
+  if (!isCurrentPageShell()) return
+  // #ifdef H5
+  setLingyunH5PageNavAllowed(navDocked.value)
+  // #endif
+}
+/** 只有当前可见的页面壳能改共用导航，盖层里的子页和压在栈下的页面都不写。 */
+function isCurrentPageShell(): boolean {
+  const current = normalizeLingyunPagePath(readLingyunCurrentPagePath())
+  const mine = normalizeLingyunPagePath(currentPagePath.value || current)
+  return !current || !mine || current === mine
+}
+/**
+ * H5 左侧导航只挂一份。show-nav=false 只隐藏它，不把窄栏标记写成关闭。
+ * 标记被写成关闭后，组件会画出 220 宽的旧目录；返回时上一页还在，不会自己再写。
+ * 有导航的页面按当前布局把标记写回去（窄栏或内联菜单列）。
+ */
+function syncSharedNavChrome(): void {
+  if (embedded || inContentCover) return
+  if (!isCurrentPageShell()) return
+  syncH5PageNavHost()
+  bindLingyunContentCoverHost(coverUid.value, navDocked.value)
+  if (!navDocked.value) return
+  setLingyunPageNavRail(pageNavRail.value)
+  setLingyunPageNavInline(pageNavInline.value)
+}
+function bindResize(): void {
+  const onWindowResize = (res?: unknown) => {
+    syncNavLayout(readLingyunResizeWidth(res))
+  }
+  _onWindowResize.value = onWindowResize
+  try {
+    if (typeof uni.onWindowResize === 'function') uni.onWindowResize(onWindowResize)
+  } catch {
+    /* 端不支持 */
+  }
+  // #ifdef H5
+  if (typeof window !== 'undefined') window.addEventListener('resize', onWindowResize)
+  // #endif
+}
+function bindWindowScroll(): void {
+  // #ifdef H5
+  if (
+    embedded ||
+    !usePageScroll.value ||
+    typeof window === 'undefined'
+  ) {
+    return
+  }
+  if (_onWindowScroll.value) return
+  const onWindowScroll = () => {
+    const top =
+      Math.max(
+        window.scrollY || window.pageYOffset || 0,
+        (document.scrollingElement && document.scrollingElement.scrollTop) || 0,
+        document.documentElement.scrollTop || 0,
+        document.body.scrollTop || 0,
+      ) || 0
+    applyScrollTop(top)
+  }
+  _onWindowScroll.value = onWindowScroll
+  window.addEventListener('scroll', onWindowScroll, { passive: true })
+  document.addEventListener('scroll', onWindowScroll, true)
+  syncWindowScrollTop()
+  // #endif
+}
+function unbindWindowScroll(): void {
+  // #ifdef H5
+  const onWindowScroll = _onWindowScroll.value
+  if (onWindowScroll && typeof window !== 'undefined') {
+    window.removeEventListener('scroll', onWindowScroll)
+    document.removeEventListener('scroll', onWindowScroll, true)
+  }
+  _onWindowScroll.value = null
+  // #endif
+}
+/** H5 页面级滚动直接读窗口位置；iframe / 预览里比 IntersectionObserver 更稳 */
+function syncWindowScrollTop(): void {
+  // #ifdef H5
+  if (
+    embedded ||
+    !usePageScroll.value ||
+    typeof window === 'undefined'
+  ) {
+    return
+  }
+  const top =
+    window.scrollY ||
+    window.pageYOffset ||
+    (document.scrollingElement && document.scrollingElement.scrollTop) ||
+    document.documentElement.scrollTop ||
+    document.body.scrollTop ||
+    0
+  applyScrollTop(top)
+  // #endif
+}
+function unbindResize(): void {
+  const onWindowResize = _onWindowResize.value
+  try {
+    if (onWindowResize && typeof uni.offWindowResize === 'function') {
+      uni.offWindowResize(onWindowResize)
+    }
+  } catch {
+    /* 端不支持 */
+  }
+  // #ifdef H5
+  if (typeof window !== 'undefined' && onWindowResize) {
+    window.removeEventListener('resize', onWindowResize)
+  }
+  // #endif
+  _onWindowResize.value = null
+}
+function clearScrollSettle(): void {
+  if (_scrollSettleTimer.value != null) {
+    clearTimeout(_scrollSettleTimer.value)
+    _scrollSettleTimer.value = null
+  }
+}
+/**
+ * 惯性滚动停稳后再对齐真实 scrollTop。
+ * 微信 scroll-view 快速回顶时常丢末帧，glassProgress 会卡在非 0；
+ * 滚动过程中仍即时更新，不改渐变手感。
+ * @param {number} [reportedTop] 内层注入上报时传入，避免误查不存在的 scroller
+ */
+function scheduleScrollSettle(reportedTop?: number): void {
+  if (reportedTop != null && Number.isFinite(Number(reportedTop))) {
+    _lastReportedTop.value = Math.max(0, Number(reportedTop))
+  }
+  clearScrollSettle()
+  _scrollSettleTimer.value = setTimeout(() => {
+    _scrollSettleTimer.value = null
+    if (useInnerScroll.value) {
+      syncScrollTopFromScroller()
+      return
+    }
+    // 无本组件 scroller（页面级滚动 / 页面自管滚动）：用末次上报近顶兜底
+    const last = Number(_lastReportedTop.value)
+    applyScrollTop(Number.isFinite(last) && last < 1 ? 0 : last || 0)
+  }, 96)
+}
+function syncScrollTopFromScroller(): void {
+  if (!useInnerScroll.value) return
+  const node = uni.createSelectorQuery().in(instance?.proxy as never).select('.lingyun-app-page__scroller')
+  const offset = node.scrollOffset as unknown as () => {
+    exec: (cb: (res: Array<{ scrollTop?: number } | undefined> | undefined) => void) => void
+  }
+  offset().exec((res) => {
+      const top = Number(res?.[0]?.scrollTop)
+      applyScrollTop(Number.isFinite(top) ? top : 0)
+    })
+}
+function applyScrollTop(scrollTop: number): void {
+  const dist = Math.max(1, Number(props.glassDistance) || 56)
+  // 亚像素 / 回弹残留：视为已在顶，避免玻璃卡在极低进度
+  const y = Math.max(0, Number(scrollTop) || 0)
+  const effective = y < 0.5 ? 0 : y
+  const next = Math.min(1, effective / dist)
+  glassProgress.value = next
+  emit('scroll', effective)
+}
+function onBodyScroll(e: { detail?: { scrollTop?: number }; target?: { scrollTop?: number } }): void {
+  const top = Number(e?.detail?.scrollTop ?? e?.target?.scrollTop ?? 0)
+  const y = Number.isFinite(top) ? top : 0
+  applyScrollTop(y)
+  scheduleScrollSettle(y)
+}
+function onScrollToUpper(): void {
+  applyScrollTop(0)
+  scheduleScrollSettle(0)
+}
+function onHostHome(): void {
+  const home = getLingyunPageNavHome(true)
+  setLingyunPageNavIntent(home)
+  if (openLingyunHostedPage(home, home)) return
+  uni.redirectTo({ url: home })
+}
+function onBack(): void {
+  if (inContentCover) {
+    closeLingyunContentCover()
+    emit('back')
+    return
+  }
+  emit('back')
+  if (!props.autoBack) return
+  const pages = getCurrentPages()
+  if (pages.length > 1) {
+    uni.navigateBack()
+    return
+  }
+  /* 深链直接落到二级页面时，返回父 Tab 的工作台，而不是回首页 */
+  const tab = matchLingyunPageTab(
+    pageConfig.value.tabs || [],
+    effectivePagePath.value,
+  )
+  if (tab && Array.isArray(tab.children) && tab.children.length) {
+    const workspace = buildLingyunPageTabWorkspaceUrl(tab)
+    if (workspace) {
+      setLingyunWorkspaceTabKey(tab.key)
+      uni.reLaunch({
+        url: workspace,
+        fail: () => uni.reLaunch({ url: '/pages/index/index' }),
       })
-      this.armNavHeader()
-    },
-    armNavHeader(left: number = 30) {
-      const slots = this.$slots || {}
-      const need: string[] = []
-      if (slots['nav-avatar']) need.push('ly-nav-slot-avatar')
-      if (slots['nav-name']) need.push('ly-nav-slot-name')
-      if (slots['nav-subtitle']) need.push('ly-nav-slot-subtitle')
-      if (!need.length) return
-      // #ifdef H5
-      const ready =
-        typeof document !== 'undefined' && need.every((id) => document.getElementById(id))
-      if (!ready) {
-        if (left <= 0) return
-        this._navSlotTimer = setTimeout(() => this.armNavHeader(left - 1), 16)
-        return
-      }
-      // #endif
-      this.navHeaderReady = true
-    },
-    releaseNavHeaderSlots() {
-      this.navHeaderReady = false
-      if (this._navSlotTimer) clearTimeout(this._navSlotTimer)
-      releaseLingyunPageNavHeaderSlots(this._navSlotClaim)
-    },
-    syncH5PageNavHost() {
-      if (this.embedded || this.inContentCover) return
-      if (!this.isCurrentPageShell()) return
-      // #ifdef H5
-      setLingyunH5PageNavAllowed(this.navDocked)
-      // #endif
-    },
-    /** 只有当前可见的页面壳能改共用导航，盖层里的子页和压在栈下的页面都不写。 */
-    isCurrentPageShell() {
-      const current = normalizeLingyunPagePath(readLingyunCurrentPagePath())
-      const mine = normalizeLingyunPagePath(this.currentPagePath || current)
-      return !current || !mine || current === mine
-    },
-    /**
-     * H5 左侧导航只挂一份。show-nav=false 只隐藏它，不把窄栏标记写成关闭。
-     * 标记被写成关闭后，组件会画出 220 宽的旧目录；返回时上一页还在，不会自己再写。
-     * 有导航的页面按当前布局把标记写回去（窄栏或内联菜单列）。
-     */
-    syncSharedNavChrome() {
-      if (this.embedded || this.inContentCover) return
-      if (!this.isCurrentPageShell()) return
-      this.syncH5PageNavHost()
-      bindLingyunContentCoverHost(this.coverUid, this.navDocked)
-      if (!this.navDocked) return
-      setLingyunPageNavRail(this.pageNavRail)
-      setLingyunPageNavInline(this.pageNavInline)
-    },
-    bindResize() {
-      const onWindowResize = (res?: unknown) => {
-        this.syncNavLayout(readLingyunResizeWidth(res))
-      }
-      this._onWindowResize = onWindowResize
-      try {
-        if (typeof uni.onWindowResize === 'function') uni.onWindowResize(onWindowResize)
-      } catch {
-        /* 端不支持 */
-      }
-      // #ifdef H5
-      if (typeof window !== 'undefined') window.addEventListener('resize', onWindowResize)
-      // #endif
-    },
-    bindWindowScroll() {
-      // #ifdef H5
-      if (
-        this._onWindowScroll ||
-        this.embedded ||
-        !this.usePageScroll ||
-        typeof window === 'undefined'
-      ) {
-        return
-      }
-      this._onWindowScroll = () => {
-        const top =
-          Math.max(
-            window.scrollY || window.pageYOffset || 0,
-            (document.scrollingElement && document.scrollingElement.scrollTop) || 0,
-            document.documentElement.scrollTop || 0,
-            document.body.scrollTop || 0,
-          ) || 0
-        this.applyScrollTop(top)
-      }
-      window.addEventListener('scroll', this._onWindowScroll, { passive: true })
-      document.addEventListener('scroll', this._onWindowScroll, true)
-      this.syncWindowScrollTop()
-      // #endif
-    },
-    unbindWindowScroll() {
-      // #ifdef H5
-      if (this._onWindowScroll && typeof window !== 'undefined') {
-        window.removeEventListener('scroll', this._onWindowScroll)
-        document.removeEventListener('scroll', this._onWindowScroll, true)
-      }
-      this._onWindowScroll = null
-      // #endif
-    },
-    /** H5 页面级滚动直接读窗口位置；iframe / 预览里比 IntersectionObserver 更稳 */
-    syncWindowScrollTop() {
-      // #ifdef H5
-      if (
-        this.embedded ||
-        !this.usePageScroll ||
-        typeof window === 'undefined'
-      ) {
-        return
-      }
-      const top =
-        window.scrollY ||
-        window.pageYOffset ||
-        (document.scrollingElement && document.scrollingElement.scrollTop) ||
-        document.documentElement.scrollTop ||
-        document.body.scrollTop ||
-        0
-      this.applyScrollTop(top)
-      // #endif
-    },
-    unbindResize() {
-      const onWindowResize = this._onWindowResize
-      try {
-        if (onWindowResize && typeof uni.offWindowResize === 'function') {
-          uni.offWindowResize(onWindowResize)
-        }
-      } catch {
-        /* 端不支持 */
-      }
-      // #ifdef H5
-      if (typeof window !== 'undefined' && onWindowResize) {
-        window.removeEventListener('resize', onWindowResize)
-      }
-      // #endif
-      this._onWindowResize = null
-    },
-    clearScrollSettle() {
-      if (this._scrollSettleTimer != null) {
-        clearTimeout(this._scrollSettleTimer)
-        this._scrollSettleTimer = null
-      }
-    },
-    /**
-     * 惯性滚动停稳后再对齐真实 scrollTop。
-     * 微信 scroll-view 快速回顶时常丢末帧，glassProgress 会卡在非 0；
-     * 滚动过程中仍即时更新，不改渐变手感。
-     * @param {number} [reportedTop] 内层注入上报时传入，避免误查不存在的 scroller
-     */
-    scheduleScrollSettle(reportedTop?: number) {
-      if (reportedTop != null && Number.isFinite(Number(reportedTop))) {
-        this._lastReportedTop = Math.max(0, Number(reportedTop))
-      }
-      this.clearScrollSettle()
-      this._scrollSettleTimer = setTimeout(() => {
-        this._scrollSettleTimer = null
-        if (this.useInnerScroll) {
-          this.syncScrollTopFromScroller()
-          return
-        }
-        // 无本组件 scroller（页面级滚动 / 页面自管滚动）：用末次上报近顶兜底
-        const last = Number(this._lastReportedTop)
-        this.applyScrollTop(Number.isFinite(last) && last < 1 ? 0 : last || 0)
-      }, 96)
-    },
-    syncScrollTopFromScroller() {
-      if (!this.useInnerScroll) return
-      const node = uni.createSelectorQuery().in(this).select('.lingyun-app-page__scroller')
-      const offset = node.scrollOffset as unknown as () => {
-        exec: (cb: (res: Array<{ scrollTop?: number } | undefined> | undefined) => void) => void
-      }
-      offset().exec((res) => {
-          const top = Number(res?.[0]?.scrollTop)
-          this.applyScrollTop(Number.isFinite(top) ? top : 0)
-        })
-    },
-    applyScrollTop(scrollTop: number) {
-      const dist = Math.max(1, Number(this.glassDistance) || 56)
-      // 亚像素 / 回弹残留：视为已在顶，避免玻璃卡在极低进度
-      const y = Math.max(0, Number(scrollTop) || 0)
-      const effective = y < 0.5 ? 0 : y
-      const next = Math.min(1, effective / dist)
-      this.glassProgress = next
-      this.$emit('scroll', effective)
-    },
-    onBodyScroll(e: { detail?: { scrollTop?: number }; target?: { scrollTop?: number } }) {
-      const top = Number(e?.detail?.scrollTop ?? e?.target?.scrollTop ?? 0)
-      const y = Number.isFinite(top) ? top : 0
-      this.applyScrollTop(y)
-      this.scheduleScrollSettle(y)
-    },
-    onScrollToUpper() {
-      this.applyScrollTop(0)
-      this.scheduleScrollSettle(0)
-    },
-    onHostHome() {
-      const home = getLingyunPageNavHome(true)
-      setLingyunPageNavIntent(home)
-      if (openLingyunHostedPage(home, home)) return
-      uni.redirectTo({ url: home })
-    },
-    onBack() {
-      if (this.inContentCover) {
-        closeLingyunContentCover()
-        this.$emit('back')
-        return
-      }
-      this.$emit('back')
-      if (!this.autoBack) return
-      const pages = getCurrentPages()
-      if (pages.length > 1) {
-        uni.navigateBack()
-        return
-      }
-      /* 深链直接落到二级页面时，返回父 Tab 的工作台，而不是回首页 */
-      const tab = matchLingyunPageTab(
-        this.pageConfig.tabs || [],
-        this.effectivePagePath,
-      )
-      if (tab && Array.isArray(tab.children) && tab.children.length) {
-        const workspace = buildLingyunPageTabWorkspaceUrl(tab)
-        if (workspace) {
-          setLingyunWorkspaceTabKey(tab.key)
-          uni.reLaunch({
-            url: workspace,
-            fail: () => uni.reLaunch({ url: '/pages/index/index' }),
-          })
-          return
-        }
-      }
-      uni.reLaunch({ url: '/pages/index/index' })
-    },
-    onClose() {
-      this.$emit('close')
-    },
-    onPageTouch() {
-      /* 页面任意位置开始触摸时先收起图表 tooltip；点图表时图表随后会重新显示 */
-      try {
-        uni.$emit('lingyun:page-touch')
-      } catch {
-        /* ignore */
-      }
-    },
-    onTrailing() {
-      this.$emit('trailing')
-    },
-    onTrailingAction(payload: Record<string, unknown>) {
-      this.$emit('trailing-action', payload)
-    },
-    /** 打开顶部搜索；searchable=false 时忽略 */
-    openSearch() {
-      if (!this.searchable || this.searchActive) return
-      this.searchActive = true
-      this.$emit('update:searching', true)
-      this.$emit('search-open')
-    },
-    /** 关闭顶部搜索；cancel=false 时不发取消事件，用于父级主动收起 */
-    closeSearch(cancel = true) {
-      if (!this.searchActive) return
-      const value = this.searchText
-      this.searchActive = false
-      this.$emit('update:searching', false)
-      if (cancel) this.$emit('search-cancel', value)
-      this.clearSearchValue()
-    },
-    clearSearchValue() {
-      if (!this.searchText) return
-      this.searchText = ''
-      this.$emit('update:searchValue', '')
-    },
-    toggleSearch() {
-      if (this.searchActive) this.closeSearch()
-      else this.openSearch()
-    },
-    onToolbarSearchOpen() {
-      this.openSearch()
-    },
-    onToolbarSearchCancel() {
-      this.closeSearch(true)
-    },
-    onSearchInput(value: string | number) {
-      this.searchText = String(value == null ? '' : value)
-      this.$emit('update:searchValue', this.searchText)
-      this.$emit('search-input', this.searchText)
-    },
-    onSearchConfirm(value: string | number) {
-      this.searchText = String(value == null ? '' : value)
-      this.$emit('update:searchValue', this.searchText)
-      this.$emit('search', this.searchText)
-    },
-    onSegmentUpdate(value: string | number) {
-      this.$emit('update:segmentValue', value)
-    },
-    onSegmentClick(payload: Record<string, unknown>) {
-      this.$emit('segment-click', payload)
-    },
-    onSegmentChange(payload: Record<string, unknown>) {
-      this.$emit('segment-change', payload)
-    },
-    onPickerValue(value: string | number, option: { value: string | number; label: string }) {
-      this.$emit('picker-value', value, option)
-    },
-    coverView(path: string) {
-      return getLingyunContentCoverView(path)
-    },
-    onCoverBack() {
-      closeLingyunContentCover()
-    },
-    scheduleCoverEnter() {
-      if (this._coverEnterTimer) clearTimeout(this._coverEnterTimer)
-      this._coverEnterTimer = setTimeout(() => {
-        this._coverEnterTimer = null
-        this.coverLayers.forEach((layer) => {
-          this.coverEntered[layer.key] = true
-        })
-      }, 32)
-    },
+      return
+    }
+  }
+  uni.reLaunch({ url: '/pages/index/index' })
+}
+function onClose(): void {
+  emit('close')
+}
+function onPageTouch(): void {
+  /* 页面任意位置开始触摸时先收起图表 tooltip；点图表时图表随后会重新显示 */
+  try {
+    uni.$emit('lingyun:page-touch')
+  } catch {
+    /* ignore */
+  }
+}
+function onTrailing(): void {
+  emit('trailing')
+}
+function onTrailingAction(payload: Record<string, unknown>): void {
+  emit('trailing-action', payload)
+}
+/** 打开顶部搜索；searchable=false 时忽略 */
+function openSearch(): void {
+  if (!props.searchable || searchActive.value) return
+  searchActive.value = true
+  emit('update:searching', true)
+  emit('search-open')
+}
+/** 关闭顶部搜索；cancel=false 时不发取消事件，用于父级主动收起 */
+function closeSearch(cancel = true): void {
+  if (!searchActive.value) return
+  const value = searchText.value
+  searchActive.value = false
+  emit('update:searching', false)
+  if (cancel) emit('search-cancel', value)
+  clearSearchValue()
+}
+function clearSearchValue(): void {
+  if (!searchText.value) return
+  searchText.value = ''
+  emit('update:searchValue', '')
+}
+function toggleSearch(): void {
+  if (searchActive.value) closeSearch()
+  else openSearch()
+}
+function onToolbarSearchOpen(): void {
+  openSearch()
+}
+function onToolbarSearchCancel(): void {
+  closeSearch(true)
+}
+function onSearchInput(value: string | number): void {
+  searchText.value = String(value == null ? '' : value)
+  emit('update:searchValue', searchText.value)
+  emit('search-input', searchText.value)
+}
+function onSearchConfirm(value: string | number): void {
+  searchText.value = String(value == null ? '' : value)
+  emit('update:searchValue', searchText.value)
+  emit('search', searchText.value)
+}
+function onSegmentUpdate(value: string | number): void {
+  emit('update:segmentValue', value)
+}
+function onSegmentClick(payload: Record<string, unknown>): void {
+  emit('segment-click', payload)
+}
+function onSegmentChange(payload: Record<string, unknown>): void {
+  emit('segment-change', payload)
+}
+function onPickerValue(value: string | number, option: { value: string | number; label: string }): void {
+  emit('picker-value', value, option)
+}
+function coverView(path: string) {
+  return getLingyunContentCoverView(path)
+}
+function onCoverBack(): void {
+  closeLingyunContentCover()
+}
+function scheduleCoverEnter(): void {
+  if (_coverEnterTimer.value) clearTimeout(_coverEnterTimer.value)
+  _coverEnterTimer.value = setTimeout(() => {
+    _coverEnterTimer.value = null
+    coverLayers.value.forEach((layer) => {
+      coverEntered.value[layer.key] = true
+    })
+  }, 32)
+}
+
+watch(
+  () => props.searching,
+  (val: boolean) => {
+    const wasActive = searchActive.value
+    searchActive.value = !!val
+    if (wasActive && !searchActive.value) clearSearchValue()
   },
+  { immediate: true },
+)
+watch(
+  () => props.searchValue,
+  (val: string) => {
+    searchText.value = String(val == null ? '' : val)
+  },
+  { immediate: true },
+)
+watch(
+  () => props.segments,
+  () => {
+    syncTopInset()
+  },
+  { deep: true },
+)
+watch(() => props.segmentControl, () => {
+  syncTopInset()
+})
+watch(searchActive, () => {
+  syncTopInset()
+})
+watch(() => props.safeArea, () => {
+  syncNavLayout()
+})
+watch(() => props.showToolbar, () => {
+  syncTopInset()
+})
+watch(() => props.titleStyle, () => {
+  syncTopInset()
+})
+watch(() => props.placement, () => {
+  syncTopInset()
+})
+watch(() => props.showGrabber, () => {
+  syncTopInset()
+})
+watch(navDocked, () => {
+  syncSharedNavChrome()
+})
+watch(pageLayout, () => {
+  applyPageLayout()
+})
+watch(tabbarVisible, () => {
+  /* 当前页是否属于一级 Tab 会随工作台 key / 路由变化 */
+  applyPageLayout()
+})
+watch(() => props.autoBottomInset, () => {
+  applyPageLayout()
+})
+watch(pageNavWidth, () => {
+  /* PC 内联菜单列展开 / 收起时，同步注入的导航占位给 tabbar、日期切换器等固定底栏 */
+  applyPageLayout()
+})
+watch(pageNavRail, () => {
+  syncSharedNavChrome()
+}, { immediate: true })
+watch(pageNavInline, () => {
+  syncSharedNavChrome()
+}, { immediate: true })
+watch(coverLayerMark, () => {
+  scheduleCoverEnter()
+})
+watch(usePageScroll, (enabled: boolean) => {
+  nextTick(() => {
+    if (enabled) {
+      bindWindowScroll()
+      // #ifndef H5
+      setupGlassObserver()
+      // #endif
+    } else {
+      unbindWindowScroll()
+      teardownGlassObserver()
+    }
+  })
+})
+
+onResize((res) => {
+  syncNavLayout(readLingyunResizeWidth(res))
+})
+onShow(() => {
+  if (embedded) return
+  syncPageChrome()
+  /* 上一页还在栈里，协议页曾把共用窄栏标记关掉时，这里按当前窗口写回去 */
+  syncSharedNavChrome()
+})
+
+provide(
+  LINGYUN_APP_PAGE_REPORT_SCROLL,
+  embedded && inheritedScrollReport
+    ? inheritedScrollReport
+    : (scrollTop: number) => {
+        applyScrollTop(scrollTop)
+        scheduleScrollSettle(scrollTop)
+      },
+)
+provide(
+  LINGYUN_APP_PAGE_SCROLL_LOCK,
+  embedded && inheritedScrollLock
+    ? inheritedScrollLock
+    : {
+        lock: () => lockBodyScroll(),
+        unlock: () => unlockBodyScroll(),
+      },
+)
+
+if (typeof bindScroll === 'function') {
+  bindScroll((scrollTop: number) => {
+    applyScrollTop(scrollTop)
+    scheduleScrollSettle(scrollTop)
+  })
+}
+syncPageChrome()
+applyPageTransition()
+syncNavLayout()
+_scrollSettleTimer.value = null
+_scrollLockCount.value = 0
+_glassObserver.value = null
+_navSlotClaim.value = 0
+
+onMounted(() => {
+  if (pageEntering.value) {
+    _pageEnterTimer.value = setTimeout(() => {
+      pageEntering.value = false
+      _pageEnterTimer.value = null
+    }, 300)
+  }
+  if (embedded) return
+  if (!inContentCover && ensureLingyunWidePageHost()) return
+  syncNavLayout()
+  syncNavHeaderSlots()
+  syncH5PageNavHost()
+  bindResize()
+  bindPageRoute()
+  if (usePageScroll.value) {
+    bindWindowScroll()
+    // #ifndef H5
+    nextTick(() => setupGlassObserver())
+    // #endif
+    // #ifdef H5
+    nextTick(() => syncWindowScrollTop())
+    // #endif
+  }
+  try {
+    useLingyunTheme().apply()
+  } catch {
+    /* pinia 未就绪时忽略 */
+  }
+})
+
+onBeforeUnmount(() => {
+  releaseNavHeaderSlots()
+  clearScrollSettle()
+  teardownGlassObserver()
+  unbindResize()
+  unbindPageRoute()
+  unbindWindowScroll()
+  if (_pageEnterTimer.value) {
+    clearTimeout(_pageEnterTimer.value)
+    _pageEnterTimer.value = null
+  }
+  if (_coverEnterTimer.value) {
+    clearTimeout(_coverEnterTimer.value)
+    _coverEnterTimer.value = null
+  }
+})
+
+/* <script setup> 下父组件 ref 只能访问这里暴露的方法 */
+defineExpose({
+  openSearch,
+  closeSearch,
 })
 </script>
 

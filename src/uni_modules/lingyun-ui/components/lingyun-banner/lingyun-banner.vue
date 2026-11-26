@@ -71,8 +71,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
 import type { LingyunBannerOverlay } from './types'
 
@@ -83,82 +84,91 @@ const OVERLAYS: LingyunBannerOverlay[] = ['none', 'top', 'bottom', 'full']
  * @description 页面营销横幅：图片 / 卡片、标题 / 说明 / 操作 / 关闭
  * @see design/BANNERS.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunBanner',
-  emits: ['click', 'action', 'close'],
-  props: {
-    image: { type: String, default: '' },
-    imageMode: { type: String, default: 'aspectFill' },
-    title: { type: String, default: '' },
-    description: { type: String, default: '' },
-    actionText: { type: String, default: '' },
-    actionIcon: { type: String, default: '' },
-    overlay: {
-      type: String as PropType<LingyunBannerOverlay>,
-      default: 'bottom',
-    },
-    height: { type: Number, default: 160 },
-    radius: { type: Number, default: 20 },
-    backgroundColor: { type: String, default: '' },
-    closable: { type: Boolean, default: false },
-    disabled: { type: Boolean, default: false },
-  },
-  data(): { visible: boolean } {
-    return { visible: true }
-  },
-  computed: {
-    rootClass(): string {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* pinia 未就绪 */
-      }
-      return themeClass
-    },
-    overlayKey(): LingyunBannerOverlay {
-      return OVERLAYS.includes(this.overlay) ? this.overlay : 'bottom'
-    },
-    hasImage(): boolean {
-      return !!String(this.image || '').trim()
-    },
-    resolvedHeight(): number {
-      const value = Number(this.height)
-      return Number.isFinite(value) && value > 0 ? value : 160
-    },
-    resolvedRadius(): number {
-      const value = Number(this.radius)
-      return Number.isFinite(value) && value >= 0 ? value : 20
-    },
-    rootStyle(): Record<string, string> {
-      const style: Record<string, string> = {
-        height: `${this.resolvedHeight}px`,
-        borderRadius: `${this.resolvedRadius}px`,
-      }
-      if (!this.hasImage && this.backgroundColor) {
-        style.backgroundColor = this.backgroundColor
-      }
-      return style
-    },
-  },
-  methods: {
-    onClick(): void {
-      if (this.disabled) return
-      this.$emit('click')
-    },
-    onAction(): void {
-      if (this.disabled) return
-      this.$emit('action')
-    },
-    onClose(): void {
-      this.visible = false
-      this.$emit('close')
-    },
-    show(): void {
-      this.visible = true
-    },
-  },
 })
+
+const props = defineProps({
+  image: { type: String, default: '' },
+  imageMode: { type: String, default: 'aspectFill' },
+  title: { type: String, default: '' },
+  description: { type: String, default: '' },
+  actionText: { type: String, default: '' },
+  actionIcon: { type: String, default: '' },
+  overlay: {
+    type: String as PropType<LingyunBannerOverlay>,
+    default: 'bottom',
+  },
+  height: { type: Number, default: 160 },
+  radius: { type: Number, default: 20 },
+  backgroundColor: { type: String, default: '' },
+  closable: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
+})
+
+const emit = defineEmits(['click', 'action', 'close'])
+
+const visible = ref(true)
+
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* pinia 未就绪 */
+  }
+  return themeClass
+})
+
+const overlayKey = computed((): LingyunBannerOverlay => {
+  return OVERLAYS.includes(props.overlay) ? props.overlay : 'bottom'
+})
+
+const hasImage = computed((): boolean => {
+  return !!String(props.image || '').trim()
+})
+
+const resolvedHeight = computed((): number => {
+  const value = Number(props.height)
+  return Number.isFinite(value) && value > 0 ? value : 160
+})
+
+const resolvedRadius = computed((): number => {
+  const value = Number(props.radius)
+  return Number.isFinite(value) && value >= 0 ? value : 20
+})
+
+const rootStyle = computed((): Record<string, string> => {
+  const style: Record<string, string> = {
+    height: `${resolvedHeight.value}px`,
+    borderRadius: `${resolvedRadius.value}px`,
+  }
+  if (!hasImage.value && props.backgroundColor) {
+    style.backgroundColor = props.backgroundColor
+  }
+  return style
+})
+
+function onClick(): void {
+  if (props.disabled) return
+  emit('click')
+}
+
+function onAction(): void {
+  if (props.disabled) return
+  emit('action')
+}
+
+function onClose(): void {
+  visible.value = false
+  emit('close')
+}
+
+function show(): void {
+  visible.value = true
+}
+
+defineExpose({ show })
 </script>
 
 <style lang="scss">

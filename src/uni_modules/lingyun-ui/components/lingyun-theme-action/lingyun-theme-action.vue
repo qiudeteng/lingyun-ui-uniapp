@@ -26,8 +26,9 @@
   </lingyun-menu>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+import { type PropType } from 'vue'
 import { useLingyunTheme, type LingyunThemePreference } from '../../utils/theme'
 
 /**
@@ -35,71 +36,67 @@ import { useLingyunTheme, type LingyunThemePreference } from '../../utils/theme'
  * @description 内置主题切换：放进工具栏 / Duo 工具组；点击弹出浅色 / 暗黑 / 自动菜单。
  * grouped 为 true 时不画玻璃底，由外层工具组提供。
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunThemeAction',
-  emits: ['menu-open', 'menu-closed'],
-  props: {
-    grouped: { type: Boolean, default: false },
-    iconSize: { type: [Number, String], default: 20 },
-    /** 菜单锚点；按钮组隐藏时由工具栏传入整组右上角，避免按单个按钮定位 */
-    anchor: {
-      type: Object as PropType<
-        { top?: number; left?: number; width?: number; height?: number } | null
-      >,
-      default: null,
-    },
-  },
-  data() {
-    return {
-      open: false,
-    }
-  },
-  watch: {
-    open(val: boolean) {
-      if (val) this.$emit('menu-open')
-    },
-  },
-  computed: {
-    theme() {
-      return useLingyunTheme()
-    },
-    actions() {
-      const preference = this.theme.preference
-      return [
-        {
-          key: 'light',
-          label: '浅色',
-          iconClass: 'lingyun-menu__symbol-icon--sun',
-          selected: preference === 'light',
-        },
-        {
-          key: 'dark',
-          label: '暗黑',
-          iconClass: 'lingyun-menu__symbol-icon--moon',
-          selected: preference === 'dark',
-        },
-        {
-          key: 'system',
-          label: '自动',
-          icon: 'loop',
-          selected: preference === 'system',
-        },
-      ]
-    },
-  },
-  methods: {
-    onThemeSelect(payload: { key?: string }): void {
-      const key = payload?.key as LingyunThemePreference | undefined
-      if (key === 'light' || key === 'dark' || key === 'system') {
-        this.theme.setPreference(key)
-      }
-      this.open = false
-    },
-    onMenuClosed(): void {
-      this.$emit('menu-closed')
-    },
+})
+
+defineProps({
+  grouped: { type: Boolean, default: false },
+  iconSize: { type: [Number, String], default: 20 },
+  /** 菜单锚点；按钮组隐藏时由工具栏传入整组右上角，避免按单个按钮定位 */
+  anchor: {
+    type: Object as PropType<
+      { top?: number; left?: number; width?: number; height?: number } | null
+    >,
+    default: null,
   },
 })
+
+const emit = defineEmits(['menu-open', 'menu-closed'])
+
+const open = ref(false)
+
+const theme = computed(() => useLingyunTheme())
+
+const actions = computed(() => {
+  const preference = theme.value.preference
+  return [
+    {
+      key: 'light',
+      label: '浅色',
+      iconClass: 'lingyun-menu__symbol-icon--sun',
+      selected: preference === 'light',
+    },
+    {
+      key: 'dark',
+      label: '暗黑',
+      iconClass: 'lingyun-menu__symbol-icon--moon',
+      selected: preference === 'dark',
+    },
+    {
+      key: 'system',
+      label: '自动',
+      icon: 'loop',
+      selected: preference === 'system',
+    },
+  ]
+})
+
+watch(open, (val: boolean) => {
+  if (val) emit('menu-open')
+})
+
+function onThemeSelect(payload: { key?: string }): void {
+  const key = payload?.key as LingyunThemePreference | undefined
+  if (key === 'light' || key === 'dark' || key === 'system') {
+    theme.value.setPreference(key)
+  }
+  open.value = false
+}
+
+function onMenuClosed(): void {
+  emit('menu-closed')
+}
 </script>
 
 <style lang="scss">

@@ -24,7 +24,7 @@
           @confirm="onConfirm"
           @focus="onFocus"
           @blur="onBlur"
-          @keyboardheightchange="onKeyboardHeightChange"
+          @keyboardheightchange="onFieldKeyboardHeightChange"
         />
         <view
           v-if="hasValue"
@@ -73,8 +73,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, inject, ref, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { inject, type PropType } from 'vue'
 import { LINGYUN_APP_PAGE_NAV_INSET } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 
 /**
@@ -94,281 +95,302 @@ import { LINGYUN_APP_PAGE_NAV_INSET } from '@/uni_modules/lingyun-ui/components/
  * @property {Boolean} focus 外部请求聚焦
  * @event {Function} update:modelValue / input / confirm / clear / mic / cancel / focus / blur
  */
+defineOptions({
+  name: 'LingyunSearchBar',
+})
+
+const props = defineProps({
+  modelValue: {
+    type: String as PropType<string | undefined>,
+    default: undefined,
+  },
+  value: {
+    type: String as PropType<string | undefined>,
+    default: undefined,
+  },
+  placeholder: {
+    type: String,
+    default: 'Search',
+  },
+  fixed: {
+    type: Boolean,
+    default: true,
+  },
+  safeArea: {
+    type: Boolean,
+    default: true,
+  },
+  showCancel: {
+    type: Boolean,
+    default: true,
+  },
+  /** 空内容时的语音按钮。暂不支持语音输入，默认关闭 */
+  showMic: {
+    type: Boolean,
+    default: false,
+  },
+  /**
+   * 覆盖默认内边距（上 0、左右与下 28）。
+   * 浮层里的搜索需要更小的左右边距，并补上边距。
+   */
+  padding: {
+    type: String,
+    default: '',
+  },
+  cancelText: {
+    type: String,
+    default: '',
+  },
+  focus: {
+    type: Boolean,
+    default: false,
+  },
+})
+
+const emit = defineEmits([
+  'update:modelValue',
+  'update:value',
+  'input',
+  'confirm',
+  'clear',
+  'mic',
+  'cancel',
+  'focus',
+  'blur',
+])
 
 type SearchDetailEvent = {
   detail?: { value?: string | number; height?: number }
 }
 
-export default defineComponent({
-  name: 'LingyunSearchBar',
-  setup() {
-    return {
-      pageNavInset: inject(LINGYUN_APP_PAGE_NAV_INSET, ref(0)),
+const pageNavInset = inject(LINGYUN_APP_PAGE_NAV_INSET, ref(0))
+const instance = getCurrentInstance()
+
+const localValue = ref('')
+const innerFocused = ref(false)
+/** 键盘高度（px）；fixed 底栏据此上推，避免被挡住 */
+const keyboardHeight = ref(0)
+const _blurTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _onFocusIn = ref<(() => void) | null>(null)
+const _onFocusOut = ref<((event: FocusEvent) => void) | null>(null)
+const _onKeyboardHeight = ref<((res: { height?: number }) => void) | null>(null)
+const _onVisualViewport = ref<(() => void) | null>(null)
+
+function setKeyboardHeight(height: unknown) {
+  const next = Math.max(0, Number(height) || 0)
+  if (next === keyboardHeight.value) return
+  keyboardHeight.value = next
+}
+
+function clearBlurTimer() {
+  if (!_blurTimer.value) return
+  clearTimeout(_blurTimer.value)
+  _blurTimer.value = null
+}
+
+const innerValue = computed(() => {
+  if (props.modelValue !== undefined && props.modelValue !== null) return props.modelValue
+  if (props.value !== undefined && props.value !== null) return props.value
+  return localValue.value
+})
+const hasValue = computed(() => {
+  return String(innerValue.value || '').length > 0
+})
+const active = computed(() => {
+  return props.showCancel && (innerFocused.value || props.focus)
+})
+const rootClass = computed(() => {
+  return [
+    props.fixed ? 'lingyun-search-bar--fixed' : '',
+    props.safeArea ? 'lingyun-search-bar--safe' : '',
+    active.value ? 'lingyun-search-bar--active' : '',
+    keyboardHeight.value > 0 ? 'lingyun-search-bar--keyboard' : '',
+    hasValue.value ? 'lingyun-search-bar--value' : 'lingyun-search-bar--placeholder',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+const rootStyle = computed(() => {
+  const style: Record<string, string> = {}
+  const pad = String(props.padding || '').trim()
+  if (pad) style.padding = pad
+  if (props.fixed) style.left = `${Math.max(0, Number(pageNavInset.value) || 0)}px`
+  if (props.fixed && keyboardHeight.value > 0) style.bottom = `${keyboardHeight.value}px`
+  return style
+})
+
+function onFieldKeyboardHeightChange(event: Event) {
+  const detail = (event as unknown as SearchDetailEvent).detail
+  const height = detail ? detail.height : 0
+  setKeyboardHeight(height)
+}
+
+function bindKeyboardHeight() {
+  if (!props.fixed) return
+  if (typeof uni === 'undefined' || typeof uni.onKeyboardHeightChange !== 'function') return
+  const onKeyboardHeight = (res: { height?: number }) => {
+    setKeyboardHeight(res && res.height)
+  }
+  _onKeyboardHeight.value = onKeyboardHeight
+  uni.onKeyboardHeightChange(onKeyboardHeight)
+}
+
+function unbindKeyboardHeight() {
+  const onKeyboardHeight = _onKeyboardHeight.value
+  if (!onKeyboardHeight) return
+  if (typeof uni !== 'undefined' && typeof uni.offKeyboardHeightChange === 'function') {
+    uni.offKeyboardHeightChange(onKeyboardHeight)
+  }
+  _onKeyboardHeight.value = null
+}
+
+/* #ifdef H5 */
+function bindVisualViewport() {
+  const viewport = typeof window === 'undefined' ? null : window.visualViewport
+  if (!props.fixed || !viewport) return
+  const onVisualViewport = () => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+    setKeyboardHeight(covered > 80 ? covered : 0)
+  }
+  _onVisualViewport.value = onVisualViewport
+  viewport.addEventListener('resize', onVisualViewport)
+  viewport.addEventListener('scroll', onVisualViewport)
+}
+
+function unbindVisualViewport() {
+  const onVisualViewport = _onVisualViewport.value
+  const viewport = typeof window === 'undefined' ? null : window.visualViewport
+  if (!onVisualViewport || !viewport) return
+  viewport.removeEventListener('resize', onVisualViewport)
+  viewport.removeEventListener('scroll', onVisualViewport)
+  _onVisualViewport.value = null
+}
+/* #endif */
+
+function setValue(next: unknown) {
+  const value = next == null ? '' : String(next)
+  localValue.value = value
+  emit('update:modelValue', value)
+  emit('update:value', value)
+}
+
+function onInput(event: Event) {
+  const detail = (event as unknown as SearchDetailEvent).detail
+  const value = detail ? detail.value : ''
+  setValue(value)
+  emit('input', value)
+}
+
+function onConfirm(event: Event) {
+  const detail = (event as unknown as SearchDetailEvent).detail
+  const value = detail ? detail.value : innerValue.value
+  emit('confirm', value)
+}
+
+function queryInput(): HTMLInputElement | null {
+  const root = instance?.proxy?.$el as { querySelector?: (selectors: string) => HTMLInputElement | null } | null
+  if (!root || !root.querySelector) return null
+  return root.querySelector('input')
+}
+
+function focusInput() {
+  /* #ifdef H5 */
+  const input = queryInput()
+  if (input && input.focus) input.focus()
+  /* #endif */
+}
+
+function blurInput() {
+  /* #ifdef H5 */
+  const input = queryInput()
+  if (input && input.blur) input.blur()
+  /* #endif */
+  if (typeof uni !== 'undefined' && uni.hideKeyboard) uni.hideKeyboard()
+}
+
+function onFocus() {
+  clearBlurTimer()
+  innerFocused.value = true
+  /* #ifdef H5 */
+  if (typeof window !== 'undefined') {
+    const x = window.scrollX
+    const y = window.scrollY
+    nextTick(() => window.scrollTo(x, y))
+  }
+  /* #endif */
+  emit('focus')
+}
+
+function onBlur() {
+  clearBlurTimer()
+  _blurTimer.value = setTimeout(() => {
+    innerFocused.value = false
+    setKeyboardHeight(0)
+    _blurTimer.value = null
+    emit('blur')
+  }, 160)
+}
+
+function onFieldClick() {
+  const was = innerFocused.value
+  clearBlurTimer()
+  innerFocused.value = true
+  focusInput()
+  if (!was) emit('focus')
+}
+
+function onClear() {
+  setValue('')
+  emit('clear')
+}
+
+function onMic() {
+  emit('mic')
+}
+
+function onCancel() {
+  clearBlurTimer()
+  setValue('')
+  innerFocused.value = false
+  setKeyboardHeight(0)
+  blurInput()
+  emit('cancel')
+}
+
+onMounted(() => {
+  /* #ifdef H5 */
+  nextTick(() => {
+    const root = instance?.proxy?.$el
+    if (!root || !root.addEventListener) return
+    const handleFocusIn = () => onFocus()
+    _onFocusIn.value = handleFocusIn
+    const handleFocusOut = (event: FocusEvent) => {
+      const next = event && event.relatedTarget
+      if (next && root.contains && root.contains(next as Node)) return
+      onBlur()
     }
-  },
-  emits: [
-    'update:modelValue',
-    'update:value',
-    'input',
-    'confirm',
-    'clear',
-    'mic',
-    'cancel',
-    'focus',
-    'blur',
-  ],
-  data() {
-    return {
-      localValue: '',
-      innerFocused: false,
-      /** 键盘高度（px）；fixed 底栏据此上推，避免被挡住 */
-      keyboardHeight: 0,
-      _blurTimer: null as ReturnType<typeof setTimeout> | null,
-      _onFocusIn: null as (() => void) | null,
-      _onFocusOut: null as ((event: FocusEvent) => void) | null,
-      _onKeyboardHeight: null as ((res: { height?: number }) => void) | null,
-      _onVisualViewport: null as (() => void) | null,
-    }
-  },
-  props: {
-    modelValue: {
-      type: String as PropType<string | undefined>,
-      default: undefined,
-    },
-    value: {
-      type: String as PropType<string | undefined>,
-      default: undefined,
-    },
-    placeholder: {
-      type: String,
-      default: 'Search',
-    },
-    fixed: {
-      type: Boolean,
-      default: true,
-    },
-    safeArea: {
-      type: Boolean,
-      default: true,
-    },
-    showCancel: {
-      type: Boolean,
-      default: true,
-    },
-    /** 空内容时的语音按钮。暂不支持语音输入，默认关闭 */
-    showMic: {
-      type: Boolean,
-      default: false,
-    },
-    /**
-     * 覆盖默认内边距（上 0、左右与下 28）。
-     * 浮层里的搜索需要更小的左右边距，并补上边距。
-     */
-    padding: {
-      type: String,
-      default: '',
-    },
-    cancelText: {
-      type: String,
-      default: '',
-    },
-    focus: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  computed: {
-    innerValue() {
-      if (this.modelValue !== undefined && this.modelValue !== null) return this.modelValue
-      if (this.value !== undefined && this.value !== null) return this.value
-      return this.localValue
-    },
-    hasValue() {
-      return String(this.innerValue || '').length > 0
-    },
-    active() {
-      return this.showCancel && (this.innerFocused || this.focus)
-    },
-    rootClass() {
-      return [
-        this.fixed ? 'lingyun-search-bar--fixed' : '',
-        this.safeArea ? 'lingyun-search-bar--safe' : '',
-        this.active ? 'lingyun-search-bar--active' : '',
-        this.keyboardHeight > 0 ? 'lingyun-search-bar--keyboard' : '',
-        this.hasValue ? 'lingyun-search-bar--value' : 'lingyun-search-bar--placeholder',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    rootStyle() {
-      const style: Record<string, string> = {}
-      const pad = String(this.padding || '').trim()
-      if (pad) style.padding = pad
-      if (this.fixed) style.left = `${Math.max(0, Number(this.pageNavInset) || 0)}px`
-      if (this.fixed && this.keyboardHeight > 0) style.bottom = `${this.keyboardHeight}px`
-      return style
-    },
-  },
-  mounted() {
-    /* #ifdef H5 */
-    this.$nextTick(() => {
-      const root = this.$el
-      if (!root || !root.addEventListener) return
-      this._onFocusIn = () => this.onFocus()
-      this._onFocusOut = (event: FocusEvent) => {
-        const next = event && event.relatedTarget
-        if (next && root.contains && root.contains(next as Node)) return
-        this.onBlur()
-      }
-      root.addEventListener('focusin', this._onFocusIn)
-      root.addEventListener('focusout', this._onFocusOut)
-    })
-    this.bindVisualViewport()
-    /* #endif */
-    this.bindKeyboardHeight()
-  },
-  beforeUnmount() {
-    this.clearBlurTimer()
-    this.unbindKeyboardHeight()
-    /* #ifdef H5 */
-    this.unbindVisualViewport()
-    const root = this.$el
-    if (root && this._onFocusIn) root.removeEventListener('focusin', this._onFocusIn)
-    if (root && this._onFocusOut) root.removeEventListener('focusout', this._onFocusOut)
-    /* #endif */
-  },
-  methods: {
-    setKeyboardHeight(height: unknown) {
-      const next = Math.max(0, Number(height) || 0)
-      if (next === this.keyboardHeight) return
-      this.keyboardHeight = next
-    },
-    onKeyboardHeightChange(event: SearchDetailEvent) {
-      const height = event && event.detail ? event.detail.height : 0
-      this.setKeyboardHeight(height)
-    },
-    bindKeyboardHeight() {
-      if (!this.fixed) return
-      if (typeof uni === 'undefined' || typeof uni.onKeyboardHeightChange !== 'function') return
-      const onKeyboardHeight = (res: { height?: number }) => {
-        this.setKeyboardHeight(res && res.height)
-      }
-      this._onKeyboardHeight = onKeyboardHeight
-      uni.onKeyboardHeightChange(onKeyboardHeight)
-    },
-    unbindKeyboardHeight() {
-      const onKeyboardHeight = this._onKeyboardHeight
-      if (!onKeyboardHeight) return
-      if (typeof uni !== 'undefined' && typeof uni.offKeyboardHeightChange === 'function') {
-        uni.offKeyboardHeightChange(onKeyboardHeight)
-      }
-      this._onKeyboardHeight = null
-    },
-    /* #ifdef H5 */
-    bindVisualViewport() {
-      const viewport = typeof window === 'undefined' ? null : window.visualViewport
-      if (!this.fixed || !viewport) return
-      const onVisualViewport = () => {
-        const vv = window.visualViewport
-        if (!vv) return
-        const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
-        this.setKeyboardHeight(covered > 80 ? covered : 0)
-      }
-      this._onVisualViewport = onVisualViewport
-      viewport.addEventListener('resize', onVisualViewport)
-      viewport.addEventListener('scroll', onVisualViewport)
-    },
-    unbindVisualViewport() {
-      const onVisualViewport = this._onVisualViewport
-      const viewport = typeof window === 'undefined' ? null : window.visualViewport
-      if (!onVisualViewport || !viewport) return
-      viewport.removeEventListener('resize', onVisualViewport)
-      viewport.removeEventListener('scroll', onVisualViewport)
-      this._onVisualViewport = null
-    },
-    /* #endif */
-    setValue(next: unknown) {
-      const value = next == null ? '' : String(next)
-      this.localValue = value
-      this.$emit('update:modelValue', value)
-      this.$emit('update:value', value)
-    },
-    onInput(event: SearchDetailEvent) {
-      const value = event && event.detail ? event.detail.value : ''
-      this.setValue(value)
-      this.$emit('input', value)
-    },
-    onConfirm(event: SearchDetailEvent) {
-      const value = event && event.detail ? event.detail.value : this.innerValue
-      this.$emit('confirm', value)
-    },
-    onFocus() {
-      this.clearBlurTimer()
-      this.innerFocused = true
-      /* #ifdef H5 */
-      if (typeof window !== 'undefined') {
-        const x = window.scrollX
-        const y = window.scrollY
-        this.$nextTick(() => window.scrollTo(x, y))
-      }
-      /* #endif */
-      this.$emit('focus')
-    },
-    onBlur() {
-      this.clearBlurTimer()
-      this._blurTimer = setTimeout(() => {
-        this.innerFocused = false
-        this.setKeyboardHeight(0)
-        this._blurTimer = null
-        this.$emit('blur')
-      }, 160)
-    },
-    clearBlurTimer() {
-      if (!this._blurTimer) return
-      clearTimeout(this._blurTimer)
-      this._blurTimer = null
-    },
-    queryInput(): HTMLInputElement | null {
-      const root = this.$el as { querySelector?: (selectors: string) => HTMLInputElement | null } | null
-      if (!root || !root.querySelector) return null
-      return root.querySelector('input')
-    },
-    focusInput() {
-      /* #ifdef H5 */
-      const input = this.queryInput()
-      if (input && input.focus) input.focus()
-      /* #endif */
-    },
-    blurInput() {
-      /* #ifdef H5 */
-      const input = this.queryInput()
-      if (input && input.blur) input.blur()
-      /* #endif */
-      if (typeof uni !== 'undefined' && uni.hideKeyboard) uni.hideKeyboard()
-    },
-    onFieldClick() {
-      const was = this.innerFocused
-      this.clearBlurTimer()
-      this.innerFocused = true
-      this.focusInput()
-      if (!was) this.$emit('focus')
-    },
-    onClear() {
-      this.setValue('')
-      this.$emit('clear')
-    },
-    onMic() {
-      this.$emit('mic')
-    },
-    onCancel() {
-      this.clearBlurTimer()
-      this.setValue('')
-      this.innerFocused = false
-      this.setKeyboardHeight(0)
-      this.blurInput()
-      this.$emit('cancel')
-    },
-  },
+    _onFocusOut.value = handleFocusOut
+    root.addEventListener('focusin', handleFocusIn)
+    root.addEventListener('focusout', handleFocusOut)
+  })
+  bindVisualViewport()
+  /* #endif */
+  bindKeyboardHeight()
+})
+
+onBeforeUnmount(() => {
+  clearBlurTimer()
+  unbindKeyboardHeight()
+  /* #ifdef H5 */
+  unbindVisualViewport()
+  const root = instance?.proxy?.$el
+  const handleFocusIn = _onFocusIn.value
+  const handleFocusOut = _onFocusOut.value
+  if (root && handleFocusIn) root.removeEventListener('focusin', handleFocusIn)
+  if (root && handleFocusOut) root.removeEventListener('focusout', handleFocusOut)
+  /* #endif */
 })
 </script>
 

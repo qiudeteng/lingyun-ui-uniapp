@@ -5,9 +5,25 @@
 @import './setting/_space.scss';
 @import './setting/_radius.scss';
 @import './setting/_text.scss';
+/* #ifndef APP */
 @import './setting/_styles.scss';
+/* #endif */
 @import './setting/_section-layout.scss';
 @import './setting/_split-layout.scss';
+/* uvue 不支持类选择器 / 伪类 / 标签选择器，这些文件仅 Web 与微信端引入补充，App 端不参与 */
+/* #ifndef APP */
 @import './setting/_app-page-layout.scss';
+/* #endif */
 @import './setting/_picker-indicator.scss';
-@import './setting/_h5-scrollbar.scss';
+/* Web 滚动条样式在 main.ts 引入 h5-scrollbar.css（普通 CSS，不进 scoped） */
+
+/*
+ * uni-app x 编译到小程序时会注入 `view { overflow: hidden }`（uvue.wxss），
+ * 导致角标、气泡箭头、阴影、浮层等悬挂元素被任意一层 view 裁掉。
+ * 这里恢复微信默认的 overflow: visible（标签选择器优先级低，组件类选择器仍可覆盖）。
+ */
+/* #ifdef MP */
+view, label, swiper, swiper-item, movable-area, movable-view, cover-view, list-item, navigator, radio-group, checkbox-group {
+  overflow: visible !important;
+}
+/* #endif */

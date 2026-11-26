@@ -8,47 +8,48 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed } from 'vue'
+import { type PropType } from 'vue'
 
 /**
  * lingyun-chip · 可选中筛选胶囊
  * @see design/TAGS.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunChip',
-  emits: ['update:selected', 'update:modelValue', 'change', 'click'],
-  props: {
-    text: { type: String, default: '' },
-    selected: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    selectable: { type: Boolean, default: true },
-    disabled: { type: Boolean, default: false },
-  },
-  computed: {
-    isSelected() {
-      if (this.modelValue !== undefined && this.modelValue !== null) return !!this.modelValue
-      return !!this.selected
-    },
-    rootClass() {
-      return [
-        this.isSelected ? 'lingyun-chip--selected' : '',
-        this.disabled ? 'lingyun-chip--disabled' : '',
-      ].filter(Boolean)
-    },
-  },
-  methods: {
-    onClick(e: Event) {
-      if (this.disabled) return
-      this.$emit('click', e)
-      if (!this.selectable) return
-      const next = !this.isSelected
-      this.$emit('update:selected', next)
-      this.$emit('update:modelValue', next)
-      this.$emit('change', next)
-    },
-  },
 })
+
+const props = defineProps({
+  text: { type: String, default: '' },
+  selected: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  selectable: { type: Boolean, default: true },
+  disabled: { type: Boolean, default: false },
+})
+
+const emit = defineEmits(['update:selected', 'update:modelValue', 'change', 'click'])
+
+const isSelected = computed(() => {
+  if (props.modelValue !== undefined && props.modelValue !== null) return !!props.modelValue
+  return !!props.selected
+})
+const rootClass = computed(() => {
+  return [
+    isSelected.value ? 'lingyun-chip--selected' : '',
+    props.disabled ? 'lingyun-chip--disabled' : '',
+  ].filter(Boolean)
+})
+
+function onClick(e: Event) {
+  if (props.disabled) return
+  emit('click', e)
+  if (!props.selectable) return
+  const next = !isSelected.value
+  emit('update:selected', next)
+  emit('update:modelValue', next)
+  emit('change', next)
+}
 </script>
 
 <style lang="scss">

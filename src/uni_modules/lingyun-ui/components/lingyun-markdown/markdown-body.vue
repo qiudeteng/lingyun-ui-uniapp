@@ -146,8 +146,8 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, inject, type PropType } from 'vue'
+<script setup lang="ts">
+import { inject, type PropType } from 'vue'
 import MarkdownSpans from './markdown-spans.vue'
 import { LINGYUN_MARKDOWN_CONTEXT } from './context'
 import type { LingyunMarkdownContext } from './context'
@@ -164,69 +164,72 @@ import type {
  * 列表 / 引用已在解析阶段拍平成带缩进的行，这里不做组件递归，
  * 避免微信小程序不生成递归组件 usingComponents 的问题。
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunMarkdownBody',
-  components: { MarkdownSpans },
-  props: {
-    rows: {
-      type: Array as PropType<LingyunMarkdownRow[]>,
-      default: () => [],
-    },
-    selectable: { type: Boolean, default: false },
-    highlight: { type: Boolean, default: true },
-  },
-  setup() {
-    const markdownContext = inject<LingyunMarkdownContext | null>(
-      LINGYUN_MARKDOWN_CONTEXT,
-      null,
-    )
-    return { markdownContext }
-  },
-  methods: {
-    /**
-     * uni-app H5 的 text 会把 `\n`（反斜杠 + n）当换行转义，
-     * 代码块需要按源码显示反斜杠；H5 下加倍，小程序保持原样。
-     */
-    displayText(value: string): string {
-      // #ifdef H5
-      return value.replace(/\\/g, '\\\\')
-      // #endif
-      // #ifndef H5
-      return value
-      // #endif
-    },
-    codeTokenLines(block: LingyunMarkdownLeafBlock): LingyunMarkdownCodeLine[] {
-      if (block.type !== 'code') return []
-      return highlightCode(block.text, block.lang, this.highlight)
-    },
-    tableColumns(block: LingyunMarkdownLeafBlock): number {
-      if (block.type !== 'table') return 0
-      return Math.max(
-        block.header.length,
-        ...block.rows.map((row) => row.length),
-      )
-    },
-    tableWide(block: LingyunMarkdownLeafBlock): boolean {
-      return this.tableColumns(block) >= 3
-    },
-    tableMinWidth(block: LingyunMarkdownLeafBlock): string {
-      const columns = this.tableColumns(block)
-      return columns >= 3 ? `${columns * 110}px` : '100%'
-    },
-    alignAt(block: LingyunMarkdownLeafBlock, index: number): string {
-      if (block.type !== 'table') return 'left'
-      return block.align[index] || 'left'
-    },
-    onImage(segment: LingyunMarkdownImageSegment): void {
-      this.markdownContext?.openImage({
-        src: segment.src,
-        alt: segment.alt,
-        title: segment.title,
-        href: segment.href,
-      })
-    },
-  },
 })
+
+const props = defineProps({
+  rows: {
+    type: Array as PropType<LingyunMarkdownRow[]>,
+    default: () => [],
+  },
+  selectable: { type: Boolean, default: false },
+  highlight: { type: Boolean, default: true },
+})
+
+const markdownContext = inject<LingyunMarkdownContext | null>(
+  LINGYUN_MARKDOWN_CONTEXT,
+  null,
+)
+
+/**
+ * uni-app H5 的 text 会把 `\n`（反斜杠 + n）当换行转义，
+ * 代码块需要按源码显示反斜杠；H5 下加倍，小程序保持原样。
+ */
+function displayText(value: string): string {
+  // #ifdef H5
+  return value.replace(/\\/g, '\\\\')
+  // #endif
+  // #ifndef H5
+  return value
+  // #endif
+}
+
+function codeTokenLines(block: LingyunMarkdownLeafBlock): LingyunMarkdownCodeLine[] {
+  if (block.type !== 'code') return []
+  return highlightCode(block.text, block.lang, props.highlight)
+}
+
+function tableColumns(block: LingyunMarkdownLeafBlock): number {
+  if (block.type !== 'table') return 0
+  return Math.max(
+    block.header.length,
+    ...block.rows.map((row) => row.length),
+  )
+}
+
+function tableWide(block: LingyunMarkdownLeafBlock): boolean {
+  return tableColumns(block) >= 3
+}
+
+function tableMinWidth(block: LingyunMarkdownLeafBlock): string {
+  const columns = tableColumns(block)
+  return columns >= 3 ? `${columns * 110}px` : '100%'
+}
+
+function alignAt(block: LingyunMarkdownLeafBlock, index: number): string {
+  if (block.type !== 'table') return 'left'
+  return block.align[index] || 'left'
+}
+
+function onImage(segment: LingyunMarkdownImageSegment): void {
+  markdownContext?.openImage({
+    src: segment.src,
+    alt: segment.alt,
+    title: segment.title,
+    href: segment.href,
+  })
+}
 </script>
 
 <style lang="scss" scoped>

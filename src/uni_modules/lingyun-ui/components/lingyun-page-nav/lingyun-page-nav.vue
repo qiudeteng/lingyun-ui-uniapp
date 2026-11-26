@@ -290,8 +290,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, getCurrentInstance, ref, watch, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { inject, type PropType } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useLingyunTheme } from '../../utils/theme'
 import LingyunIcon from '../lingyun-icon/lingyun-icon.vue'
@@ -359,744 +360,722 @@ const LINGYUN_PAGE_NAV_SUBTITLE = '一套对齐 Apple Liquid Glass 的 uni-app �
  * 宽屏目录。H5 挂在 body 上，不随 redirectTo 拆掉；小程序嵌在 lingyun-app-page。
  * scroll-top 只在挂载时写入一次，滚动中不回写，避免把列表拽回旧位置。
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunPageNav',
-  components: { LingyunIcon, LingyunAvatar, LingyunMenu },
-  inject: {
-    pageScrollLocked: {
-      from: LINGYUN_APP_PAGE_SCROLL_LOCKED,
-      default: () => ref(false),
-    },
+})
+
+const props = defineProps({
+  sections: {
+    type: Array as PropType<LingyunPageNavSection[] | null>,
+    default: null,
   },
-  props: {
-    sections: {
-      type: Array as PropType<LingyunPageNavSection[] | null>,
-      default: null,
-    },
-    /** 顶部头像地址。有 #avatar 插槽时不用这张图。 */
-    avatar: { type: String, default: '' },
-    /** 宿主已为导航预留的状态栏安全区；-1 表示由导航自己处理 */
-    hostSafeTop: { type: Number, default: -1 },
-    /** 顶部名称。有 #name 插槽时不用这段文字。 */
-    name: { type: String, default: '' },
-    /** 顶部副标题。有 #subtitle 插槽时不用这段文字。 */
-    subtitle: { type: String, default: '' },
-  },
-  data() {
-    return {
-      statusBarPx: 0,
-      barHeightPx: LINGYUN_TOOLBAR_BAR_DESIGN_PX,
-      padTopPx: 0,
-      padBottomPx: 0,
-      currentPath: getLingyunPageNavIntent(),
-      navScrollTop: getLingyunPageNavScrollTop(),
-      avatarFailed: false,
-      /** 选中项滑动胶囊 */
-      indicatorTop: 0,
-      indicatorHeight: 0,
-      indicatorVisible: false,
-      indicatorReady: false,
-      /** 窄栏点击二级菜单 */
-      childMenuKey: '',
-      /** PC 三栏：右侧内联菜单列当前展示的一级 Tab key */
-      inlineMenuKey: '',
-      /** 切换到另一个二级菜单时，让旧菜单立即关闭，避免两个面板重叠 */
-      instantMenuKey: '',
-      _instantMenuTimer: null as ReturnType<typeof setTimeout> | null,
-      _onHashChange: null as (() => void) | null,
-      _expectPath: '',
-      _routeSeen: '',
-      _routeTimer: null as ReturnType<typeof setTimeout> | null,
-      _navScrollSettled: false,
-      _navMounted: false,
-    }
-  },
-  setup() {
-    const instance = getCurrentInstance()
-    const intent = useLingyunPageNavIntent()
-    watch(intent, (value) => {
-      if (!value) return
-      const proxy = instance?.proxy as { currentPath?: string; _routeSeen?: string } | null | undefined
-      if (!proxy) return
-      proxy.currentPath = value
-      proxy._routeSeen = value
-    })
-    watch(useLingyunWorkspaceTabKey(), () => {
-      const proxy = instance?.proxy as { syncIndicator?: (animate?: boolean) => void } | null | undefined
-      proxy?.syncIndicator?.(false)
-    })
-    onShow(() => {
-      const proxy = instance?.proxy as
-        | { syncRoute?: () => void; syncLayout?: () => void }
-        | null
-        | undefined
-      proxy?.syncLayout?.()
-      proxy?.syncRoute?.()
-    })
-    return {}
-  },
-  computed: {
-    navScrollY(): boolean {
-      return !(this.pageScrollLocked as boolean)
-    },
-    /** 未登录时「首页」进组件演示，登录后仍进业务首页。 */
-    navHome(): string {
-      return getLingyunPageNavHome(isLingyunPageNavLoggedIn())
-    },
-    indicatorStyle() {
-      return {
-        top: `${this.indicatorTop}px`,
-        height: `${this.indicatorHeight}px`,
-      }
-    },
-    themeRootClass() {
-      try {
-        return useLingyunTheme().rootClass
-      } catch {
-        return 'theme-light'
-      }
-    },
-    /** 由 lingyun-app-page 统一决定：PC + 全局 tabs 时窄栏 */
-    railMode(): boolean {
-      return lingyunPageNavRail.value
-    },
-    /** PC 宽屏：窄栏右侧常驻二级 / 三级菜单列 */
-    inlineMode(): boolean {
-      return lingyunPageNavInline.value
-    },
-    inlineNavItems(): LingyunPageNavItem[] {
-      const items: LingyunPageNavItem[] = []
-      ;(this.pageNavSections || []).forEach((section) => {
-        items.push(...(section.items || []))
-      })
-      return items
-    },
-    /** 内联菜单列当前展示的一级 Tab；用户点选优先，否则跟随当前路由 */
-    inlineMenuItem(): LingyunPageNavItem | null {
-      const items = this.inlineNavItems
-      if (!items.length) return null
-      const picked = items.find((item) => !!item.key && item.key === this.inlineMenuKey)
-      if (picked) return picked
-      const current = items.find((item) => this.isNavItemCurrent(item))
-      return current || items[0]
-    },
-    inlineMenuTitle(): string {
-      return this.inlineMenuItem ? this.inlineMenuItem.title : ''
-    },
-    inlineMenuChildren(): LingyunPageNavChild[] {
-      const item = this.inlineMenuItem
-      return item && Array.isArray(item.children) ? item.children : []
-    },
-    /** 当前一级 Tab 没有二级 / 三级菜单时收起菜单列，不占内容区宽度 */
-    inlineMenuVisible(): boolean {
-      return this.inlineMode && this.inlineMenuChildren.length > 0
-    },
-    railBrand(): string {
-      const name = (this.profileName || '').trim()
-      return name ? name.slice(0, 1) : '凌'
-    },
-    pageNavSections(): LingyunPageNavSection[] {
-      if (Array.isArray(this.sections)) return this.sections
-      const config = getLingyunPageConfig()
-      if (config.tabs && config.tabs.length) {
-        return buildLingyunPageTabSections(
-          config.tabs,
-          config.sidebarTitle || '',
-          config.workspaceUrl || '',
-        )
-      }
-      return getLingyunPageNavSections()
-    },
-    /** 全局一级导航已包含首页时，不再渲染内置「首页」行 */
-    showHome(): boolean {
-      if (Array.isArray(this.sections)) return true
-      const config = getLingyunPageConfig()
-      return !(config.tabs && config.tabs.length)
-    },
-    windowControls() {
-      return !!getLingyunNavLayout(LINGYUN_TOOLBAR_BAR_DESIGN_PX).windowControls
-    },
-    navHeadStyle() {
-      /* 宿主已按状态栏留安全区时这里不再重复；窄栏内部再留 8px */
-      const railPad = this.railMode ? 8 : 0
-      const status = this.hostSafeTop >= 0 ? 0 : this.statusBarPx
-      return { paddingTop: `${status + railPad}px` }
-    },
-    profile() {
-      return getLingyunPageNavProfile()
-    },
-    profileAvatar(): string {
-      return this.avatar || this.profile.avatar || ''
-    },
-    avatarInitial(): string {
-      const name = (this.profileName || '').trim()
-      return name ? name.slice(0, 1) : ''
-    },
-    profileName(): string {
-      return this.name || this.profile.name || LINGYUN_PAGE_NAV_TITLE
-    },
-    profileSubtitle(): string {
-      if (this.subtitle) return this.subtitle
-      if (this.profile.subtitle) return this.profile.subtitle
-      const customName = !!(this.name || this.profile.name || this.useNameSlot)
-      return customName ? '' : LINGYUN_PAGE_NAV_SUBTITLE
-    },
-    /**
-     * 小程序父级只要写了 slot="avatar"，子组件 $slots.avatar 就恒为真，
-     * 写在 slot 默认内容里的头像和名称不会渲染。是否改用插槽只看页面有没有真的传入。
-     */
-    useAvatarSlot(): boolean {
-      return !!this.profile.slotAvatar
-    },
-    useNameSlot(): boolean {
-      return !!this.profile.slotName
-    },
-    useSubtitleSlot(): boolean {
-      return !!this.profile.slotSubtitle
-    },
-    avatarImgStyle(): Record<string, string> {
-      const size = this.showStorePicker ? '52px' : '36px'
-      return { width: size, height: size }
-    },
-    showStorePicker(): boolean {
-      return getLingyunPageNavStoreOptions().length > 0 || !!getLingyunPageNavStoreName()
-    },
-    storeLabel(): string {
-      return getLingyunPageNavStoreName() || '请选择门店'
-    },
-    storeRange(): { store_id: string | number; store_name: string }[] {
-      return getLingyunPageNavStoreOptions()
-    },
-    storeIndex(): number {
-      const storeId = getLingyunPageNavStoreId()
-      const idx = this.storeRange.findIndex(
-        (item) => storeId != null && String(item.store_id) === String(storeId),
-      )
-      return idx < 0 ? 0 : idx
-    },
-    showAvatar(): boolean {
-      return !!(this.profileAvatar || this.useAvatarSlot)
-    },
-    showName(): boolean {
-      return !!(this.profileName || this.useNameSlot)
-    },
-    showSubtitle(): boolean {
-      return !!(this.profileSubtitle || this.useSubtitleSlot)
-    },
-    showProfile(): boolean {
-      return this.showAvatar || this.showName || this.showSubtitle
-    },
-    navBarStyle() {
-      const h = this.barHeightPx || LINGYUN_TOOLBAR_BAR_DESIGN_PX
-      return {
-        minHeight: `${h}px`,
-      }
-    },
-  },
-  watch: {
-    profileAvatar() {
-      this.avatarFailed = false
-    },
-    railMode: {
-      immediate: true,
-      handler() {
-        this.$nextTick(() => {
-          setTimeout(() => this.syncIndicator(false), 30)
-        })
-      },
-    },
-    inlineMode: {
-      immediate: true,
-      handler() {
-        this.$nextTick(() => {
-          this.syncInlineSelection()
-        })
-      },
-    },
-    inlineMenuVisible: {
-      immediate: true,
-      handler(value: boolean) {
-        setLingyunPageNavInlineMenu(value)
-      },
-    },
-    currentPath() {
-      this.syncInlineSelection()
-      this.syncIndicator(true)
-    },
-    inlineMenuKey() {
-      this.syncIndicator(true)
-    },
-    pageNavSections() {
-      this.syncIndicator(false)
-    },
-    navHome() {
-      this.syncIndicator(false)
-    },
-    showHome() {
-      this.syncIndicator(false)
-    },
-  },
-  created() {
-    this.syncLayout()
-    this.syncRoute()
-  },
-  mounted() {
-    this._navMounted = true
-    this.syncLayout()
-    this.syncRoute()
-    // 刷新不会走 hashchange。侧栏往往比路由更早挂上，404 的 from 要等路由就绪再写进选中项。
-    this._routeSeen = ''
-    this.pullRoute(40)
-    this.$nextTick(() => {
-      setTimeout(() => this.syncIndicator(false), 30)
-    })
-    // #ifdef H5
-    this._onHashChange = () => {
-      clearTimeout(this._routeTimer ?? undefined)
-      this._expectPath = ''
-      const hashPath = this.hashRoute()
-      if (!hashPath) return
-      if (hashPath === 'pages/404/404') {
-        const from = this.missedMenuPath()
-        if (from) {
-          this.currentPath = from
-          this._routeSeen = from
-        }
-        return
-      }
-      /*
-       * 一级 Tab 宿主用 ?tab= 记录页内内容。子页 hashchange 不能清宿主，
-       * 否则从子页返回时工作台内容会丢；只有回到首页 / 目录时才清空。
-       */
-      const hash = (typeof window !== 'undefined' && window.location.hash) || ''
-      const query = hash.split('?')[1] || ''
-      const tabPart = query.split('&').find((item) => item.startsWith('tab='))
-      let tabKey = tabPart ? tabPart.slice('tab='.length) : ''
-      try {
-        tabKey = tabKey ? decodeURIComponent(tabKey) : ''
-      } catch {
-        /* 保留原始值 */
-      }
-      if (hashPath === 'pages/index/index' && tabKey) {
-        const tab = findLingyunPageTab(tabKey)
-        if (tab) {
-          setLingyunWorkspaceTabKey(tab.key)
-          const target =
-            Array.isArray(tab.children) && tab.children.length
-              ? buildLingyunPageTabWorkspaceUrl(tab)
-              : tab.url
-          if (target) openLingyunTabPage(target)
-        }
-      } else if (
-        hashPath === 'pages/index/index' ||
-        hashPath === 'pages/demo/demo'
-      ) {
-        clearLingyunPageHost()
-      }
+  /** 顶部头像地址。有 #avatar 插槽时不用这张图。 */
+  avatar: { type: String, default: '' },
+  /** 宿主已为导航预留的状态栏安全区；-1 表示由导航自己处理 */
+  hostSafeTop: { type: Number, default: -1 },
+  /** 顶部名称。有 #name 插槽时不用这段文字。 */
+  name: { type: String, default: '' },
+  /** 顶部副标题。有 #subtitle 插槽时不用这段文字。 */
+  subtitle: { type: String, default: '' },
+})
+
+const injectedPageScrollLocked = inject(LINGYUN_APP_PAGE_SCROLL_LOCKED, null)
+const pageScrollLocked = injectedPageScrollLocked ?? ref(false)
+
+const statusBarPx = ref(0)
+const barHeightPx = ref(LINGYUN_TOOLBAR_BAR_DESIGN_PX)
+const padTopPx = ref(0)
+const padBottomPx = ref(0)
+const currentPath = ref(getLingyunPageNavIntent())
+const navScrollTop = ref(getLingyunPageNavScrollTop())
+const avatarFailed = ref(false)
+/** 选中项滑动胶囊 */
+const indicatorTop = ref(0)
+const indicatorHeight = ref(0)
+const indicatorVisible = ref(false)
+const indicatorReady = ref(false)
+/** 窄栏点击二级菜单 */
+const childMenuKey = ref('')
+/** PC 三栏：右侧内联菜单列当前展示的一级 Tab key */
+const inlineMenuKey = ref('')
+/** 切换到另一个二级菜单时，让旧菜单立即关闭，避免两个面板重叠 */
+const instantMenuKey = ref('')
+const _instantMenuTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _onHashChange = ref<(() => void) | null>(null)
+const _expectPath = ref('')
+const _routeSeen = ref('')
+const _routeTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _navScrollSettled = ref(false)
+const _navMounted = ref(false)
+
+const instance = getCurrentInstance()
+
+function isNavCurrent(url: string) {
+  const selected = getLingyunHostedPath() || currentPath.value
+  return normalizeLingyunPagePath(url) === selected
+}
+function isNavItemCurrent(item: LingyunPageNavItem) {
+  if (isNavCurrent(item.url)) return true
+  const selected = normalizeLingyunPagePath(getLingyunHostedPath() || currentPath.value)
+  if (isLingyunWorkspacePath(selected)) {
+    return !!item.key && item.key === getLingyunWorkspaceTabKey()
+  }
+  const matches = Array.isArray(item.match) ? item.match : item.match ? [item.match] : []
+  return matches.some((match) => normalizeLingyunPagePath(match) === selected)
+}
+function isChildCurrent(child: LingyunPageNavChild): boolean {
+  if (!child.url) return false
+  const selected = normalizeLingyunPagePath(getLingyunHostedPath() || currentPath.value)
+  if (normalizeLingyunPagePath(child.url) === selected) return true
+  const matches = Array.isArray(child.match)
+    ? child.match
+    : child.match
+      ? [child.match]
+      : []
+  return matches.some((match) => normalizeLingyunPagePath(match) === selected)
+}
+function hasItemBadge(item: LingyunPageNavItem | LingyunPageNavChild): boolean {
+  const badge = item.badge
+  return badge !== undefined && badge !== null && badge !== false && badge !== ''
+}
+function itemBadgeText(item: LingyunPageNavItem | LingyunPageNavChild): string | number {
+  const badge = item.badge
+  if (badge && typeof badge === 'object') {
+    return badge.text != null ? badge.text : ''
+  }
+  return typeof badge === 'boolean' ? '' : (badge ?? '')
+}
+function itemBadgeColor(item: LingyunPageNavItem | LingyunPageNavChild): string | undefined {
+  const badge = item.badge
+  return badge && typeof badge === 'object' ? badge.color : undefined
+}
+function itemBadgeDot(item: LingyunPageNavItem | LingyunPageNavChild): boolean {
+  const badge = item.badge
+  return badge === true || (!!badge && typeof badge === 'object' && !!badge.dot)
+}
+function itemBadgeMax(item: LingyunPageNavItem | LingyunPageNavChild): number | string | undefined {
+  const badge = item.badge
+  return badge && typeof badge === 'object' ? badge.max : undefined
+}
+
+const navScrollY = computed((): boolean => {
+  return !pageScrollLocked.value
+})
+/** 未登录时「首页」进组件演示，登录后仍进业务首页。 */
+const navHome = computed((): string => {
+  return getLingyunPageNavHome(isLingyunPageNavLoggedIn())
+})
+const indicatorStyle = computed(() => {
+  return {
+    top: `${indicatorTop.value}px`,
+    height: `${indicatorHeight.value}px`,
+  }
+})
+const themeRootClass = computed(() => {
+  try {
+    return useLingyunTheme().rootClass
+  } catch {
+    return 'theme-light'
+  }
+})
+/** 由 lingyun-app-page 统一决定：PC + 全局 tabs 时窄栏 */
+const railMode = computed((): boolean => {
+  return lingyunPageNavRail.value
+})
+/** PC 宽屏：窄栏右侧常驻二级 / 三级菜单列 */
+const inlineMode = computed((): boolean => {
+  return lingyunPageNavInline.value
+})
+const profile = computed(() => {
+  return getLingyunPageNavProfile()
+})
+/**
+ * 小程序父级只要写了 slot="avatar"，子组件 $slots.avatar 就恒为真，
+ * 写在 slot 默认内容里的头像和名称不会渲染。是否改用插槽只看页面有没有真的传入。
+ */
+const useAvatarSlot = computed((): boolean => {
+  return !!profile.value.slotAvatar
+})
+const useNameSlot = computed((): boolean => {
+  return !!profile.value.slotName
+})
+const useSubtitleSlot = computed((): boolean => {
+  return !!profile.value.slotSubtitle
+})
+const profileName = computed((): string => {
+  return props.name || profile.value.name || LINGYUN_PAGE_NAV_TITLE
+})
+const profileSubtitle = computed((): string => {
+  if (props.subtitle) return props.subtitle
+  if (profile.value.subtitle) return profile.value.subtitle
+  const customName = !!(props.name || profile.value.name || useNameSlot.value)
+  return customName ? '' : LINGYUN_PAGE_NAV_SUBTITLE
+})
+const profileAvatar = computed((): string => {
+  return props.avatar || profile.value.avatar || ''
+})
+const avatarInitial = computed((): string => {
+  const name = (profileName.value || '').trim()
+  return name ? name.slice(0, 1) : ''
+})
+const railBrand = computed((): string => {
+  const name = (profileName.value || '').trim()
+  return name ? name.slice(0, 1) : '凌'
+})
+const showStorePicker = computed((): boolean => {
+  return getLingyunPageNavStoreOptions().length > 0 || !!getLingyunPageNavStoreName()
+})
+const avatarImgStyle = computed((): Record<string, string> => {
+  const size = showStorePicker.value ? '52px' : '36px'
+  return { width: size, height: size }
+})
+const storeLabel = computed((): string => {
+  return getLingyunPageNavStoreName() || '请选择门店'
+})
+const storeRange = computed((): { store_id: string | number; store_name: string }[] => {
+  return getLingyunPageNavStoreOptions()
+})
+const storeIndex = computed((): number => {
+  const storeId = getLingyunPageNavStoreId()
+  const idx = storeRange.value.findIndex(
+    (item) => storeId != null && String(item.store_id) === String(storeId),
+  )
+  return idx < 0 ? 0 : idx
+})
+const showAvatar = computed((): boolean => {
+  return !!(profileAvatar.value || useAvatarSlot.value)
+})
+const showName = computed((): boolean => {
+  return !!(profileName.value || useNameSlot.value)
+})
+const showSubtitle = computed((): boolean => {
+  return !!(profileSubtitle.value || useSubtitleSlot.value)
+})
+const showProfile = computed((): boolean => {
+  return showAvatar.value || showName.value || showSubtitle.value
+})
+const pageNavSections = computed((): LingyunPageNavSection[] => {
+  if (Array.isArray(props.sections)) return props.sections
+  const config = getLingyunPageConfig()
+  if (config.tabs && config.tabs.length) {
+    return buildLingyunPageTabSections(
+      config.tabs,
+      config.sidebarTitle || '',
+      config.workspaceUrl || '',
+    )
+  }
+  return getLingyunPageNavSections()
+})
+/** 全局一级导航已包含首页时，不再渲染内置「首页」行 */
+const showHome = computed((): boolean => {
+  if (Array.isArray(props.sections)) return true
+  const config = getLingyunPageConfig()
+  return !(config.tabs && config.tabs.length)
+})
+const windowControls = computed(() => {
+  return !!getLingyunNavLayout(LINGYUN_TOOLBAR_BAR_DESIGN_PX).windowControls
+})
+const navHeadStyle = computed(() => {
+  /* 宿主已按状态栏留安全区时这里不再重复；窄栏内部再留 8px */
+  const railPad = railMode.value ? 8 : 0
+  const status = props.hostSafeTop >= 0 ? 0 : statusBarPx.value
+  return { paddingTop: `${status + railPad}px` }
+})
+const inlineNavItems = computed((): LingyunPageNavItem[] => {
+  const items: LingyunPageNavItem[] = []
+  ;(pageNavSections.value || []).forEach((section) => {
+    items.push(...(section.items || []))
+  })
+  return items
+})
+/** 内联菜单列当前展示的一级 Tab；用户点选优先，否则跟随当前路由 */
+const inlineMenuItem = computed((): LingyunPageNavItem | null => {
+  const items = inlineNavItems.value
+  if (!items.length) return null
+  const picked = items.find((item) => !!item.key && item.key === inlineMenuKey.value)
+  if (picked) return picked
+  const current = items.find((item) => isNavItemCurrent(item))
+  return current || items[0]
+})
+const inlineMenuTitle = computed((): string => {
+  return inlineMenuItem.value ? inlineMenuItem.value.title : ''
+})
+const inlineMenuChildren = computed((): LingyunPageNavChild[] => {
+  const item = inlineMenuItem.value
+  return item && Array.isArray(item.children) ? item.children : []
+})
+/** 当前一级 Tab 没有二级 / 三级菜单时收起菜单列，不占内容区宽度 */
+const inlineMenuVisible = computed((): boolean => {
+  return inlineMode.value && inlineMenuChildren.value.length > 0
+})
+const navBarStyle = computed(() => {
+  const h = barHeightPx.value || LINGYUN_TOOLBAR_BAR_DESIGN_PX
+  return {
+    minHeight: `${h}px`,
+  }
+})
+
+function onAvatarError(): void {
+  avatarFailed.value = true
+}
+function onStorePick(payload: { value?: number | string | string[] }): void {
+  const idx = Number(payload?.value)
+  if (!Number.isFinite(idx) || idx < 0) return
+  const item = storeRange.value[idx]
+  if (item) selectLingyunPageNavStore(item.store_id)
+}
+function syncLayout(): void {
+  const layout = getLingyunNavLayout(LINGYUN_TOOLBAR_BAR_DESIGN_PX)
+  statusBarPx.value = layout.statusBarHeight || 0
+  barHeightPx.value = layout.barHeight
+  padTopPx.value = layout.padTop
+  padBottomPx.value = layout.padBottom
+}
+function readRoute(): string {
+  try {
+    const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+    const cur = pages[pages.length - 1] as NavPage | undefined
+    const raw = (cur && (cur.route || cur.$page?.fullPath || cur.$page?.route)) || ''
+    return normalizeLingyunPagePath(raw)
+  } catch {
+    return ''
+  }
+}
+/** H5 地址栏。`#/` 是首页。hashchange 时路由栈可能还停在 404。 */
+function hashRoute(): string {
+  // #ifdef H5
+  if (typeof window === 'undefined') return ''
+  const raw = (window.location.hash || '').replace(/^#/, '').split('?')[0]
+  if (!raw || raw === '/') return normalizeLingyunPagePath(navHome.value)
+  return normalizeLingyunPagePath(raw)
+  // #endif
+  // #ifndef H5
+  return ''
+  // #endif
+}
+function syncRoute(): void {
+  const next = readRoute()
+  const intent = getLingyunPageNavIntent()
+  const highlight = routeHighlight(next)
+  if (intent && highlight !== intent) {
+    currentPath.value = intent
+    return
+  }
+  if (intent && highlight === intent) clearLingyunPageNavIntent()
+  if (highlight) currentPath.value = highlight
+}
+/** 等到 getCurrentPages 跟上再对齐。对不上时保持点中的那一项，不要写回上一页。 */
+function pullRoute(left = 8): void {
+  if (_routeTimer.value != null) clearTimeout(_routeTimer.value)
+  const now = readRoute()
+  const expect = _expectPath.value
+  if (expect) {
+    if (now === expect) {
+      currentPath.value = routeHighlight(now)
+      _expectPath.value = ''
       clearLingyunPageNavIntent()
-      this.currentPath = hashPath
-      this._routeSeen = hashPath
+      return
     }
-    if (typeof window !== 'undefined') window.addEventListener('hashchange', this._onHashChange)
-    // #endif
-    // #ifndef H5
-    const saved = getLingyunPageNavScrollTop()
-    if (saved > 0) {
-      // 只改一个几乎看不见的差值，让小程序应用初始 scroll-top，且不会先跳到顶部
-      this.$nextTick(() => {
-        this.navScrollTop = saved + 0.01
-      })
-    }
-    // #endif
-  },
-  beforeUnmount() {
-    this._navMounted = false
-    clearTimeout(this._routeTimer ?? undefined)
-    clearTimeout(this._instantMenuTimer ?? undefined)
-    this._instantMenuTimer = null
-    // #ifdef H5
-    if (typeof window !== 'undefined' && this._onHashChange) {
-      window.removeEventListener('hashchange', this._onHashChange)
-    }
-    // #endif
-  },
-  methods: {
-    onAvatarError() {
-      this.avatarFailed = true
-    },
-    onStorePick(payload: { value?: number | string | string[] }) {
-      const idx = Number(payload?.value)
-      if (!Number.isFinite(idx) || idx < 0) return
-      const item = this.storeRange[idx]
-      if (item) selectLingyunPageNavStore(item.store_id)
-    },
-    syncLayout() {
-      const layout = getLingyunNavLayout(LINGYUN_TOOLBAR_BAR_DESIGN_PX)
-      this.statusBarPx = layout.statusBarHeight || 0
-      this.barHeightPx = layout.barHeight
-      this.padTopPx = layout.padTop
-      this.padBottomPx = layout.padBottom
-    },
-    readRoute() {
-      try {
-        const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
-        const cur = pages[pages.length - 1] as NavPage | undefined
-        const raw = (cur && (cur.route || cur.$page?.fullPath || cur.$page?.route)) || ''
-        return normalizeLingyunPagePath(raw)
-      } catch {
-        return ''
-      }
-    },
-    /** H5 地址栏。`#/` 是首页。hashchange 时路由栈可能还停在 404。 */
-    hashRoute(): string {
-      // #ifdef H5
-      if (typeof window === 'undefined') return ''
-      const raw = (window.location.hash || '').replace(/^#/, '').split('?')[0]
-      if (!raw || raw === '/') return normalizeLingyunPagePath(this.navHome)
-      return normalizeLingyunPagePath(raw)
-      // #endif
-      // #ifndef H5
-      return ''
-      // #endif
-    },
-    syncRoute() {
-      const next = this.readRoute()
-      const intent = getLingyunPageNavIntent()
-      const highlight = this.routeHighlight(next)
-      if (intent && highlight !== intent) {
-        this.currentPath = intent
-        return
-      }
-      if (intent && highlight === intent) clearLingyunPageNavIntent()
-      if (highlight) this.currentPath = highlight
-    },
-    /** 等到 getCurrentPages 跟上再对齐。对不上时保持点中的那一项，不要写回上一页。 */
-    pullRoute(left = 8) {
-      clearTimeout(this._routeTimer ?? undefined)
-      const now = this.readRoute()
-      const expect = this._expectPath
-      if (expect) {
-        if (now === expect) {
-          this.currentPath = this.routeHighlight(now)
-          this._expectPath = ''
-          clearLingyunPageNavIntent()
-          return
-        }
-      } else if (now && now !== this._routeSeen) {
-        const highlight = this.routeHighlight(now)
-        if (now === 'pages/404/404' && (!highlight || highlight === 'pages/404/404')) {
-          if (left <= 0) {
-            this._expectPath = ''
-            return
-          }
-          this._routeTimer = setTimeout(() => this.pullRoute(left - 1), 16)
-          return
-        }
-        this.currentPath = highlight
-        return
-      }
+  } else if (now && now !== _routeSeen.value) {
+    const highlight = routeHighlight(now)
+    if (now === 'pages/404/404' && (!highlight || highlight === 'pages/404/404')) {
       if (left <= 0) {
-        this._expectPath = ''
+        _expectPath.value = ''
         return
       }
-      this._routeTimer = setTimeout(() => this.pullRoute(left - 1), 16)
-    },
-    /**
-     * 404 对不上菜单项。已有点中的菜单路径就留着；刷新进 404 时才用地址里的 from。
-     */
-    routeHighlight(route: string): string {
-      const hostedPath = getLingyunHostedPath()
-      if (hostedPath && route === 'pages/404/404') return hostedPath
-      if (route === 'pages/404/404') {
-        if (this.currentPath && this.currentPath !== 'pages/404/404') return this.currentPath
-        const from = this.missedMenuPath()
-        if (from) return from
-      }
-      if (hostedPath && !route) return hostedPath
-      return route
-    },
-    missedMenuPath(): string {
-      let raw = ''
-      try {
-        const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
-        const cur = pages[pages.length - 1] as NavPage | undefined
-        raw = cur?.options?.from || cur?.$page?.options?.from || ''
-        if (!raw && cur?.$page?.fullPath) raw = this.queryValue(cur.$page.fullPath, 'from')
-      } catch {
-        raw = ''
-      }
-      // #ifdef H5
-      if (!raw && typeof window !== 'undefined') raw = this.queryValue(window.location.hash || '', 'from')
-      // #endif
-      if (!raw) return ''
-      return normalizeLingyunPagePath(this.safeDecode(raw))
-    },
-    queryValue(url: string, key: string): string {
-      const query = String(url || '').split('?')[1] || ''
-      const part = query.split('&').find((item) => item.startsWith(`${key}=`))
-      return part ? part.slice(key.length + 1) : ''
-    },
-    safeDecode(value: string): string {
-      let next = value
-      for (let i = 0; i < 2; i += 1) {
-        try {
-          const decoded = decodeURIComponent(next)
-          if (decoded === next) break
-          next = decoded
-        } catch {
-          break
+      _routeTimer.value = setTimeout(() => pullRoute(left - 1), 16)
+      return
+    }
+    currentPath.value = highlight
+    return
+  }
+  if (left <= 0) {
+    _expectPath.value = ''
+    return
+  }
+  _routeTimer.value = setTimeout(() => pullRoute(left - 1), 16)
+}
+/**
+ * 404 对不上菜单项。已有点中的菜单路径就留着；刷新进 404 时才用地址里的 from。
+ */
+function routeHighlight(route: string): string {
+  const hostedPath = getLingyunHostedPath()
+  if (hostedPath && route === 'pages/404/404') return hostedPath
+  if (route === 'pages/404/404') {
+    if (currentPath.value && currentPath.value !== 'pages/404/404') return currentPath.value
+    const from = missedMenuPath()
+    if (from) return from
+  }
+  if (hostedPath && !route) return hostedPath
+  return route
+}
+function missedMenuPath(): string {
+  let raw = ''
+  try {
+    const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+    const cur = pages[pages.length - 1] as NavPage | undefined
+    raw = cur?.options?.from || cur?.$page?.options?.from || ''
+    if (!raw && cur?.$page?.fullPath) raw = queryValue(cur.$page.fullPath, 'from')
+  } catch {
+    raw = ''
+  }
+  // #ifdef H5
+  if (!raw && typeof window !== 'undefined') raw = queryValue(window.location.hash || '', 'from')
+  // #endif
+  if (!raw) return ''
+  return normalizeLingyunPagePath(safeDecode(raw))
+}
+function queryValue(url: string, key: string): string {
+  const query = String(url || '').split('?')[1] || ''
+  const part = query.split('&').find((item) => item.startsWith(`${key}=`))
+  return part ? part.slice(key.length + 1) : ''
+}
+function safeDecode(value: string): string {
+  let next = value
+  for (let i = 0; i < 2; i += 1) {
+    try {
+      const decoded = decodeURIComponent(next)
+      if (decoded === next) break
+      next = decoded
+    } catch {
+      break
+    }
+  }
+  return next
+}
+function navItemId(url: string): string {
+  const path = normalizeLingyunPagePath(url)
+  return `ly-nav-${path.replace(/[^a-zA-Z0-9_-]/g, '-')}`
+}
+function selectedNavUrl(): string {
+  if (showHome.value && isNavCurrent(navHome.value)) return navHome.value
+  for (const section of pageNavSections.value || []) {
+    for (const item of section.items || []) {
+      if (isRailItemCurrent(item)) return item.url
+    }
+  }
+  return ''
+}
+/** 路由变化时让内联菜单列跟回当前一级 Tab */
+function syncInlineSelection(): void {
+  if (!inlineMode.value) {
+    inlineMenuKey.value = ''
+    return
+  }
+  const items = inlineNavItems.value
+  const current =
+    items.find((item) => isNavItemCurrent(item)) || items[0]
+  inlineMenuKey.value = current && current.key ? current.key : ''
+}
+/** 选中胶囊：首次落位不动画，之后上下滑动 */
+function syncIndicator(animate = true, retry = 0): void {
+  if (!_navMounted.value) return
+  const url = selectedNavUrl()
+  if (!url) {
+    indicatorVisible.value = false
+    indicatorReady.value = false
+    return
+  }
+  nextTick(() => {
+    uni
+      .createSelectorQuery()
+      .in(instance?.proxy as never)
+      .select('.lingyun-page-nav__body')
+      .boundingClientRect()
+      .select(`#${navItemId(url)}`)
+      .boundingClientRect()
+      .exec((res) => {
+        const body = res && res[0]
+        const item = res && res[1]
+        if (!body || !item || !item.height) {
+          /* H5 宿主初始 display:none，等侧栏显示后再测量 */
+          if (retry < 10) {
+            setTimeout(() => syncIndicator(animate, retry + 1), 50)
+          }
+          return
         }
-      }
-      return next
-    },
-    navItemId(url: string): string {
-      const path = normalizeLingyunPagePath(url)
-      return `ly-nav-${path.replace(/[^a-zA-Z0-9_-]/g, '-')}`
-    },
-    selectedNavUrl(): string {
-      if (this.showHome && this.isNavCurrent(this.navHome)) return this.navHome
-      for (const section of this.pageNavSections || []) {
-        for (const item of section.items || []) {
-          if (this.isRailItemCurrent(item)) return item.url
-        }
-      }
-      return ''
-    },
-    /** 路由变化时让内联菜单列跟回当前一级 Tab */
-    syncInlineSelection(): void {
-      if (!this.inlineMode) {
-        this.inlineMenuKey = ''
-        return
-      }
-      const items = this.inlineNavItems
-      const current =
-        items.find((item) => this.isNavItemCurrent(item)) || items[0]
-      this.inlineMenuKey = current && current.key ? current.key : ''
-    },
-    /** 选中胶囊：首次落位不动画，之后上下滑动 */
-    syncIndicator(animate = true, retry = 0): void {
-      if (!this._navMounted) return
-      const url = this.selectedNavUrl()
-      if (!url) {
-        this.indicatorVisible = false
-        this.indicatorReady = false
-        return
-      }
-      this.$nextTick(() => {
-        uni
-          .createSelectorQuery()
-          .in(this)
-          .select('.lingyun-page-nav__body')
-          .boundingClientRect()
-          .select(`#${this.navItemId(url)}`)
-          .boundingClientRect()
-          .exec((res) => {
-            const body = res && res[0]
-            const item = res && res[1]
-            if (!body || !item || !item.height) {
-              /* H5 宿主初始 display:none，等侧栏显示后再测量 */
-              if (retry < 10) {
-                setTimeout(() => this.syncIndicator(animate, retry + 1), 50)
-              }
-              return
-            }
-            this.indicatorTop = item.top - body.top
-            this.indicatorHeight = item.height
-            if (!this.indicatorVisible) {
-              this.indicatorVisible = true
-              this.indicatorReady = false
-              this.$nextTick(() => {
-                setTimeout(() => {
-                  this.indicatorReady = true
-                }, 20)
-              })
-              return
-            }
-            if (!animate) {
-              this.indicatorReady = false
-              this.$nextTick(() => {
-                setTimeout(() => {
-                  this.indicatorReady = true
-                }, 20)
-              })
-            }
+        indicatorTop.value = item.top - body.top
+        indicatorHeight.value = item.height
+        if (!indicatorVisible.value) {
+          indicatorVisible.value = true
+          indicatorReady.value = false
+          nextTick(() => {
+            setTimeout(() => {
+              indicatorReady.value = true
+            }, 20)
           })
+          return
+        }
+        if (!animate) {
+          indicatorReady.value = false
+          nextTick(() => {
+            setTimeout(() => {
+              indicatorReady.value = true
+            }, 20)
+          })
+        }
       })
-    },
-    isNavCurrent(url: string) {
-      const selected = getLingyunHostedPath() || this.currentPath
-      return normalizeLingyunPagePath(url) === selected
-    },
-    isNavItemCurrent(item: LingyunPageNavItem) {
-      if (this.isNavCurrent(item.url)) return true
-      const selected = normalizeLingyunPagePath(getLingyunHostedPath() || this.currentPath)
-      if (isLingyunWorkspacePath(selected)) {
-        return !!item.key && item.key === getLingyunWorkspaceTabKey()
-      }
-      const matches = Array.isArray(item.match) ? item.match : item.match ? [item.match] : []
-      return matches.some((match) => normalizeLingyunPagePath(match) === selected)
-    },
-    /** 三栏模式下选中态跟随内联列；其余模式仍按路由 */
-    isRailItemCurrent(item: LingyunPageNavItem): boolean {
-      if (this.inlineMode) {
-        const active = this.inlineMenuItem
-        return !!active && !!item.key && active.key === item.key
-      }
-      return this.isNavItemCurrent(item)
-    },
-    isChildCurrent(child: LingyunPageNavChild): boolean {
-      if (!child.url) return false
-      const selected = normalizeLingyunPagePath(getLingyunHostedPath() || this.currentPath)
-      if (normalizeLingyunPagePath(child.url) === selected) return true
-      const matches = Array.isArray(child.match)
-        ? child.match
-        : child.match
-          ? [child.match]
-          : []
-      return matches.some((match) => normalizeLingyunPagePath(match) === selected)
-    },
-    hasItemBadge(item: LingyunPageNavItem | LingyunPageNavChild): boolean {
-      const badge = item.badge
-      return badge !== undefined && badge !== null && badge !== false && badge !== ''
-    },
-    itemBadgeText(item: LingyunPageNavItem | LingyunPageNavChild): string | number {
-      const badge = item.badge
-      if (badge && typeof badge === 'object') {
-        return badge.text != null ? badge.text : ''
-      }
-      return typeof badge === 'boolean' ? '' : (badge ?? '')
-    },
-    itemBadgeColor(item: LingyunPageNavItem | LingyunPageNavChild): string | undefined {
-      const badge = item.badge
-      return badge && typeof badge === 'object' ? badge.color : undefined
-    },
-    itemBadgeDot(item: LingyunPageNavItem | LingyunPageNavChild): boolean {
-      const badge = item.badge
-      return badge === true || (!!badge && typeof badge === 'object' && !!badge.dot)
-    },
-    itemBadgeMax(item: LingyunPageNavItem | LingyunPageNavChild): number | string | undefined {
-      const badge = item.badge
-      return badge && typeof badge === 'object' ? badge.max : undefined
-    },
-    onNavScroll(event: { detail?: { scrollTop?: number } }) {
-      const y = Number(event && event.detail && event.detail.scrollTop)
-      if (!Number.isFinite(y) || y < 0) return
-      const saved = getLingyunPageNavScrollTop()
-      // 重建时 scroll-view 会先抛一次 0，不能把记住的位置清掉
-      if (saved > 40 && y < 1 && !this._navScrollSettled) return
-      this._navScrollSettled = true
-      setLingyunPageNavScrollTop(y)
-    },
-    replacePage(url: string) {
-      uni.redirectTo({
+  })
+}
+/** 三栏模式下选中态跟随内联列；其余模式仍按路由 */
+function isRailItemCurrent(item: LingyunPageNavItem): boolean {
+  if (inlineMode.value) {
+    const active = inlineMenuItem.value
+    return !!active && !!item.key && active.key === item.key
+  }
+  return isNavItemCurrent(item)
+}
+function onNavScroll(event: { detail?: { scrollTop?: number } }): void {
+  const y = Number(event && event.detail && event.detail.scrollTop)
+  if (!Number.isFinite(y) || y < 0) return
+  const saved = getLingyunPageNavScrollTop()
+  // 重建时 scroll-view 会先抛一次 0，不能把记住的位置清掉
+  if (saved > 40 && y < 1 && !_navScrollSettled.value) return
+  _navScrollSettled.value = true
+  setLingyunPageNavScrollTop(y)
+}
+function replacePage(url: string): void {
+  uni.redirectTo({
+    url,
+    fail: () => {
+      uni.navigateTo({
         url,
         fail: () => {
-          uni.navigateTo({
-            url,
-            fail: () => {
-              clearLingyunPageNavIntent()
-              this._expectPath = ''
-              this.syncRoute()
-            },
-          })
+          clearLingyunPageNavIntent()
+          _expectPath.value = ''
+          syncRoute()
         },
       })
     },
-    childMenuActions(item: LingyunPageNavItem) {
-      return (item.children || []).map((child) => ({
-        key: child.key,
-        label: child.title,
-        icon: child.icon,
-        iconSrc: child.iconSrc,
-        activeIconSrc: child.activeIconSrc,
-        kind: child.kind,
-        selected: this.isChildCurrent(child),
-      }))
-    },
-    onInlineChildTap(child: LingyunPageNavChild) {
-      if (!child || child.kind === 'title' || !child.url) return
-      this.onNavTap(child.url)
-    },
-    onChildMenuShow(item: LingyunPageNavItem, show: boolean) {
-      if (!show && this.childMenuKey === item.key) this.childMenuKey = ''
-    },
-    closeChildMenu() {
-      this.childMenuKey = ''
-    },
-    onChildMenuSelect(item: LingyunPageNavItem, payload: { key?: string }) {
-      const child = (item.children || []).find((entry) => entry.key === payload?.key)
-      this.childMenuKey = ''
-      if (!child || child.kind === 'title' || !child.url) return
-      this.onNavTap(child.url)
-    },
-    onNavItemTap(item: LingyunPageNavItem) {
-      const previous = this.childMenuKey
-      const wasOpen = previous === item.key
-      this.childMenuKey = ''
-      /* PC 三栏：一级 Tab 只切换右侧菜单列，不再弹出 menu */
-      if (this.inlineMode) {
-        this.inlineMenuKey = item.key || ''
-        if (item.children && item.children.length) return
-        this.onNavTap(item.url)
-        return
+  })
+}
+function childMenuActions(item: LingyunPageNavItem) {
+  return (item.children || []).map((child) => ({
+    key: child.key,
+    label: child.title,
+    icon: child.icon,
+    iconSrc: child.iconSrc,
+    activeIconSrc: child.activeIconSrc,
+    kind: child.kind,
+    selected: isChildCurrent(child),
+  }))
+}
+function onInlineChildTap(child: LingyunPageNavChild) {
+  if (!child || child.kind === 'title' || !child.url) return
+  onNavTap(child.url)
+}
+function onChildMenuShow(item: LingyunPageNavItem, show: boolean) {
+  if (!show && childMenuKey.value === item.key) childMenuKey.value = ''
+}
+function closeChildMenu() {
+  childMenuKey.value = ''
+}
+function onChildMenuSelect(item: LingyunPageNavItem, payload: { key?: string }) {
+  const child = (item.children || []).find((entry) => entry.key === payload?.key)
+  childMenuKey.value = ''
+  if (!child || child.kind === 'title' || !child.url) return
+  onNavTap(child.url)
+}
+function onNavItemTap(item: LingyunPageNavItem) {
+  const previous = childMenuKey.value
+  const wasOpen = previous === item.key
+  childMenuKey.value = ''
+  /* PC 三栏：一级 Tab 只切换右侧菜单列，不再弹出 menu */
+  if (inlineMode.value) {
+    inlineMenuKey.value = item.key || ''
+    if (item.children && item.children.length) return
+    onNavTap(item.url)
+    return
+  }
+  /* 宽屏左侧（Web 与小程序一致）：有二级菜单点击只弹 menu，再点关闭 */
+  if (railMode.value && item.children && item.children.length) {
+    if (wasOpen) return
+    /* 从一个已打开的菜单切到另一个：旧菜单立即关闭，避免缩放进场重叠 */
+    if (previous) {
+      instantMenuKey.value = previous
+      if (_instantMenuTimer.value != null) clearTimeout(_instantMenuTimer.value)
+      _instantMenuTimer.value = setTimeout(() => {
+        if (instantMenuKey.value === previous) instantMenuKey.value = ''
+        _instantMenuTimer.value = null
+      }, 320)
+    }
+    childMenuKey.value = item.key || ''
+    return
+  }
+  onNavTap(item.url)
+}
+function onNavTap(url: string) {
+  const rawTarget = normalizeLingyunPagePath(url)
+  if (!rawTarget) return
+  const fromPath = normalizeLingyunPagePath(
+    getLingyunHostedPath() || currentPath.value,
+  )
+  beginLingyunNavTransition(fromPath, rawTarget)
+  if (openLingyunHostedPage(url, rawTarget)) {
+    currentPath.value = rawTarget
+    return
+  }
+  const next = resolveLingyunPageUrl(url)
+  const target = normalizeLingyunPagePath(next)
+  if (!target) {
+    clearLingyunNavTransition()
+    return
+  }
+  const hostedPath = getLingyunHostedPath()
+  if (hostedPath === rawTarget && getLingyunHostedUrl() === next) {
+    clearLingyunNavTransition()
+    return
+  }
+  if (!hostedPath && target === currentPath.value && target === rawTarget) {
+    clearLingyunNavTransition()
+    return
+  }
+  if (openLingyunHostedPage(next, rawTarget)) {
+    currentPath.value = rawTarget
+    return
+  }
+  if (hostedPath) clearLingyunPageHost()
+  const highlight = target === 'pages/404/404' ? rawTarget : target
+  currentPath.value = highlight
+  setLingyunPageNavIntent(highlight)
+  _expectPath.value = target
+  pullRoute()
+  beginLingyunNavTransition(fromPath, target)
+  replacePage(next)
+}
+
+const intent = useLingyunPageNavIntent()
+watch(intent, (value) => {
+  if (!value) return
+  currentPath.value = value
+  _routeSeen.value = value
+})
+watch(useLingyunWorkspaceTabKey(), () => {
+  syncIndicator(false)
+})
+
+watch(profileAvatar, () => {
+  avatarFailed.value = false
+})
+watch(railMode, () => {
+  nextTick(() => {
+    setTimeout(() => syncIndicator(false), 30)
+  })
+}, { immediate: true })
+watch(inlineMode, () => {
+  nextTick(() => {
+    syncInlineSelection()
+  })
+}, { immediate: true })
+watch(inlineMenuVisible, (value: boolean) => {
+  setLingyunPageNavInlineMenu(value)
+}, { immediate: true })
+watch(currentPath, () => {
+  syncInlineSelection()
+  syncIndicator(true)
+})
+watch(inlineMenuKey, () => {
+  syncIndicator(true)
+})
+watch(pageNavSections, () => {
+  syncIndicator(false)
+})
+watch(navHome, () => {
+  syncIndicator(false)
+})
+watch(showHome, () => {
+  syncIndicator(false)
+})
+
+onShow(() => {
+  syncLayout()
+  syncRoute()
+})
+
+syncLayout()
+syncRoute()
+
+onMounted(() => {
+  _navMounted.value = true
+  syncLayout()
+  syncRoute()
+  // 刷新不会走 hashchange。侧栏往往比路由更早挂上，404 的 from 要等路由就绪再写进选中项。
+  _routeSeen.value = ''
+  pullRoute(40)
+  nextTick(() => {
+    setTimeout(() => syncIndicator(false), 30)
+  })
+  // #ifdef H5
+  const onHashChange = () => {
+    if (_routeTimer.value != null) clearTimeout(_routeTimer.value)
+    _expectPath.value = ''
+    const hashPath = hashRoute()
+    if (!hashPath) return
+    if (hashPath === 'pages/404/404') {
+      const from = missedMenuPath()
+      if (from) {
+        currentPath.value = from
+        _routeSeen.value = from
       }
-      /* 宽屏左侧（Web 与小程序一致）：有二级菜单点击只弹 menu，再点关闭 */
-      if (this.railMode && item.children && item.children.length) {
-        if (wasOpen) return
-        /* 从一个已打开的菜单切到另一个：旧菜单立即关闭，避免缩放进场重叠 */
-        if (previous) {
-          this.instantMenuKey = previous
-          clearTimeout(this._instantMenuTimer ?? undefined)
-          this._instantMenuTimer = setTimeout(() => {
-            if (this.instantMenuKey === previous) this.instantMenuKey = ''
-            this._instantMenuTimer = null
-          }, 320)
-        }
-        this.childMenuKey = item.key || ''
-        return
+      return
+    }
+    /*
+     * 一级 Tab 宿主用 ?tab= 记录页内内容。子页 hashchange 不能清宿主，
+     * 否则从子页返回时工作台内容会丢；只有回到首页 / 目录时才清空。
+     */
+    const hash = (typeof window !== 'undefined' && window.location.hash) || ''
+    const query = hash.split('?')[1] || ''
+    const tabPart = query.split('&').find((item) => item.startsWith('tab='))
+    let tabKey = tabPart ? tabPart.slice('tab='.length) : ''
+    try {
+      tabKey = tabKey ? decodeURIComponent(tabKey) : ''
+    } catch {
+      /* 保留原始值 */
+    }
+    if (hashPath === 'pages/index/index' && tabKey) {
+      const tab = findLingyunPageTab(tabKey)
+      if (tab) {
+        setLingyunWorkspaceTabKey(tab.key)
+        const target =
+          Array.isArray(tab.children) && tab.children.length
+            ? buildLingyunPageTabWorkspaceUrl(tab)
+            : tab.url
+        if (target) openLingyunTabPage(target)
       }
-      this.onNavTap(item.url)
-    },
-    onNavTap(url: string) {
-      const rawTarget = normalizeLingyunPagePath(url)
-      if (!rawTarget) return
-      const fromPath = normalizeLingyunPagePath(
-        getLingyunHostedPath() || this.currentPath,
-      )
-      beginLingyunNavTransition(fromPath, rawTarget)
-      if (openLingyunHostedPage(url, rawTarget)) {
-        this.currentPath = rawTarget
-        return
-      }
-      const next = resolveLingyunPageUrl(url)
-      const target = normalizeLingyunPagePath(next)
-      if (!target) {
-        clearLingyunNavTransition()
-        return
-      }
-      const hostedPath = getLingyunHostedPath()
-      if (hostedPath === rawTarget && getLingyunHostedUrl() === next) {
-        clearLingyunNavTransition()
-        return
-      }
-      if (!hostedPath && target === this.currentPath && target === rawTarget) {
-        clearLingyunNavTransition()
-        return
-      }
-      if (openLingyunHostedPage(next, rawTarget)) {
-        this.currentPath = rawTarget
-        return
-      }
-      if (hostedPath) clearLingyunPageHost()
-      const highlight = target === 'pages/404/404' ? rawTarget : target
-      this.currentPath = highlight
-      setLingyunPageNavIntent(highlight)
-      this._expectPath = target
-      this.pullRoute()
-      beginLingyunNavTransition(fromPath, target)
-      this.replacePage(next)
-    },
-  },
+    } else if (
+      hashPath === 'pages/index/index' ||
+      hashPath === 'pages/demo/demo'
+    ) {
+      clearLingyunPageHost()
+    }
+    clearLingyunPageNavIntent()
+    currentPath.value = hashPath
+    _routeSeen.value = hashPath
+  }
+  _onHashChange.value = onHashChange
+  if (typeof window !== 'undefined') window.addEventListener('hashchange', onHashChange)
+  // #endif
+  // #ifndef H5
+  const saved = getLingyunPageNavScrollTop()
+  if (saved > 0) {
+    // 只改一个几乎看不见的差值，让小程序应用初始 scroll-top，且不会先跳到顶部
+    nextTick(() => {
+      navScrollTop.value = saved + 0.01
+    })
+  }
+  // #endif
+})
+
+onBeforeUnmount(() => {
+  _navMounted.value = false
+  if (_routeTimer.value != null) clearTimeout(_routeTimer.value)
+  if (_instantMenuTimer.value != null) clearTimeout(_instantMenuTimer.value)
+  _instantMenuTimer.value = null
+  // #ifdef H5
+  if (typeof window !== 'undefined' && _onHashChange.value) {
+    window.removeEventListener('hashchange', _onHashChange.value)
+  }
+  // #endif
 })
 </script>
 

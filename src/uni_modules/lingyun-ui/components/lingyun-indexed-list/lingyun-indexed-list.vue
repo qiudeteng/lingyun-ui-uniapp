@@ -74,8 +74,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, nextTick, onMounted, ref, watch } from 'vue'
+import { type PropType } from 'vue'
 
 /**
  * lingyun-indexed-list
@@ -110,185 +111,199 @@ type IndexedGroup = {
   itemIndex: number
 }
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunIndexedList',
-  emits: ['click'],
-  props: {
-    options: {
-      type: Array as PropType<IndexedOption[]>,
-      default: (): IndexedOption[] => [],
-    },
-    showSelect: {
-      type: Boolean,
-      default: false,
-    },
+})
+
+const props = defineProps({
+  options: {
+    type: Array as PropType<IndexedOption[]>,
+    default: (): IndexedOption[] => [],
   },
-  data() {
-    return {
-      lists: [] as IndexedGroup[],
-      menuTop: 0,
-      itemHeight: 0,
-      touchmove: false,
-      touchmoveIndex: -1,
-      scrollViewId: '',
-      isPC: false,
-    }
+  showSelect: {
+    type: Boolean,
+    default: false,
   },
-  computed: {
-    activeKey(): string {
-      const group = this.lists[this.touchmoveIndex]
-      return group ? group.key : ''
-    },
-  },
-  watch: {
-    options: {
-      deep: true,
-      handler() {
-        this.setList()
-        this.$nextTick(() => this.measureMenu())
-      },
-    },
-  },
-  mounted() {
-    /* #ifdef H5 */
-    this.isPC = this.detectPC()
-    /* #endif */
-    this.setList()
-    this.$nextTick(() => {
-      setTimeout(() => this.measureMenu(), 30)
+})
+
+const emit = defineEmits(['click'])
+
+const instance = getCurrentInstance()
+
+const lists = ref<IndexedGroup[]>([])
+const menuTop = ref(0)
+const itemHeight = ref(0)
+const touchmove = ref(false)
+const touchmoveIndex = ref(-1)
+const scrollViewId = ref('')
+const isPC = ref(false)
+
+const activeKey = computed((): string => {
+  const group = lists.value[touchmoveIndex.value]
+  return group ? group.key : ''
+})
+
+function setList(): void {
+  const next: IndexedGroup[] = []
+  let cursor = 0
+  ;(props.options || []).forEach((group) => {
+    const letter = group && (group.letter || group.key)
+    const data = group && Array.isArray(group.data) ? group.data : []
+    if (!letter || !data.length) return
+    const itemIndex = cursor
+    const items = data.map((raw) => {
+      const name = raw && typeof raw === 'object' ? raw.name || '' : String(raw)
+      const row: IndexedRow = {
+        key: letter,
+        name,
+        itemIndex: cursor,
+        checked: !!(raw && typeof raw === 'object' && raw.checked),
+      }
+      cursor += 1
+      return row
     })
-  },
-  methods: {
-    setList() {
-      const lists: IndexedGroup[] = []
-      let cursor = 0
-      ;(this.options || []).forEach((group) => {
-        const letter = group && (group.letter || group.key)
-        const data = group && Array.isArray(group.data) ? group.data : []
-        if (!letter || !data.length) return
-        const itemIndex = cursor
-        const items = data.map((raw) => {
-          const name = raw && typeof raw === 'object' ? raw.name || '' : String(raw)
-          const row: IndexedRow = {
-            key: letter,
-            name,
-            itemIndex: cursor,
-            checked: !!(raw && typeof raw === 'object' && raw.checked),
-          }
-          cursor += 1
-          return row
-        })
-        lists.push({
-          title: letter,
-          key: letter,
-          items,
-          itemIndex,
-        })
-      })
-      this.lists = lists
-      if (this.touchmoveIndex >= lists.length) this.touchmoveIndex = -1
-    },
-    detectPC(): boolean {
-      const ua = navigator.userAgent || ''
-      return !/Android|iPhone|SymbianOS|Windows Phone|iPad|iPod/i.test(ua)
-    },
-    pointY(event: TouchEvent | MouseEvent): number {
-      if ('touches' in event) {
-        const touch = event.touches[0] || event.changedTouches[0]
-        if (touch && touch.clientY != null) return touch.clientY
+    next.push({
+      title: letter,
+      key: letter,
+      items,
+      itemIndex,
+    })
+  })
+  lists.value = next
+  if (touchmoveIndex.value >= next.length) touchmoveIndex.value = -1
+}
+
+// #ifdef H5
+function detectPC(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const ua = navigator.userAgent || ''
+  return !/Android|iPhone|SymbianOS|Windows Phone|iPad|iPod|Harmony/i.test(ua)
+}
+// #endif
+
+function pointY(event: TouchEvent | MouseEvent): number {
+  if ('touches' in event) {
+    const touch = event.touches[0] || event.changedTouches[0]
+    if (touch && touch.clientY != null) return touch.clientY
+  }
+  if ('clientY' in event && typeof event.clientY === 'number') return event.clientY
+  return Number.NaN
+}
+
+function measureMenu(done?: () => void): void {
+  uni
+    .createSelectorQuery()
+    .in(instance?.proxy as never)
+    .select('#ly-indexed-menu')
+    .boundingClientRect((rect) => {
+      const info = Array.isArray(rect) ? rect[0] : rect
+      if (info && info.height && lists.value.length) {
+        menuTop.value = info.top ?? 0
+        itemHeight.value = info.height / lists.value.length
       }
-      if ('clientY' in event && typeof event.clientY === 'number') return event.clientY
-      return Number.NaN
-    },
-    measureMenu(done?: () => void) {
-      uni
-        .createSelectorQuery()
-        .in(this)
-        .select('#ly-indexed-menu')
-        .boundingClientRect((rect) => {
-          const info = Array.isArray(rect) ? rect[0] : rect
-          if (info && info.height && this.lists.length) {
-            this.menuTop = info.top ?? 0
-            this.itemHeight = info.height / this.lists.length
-          }
-          if (done) done()
-        })
-        .exec()
-    },
-    jumpTo(index: number) {
-      if (!this.lists[index]) return
-      this.touchmoveIndex = index
-      const id = 'ly-indexed-' + index
-      if (this.scrollViewId === id) {
-        this.scrollViewId = ''
-        this.$nextTick(() => {
-          this.scrollViewId = id
-        })
-        return
-      }
-      this.scrollViewId = id
-    },
-    pick(event: TouchEvent | MouseEvent) {
-      if (!this.itemHeight || !this.lists.length) return
-      const y = this.pointY(event)
-      if (!Number.isFinite(y)) return
-      const raw = Math.floor((y - this.menuTop) / this.itemHeight)
-      const index = Math.max(0, Math.min(this.lists.length - 1, raw))
-      if (index === this.touchmoveIndex) return
-      this.jumpTo(index)
-    },
-    onTouchStart(event: TouchEvent | MouseEvent) {
-      this.touchmove = true
-      this.measureMenu(() => this.pick(event))
-    },
-    onTouchMove(event: TouchEvent | MouseEvent) {
-      this.touchmove = true
-      if (!this.itemHeight) {
-        this.measureMenu(() => this.pick(event))
-        return
-      }
-      this.pick(event)
-    },
-    onTouchEnd() {
-      this.touchmove = false
-    },
-    onMouseDown(event: MouseEvent) {
-      if (!this.isPC) return
-      this.onTouchStart(event)
-    },
-    onMouseMove(event: MouseEvent) {
-      if (!this.isPC || !this.touchmove) return
-      this.onTouchMove(event)
-    },
-    onClick(idx: number, index: number) {
-      const row = this.lists[idx] && this.lists[idx].items[index]
-      if (!row) return
-      const item: IndexedRow = {
-        key: row.key,
-        name: row.name,
-        itemIndex: row.itemIndex,
-        checked: row.checked,
-      }
-      const select: IndexedRow[] = []
-      if (this.showSelect) {
-        row.checked = !row.checked
-        item.checked = row.checked
-        this.lists.forEach((group) => {
-          group.items.forEach((entry) => {
-            if (entry.checked) {
-              select.push({
-                key: entry.key,
-                name: entry.name,
-                itemIndex: entry.itemIndex,
-                checked: true,
-              })
-            }
+      if (done) done()
+    })
+    .exec()
+}
+
+function jumpTo(index: number): void {
+  if (!lists.value[index]) return
+  touchmoveIndex.value = index
+  const id = 'ly-indexed-' + index
+  if (scrollViewId.value === id) {
+    scrollViewId.value = ''
+    nextTick(() => {
+      scrollViewId.value = id
+    })
+    return
+  }
+  scrollViewId.value = id
+}
+
+function pick(event: TouchEvent | MouseEvent): void {
+  if (!itemHeight.value || !lists.value.length) return
+  const y = pointY(event)
+  if (!Number.isFinite(y)) return
+  const raw = Math.floor((y - menuTop.value) / itemHeight.value)
+  const index = Math.max(0, Math.min(lists.value.length - 1, raw))
+  if (index === touchmoveIndex.value) return
+  jumpTo(index)
+}
+
+function onTouchStart(event: TouchEvent | MouseEvent): void {
+  touchmove.value = true
+  measureMenu(() => pick(event))
+}
+
+function onTouchMove(event: TouchEvent | MouseEvent): void {
+  touchmove.value = true
+  if (!itemHeight.value) {
+    measureMenu(() => pick(event))
+    return
+  }
+  pick(event)
+}
+
+function onTouchEnd(): void {
+  touchmove.value = false
+}
+
+function onMouseDown(event: MouseEvent): void {
+  if (!isPC.value) return
+  onTouchStart(event)
+}
+
+function onMouseMove(event: MouseEvent): void {
+  if (!isPC.value || !touchmove.value) return
+  onTouchMove(event)
+}
+
+function onClick(idx: number, index: number): void {
+  const row = lists.value[idx] && lists.value[idx].items[index]
+  if (!row) return
+  const item: IndexedRow = {
+    key: row.key,
+    name: row.name,
+    itemIndex: row.itemIndex,
+    checked: row.checked,
+  }
+  const select: IndexedRow[] = []
+  if (props.showSelect) {
+    row.checked = !row.checked
+    item.checked = row.checked
+    lists.value.forEach((group) => {
+      group.items.forEach((entry) => {
+        if (entry.checked) {
+          select.push({
+            key: entry.key,
+            name: entry.name,
+            itemIndex: entry.itemIndex,
+            checked: true,
           })
-        })
-      }
-      this.$emit('click', { item, select })
-    },
+        }
+      })
+    })
+  }
+  emit('click', { item, select })
+}
+
+watch(
+  () => props.options,
+  () => {
+    setList()
+    nextTick(() => measureMenu())
   },
+  { deep: true },
+)
+
+onMounted(() => {
+  /* #ifdef H5 */
+  isPC.value = detectPC()
+  /* #endif */
+  setList()
+  nextTick(() => {
+    setTimeout(() => measureMenu(), 30)
+  })
 })
 </script>
 

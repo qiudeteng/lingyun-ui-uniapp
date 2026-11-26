@@ -139,8 +139,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+import { type PropType } from 'vue'
 import {
   defaultFilterOp,
   filterOpsOf,
@@ -171,215 +172,236 @@ interface ShownOption {
  * submitSeq 加一时提交，校验通过才抛 confirm。
  * @see design/TABLES.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunTableFilterForm',
-  emits: ['confirm', 'valid'],
-  props: {
-    /** 变化时按外部值重置草稿（换列、重新打开） */
-    resetKey: { type: String, default: '' },
-    /** 加一即提交 */
-    submitSeq: { type: Number, default: 0 },
-    /** 宽屏 Popover 里用，行高和间距收紧 */
-    compact: { type: Boolean, default: false },
-    /** 为空时只显示排序 */
-    type: { type: String as PropType<LingyunTableFilterType | ''>, default: '' },
-    options: { type: Array as PropType<LingyunTableFilterOption[]>, default: () => [] },
-    values: { type: Array as PropType<string[]>, default: () => [] },
-    condition: { type: Object as PropType<LingyunTableFilterCondition | null>, default: null },
-    sortable: { type: Boolean, default: false },
-    sortOrder: { type: String as PropType<'asc' | 'desc' | ''>, default: '' },
-    /** 选项多于这个数时显示搜索 */
-    searchThreshold: { type: Number, default: 8 },
-  },
-  data() {
-    return {
-      draftSort: 'none' as SortPick,
-      draftPicked: [] as string[],
-      draftOp: 'eq' as LingyunTableFilterOp,
-      draftValue: '',
-      draftValue2: '',
-      query: '',
-    }
-  },
-  computed: {
-    sortItems(): Array<{ key: SortPick; text: string }> {
-      return [
-        { key: 'none', text: '不排序' },
-        { key: 'asc', text: '升序' },
-        { key: 'desc', text: '降序' },
-      ]
-    },
-    ops(): LingyunTableFilterOpItem[] {
-      return this.type ? filterOpsOf(this.type) : []
-    },
-    showSearch(): boolean {
-      return this.options.length > this.searchThreshold
-    },
-    pickedSet(): Set<string> {
-      return new Set(this.draftPicked)
-    },
-    pickedCount(): number {
-      return this.draftPicked.length
-    },
-    matchedOptions(): LingyunTableFilterOption[] {
-      const q = this.query.trim().toLowerCase()
-      if (!q) return this.options
-      return this.options.filter((opt) => String(opt.text).toLowerCase().indexOf(q) >= 0)
-    },
-    shownOptions(): ShownOption[] {
-      const set = this.pickedSet
-      return this.matchedOptions.slice(0, MAX_ROWS).map((opt) => {
-        const token = String(opt.value)
-        return { token, text: opt.text, count: opt.count, on: set.has(token) }
-      })
-    },
-    hiddenCount(): number {
-      return Math.max(0, this.matchedOptions.length - MAX_ROWS)
-    },
-    allOn(): boolean {
-      const list = this.matchedOptions
-      if (!list.length) return false
-      const set = this.pickedSet
-      return list.every((opt) => set.has(String(opt.value)))
-    },
-    someOn(): boolean {
-      if (this.allOn) return false
-      const set = this.pickedSet
-      return this.matchedOptions.some((opt) => set.has(String(opt.value)))
-    },
-    allCheckClass(): Record<string, boolean> {
-      return {
-        'lingyun-table-filter-form__check--on': this.allOn || this.someOn,
-      }
-    },
-    draftEmpty(): boolean {
-      if (this.type === 'select') return !this.draftPicked.length
-      if (this.draftOp === 'between') return !this.draftValue.trim() && !this.draftValue2.trim()
-      return !this.draftValue.trim()
-    },
-    draftCondition(): LingyunTableFilterCondition | null {
-      if (!this.type || this.type === 'select') return null
-      return normalizeFilterCondition(this.type, { op: this.draftOp, value: this.draftValue, value2: this.draftValue2 })
-    },
-    draftInvalid(): boolean {
-      if (!this.type || this.type === 'select' || this.draftEmpty) return false
-      return !this.draftCondition
-    },
-    invalidText(): string {
-      if (this.draftOp === 'between') return this.type === 'date' ? '请选择起止日期' : '请填写最小值和最大值'
-      return this.type === 'number' ? '请输入数字' : '请填写条件'
-    },
-    draftDirty(): boolean {
-      return !this.draftEmpty
-    },
-    canConfirm(): boolean {
-      return !this.draftInvalid
-    },
-    firstPlaceholder(): string {
-      if (this.type === 'number') return this.draftOp === 'between' ? '最小值' : '输入数值'
-      return '输入关键字'
-    },
-    dateRange(): string[] {
-      return this.draftValue && this.draftValue2 ? [this.draftValue, this.draftValue2] : []
-    },
-  },
-  watch: {
-    resetKey: {
-      immediate: true,
-      handler() {
-        this.resetDraft()
-      },
-    },
-    submitSeq(next: number, prev: number) {
-      if (next > prev) this.onConfirm()
-    },
-    canConfirm: {
-      immediate: true,
-      handler(ok: boolean) {
-        this.$emit('valid', ok)
-      },
-    },
-  },
-  methods: {
-    resetDraft() {
-      this.query = ''
-      this.draftSort = this.sortOrder === 'asc' || this.sortOrder === 'desc' ? this.sortOrder : 'none'
-      this.draftPicked = (this.values || []).map((v) => String(v))
-      const cond = this.condition
-      const ops = this.ops
-      if (cond && ops.some((op) => op.key === cond.op)) {
-        this.draftOp = cond.op
-        this.draftValue = cond.value || ''
-        this.draftValue2 = cond.value2 || ''
-      } else {
-        this.draftOp = this.type ? defaultFilterOp(this.type) : 'eq'
-        this.draftValue = ''
-        this.draftValue2 = ''
-      }
-    },
-    onSortPick(key: string | number) {
-      this.draftSort = key === 'asc' || key === 'desc' ? key : 'none'
-    },
-    onQuery(value: string) {
-      this.query = value || ''
-    },
-    toggleOption(token: string) {
-      const set = new Set(this.draftPicked)
-      if (set.has(token)) set.delete(token)
-      else set.add(token)
-      this.draftPicked = Array.from(set)
-    },
-    toggleAll() {
-      const set = new Set(this.draftPicked)
-      const tokens = this.matchedOptions.map((opt) => String(opt.value))
-      if (this.allOn) tokens.forEach((token) => set.delete(token))
-      else tokens.forEach((token) => set.add(token))
-      this.draftPicked = Array.from(set)
-    },
-    onOpPick(op: LingyunTableFilterOp) {
-      if (op === this.draftOp) return
-      const wasRange = this.draftOp === 'between'
-      this.draftOp = op
-      if (op !== 'between') this.draftValue2 = ''
-      if (this.type === 'date' && wasRange !== (op === 'between')) this.draftValue = ''
-    },
-    onValue(value: string) {
-      this.draftValue = value == null ? '' : String(value)
-    },
-    onValue2(value: string) {
-      this.draftValue2 = value == null ? '' : String(value)
-    },
-    onDateValue(value: unknown) {
-      this.draftValue = typeof value === 'string' ? value : ''
-    },
-    onDateRange(value: unknown) {
-      const list = Array.isArray(value) ? value : []
-      this.draftValue = list[0] ? String(list[0]) : ''
-      this.draftValue2 = list[1] ? String(list[1]) : this.draftValue
-    },
-    onReset() {
-      this.query = ''
-      this.draftPicked = []
-      this.draftValue = ''
-      this.draftValue2 = ''
-    },
-    onConfirm() {
-      if (!this.canConfirm) return
-      let values: string[] = []
-      if (this.type === 'select') {
-        // 全部勾上等于不筛选，标签栏也不再显示
-        const all = this.options.length > 0 && this.draftPicked.length >= this.options.length && this.options.every((opt) => this.pickedSet.has(String(opt.value)))
-        values = all ? [] : this.draftPicked.slice()
-      }
-      const result: LingyunTableFilterResult = {
-        values,
-        condition: this.draftEmpty ? null : this.draftCondition,
-        sortOrder: this.draftSort === 'none' ? '' : this.draftSort,
-      }
-      this.$emit('confirm', result)
-    },
-  },
 })
+
+const props = defineProps({
+  /** 变化时按外部值重置草稿（换列、重新打开） */
+  resetKey: { type: String, default: '' },
+  /** 加一即提交 */
+  submitSeq: { type: Number, default: 0 },
+  /** 宽屏 Popover 里用，行高和间距收紧 */
+  compact: { type: Boolean, default: false },
+  /** 为空时只显示排序 */
+  type: { type: String as PropType<LingyunTableFilterType | ''>, default: '' },
+  options: { type: Array as PropType<LingyunTableFilterOption[]>, default: () => [] },
+  values: { type: Array as PropType<string[]>, default: () => [] },
+  condition: { type: Object as PropType<LingyunTableFilterCondition | null>, default: null },
+  sortable: { type: Boolean, default: false },
+  sortOrder: { type: String as PropType<'asc' | 'desc' | ''>, default: '' },
+  /** 选项多于这个数时显示搜索 */
+  searchThreshold: { type: Number, default: 8 },
+})
+
+const emit = defineEmits(['confirm', 'valid'])
+
+const draftSort = ref<SortPick>('none')
+const draftPicked = ref<string[]>([])
+const draftOp = ref<LingyunTableFilterOp>('eq')
+const draftValue = ref('')
+const draftValue2 = ref('')
+const query = ref('')
+
+const sortItems = computed((): Array<{ key: SortPick; text: string }> => {
+  return [
+    { key: 'none', text: '不排序' },
+    { key: 'asc', text: '升序' },
+    { key: 'desc', text: '降序' },
+  ]
+})
+
+const ops = computed((): LingyunTableFilterOpItem[] => {
+  return props.type ? filterOpsOf(props.type) : []
+})
+
+const showSearch = computed((): boolean => {
+  return props.options.length > props.searchThreshold
+})
+
+const pickedSet = computed((): Set<string> => {
+  return new Set(draftPicked.value)
+})
+
+const pickedCount = computed((): number => {
+  return draftPicked.value.length
+})
+
+const matchedOptions = computed((): LingyunTableFilterOption[] => {
+  const q = query.value.trim().toLowerCase()
+  if (!q) return props.options
+  return props.options.filter((opt) => String(opt.text).toLowerCase().indexOf(q) >= 0)
+})
+
+const shownOptions = computed((): ShownOption[] => {
+  const set = pickedSet.value
+  return matchedOptions.value.slice(0, MAX_ROWS).map((opt) => {
+    const token = String(opt.value)
+    return { token, text: opt.text, count: opt.count, on: set.has(token) }
+  })
+})
+
+const hiddenCount = computed((): number => {
+  return Math.max(0, matchedOptions.value.length - MAX_ROWS)
+})
+
+const allOn = computed((): boolean => {
+  const list = matchedOptions.value
+  if (!list.length) return false
+  const set = pickedSet.value
+  return list.every((opt) => set.has(String(opt.value)))
+})
+
+const someOn = computed((): boolean => {
+  if (allOn.value) return false
+  const set = pickedSet.value
+  return matchedOptions.value.some((opt) => set.has(String(opt.value)))
+})
+
+const allCheckClass = computed((): Record<string, boolean> => {
+  return {
+    'lingyun-table-filter-form__check--on': allOn.value || someOn.value,
+  }
+})
+
+const draftEmpty = computed((): boolean => {
+  if (props.type === 'select') return !draftPicked.value.length
+  if (draftOp.value === 'between') return !draftValue.value.trim() && !draftValue2.value.trim()
+  return !draftValue.value.trim()
+})
+
+const draftCondition = computed((): LingyunTableFilterCondition | null => {
+  if (!props.type || props.type === 'select') return null
+  return normalizeFilterCondition(props.type, { op: draftOp.value, value: draftValue.value, value2: draftValue2.value })
+})
+
+const draftInvalid = computed((): boolean => {
+  if (!props.type || props.type === 'select' || draftEmpty.value) return false
+  return !draftCondition.value
+})
+
+const invalidText = computed((): string => {
+  if (draftOp.value === 'between') return props.type === 'date' ? '请选择起止日期' : '请填写最小值和最大值'
+  return props.type === 'number' ? '请输入数字' : '请填写条件'
+})
+
+const draftDirty = computed((): boolean => {
+  return !draftEmpty.value
+})
+
+const canConfirm = computed((): boolean => {
+  return !draftInvalid.value
+})
+
+const firstPlaceholder = computed((): string => {
+  if (props.type === 'number') return draftOp.value === 'between' ? '最小值' : '输入数值'
+  return '输入关键字'
+})
+
+const dateRange = computed((): string[] => {
+  return draftValue.value && draftValue2.value ? [draftValue.value, draftValue2.value] : []
+})
+
+function resetDraft(): void {
+  query.value = ''
+  draftSort.value = props.sortOrder === 'asc' || props.sortOrder === 'desc' ? props.sortOrder : 'none'
+  draftPicked.value = (props.values || []).map((v) => String(v))
+  const cond = props.condition
+  const availableOps = ops.value
+  if (cond && availableOps.some((op) => op.key === cond.op)) {
+    draftOp.value = cond.op
+    draftValue.value = cond.value || ''
+    draftValue2.value = cond.value2 || ''
+  } else {
+    draftOp.value = props.type ? defaultFilterOp(props.type) : 'eq'
+    draftValue.value = ''
+    draftValue2.value = ''
+  }
+}
+
+function onSortPick(key: string | number): void {
+  draftSort.value = key === 'asc' || key === 'desc' ? key : 'none'
+}
+
+function onQuery(value: string): void {
+  query.value = value || ''
+}
+
+function toggleOption(token: string): void {
+  const set = new Set(draftPicked.value)
+  if (set.has(token)) set.delete(token)
+  else set.add(token)
+  draftPicked.value = Array.from(set)
+}
+
+function toggleAll(): void {
+  const set = new Set(draftPicked.value)
+  const tokens = matchedOptions.value.map((opt) => String(opt.value))
+  if (allOn.value) tokens.forEach((token) => set.delete(token))
+  else tokens.forEach((token) => set.add(token))
+  draftPicked.value = Array.from(set)
+}
+
+function onOpPick(op: LingyunTableFilterOp): void {
+  if (op === draftOp.value) return
+  const wasRange = draftOp.value === 'between'
+  draftOp.value = op
+  if (op !== 'between') draftValue2.value = ''
+  if (props.type === 'date' && wasRange !== (op === 'between')) draftValue.value = ''
+}
+
+function onValue(value: string): void {
+  draftValue.value = value == null ? '' : String(value)
+}
+
+function onValue2(value: string): void {
+  draftValue2.value = value == null ? '' : String(value)
+}
+
+function onDateValue(value: unknown): void {
+  draftValue.value = typeof value === 'string' ? value : ''
+}
+
+function onDateRange(value: unknown): void {
+  const list = Array.isArray(value) ? value : []
+  draftValue.value = list[0] ? String(list[0]) : ''
+  draftValue2.value = list[1] ? String(list[1]) : draftValue.value
+}
+
+function onReset(): void {
+  query.value = ''
+  draftPicked.value = []
+  draftValue.value = ''
+  draftValue2.value = ''
+}
+
+function onConfirm(): void {
+  if (!canConfirm.value) return
+  let values: string[] = []
+  if (props.type === 'select') {
+    // 全部勾上等于不筛选，标签栏也不再显示
+    const all = props.options.length > 0 && draftPicked.value.length >= props.options.length && props.options.every((opt) => pickedSet.value.has(String(opt.value)))
+    values = all ? [] : draftPicked.value.slice()
+  }
+  const result: LingyunTableFilterResult = {
+    values,
+    condition: draftEmpty.value ? null : draftCondition.value,
+    sortOrder: draftSort.value === 'none' ? '' : draftSort.value,
+  }
+  emit('confirm', result)
+}
+
+watch(() => props.resetKey, () => {
+  resetDraft()
+}, { immediate: true })
+
+watch(() => props.submitSeq, (next: number, prev: number) => {
+  if (next > prev) onConfirm()
+})
+
+watch(canConfirm, (ok: boolean) => {
+  emit('valid', ok)
+}, { immediate: true })
 </script>
 
 <style lang="scss">

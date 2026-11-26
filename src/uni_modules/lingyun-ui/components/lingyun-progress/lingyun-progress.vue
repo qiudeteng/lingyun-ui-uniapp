@@ -13,84 +13,95 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed } from 'vue'
+import { type PropType } from 'vue'
 
 /**
  * lingyun-progress
  * @see design/PROGRESS.md
  * circle 用 conic-gradient；小程序基础库支持有限时降级为边框弧近似
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunProgress',
-  props: {
-    type: { type: String, default: 'line' },
-    percent: { type: [Number, String] as PropType<number | string>, default: 0 },
-    strokeWidth: { type: [Number, String] as PropType<number | string | undefined>, default: undefined },
-    size: { type: [Number, String] as PropType<number | string>, default: 40 },
-    showInfo: { type: Boolean, default: false },
-    activeColor: { type: String, default: '' },
-    backgroundColor: { type: String, default: '' },
-  },
-  computed: {
-    typeKey() {
-      return this.type === 'circle' ? 'circle' : 'line'
-    },
-    clamped() {
-      const n = Number(this.percent)
-      if (Number.isNaN(n)) return 0
-      return Math.min(100, Math.max(0, Math.round(n)))
-    },
-    stroke() {
-      if (this.strokeWidth != null && this.strokeWidth !== '') return Number(this.strokeWidth)
-      return this.typeKey === 'circle' ? 3 : 4
-    },
-    active() {
-      return this.activeColor || 'var(--lingyun-primary, #0088ff)'
-    },
-    track() {
-      return this.backgroundColor || 'var(--lingyun-fill-tertiary, rgba(118,118,128,0.12))'
-    },
-    rootClass() {
-      return [`lingyun-progress--${this.typeKey}`]
-    },
-    lineTrackStyle() {
-      return {
-        height: `${this.stroke}px`,
-        borderRadius: `${this.stroke}px`,
-        backgroundColor: this.track,
-      }
-    },
-    lineBarStyle() {
-      return {
-        width: `${this.clamped}%`,
-        height: '100%',
-        borderRadius: `${this.stroke}px`,
-        backgroundColor: this.active,
-      }
-    },
-    circleSize() {
-      return Number(this.size) || 40
-    },
-    circleWrapStyle() {
-      const s = this.circleSize
-      return { width: `${s}px`, height: `${s}px` }
-    },
-    circleStyle() {
-      const s = this.circleSize
-      const w = this.stroke
-      const p = this.clamped
-      /* conic-gradient：H5 / 较新小程序；角度从顶部起 */
-      return {
-        width: `${s}px`,
-        height: `${s}px`,
-        borderRadius: '50%',
-        background: `conic-gradient(${this.active} 0% ${p}%, ${this.track} ${p}% 100%)`,
-        mask: `radial-gradient(farthest-side, transparent calc(100% - ${w}px), #000 calc(100% - ${w}px + 0.5px))`,
-        '-webkit-mask': `radial-gradient(farthest-side, transparent calc(100% - ${w}px), #000 calc(100% - ${w}px + 0.5px))`,
-      }
-    },
-  },
+})
+
+const props = defineProps({
+  type: { type: String, default: 'line' },
+  percent: { type: [Number, String] as PropType<number | string>, default: 0 },
+  strokeWidth: { type: [Number, String] as PropType<number | string | undefined>, default: undefined },
+  size: { type: [Number, String] as PropType<number | string>, default: 40 },
+  showInfo: { type: Boolean, default: false },
+  activeColor: { type: String, default: '' },
+  backgroundColor: { type: String, default: '' },
+})
+
+const typeKey = computed((): string => {
+  return props.type === 'circle' ? 'circle' : 'line'
+})
+
+const clamped = computed((): number => {
+  const n = Number(props.percent)
+  if (Number.isNaN(n)) return 0
+  return Math.min(100, Math.max(0, Math.round(n)))
+})
+
+const stroke = computed((): number => {
+  if (props.strokeWidth != null && props.strokeWidth !== '') return Number(props.strokeWidth)
+  return typeKey.value === 'circle' ? 3 : 4
+})
+
+const active = computed((): string => {
+  return props.activeColor || 'var(--lingyun-primary, #0088ff)'
+})
+
+const track = computed((): string => {
+  return props.backgroundColor || 'var(--lingyun-fill-tertiary, rgba(118,118,128,0.12))'
+})
+
+const rootClass = computed((): string[] => {
+  return [`lingyun-progress--${typeKey.value}`]
+})
+
+const lineTrackStyle = computed((): Record<string, string> => {
+  return {
+    height: `${stroke.value}px`,
+    borderRadius: `${stroke.value}px`,
+    backgroundColor: track.value,
+  }
+})
+
+const lineBarStyle = computed((): Record<string, string> => {
+  return {
+    width: `${clamped.value}%`,
+    height: '100%',
+    borderRadius: `${stroke.value}px`,
+    backgroundColor: active.value,
+  }
+})
+
+const circleSize = computed((): number => {
+  return Number(props.size) || 40
+})
+
+const circleWrapStyle = computed((): Record<string, string> => {
+  const s = circleSize.value
+  return { width: `${s}px`, height: `${s}px` }
+})
+
+const circleStyle = computed((): Record<string, string> => {
+  const s = circleSize.value
+  const w = stroke.value
+  const p = clamped.value
+  /* conic-gradient：H5 / 较新小程序；角度从顶部起 */
+  return {
+    width: `${s}px`,
+    height: `${s}px`,
+    borderRadius: '50%',
+    background: `conic-gradient(${active.value} 0% ${p}%, ${track.value} ${p}% 100%)`,
+    mask: `radial-gradient(farthest-side, transparent calc(100% - ${w}px), #000 calc(100% - ${w}px + 0.5px))`,
+    '-webkit-mask': `radial-gradient(farthest-side, transparent calc(100% - ${w}px), #000 calc(100% - ${w}px + 0.5px))`,
+  }
 })
 </script>
 

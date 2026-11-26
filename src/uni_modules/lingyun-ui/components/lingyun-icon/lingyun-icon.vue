@@ -7,8 +7,8 @@
   >{{ glyph }}</text>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { computed } from 'vue'
 import { fontData } from './icons'
 
 /**
@@ -21,6 +21,22 @@ import { fontData } from './icons'
  * @event click
  * @see design/ICONS.md
  */
+
+defineOptions({
+  name: 'LingyunIcon',
+  // 去掉组件宿主，圆钮 flex 直接居中字形盒子（小程序宿主会把符号挤偏）
+  virtualHost: true,
+})
+
+const props = defineProps({
+  type: { type: String, default: '' },
+  /** 语义色（label/primary/red…）或任意 CSS 色（#hex / rgb / var） */
+  color: { type: String, default: '' },
+  size: { type: [Number, String], default: 16 },
+  customPrefix: { type: String, default: 'lyicon' },
+})
+
+const emit = defineEmits(['click'])
 
 /** 与 lingyun-text / COLORS 对齐的语义色；未命中则当作自定义 CSS 色 */
 const SEMANTIC_COLORS: Record<string, string> = {
@@ -52,69 +68,56 @@ const SEMANTIC_COLORS: Record<string, string> = {
   inherit: 'inherit',
 }
 
-export default defineComponent({
-  name: 'LingyunIcon',
-  options: {
-    // 去掉组件宿主，圆钮 flex 直接居中字形盒子（小程序宿主会把符号挤偏）
-    virtualHost: true,
-  },
-  emits: ['click'],
-  props: {
-    type: { type: String, default: '' },
-    /** 语义色（label/primary/red…）或任意 CSS 色（#hex / rgb / var） */
-    color: { type: String, default: '' },
-    size: { type: [Number, String], default: 16 },
-    customPrefix: { type: String, default: 'lyicon' },
-  },
-  computed: {
-    /** 内置字库直接输出字符。::before 在小程序上盒模型不稳，圆钮里会对不齐。 */
-    glyph() {
-      const prefix = this.customPrefix || 'lyicon'
-      const type = this.type || ''
-      if (!type || prefix !== 'lyicon') return ''
-      const found = fontData.find((item) => item.font_class === type)
-      return found ? found.unicode : ''
-    },
-    iconClass(): string | string[] {
-      if (this.glyph) return ''
-      const prefix = this.customPrefix || 'lyicon'
-      const type = this.type || ''
-      if (!type) return ''
-      if (prefix === 'lyicon') return `lyicon-${type}`
-      return [prefix, type]
-    },
-    iconSize() {
-      const val = this.size
-      if (typeof val === 'number') return `${val}px`
-      const s = String(val || '').trim()
-      if (!s) return '16px'
-      if (/^\d+(\.\d+)?$/.test(s)) return `${s}px`
-      return s
-    },
-    colorValue() {
-      const raw = String(this.color || '').trim()
-      if (!raw) return SEMANTIC_COLORS.label
-      const key = raw.toLowerCase()
-      if (SEMANTIC_COLORS[key]) return SEMANTIC_COLORS[key]
-      return raw
-    },
-    iconStyle() {
-      return {
-        color: this.colorValue,
-        fontSize: this.iconSize,
-        lineHeight: this.iconSize,
-      }
-    },
-  },
-  methods: {
-    onClick(event: Event) {
-      this.$emit('click', event)
-    },
-    getIconNames() {
-      return fontData.map((item) => item.font_class)
-    },
-  },
+/** 内置字库直接输出字符。::before 在小程序上盒模型不稳，圆钮里会对不齐。 */
+const glyph = computed((): string => {
+  const prefix = props.customPrefix || 'lyicon'
+  const type = props.type || ''
+  if (!type || prefix !== 'lyicon') return ''
+  const found = fontData.find((item) => item.font_class === type)
+  return found ? found.unicode : ''
 })
+
+const iconClass = computed((): string | string[] => {
+  if (glyph.value) return ''
+  const prefix = props.customPrefix || 'lyicon'
+  const type = props.type || ''
+  if (!type) return ''
+  if (prefix === 'lyicon') return `lyicon-${type}`
+  return [prefix, type]
+})
+
+const iconSize = computed((): string => {
+  const val = props.size
+  if (typeof val === 'number') return `${val}px`
+  const s = String(val || '').trim()
+  if (!s) return '16px'
+  if (/^\d+(\.\d+)?$/.test(s)) return `${s}px`
+  return s
+})
+
+const colorValue = computed((): string => {
+  const raw = String(props.color || '').trim()
+  if (!raw) return SEMANTIC_COLORS.label
+  const key = raw.toLowerCase()
+  if (SEMANTIC_COLORS[key]) return SEMANTIC_COLORS[key]
+  return raw
+})
+
+const iconStyle = computed((): Record<string, string> => {
+  return {
+    color: colorValue.value,
+    fontSize: iconSize.value,
+    lineHeight: iconSize.value,
+  }
+})
+
+function onClick(event: Event): void {
+  emit('click', event)
+}
+
+function getIconNames(): string[] {
+  return fontData.map((item) => item.font_class)
+}
 </script>
 
 <style lang="scss">

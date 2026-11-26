@@ -39,12 +39,12 @@
 
         <view class="lingyun-login__agree">
           <lingyun-checkbox v-model="agreed">
-            <text class="lingyun-login__agree-text">
-              我已阅读并同意
+            <view class="lingyun-login__agree-text">
+              <text class="lingyun-login__agree-plain">我已阅读并同意</text>
               <text class="lingyun-login__link" @click.stop="onPolicy('user')">《用户服务协议》</text>
-              和
+              <text class="lingyun-login__agree-plain">和</text>
               <text class="lingyun-login__link" @click.stop="onPolicy('privacy')">《隐私政策》</text>
-            </text>
+            </view>
           </lingyun-checkbox>
         </view>
 
@@ -291,12 +291,21 @@
   }
 
   .lingyun-login__agree-text {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .lingyun-login__agree-plain {
     font-size: 13px;
     line-height: 20px;
     color: var(--lingyun-label-secondary, #{$lingyun-label-secondary});
   }
 
   .lingyun-login__link {
+    font-size: 13px;
+    line-height: 20px;
     color: var(--lingyun-primary, #{$lingyun-primary});
   }
 

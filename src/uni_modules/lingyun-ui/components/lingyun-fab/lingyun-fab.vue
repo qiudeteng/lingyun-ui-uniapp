@@ -50,8 +50,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, inject, ref, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, onMounted, ref, watch } from 'vue'
+import { inject, type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
 import {
   LINGYUN_APP_PAGE_BOTTOM_INSET,
@@ -80,6 +81,9 @@ type FabItem = {
   raw: FabContent
 }
 
+const BTN = 56
+const GAP = 16
+
 /**
  * lingyun-fab
  * @description 悬浮按钮。位置与展开方式对齐 uni-fab，主钮与菜单走 Liquid Glass。
@@ -94,146 +98,147 @@ type FabItem = {
  * @event fabClick 点击主钮
  * @event trigger 点击菜单项 { index, item }
  */
-const BTN = 56
-const GAP = 16
-
-export default defineComponent({
+defineOptions({
   name: 'LingyunFab',
-  setup() {
-    return {
-      pageNavInset: inject(LINGYUN_APP_PAGE_NAV_INSET, ref(0)),
-      pageBottomInset: inject(LINGYUN_APP_PAGE_BOTTOM_INSET, ref(0)),
-    }
+})
+
+const props = defineProps({
+  horizontal: { type: String, default: 'right' },
+  vertical: { type: String, default: 'bottom' },
+  direction: { type: String, default: 'vertical' },
+  content: { type: Array as PropType<FabContent[]>, default: () => [] as FabContent[] },
+  popMenu: { type: Boolean, default: true },
+  show: { type: Boolean, default: false },
+  icon: { type: String, default: 'plusempty' },
+  safeArea: { type: Boolean, default: true },
+  gap: { type: [Number, String] as PropType<number | string>, default: 16 },
+  zIndex: { type: [Number, String] as PropType<number | string>, default: 200 },
+  closeOnSelect: { type: Boolean, default: true },
+})
+
+const emit = defineEmits(['fabClick', 'trigger', 'update:show'])
+
+const pageNavInset = inject(LINGYUN_APP_PAGE_NAV_INSET, ref(0))
+const pageBottomInset = inject(LINGYUN_APP_PAGE_BOTTOM_INSET, ref(0))
+
+const opened = ref(false)
+const safeBottom = ref(0)
+
+const items = computed((): FabItem[] => {
+  const list = Array.isArray(props.content) ? props.content : []
+  return list.map((item, index) => ({
+    key: item && item.key != null ? String(item.key) : `fab-${index}`,
+    icon: (item && item.icon) || '',
+    text: (item && (item.text || item.name)) || '',
+    iconPath: (item && item.iconPath) || '',
+    selectedIconPath: (item && item.selectedIconPath) || '',
+    active: !!(item && item.active),
+    disabled: !!(item && item.disabled),
+    raw: item,
+  }))
+})
+
+const menuVisible = computed((): boolean => {
+  return opened.value && props.popMenu && items.value.length > 0
+})
+
+const themeClass = computed((): string => {
+  try {
+    return useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    return 'theme-light'
+  }
+})
+
+const rootClass = computed((): string[] => {
+  return [
+    themeClass.value,
+    props.horizontal === 'left' ? 'lingyun-fab--left' : 'lingyun-fab--right',
+    props.vertical === 'top' ? 'lingyun-fab--top' : 'lingyun-fab--bottom',
+  ]
+})
+
+const menuClass = computed((): Record<string, boolean> => {
+  const horizontalMenu = props.direction === 'horizontal'
+  return {
+    'lingyun-fab__menu--above': !horizontalMenu && props.vertical !== 'top',
+    'lingyun-fab__menu--below': !horizontalMenu && props.vertical === 'top',
+    'lingyun-fab__menu--before': horizontalMenu && props.horizontal !== 'left',
+    'lingyun-fab__menu--after': horizontalMenu && props.horizontal === 'left',
+  }
+})
+
+const anchorStyle = computed((): Record<string, string | number> => {
+  const gap = Math.max(0, Number(props.gap) || GAP)
+  const pageBottom =
+    props.vertical !== 'top' ? Math.max(0, Number(pageBottomInset.value) || 0) : 0
+  const bottomExtra =
+    pageBottom > 0
+      ? pageBottom
+      : props.vertical !== 'top' && props.safeArea
+        ? safeBottom.value
+        : 0
+  const style: Record<string, string | number> = {
+    zIndex: Number(props.zIndex) || 200,
+    width: `${BTN}px`,
+    height: `${BTN}px`,
+  }
+  if (props.horizontal === 'left') {
+    style.left = `${Math.max(0, Number(pageNavInset.value) || 0) + gap}px`
+  }
+  else style.right = `${gap}px`
+  if (props.vertical === 'top') style.top = `${gap}px`
+  else style.bottom = `${gap + bottomExtra}px`
+  return style
+})
+
+function syncSafe(): void {
+  try {
+    const info =
+      typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
+    const inset = info && info.safeAreaInsets
+    safeBottom.value = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
+  } catch {
+    safeBottom.value = 0
+  }
+}
+
+function onFab(): void {
+  emit('fabClick')
+  if (!props.popMenu || !items.value.length) return
+  opened.value = !opened.value
+  emit('update:show', opened.value)
+}
+
+function onItem(index: number, item: FabItem): void {
+  if (!opened.value || item.disabled) return
+  emit('trigger', { index, item: item.raw })
+  if (props.closeOnSelect) {
+    opened.value = false
+    emit('update:show', false)
+  }
+}
+
+function open(): void {
+  opened.value = true
+  emit('update:show', true)
+}
+
+function close(): void {
+  opened.value = false
+  emit('update:show', false)
+}
+
+watch(
+  () => props.show,
+  (val: boolean) => {
+    opened.value = !!val
   },
-  emits: ['fabClick', 'trigger', 'update:show'],
-  props: {
-    horizontal: { type: String, default: 'right' },
-    vertical: { type: String, default: 'bottom' },
-    direction: { type: String, default: 'vertical' },
-    content: { type: Array as PropType<FabContent[]>, default: () => [] as FabContent[] },
-    popMenu: { type: Boolean, default: true },
-    show: { type: Boolean, default: false },
-    icon: { type: String, default: 'plusempty' },
-    safeArea: { type: Boolean, default: true },
-    gap: { type: [Number, String] as PropType<number | string>, default: GAP },
-    zIndex: { type: [Number, String] as PropType<number | string>, default: 200 },
-    closeOnSelect: { type: Boolean, default: true },
-  },
-  data() {
-    return {
-      opened: false,
-      safeBottom: 0,
-    }
-  },
-  computed: {
-    items(): FabItem[] {
-      const list = Array.isArray(this.content) ? this.content : []
-      return list.map((item, index) => ({
-        key: item && item.key != null ? String(item.key) : `fab-${index}`,
-        icon: (item && item.icon) || '',
-        text: (item && (item.text || item.name)) || '',
-        iconPath: (item && item.iconPath) || '',
-        selectedIconPath: (item && item.selectedIconPath) || '',
-        active: !!(item && item.active),
-        disabled: !!(item && item.disabled),
-        raw: item,
-      }))
-    },
-    menuVisible() {
-      return this.opened && this.popMenu && this.items.length > 0
-    },
-    themeClass() {
-      try {
-        return useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        return 'theme-light'
-      }
-    },
-    rootClass() {
-      return [
-        this.themeClass,
-        this.horizontal === 'left' ? 'lingyun-fab--left' : 'lingyun-fab--right',
-        this.vertical === 'top' ? 'lingyun-fab--top' : 'lingyun-fab--bottom',
-      ]
-    },
-    menuClass() {
-      const horizontalMenu = this.direction === 'horizontal'
-      return {
-        'lingyun-fab__menu--above': !horizontalMenu && this.vertical !== 'top',
-        'lingyun-fab__menu--below': !horizontalMenu && this.vertical === 'top',
-        'lingyun-fab__menu--before': horizontalMenu && this.horizontal !== 'left',
-        'lingyun-fab__menu--after': horizontalMenu && this.horizontal === 'left',
-      }
-    },
-    anchorStyle(): Record<string, string | number> {
-      const gap = Math.max(0, Number(this.gap) || GAP)
-      const pageBottom =
-        this.vertical !== 'top' ? Math.max(0, Number(this.pageBottomInset) || 0) : 0
-      const bottomExtra =
-        pageBottom > 0
-          ? pageBottom
-          : this.vertical !== 'top' && this.safeArea
-            ? this.safeBottom
-            : 0
-      const style: Record<string, string | number> = {
-        zIndex: Number(this.zIndex) || 200,
-        width: `${BTN}px`,
-        height: `${BTN}px`,
-      }
-      if (this.horizontal === 'left') {
-        style.left = `${Math.max(0, Number(this.pageNavInset) || 0) + gap}px`
-      }
-      else style.right = `${gap}px`
-      if (this.vertical === 'top') style.top = `${gap}px`
-      else style.bottom = `${gap + bottomExtra}px`
-      return style
-    },
-  },
-  watch: {
-    show: {
-      immediate: true,
-      handler(val: boolean) {
-        this.opened = !!val
-      },
-    },
-  },
-  mounted() {
-    this.syncSafe()
-  },
-  methods: {
-    syncSafe() {
-      try {
-        const info =
-          typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
-        const inset = info && info.safeAreaInsets
-        this.safeBottom = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
-      } catch {
-        this.safeBottom = 0
-      }
-    },
-    onFab() {
-      this.$emit('fabClick')
-      if (!this.popMenu || !this.items.length) return
-      this.opened = !this.opened
-      this.$emit('update:show', this.opened)
-    },
-    onItem(index: number, item: FabItem) {
-      if (!this.opened || item.disabled) return
-      this.$emit('trigger', { index, item: item.raw })
-      if (this.closeOnSelect) {
-        this.opened = false
-        this.$emit('update:show', false)
-      }
-    },
-    open() {
-      this.opened = true
-      this.$emit('update:show', true)
-    },
-    close() {
-      this.opened = false
-      this.$emit('update:show', false)
-    },
-  },
+  { immediate: true },
+)
+
+onMounted(() => {
+  syncSafe()
 })
 </script>
 

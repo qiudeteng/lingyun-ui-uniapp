@@ -1,4 +1,4 @@
-/* #ifdef H5 */
+/* #ifdef H5 || WEB */
 /* 页面级滚动隐藏原生条，改用不占布局的 fixed 悬浮滑块；内部滚动条仍用系统样式。 */
 html.lingyun-h5-scrollbar-hidden,
 html.lingyun-h5-scrollbar-hidden body {

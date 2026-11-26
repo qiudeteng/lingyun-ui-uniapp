@@ -37,8 +37,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { nextLingyunUid } from '../../utils/uid'
 import { useLingyunTheme } from '../../utils/theme'
 import type {
   LingyunLoadMorePayload,
@@ -54,7 +55,6 @@ interface IntersectionObserverLike {
   disconnect: () => void
 }
 
-let loadMoreSequence = 0
 
 const STATUS_VALUES: LingyunLoadMoreStatus[] = [
   'more',
@@ -72,133 +72,148 @@ function isStatus(value: unknown): value is LingyunLoadMoreStatus {
  * @description 长列表底部加载更多：更多 / 加载中 / 没有更多 / 失败重试；可自动触底加载
  * @see design/LOAD_MORE.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunLoadMore',
-  emits: ['load'],
-  props: {
-    status: { type: String, default: 'more' },
-    moreText: { type: String, default: '加载更多' },
-    loadingText: { type: String, default: '加载中…' },
-    noMoreText: { type: String, default: '没有更多了' },
-    errorText: { type: String, default: '加载失败，点击重试' },
-    showEndLine: { type: Boolean, default: true },
-    auto: { type: Boolean, default: false },
-    disabled: { type: Boolean, default: false },
-    minHeight: { type: Number, default: 48 },
-  },
-  data(): {
-    uid: number
-    observer: IntersectionObserverLike | null
-    autoTriggered: boolean
-  } {
-    return {
-      uid: (loadMoreSequence += 1),
-      observer: null,
-      autoTriggered: false,
+})
+
+const props = defineProps({
+  status: { type: String, default: 'more' },
+  moreText: { type: String, default: '加载更多' },
+  loadingText: { type: String, default: '加载中…' },
+  noMoreText: { type: String, default: '没有更多了' },
+  errorText: { type: String, default: '加载失败，点击重试' },
+  showEndLine: { type: Boolean, default: true },
+  auto: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
+  minHeight: { type: Number, default: 48 },
+})
+
+const emit = defineEmits(['load'])
+
+const instance = getCurrentInstance()
+
+const uid = ref(nextLingyunUid('loadMore'))
+const observerRef = ref<IntersectionObserverLike | null>(null)
+const autoTriggered = ref(false)
+
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* pinia 未就绪 */
+  }
+  return themeClass
+})
+
+const rootId = computed((): string => {
+  return `lingyun-load-more-${uid.value}`
+})
+
+const statusKey = computed((): LingyunLoadMoreStatus => {
+  return isStatus(props.status) ? props.status : 'more'
+})
+
+const resolvedMinHeight = computed((): number => {
+  const value = Number(props.minHeight)
+  return Number.isFinite(value) && value > 0 ? value : 48
+})
+
+const hoverClass = computed((): string => {
+  if (props.disabled) return 'none'
+  return statusKey.value === 'more' || statusKey.value === 'error'
+    ? 'lingyun-load-more--hover'
+    : 'none'
+})
+
+function disconnectObserver(): void {
+  if (observerRef.value) {
+    try {
+      observerRef.value.disconnect()
+    } catch {
+      /* ignore */
     }
-  },
-  computed: {
-    rootClass(): string {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* pinia 未就绪 */
-      }
-      return themeClass
-    },
-    rootId(): string {
-      return `lingyun-load-more-${this.uid}`
-    },
-    statusKey(): LingyunLoadMoreStatus {
-      return isStatus(this.status) ? this.status : 'more'
-    },
-    resolvedMinHeight(): number {
-      const value = Number(this.minHeight)
-      return Number.isFinite(value) && value > 0 ? value : 48
-    },
-    hoverClass(): string {
-      if (this.disabled) return 'none'
-      return this.statusKey === 'more' || this.statusKey === 'error'
-        ? 'lingyun-load-more--hover'
-        : 'none'
-    },
-  },
-  watch: {
-    status() {
-      this.autoTriggered = false
-      this.$nextTick(() => this.setupObserver())
-    },
-    auto() {
-      this.autoTriggered = false
-      this.$nextTick(() => this.setupObserver())
-    },
-    disabled() {
-      this.$nextTick(() => this.setupObserver())
-    },
-  },
-  mounted() {
-    this.$nextTick(() => this.setupObserver())
-  },
-  beforeUnmount() {
-    this.disconnectObserver()
-  },
-  methods: {
-    onClick(): void {
-      if (this.disabled) return
-      if (this.statusKey !== 'more' && this.statusKey !== 'error') return
-      this.emitLoad('click')
-    },
-    emitLoad(source: 'click' | 'auto'): void {
-      if (this.disabled) return
-      const payload: LingyunLoadMorePayload = { source }
-      this.$emit('load', payload)
-    },
-    setupObserver(): void {
-      this.disconnectObserver()
-      if (!this.auto || this.disabled || this.statusKey !== 'more') return
-      try {
-        const observer = uni.createIntersectionObserver(this, {
-          thresholds: [0],
-        }) as unknown as IntersectionObserverLike
-        observer.relativeToViewport({ bottom: 80 }).observe(
-          `#${this.rootId}`,
-          (result) => {
-            if (
-              this.autoTriggered ||
-              this.disabled ||
-              this.statusKey !== 'more'
-            ) {
-              return
-            }
-            if ((result.intersectionRatio || 0) > 0) {
-              this.autoTriggered = true
-              this.emitLoad('auto')
-            }
-          },
-        )
-        this.observer = observer
-      } catch {
-        /* 环境不支持 IntersectionObserver 时保持手动点击 */
-      }
-    },
-    disconnectObserver(): void {
-      if (this.observer) {
-        try {
-          this.observer.disconnect()
-        } catch {
-          /* ignore */
+    observerRef.value = null
+  }
+}
+
+function emitLoad(source: 'click' | 'auto'): void {
+  if (props.disabled) return
+  const payload: LingyunLoadMorePayload = { source }
+  emit('load', payload)
+}
+
+function onClick(): void {
+  if (props.disabled) return
+  if (statusKey.value !== 'more' && statusKey.value !== 'error') return
+  emitLoad('click')
+}
+
+function setupObserver(): void {
+  disconnectObserver()
+  if (!props.auto || props.disabled || statusKey.value !== 'more') return
+  try {
+    const observer = uni.createIntersectionObserver(instance?.proxy as never, {
+      thresholds: [0],
+    }) as unknown as IntersectionObserverLike
+    observer.relativeToViewport({ bottom: 80 }).observe(
+      `#${rootId.value}`,
+      (result) => {
+        if (
+          autoTriggered.value ||
+          props.disabled ||
+          statusKey.value !== 'more'
+        ) {
+          return
         }
-        this.observer = null
-      }
-    },
-    /** 供宿主手动触发（例如 scroll-view 触底事件） */
-    trigger(): void {
-      if (this.disabled) return
-      if (this.statusKey !== 'more' && this.statusKey !== 'error') return
-      this.emitLoad('click')
-    },
+        if ((result.intersectionRatio || 0) > 0) {
+          autoTriggered.value = true
+          emitLoad('auto')
+        }
+      },
+    )
+    observerRef.value = observer
+  } catch {
+    /* 环境不支持 IntersectionObserver 时保持手动点击 */
+  }
+}
+
+/** 供宿主手动触发（例如 scroll-view 触底事件） */
+function trigger(): void {
+  if (props.disabled) return
+  if (statusKey.value !== 'more' && statusKey.value !== 'error') return
+  emitLoad('click')
+}
+
+watch(
+  () => props.status,
+  () => {
+    autoTriggered.value = false
+    nextTick(() => setupObserver())
   },
+)
+
+watch(
+  () => props.auto,
+  () => {
+    autoTriggered.value = false
+    nextTick(() => setupObserver())
+  },
+)
+
+watch(
+  () => props.disabled,
+  () => {
+    nextTick(() => setupObserver())
+  },
+)
+
+onMounted(() => {
+  nextTick(() => setupObserver())
+})
+
+onBeforeUnmount(() => {
+  disconnectObserver()
 })
 </script>
 

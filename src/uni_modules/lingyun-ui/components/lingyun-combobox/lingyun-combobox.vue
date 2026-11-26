@@ -71,7 +71,7 @@
           :adjust-position="false"
           @input="onSearchInput"
           @confirm="onSearchConfirm"
-          @keyboardheightchange="onKeyboardHeightChange"
+          @keyboardheightchange="onFieldKeyboardHeightChange"
         />
         <view
           v-if="query"
@@ -126,8 +126,9 @@
   </lingyun-popover>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import type { PropType } from 'vue'
 import type {
   LingyunComboboxChangePayload,
   LingyunComboboxItem,
@@ -144,191 +145,200 @@ type SearchEvent = {
  * @description 可搜索选择：字段触发 + Popover 搜索列表
  * @see design/COMBOBOX.md
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunCombobox',
-  emits: ['update:modelValue', 'change', 'open', 'close', 'search'],
-  props: {
-    modelValue: {
-      type: [String, Number] as PropType<LingyunComboboxValue>,
-      default: null,
-    },
-    items: {
-      type: Array as PropType<LingyunComboboxItem[]>,
-      default: () => [],
-    },
-    label: { type: String, default: '' },
-    placeholder: { type: String, default: '请选择' },
-    searchPlaceholder: { type: String, default: '搜索' },
-    emptyText: { type: String, default: '没有匹配项' },
-    showSearch: { type: Boolean, default: true },
-    clearable: { type: Boolean, default: false },
-    disabled: { type: Boolean, default: false },
-    readonly: { type: Boolean, default: false },
-    dropdownWidth: {
-      type: [Number, String] as PropType<number | string>,
-      default: 0,
-    },
-    maxHeight: { type: Number, default: 240 },
-    zIndex: { type: [Number, String] as PropType<number | string>, default: 1250 },
+})
+
+const props = defineProps({
+  modelValue: {
+    type: [String, Number] as PropType<LingyunComboboxValue>,
+    default: null,
   },
-  data(): {
-    visible: boolean
-    query: string
-    keyboardHeight: number
-    searchFocus: boolean
-    focusTimer: ReturnType<typeof setTimeout> | null
-  } {
-    return {
-      visible: false,
-      query: '',
-      keyboardHeight: 0,
-      searchFocus: false,
-      focusTimer: null,
-    }
+  items: {
+    type: Array as PropType<LingyunComboboxItem[]>,
+    default: () => [],
   },
-  computed: {
-    normalizedItems(): LingyunComboboxItem[] {
-      const list = Array.isArray(this.items) ? this.items : []
-      return list.map((item) => ({
-        label: String(item?.label ?? item?.value ?? ''),
-        value: item?.value ?? '',
-        description: item?.description ? String(item.description) : '',
-        disabled: item?.disabled === true,
-      }))
-    },
-    selectedItem(): LingyunComboboxItem | null {
-      return (
-        this.normalizedItems.find((item) =>
-          this.isSame(item.value, this.modelValue),
-        ) || null
-      )
-    },
-    hasValue(): boolean {
-      return (
-        this.selectedItem != null ||
-        (this.modelValue != null && this.modelValue !== '')
-      )
-    },
-    displayText(): string {
-      if (this.selectedItem) return this.selectedItem.label
-      return this.modelValue == null ? '' : String(this.modelValue)
-    },
-    filteredItems(): LingyunComboboxItem[] {
-      const query = String(this.query || '').trim().toLowerCase()
-      if (!query) return this.normalizedItems
-      return this.normalizedItems.filter((item) => {
-        return (
-          item.label.toLowerCase().includes(query) ||
-          (item.description || '').toLowerCase().includes(query)
-        )
-      })
-    },
-    listHeight(): number {
-      const max = Math.max(80, Number(this.maxHeight) || 240)
-      /* 键盘抬起时缩短列表，配合 Popover bottomInset 保证不被键盘覆盖 */
-      const effectiveMax =
-        this.keyboardHeight > 0 ? Math.min(max, 160) : max
-      const rowHeight = 56
-      const height = this.filteredItems.length
-        ? this.filteredItems.length * rowHeight + 8
-        : 64
-      return Math.min(effectiveMax, height)
-    },
+  label: { type: String, default: '' },
+  placeholder: { type: String, default: '请选择' },
+  searchPlaceholder: { type: String, default: '搜索' },
+  emptyText: { type: String, default: '没有匹配项' },
+  showSearch: { type: Boolean, default: true },
+  clearable: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
+  readonly: { type: Boolean, default: false },
+  dropdownWidth: {
+    type: [Number, String] as PropType<number | string>,
+    default: 0,
   },
-  watch: {
-    visible(value: boolean) {
-      if (value) {
-        this.query = ''
-        this.searchFocus = false
-        this.$emit('open')
-        if (this.focusTimer) clearTimeout(this.focusTimer)
-        let delay = 80
-        // #ifdef MP-WEIXIN
-        /* Popover 在 root-portal 内挂载，稍等展开后再聚焦才能拉起键盘 */
-        delay = 260
-        // #endif
-        this.focusTimer = setTimeout(() => {
-          this.focusTimer = null
-          if (this.visible) this.searchFocus = true
-        }, delay)
-        return
-      }
-      if (this.focusTimer) {
-        clearTimeout(this.focusTimer)
-        this.focusTimer = null
-      }
-      this.searchFocus = false
-      this.query = ''
-      this.keyboardHeight = 0
-      this.$emit('close')
-    },
-    disabled(value: boolean) {
-      if (value) this.visible = false
-    },
+  maxHeight: { type: Number, default: 240 },
+  zIndex: { type: [Number, String] as PropType<number | string>, default: 1250 },
+})
+
+const emit = defineEmits(['update:modelValue', 'change', 'open', 'close', 'search'])
+
+const visible = ref(false)
+const query = ref('')
+const keyboardHeight = ref(0)
+const searchFocus = ref(false)
+const focusTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+
+function isSame(a: unknown, b: unknown): boolean {
+  if (a == null || b == null) return a === b
+  return String(a) === String(b)
+}
+
+const normalizedItems = computed((): LingyunComboboxItem[] => {
+  const list = Array.isArray(props.items) ? props.items : []
+  return list.map((item) => ({
+    label: String(item?.label ?? item?.value ?? ''),
+    value: item?.value ?? '',
+    description: item?.description ? String(item.description) : '',
+    disabled: item?.disabled === true,
+  }))
+})
+
+const selectedItem = computed((): LingyunComboboxItem | null => {
+  return (
+    normalizedItems.value.find((item) =>
+      isSame(item.value, props.modelValue),
+    ) || null
+  )
+})
+
+const hasValue = computed((): boolean => {
+  return (
+    selectedItem.value != null ||
+    (props.modelValue != null && props.modelValue !== '')
+  )
+})
+
+const displayText = computed((): string => {
+  if (selectedItem.value) return selectedItem.value.label
+  return props.modelValue == null ? '' : String(props.modelValue)
+})
+
+const filteredItems = computed((): LingyunComboboxItem[] => {
+  const keyword = String(query.value || '').trim().toLowerCase()
+  if (!keyword) return normalizedItems.value
+  return normalizedItems.value.filter((item) => {
+    return (
+      item.label.toLowerCase().includes(keyword) ||
+      (item.description || '').toLowerCase().includes(keyword)
+    )
+  })
+})
+
+const listHeight = computed((): number => {
+  const max = Math.max(80, Number(props.maxHeight) || 240)
+  /* 键盘抬起时缩短列表，配合 Popover bottomInset 保证不被键盘覆盖 */
+  const effectiveMax =
+    keyboardHeight.value > 0 ? Math.min(max, 160) : max
+  const rowHeight = 56
+  const height = filteredItems.value.length
+    ? filteredItems.value.length * rowHeight + 8
+    : 64
+  return Math.min(effectiveMax, height)
+})
+
+function toggle(): void {
+  if (props.disabled || props.readonly) return
+  visible.value = !visible.value
+}
+
+function open(): void {
+  if (props.disabled || props.readonly) return
+  visible.value = true
+}
+
+function close(): void {
+  visible.value = false
+}
+
+function select(item: LingyunComboboxItem): void {
+  if (item.disabled) return
+  const payload: LingyunComboboxChangePayload = {
+    value: item.value,
+    item,
+  }
+  emit('update:modelValue', item.value)
+  emit('change', payload)
+  visible.value = false
+}
+
+function clear(): void {
+  if (props.disabled || props.readonly) return
+  emit('update:modelValue', null)
+  emit('change', { value: null, item: null })
+  visible.value = false
+}
+
+function onSearchInput(event: InputEvent): void {
+  const rawEvent = event as unknown as SearchEvent
+  const detail = rawEvent?.detail
+  const target = rawEvent?.target
+  const value =
+    detail && detail.value != null
+      ? detail.value
+      : target && target.value != null
+        ? target.value
+        : ''
+  query.value = String(value)
+  emit('search', query.value)
+}
+
+function onSearchConfirm(): void {
+  if (filteredItems.value.length) select(filteredItems.value[0])
+}
+
+function onFieldKeyboardHeightChange(event: { detail?: { height?: number } }): void {
+  const height = Number(event?.detail?.height)
+  keyboardHeight.value =
+    Number.isFinite(height) && height > 0 ? Math.round(height) : 0
+}
+
+function clearQuery(): void {
+  query.value = ''
+}
+
+watch(visible, (value: boolean) => {
+  if (value) {
+    query.value = ''
+    searchFocus.value = false
+    emit('open')
+    if (focusTimer.value) clearTimeout(focusTimer.value)
+    let delay = 80
+    // #ifdef MP-WEIXIN
+    /* Popover 在 root-portal 内挂载，稍等展开后再聚焦才能拉起键盘 */
+    delay = 260
+    // #endif
+    focusTimer.value = setTimeout(() => {
+      focusTimer.value = null
+      if (visible.value) searchFocus.value = true
+    }, delay)
+    return
+  }
+  if (focusTimer.value) {
+    clearTimeout(focusTimer.value)
+    focusTimer.value = null
+  }
+  searchFocus.value = false
+  query.value = ''
+  keyboardHeight.value = 0
+  emit('close')
+})
+
+watch(
+  () => props.disabled,
+  (value: boolean) => {
+    if (value) visible.value = false
   },
-  beforeUnmount() {
-    if (this.focusTimer) {
-      clearTimeout(this.focusTimer)
-      this.focusTimer = null
-    }
-  },
-  methods: {
-    isSame(a: unknown, b: unknown): boolean {
-      if (a == null || b == null) return a === b
-      return String(a) === String(b)
-    },
-    toggle(): void {
-      if (this.disabled || this.readonly) return
-      this.visible = !this.visible
-    },
-    open(): void {
-      if (this.disabled || this.readonly) return
-      this.visible = true
-    },
-    close(): void {
-      this.visible = false
-    },
-    select(item: LingyunComboboxItem): void {
-      if (item.disabled) return
-      const payload: LingyunComboboxChangePayload = {
-        value: item.value,
-        item,
-      }
-      this.$emit('update:modelValue', item.value)
-      this.$emit('change', payload)
-      this.visible = false
-    },
-    clear(): void {
-      if (this.disabled || this.readonly) return
-      this.$emit('update:modelValue', null)
-      this.$emit('change', { value: null, item: null })
-      this.visible = false
-    },
-    onSearchInput(event: InputEvent): void {
-      const rawEvent = event as unknown as SearchEvent
-      const detail = rawEvent?.detail
-      const target = rawEvent?.target
-      const value =
-        detail && detail.value != null
-          ? detail.value
-          : target && target.value != null
-            ? target.value
-            : ''
-      this.query = String(value)
-      this.$emit('search', this.query)
-    },
-    onSearchConfirm(): void {
-      if (this.filteredItems.length) this.select(this.filteredItems[0])
-    },
-    onKeyboardHeightChange(event: { detail?: { height?: number } }): void {
-      const height = Number(event?.detail?.height)
-      this.keyboardHeight =
-        Number.isFinite(height) && height > 0 ? Math.round(height) : 0
-    },
-    clearQuery(): void {
-      this.query = ''
-    },
-  },
+)
+
+onBeforeUnmount(() => {
+  if (focusTimer.value) {
+    clearTimeout(focusTimer.value)
+    focusTimer.value = null
+  }
 })
 </script>
 

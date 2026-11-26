@@ -41,7 +41,8 @@
   </lingyun-app-page>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, onUpdated, ref, watch } from 'vue'
 /**
  * lingyun-split-layout
  * 列表 + 详情分栏布局：≥ splitAt 左右分栏（左栏固定 listWidth）。
@@ -54,7 +55,6 @@
  * props 清回默认值，顶栏会先空一帧再出现，列表也会闪成空白。
  * 使用约定见 doc/guide/split-pages.md。
  */
-import { defineComponent } from 'vue'
 import { LINGYUN_SCREEN_PAD_MIN } from '../../utils/screenResolve'
 import type { LingyunSplitLayoutChange } from './types'
 
@@ -73,191 +73,222 @@ function readWindowWidth(): number {
   }
 }
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunSplitLayout',
-  props: {
-    /** app-page 标题（分栏时两栏 toolbar 自带标题，这里通常留空） */
-    title: { type: String, default: '' },
-    /** 分栏门槛：窗口宽度 ≥ 该值左右分栏，窄屏只显示左栏 */
-    splitAt: { type: Number, default: 900 },
-    /** 宽屏左栏宽度（手机逻辑宽度） */
-    listWidth: { type: Number, default: 375 },
-    /** 透传 app-page：宽屏是否保留应用导航列 */
-    showNav: { type: Boolean, default: true },
-    /** 透传 app-page：是否显示底部 Tab（分栏页一般关掉） */
-    showTabbar: { type: Boolean, default: false },
-    /**
-     * 中屏详情是否打开。仅 cover（有左侧导航、未分栏）时生效：
-     * 详情盖住内容区并横向滑入，不新开页面，左侧导航不参与动画。
-     */
-    detailOpen: { type: Boolean, default: false },
-  },
-  emits: ['wide-change', 'layout-change', 'ready'],
-  data() {
-    return {
-      windowWidth: 0,
-      listHeaderHeight: 0,
-      detailHeaderHeight: 0,
-      /** 中屏详情节点是否挂上（滑出动画结束后才卸） */
-      coverMounted: false,
-      /** 中屏详情是否已滑到内容区 */
-      coverIn: false,
-      _measureTimer: null as ReturnType<typeof setTimeout> | null,
-      _coverTimer: null as ReturnType<typeof setTimeout> | null,
-      _onWindowResize: null as (() => void) | null,
+})
+
+const props = defineProps({
+  /** app-page 标题（分栏时两栏 toolbar 自带标题，这里通常留空） */
+  title: { type: String, default: '' },
+  /** 分栏门槛：窗口宽度 ≥ 该值左右分栏，窄屏只显示左栏 */
+  splitAt: { type: Number, default: 900 },
+  /** 宽屏左栏宽度（手机逻辑宽度） */
+  listWidth: { type: Number, default: 375 },
+  /** 透传 app-page：宽屏是否保留应用导航列 */
+  showNav: { type: Boolean, default: true },
+  /** 透传 app-page：是否显示底部 Tab（分栏页一般关掉） */
+  showTabbar: { type: Boolean, default: false },
+  /**
+   * 中屏详情是否打开。仅 cover（有左侧导航、未分栏）时生效：
+   * 详情盖住内容区并横向滑入，不新开页面，左侧导航不参与动画。
+   */
+  detailOpen: { type: Boolean, default: false },
+})
+
+const emit = defineEmits(['wide-change', 'layout-change', 'ready'])
+
+const instance = getCurrentInstance()
+
+const windowWidth = ref(0)
+const listHeaderHeight = ref(0)
+const detailHeaderHeight = ref(0)
+/** 中屏详情节点是否挂上（滑出动画结束后才卸） */
+const coverMounted = ref(false)
+/** 中屏详情是否已滑到内容区 */
+const coverIn = ref(false)
+const _measureTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _coverTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const _onWindowResize = ref<(() => void) | null>(null)
+
+const wide = computed((): boolean => {
+  return windowWidth.value >= Number(props.splitAt || 900)
+})
+/** 左侧导航已出现、尚未分栏：详情在当前页滑入 */
+const cover = computed((): boolean => {
+  return windowWidth.value >= LINGYUN_SCREEN_PAD_MIN && !wide.value
+})
+const showDetail = computed((): boolean => {
+  return wide.value || coverMounted.value
+})
+const listPaneStyle = computed((): Record<string, string> => {
+  if (!wide.value) return {}
+  const width = Math.max(0, Number(props.listWidth) || 375)
+  return {
+    flex: `0 0 ${width}px`,
+    width: `${width}px`,
+  }
+})
+const layoutState = computed((): LingyunSplitLayoutChange => {
+  return {
+    wide: wide.value,
+    cover: cover.value,
+    listTopSpace: listHeaderHeight.value,
+    detailTopSpace: detailHeaderHeight.value,
+  }
+})
+
+function measureHeaders(): void {
+  // #ifdef H5 || WEB
+  /* uni.createSelectorQuery().in(this) reports a stale height on Web here,
+     so measure the real DOM nodes directly. */
+  try {
+    const listEl: any = document.querySelector('.ly-split-layout__header--list')
+    if (listEl) {
+      const h = Math.round(listEl.getBoundingClientRect().height)
+      if (h > 0 && h !== listHeaderHeight.value) listHeaderHeight.value = h
     }
-  },
-  computed: {
-    wide(): boolean {
-      return this.windowWidth >= Number(this.splitAt || 900)
-    },
-    /** 左侧导航已出现、尚未分栏：详情在当前页滑入 */
-    cover(): boolean {
-      return this.windowWidth >= LINGYUN_SCREEN_PAD_MIN && !this.wide
-    },
-    showDetail(): boolean {
-      return this.wide || this.coverMounted
-    },
-    listPaneStyle(): Record<string, string> {
-      if (!this.wide) return {}
-      const width = Math.max(0, Number(this.listWidth) || 375)
-      return {
-        flex: `0 0 ${width}px`,
-        width: `${width}px`,
-      }
-    },
-    layoutState(): LingyunSplitLayoutChange {
-      return {
-        wide: this.wide,
-        cover: this.cover,
-        listTopSpace: this.listHeaderHeight,
-        detailTopSpace: this.detailHeaderHeight,
-      }
-    },
-  },
-  watch: {
-    wide(value: boolean) {
-      this.$emit('wide-change', value)
-      this.syncCover()
-      this.scheduleMeasure()
-    },
-    detailOpen() {
-      this.syncCover()
-    },
-    cover() {
-      this.syncCover()
-    },
-    layoutState(value: LingyunSplitLayoutChange) {
-      this.$emit('layout-change', value)
-    },
-  },
-  mounted() {
-    this.syncWindowWidth()
-    this.syncCover()
-    this.$emit('wide-change', this.wide)
-    this.$emit('layout-change', this.layoutState)
-    this._onWindowResize = () => {
-      this.syncWindowWidth()
-      this.scheduleMeasure()
+    const detailEl: any = document.querySelector('.ly-split-layout__header--detail')
+    if (detailEl) {
+      const h = Math.round(detailEl.getBoundingClientRect().height)
+      if (h > 0 && h !== detailHeaderHeight.value) detailHeaderHeight.value = h
     }
-    try {
-      if (typeof uni.onWindowResize === 'function') uni.onWindowResize(this._onWindowResize)
-    } catch {
-      /* 端不支持 */
-    }
-    this.$nextTick(() => {
-      this.measureHeaders()
-      this.scheduleMeasure()
-      setTimeout(() => {
-        this.measureHeaders()
-        this.$emit('ready')
-      }, 360)
+    return
+  } catch (e) {
+    /* fall through to the selector query */
+  }
+  // #endif
+  const query = uni.createSelectorQuery().in(instance?.proxy as never)
+  query
+    .select('.ly-split-layout__header--list')
+    .boundingClientRect((rect) => {
+      const box = Array.isArray(rect) ? rect[0] : rect
+      const height = Number(box && box.height) || 0
+      if (height !== listHeaderHeight.value) listHeaderHeight.value = height
     })
-  },
-  updated() {
-    /* 插槽内容变化（换标题、切分段）后头部高度可能变化，防抖重测 */
-    this.scheduleMeasure()
-  },
-  beforeUnmount() {
-    clearTimeout(this._measureTimer ?? undefined)
-    clearTimeout(this._coverTimer ?? undefined)
-    this._measureTimer = null
-    this._coverTimer = null
-    const handler = this._onWindowResize
-    try {
-      if (handler && typeof uni.offWindowResize === 'function') {
-        uni.offWindowResize(handler)
-      }
-    } catch {
-      /* 端不支持 */
+  query
+    .select('.ly-split-layout__header--detail')
+    .boundingClientRect((rect) => {
+      const box = Array.isArray(rect) ? rect[0] : rect
+      const height = Number(box && box.height) || 0
+      if (height !== detailHeaderHeight.value) detailHeaderHeight.value = height
+    })
+  query.exec(() => {})
+}
+
+function scheduleMeasure(): void {
+  clearTimeout(_measureTimer.value ?? undefined)
+  _measureTimer.value = setTimeout(() => {
+    _measureTimer.value = null
+    measureHeaders()
+  }, 120)
+  // #ifdef H5 || WEB
+  /* Web first paint can still be settling (fonts / nav inset), so a single
+     early measurement may read a shorter header. Re-check a few times. */
+  ;[400, 900, 1600].forEach((ms) => setTimeout(() => measureHeaders(), ms))
+  // #endif
+}
+
+function syncWindowWidth(): void {
+  const width = readWindowWidth()
+  if (width > 0) windowWidth.value = width
+}
+
+function syncCover(): void {
+  const open = !!props.detailOpen && cover.value && !wide.value
+  clearTimeout(_coverTimer.value ?? undefined)
+  _coverTimer.value = null
+  if (open) {
+    if (!coverMounted.value) {
+      coverMounted.value = true
+      coverIn.value = false
+      nextTick(() => {
+        _coverTimer.value = setTimeout(() => {
+          _coverTimer.value = null
+          if (!(props.detailOpen && cover.value && !wide.value)) return
+          coverIn.value = true
+          measureHeaders()
+        }, 32)
+      })
+      return
     }
-    this._onWindowResize = null
+    coverIn.value = true
+    return
+  }
+  if (!coverMounted.value || wide.value) {
+    coverIn.value = false
+    coverMounted.value = false
+    return
+  }
+  coverIn.value = false
+  _coverTimer.value = setTimeout(() => {
+    _coverTimer.value = null
+    if (props.detailOpen && cover.value && !wide.value) return
+    coverMounted.value = false
+  }, COVER_MS)
+}
+
+watch(wide, (value: boolean) => {
+  emit('wide-change', value)
+  syncCover()
+  scheduleMeasure()
+})
+watch(
+  () => props.detailOpen,
+  () => {
+    syncCover()
   },
-  methods: {
-    syncCover(): void {
-      const open = !!this.detailOpen && this.cover && !this.wide
-      clearTimeout(this._coverTimer ?? undefined)
-      this._coverTimer = null
-      if (open) {
-        if (!this.coverMounted) {
-          this.coverMounted = true
-          this.coverIn = false
-          this.$nextTick(() => {
-            this._coverTimer = setTimeout(() => {
-              this._coverTimer = null
-              if (!(this.detailOpen && this.cover && !this.wide)) return
-              this.coverIn = true
-              this.measureHeaders()
-            }, 32)
-          })
-          return
-        }
-        this.coverIn = true
-        return
-      }
-      if (!this.coverMounted || this.wide) {
-        this.coverIn = false
-        this.coverMounted = false
-        return
-      }
-      this.coverIn = false
-      this._coverTimer = setTimeout(() => {
-        this._coverTimer = null
-        if (this.detailOpen && this.cover && !this.wide) return
-        this.coverMounted = false
-      }, COVER_MS)
-    },
-    syncWindowWidth(): void {
-      const width = readWindowWidth()
-      if (width > 0) this.windowWidth = width
-    },
-    scheduleMeasure(): void {
-      clearTimeout(this._measureTimer ?? undefined)
-      this._measureTimer = setTimeout(() => {
-        this._measureTimer = null
-        this.measureHeaders()
-      }, 120)
-    },
-    /** 重新测量左右栏浮动头部高度（业务可主动调用，如动态插拔 toolbar 后） */
-    measureHeaders(): void {
-      const query = uni.createSelectorQuery().in(this as never)
-      query
-        .select('.ly-split-layout__header--list')
-        .boundingClientRect((rect) => {
-          const box = Array.isArray(rect) ? rect[0] : rect
-          const height = Number(box && box.height) || 0
-          if (height !== this.listHeaderHeight) this.listHeaderHeight = height
-        })
-      query
-        .select('.ly-split-layout__header--detail')
-        .boundingClientRect((rect) => {
-          const box = Array.isArray(rect) ? rect[0] : rect
-          const height = Number(box && box.height) || 0
-          if (height !== this.detailHeaderHeight) this.detailHeaderHeight = height
-        })
-      query.exec(() => {})
-    },
-  },
+)
+watch(cover, () => {
+  syncCover()
+})
+watch(layoutState, (value: LingyunSplitLayoutChange) => {
+  emit('layout-change', value)
+})
+
+onMounted(() => {
+  syncWindowWidth()
+  syncCover()
+  emit('wide-change', wide.value)
+  emit('layout-change', layoutState.value)
+  const resizeHandler = () => {
+    syncWindowWidth()
+    scheduleMeasure()
+  }
+  _onWindowResize.value = resizeHandler
+  try {
+    if (typeof uni.onWindowResize === 'function') uni.onWindowResize(resizeHandler)
+  } catch {
+    /* 端不支持 */
+  }
+  nextTick(() => {
+    measureHeaders()
+    scheduleMeasure()
+    setTimeout(() => {
+      measureHeaders()
+      emit('ready')
+    }, 360)
+  })
+})
+
+onUpdated(() => {
+  /* 插槽内容变化（换标题、切分段）后头部高度可能变化，防抖重测 */
+  scheduleMeasure()
+})
+
+onBeforeUnmount(() => {
+  clearTimeout(_measureTimer.value ?? undefined)
+  clearTimeout(_coverTimer.value ?? undefined)
+  _measureTimer.value = null
+  _coverTimer.value = null
+  const handler = _onWindowResize.value
+  try {
+    if (handler && typeof uni.offWindowResize === 'function') {
+      uni.offWindowResize(handler)
+    }
+  } catch {
+    /* 端不支持 */
+  }
+  _onWindowResize.value = null
 })
 </script>
 

@@ -166,10 +166,11 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
-import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
+import { syncLingyunMpOverlayHold } from '../../utils/mp-overlay-gate'
 import {
   normalizeMenuActions,
   type MenuAction,
@@ -185,177 +186,203 @@ import {
 const LEAVE_MS = 200
 const QUERY_TIMEOUT_MS = 180
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunContextMenu',
-  mixins: [mpOverlayHoldMixin],
-  emits: ['select', 'open', 'close'],
-  props: {
-    actions: { type: Array as PropType<MenuActionInput[]>, default: () => [] as MenuActionInput[] },
-    maskClosable: { type: Boolean, default: true },
-    zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
-  },
-  data() {
-    return {
-      mounted: false,
-      phase: '',
-      leaveTimer: null as ReturnType<typeof setTimeout> | null,
-      panelTop: 160,
-      panelLeft: 16,
-      panelWidth: 200,
+})
+
+const props = defineProps({
+  actions: { type: Array as PropType<MenuActionInput[]>, default: () => [] as MenuActionInput[] },
+  maskClosable: { type: Boolean, default: true },
+  zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
+})
+
+const emit = defineEmits(['select', 'open', 'close'])
+
+const instance = getCurrentInstance()
+
+const mounted = ref(false)
+const phase = ref('')
+const leaveTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const panelTop = ref(160)
+const panelLeft = ref(16)
+const panelWidth = ref(200)
+const _lingyunMpOverlayHold = ref(false)
+
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* ignore */
+  }
+  return [themeClass, phase.value ? `lingyun-context-menu--${phase.value}` : ''].filter(Boolean).join(' ')
+})
+
+const liftStyle = computed((): Record<string, string> => {
+  return {
+    top: `${panelTop.value}px`,
+    left: `${panelLeft.value}px`,
+    width: `${panelWidth.value}px`,
+  }
+})
+
+const normalizedActions = computed((): MenuAction[] => normalizeMenuActions(props.actions))
+
+function iconColor(action: { disabled?: boolean; role?: string }): string {
+  if (action.disabled) return 'tertiary'
+  if (action.role === 'destructive') return 'red'
+  return 'label'
+}
+
+function rowClass(action: MenuAction): string {
+  if (action.kind === 'separator') return 'lingyun-menu__sep'
+  if (action.kind === 'title') return 'lingyun-menu__heading'
+  if (action.kind === 'controls') return 'lingyun-menu__controls'
+  return [
+    'lingyun-menu__item',
+    action.subtitle ? 'lingyun-menu__item--sub' : '',
+    action.disabled ? 'lingyun-menu__item--disabled' : '',
+    action.role === 'destructive' ? 'lingyun-menu__item--destructive' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+function controlClass(item: MenuItem): string {
+  return [
+    item.disabled ? 'lingyun-menu__control--disabled' : '',
+    item.role === 'destructive' ? 'lingyun-menu__control--destructive' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+function hoverClass(action: MenuAction): string {
+  if (action.kind !== 'item' || action.disabled) return ''
+  return 'lingyun-menu__item--hover'
+}
+
+function measure(includePanel: boolean): Promise<void> {
+  return new Promise<void>((resolve) => {
+    let settled = false
+    const finish = () => {
+      if (settled) return
+      settled = true
+      resolve()
     }
-  },
-  computed: {
-    rootClass() {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* ignore */
-      }
-      return [themeClass, this.phase ? `lingyun-context-menu--${this.phase}` : ''].filter(Boolean).join(' ')
-    },
-    liftStyle() {
-      return {
-        top: `${this.panelTop}px`,
-        left: `${this.panelLeft}px`,
-        width: `${this.panelWidth}px`,
-      }
-    },
-    normalizedActions(): MenuAction[] {
-      return normalizeMenuActions(this.actions)
-    },
-  },
-  beforeUnmount() {
-    if (this.leaveTimer) clearTimeout(this.leaveTimer)
-  },
-  methods: {
-    iconColor(action: { disabled?: boolean; role?: string }): string {
-      if (action.disabled) return 'tertiary'
-      if (action.role === 'destructive') return 'red'
-      return 'label'
-    },
-    rowClass(action: MenuAction): string {
-      if (action.kind === 'separator') return 'lingyun-menu__sep'
-      if (action.kind === 'title') return 'lingyun-menu__heading'
-      if (action.kind === 'controls') return 'lingyun-menu__controls'
-      return [
-        'lingyun-menu__item',
-        action.subtitle ? 'lingyun-menu__item--sub' : '',
-        action.disabled ? 'lingyun-menu__item--disabled' : '',
-        action.role === 'destructive' ? 'lingyun-menu__item--destructive' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    controlClass(item: MenuItem): string {
-      return [
-        item.disabled ? 'lingyun-menu__control--disabled' : '',
-        item.role === 'destructive' ? 'lingyun-menu__control--destructive' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    hoverClass(action: MenuAction): string {
-      if (action.kind !== 'item' || action.disabled) return ''
-      return 'lingyun-menu__item--hover'
-    },
-    emitSelect(action: MenuItem) {
-      this.$emit('select', { action: action.raw || action, key: action.key })
-      this.close()
-    },
-    onRow(action: MenuAction) {
-      if (!action || action.kind !== 'item' || action.disabled) return
-      this.emitSelect(action)
-    },
-    onControl(item: MenuItem) {
-      if (!item || item.disabled) return
-      this.emitSelect(item)
-    },
-    measure(includePanel: boolean): Promise<void> {
-      return new Promise<void>((resolve) => {
-        let settled = false
-        const finish = () => {
-          if (settled) return
-          settled = true
-          resolve()
-        }
-        const timer = setTimeout(finish, QUERY_TIMEOUT_MS)
-        try {
-          const q = uni.createSelectorQuery().in(this)
-          q.select('.lingyun-context-menu__host').boundingClientRect()
-          if (includePanel) q.select('.lingyun-context-menu__panel').boundingClientRect()
-          q.selectViewport().boundingClientRect()
-          q.exec((res) => {
-            clearTimeout(timer)
-            const list = Array.isArray(res) ? res : []
-            const viewport = list.length ? list[list.length - 1] : null
-            const host = list[0]
-            const panel = includePanel ? list[1] : null
-            const vw = (viewport && viewport.width) || 375
-            const vh = (viewport && viewport.height) || 667
-            const width = 250
-            const gap = 8
-            if (!host || !(host.width > 0)) {
-              this.panelTop = Math.round(vh * 0.35)
-              this.panelLeft = 16
-              this.panelWidth = width
-              finish()
-              return
-            }
-            let left = host.left + host.width / 2 - width / 2
-            left = Math.max(12, Math.min(left, vw - width - 12))
-            const panelH = panel && panel.height > 0 ? panel.height : 120
-            let top = host.top + host.height + gap
-            if (top + panelH > vh - 12) {
-              top = Math.max(12, host.top - gap - panelH)
-            }
-            this.panelTop = Math.round(top)
-            this.panelLeft = Math.round(left)
-            this.panelWidth = width
-            finish()
-          })
-        } catch {
-          clearTimeout(timer)
+    const timer = setTimeout(finish, QUERY_TIMEOUT_MS)
+    try {
+      const q = uni.createSelectorQuery().in(instance?.proxy as never)
+      q.select('.lingyun-context-menu__host').boundingClientRect()
+      if (includePanel) q.select('.lingyun-context-menu__panel').boundingClientRect()
+      q.selectViewport().boundingClientRect()
+      q.exec((res) => {
+        clearTimeout(timer)
+        const list = Array.isArray(res) ? res : []
+        const viewport = list.length ? list[list.length - 1] : null
+        const host = list[0]
+        const panel = includePanel ? list[1] : null
+        const vw = (viewport && viewport.width) || 375
+        const vh = (viewport && viewport.height) || 667
+        const width = 250
+        const gap = 8
+        if (!host || !(host.width > 0)) {
+          panelTop.value = Math.round(vh * 0.35)
+          panelLeft.value = 16
+          panelWidth.value = width
           finish()
+          return
         }
+        let left = host.left + host.width / 2 - width / 2
+        left = Math.max(12, Math.min(left, vw - width - 12))
+        const panelH = panel && panel.height > 0 ? panel.height : 120
+        let top = host.top + host.height + gap
+        if (top + panelH > vh - 12) {
+          top = Math.max(12, host.top - gap - panelH)
+        }
+        panelTop.value = Math.round(top)
+        panelLeft.value = Math.round(left)
+        panelWidth.value = width
+        finish()
       })
-    },
-    open() {
-      if (this.leaveTimer) {
-        clearTimeout(this.leaveTimer)
-        this.leaveTimer = null
-      }
-      this.mounted = true
-      this.phase = 'enter'
-      this.$emit('open')
-      this.$nextTick(() => {
-        this.measure(false).then(() => {
-          setTimeout(() => {
-            this.measure(true).then(() => {
-              this.phase = 'open'
-            })
-          }, 48)
+    } catch {
+      clearTimeout(timer)
+      finish()
+    }
+  })
+}
+
+function open(): void {
+  if (leaveTimer.value) {
+    clearTimeout(leaveTimer.value)
+    leaveTimer.value = null
+  }
+  mounted.value = true
+  phase.value = 'enter'
+  emit('open')
+  nextTick(() => {
+    measure(false).then(() => {
+      setTimeout(() => {
+        measure(true).then(() => {
+          phase.value = 'open'
         })
-      })
-    },
-    onLongPress() {
-      this.open()
-    },
-    close() {
-      if (!this.mounted) return
-      this.phase = 'leave'
-      this.leaveTimer = setTimeout(() => {
-        this.mounted = false
-        this.phase = ''
-        this.leaveTimer = null
-        this.$emit('close')
-      }, LEAVE_MS)
-    },
-    onMask() {
-      if (!this.maskClosable) return
-      this.close()
-    },
+      }, 48)
+    })
+  })
+}
+
+function onLongPress(): void {
+  open()
+}
+
+function close(): void {
+  if (!mounted.value) return
+  phase.value = 'leave'
+  leaveTimer.value = setTimeout(() => {
+    mounted.value = false
+    phase.value = ''
+    leaveTimer.value = null
+    emit('close')
+  }, LEAVE_MS)
+}
+
+function emitSelect(action: MenuItem): void {
+  emit('select', { action: action.raw || action, key: action.key })
+  close()
+}
+
+function onRow(action: MenuAction): void {
+  if (!action || action.kind !== 'item' || action.disabled) return
+  emitSelect(action)
+}
+
+function onControl(item: MenuItem): void {
+  if (!item || item.disabled) return
+  emitSelect(item)
+}
+
+function onMask(): void {
+  if (!props.maskClosable) return
+  close()
+}
+
+watch(
+  phase,
+  (value: string) => {
+    _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+      !!_lingyunMpOverlayHold.value,
+      !!value,
+    )
   },
+  { immediate: true },
+)
+
+onBeforeUnmount(() => {
+  _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+    !!_lingyunMpOverlayHold.value,
+    false,
+  )
+  if (leaveTimer.value) clearTimeout(leaveTimer.value)
 })
 </script>
 

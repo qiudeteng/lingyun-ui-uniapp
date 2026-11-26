@@ -54,10 +54,11 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
+<script setup lang="ts">
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { inject, type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
-import { mpOverlayHoldMixin } from '../../utils/mpOverlayHoldMixin'
+import { syncLingyunMpOverlayHold } from '../../utils/mp-overlay-gate'
 import {
   LINGYUN_APP_PAGE_SCROLL_LOCK,
   type LingyunAppPageScrollLock,
@@ -93,266 +94,291 @@ const INSET_X = 8
 const GAP_CANCEL = 8
 const PAD_BOTTOM = 8
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunActionSheet',
-  mixins: [mpOverlayHoldMixin],
-  emits: ['update:show', 'update:modelValue', 'action', 'close', 'cancel'],
-  inject: {
-    appPageScrollLock: {
-      from: LINGYUN_APP_PAGE_SCROLL_LOCK,
-      default: null as LingyunAppPageScrollLock | null,
+})
+
+const props = defineProps({
+  show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  title: { type: String, default: '' },
+  message: { type: String, default: '' },
+  actions: { type: Array as PropType<ActionSheetAction[]>, default: () => [] as ActionSheetAction[] },
+  cancelText: { type: String, default: 'Cancel' },
+  showCancel: { type: Boolean, default: true },
+  maskClosable: { type: Boolean, default: true },
+  closeOnAction: { type: Boolean, default: true },
+  zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
+})
+
+const emit = defineEmits(['update:show', 'update:modelValue', 'action', 'close', 'cancel'])
+
+const appPageScrollLock = inject(LINGYUN_APP_PAGE_SCROLL_LOCK, null)
+
+const mounted = ref(false)
+const phase = ref('')
+const leaveTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const enterTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const safeBottom = ref(0)
+const _appScrollLocked = ref(false)
+const _scrollLocked = ref(false)
+const _prevBodyOverflow = ref('')
+const _prevBodyOverscroll = ref('')
+const _prevHtmlOverscroll = ref('')
+const _lingyunMpOverlayHold = ref(false)
+
+const visible = computed((): boolean => {
+  if (props.show !== undefined && props.show !== null) return !!props.show
+  if (props.modelValue !== undefined && props.modelValue !== null) return !!props.modelValue
+  return false
+})
+
+const reduceMotion = computed((): boolean => {
+  try {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    }
+  } catch {
+    /* ignore */
+  }
+  return false
+})
+
+const hasHeader = computed((): boolean => !!(props.title || props.message))
+
+const resolvedActions = computed((): ResolvedAction[] => {
+  const list = Array.isArray(props.actions) ? props.actions : []
+  return list
+    .filter((a): a is ActionSheetAction & { text: string | number } => !!(a && a.text))
+    .map((a) => {
+      const role = a.role === 'destructive' ? 'destructive' : 'default'
+      return {
+        key: a.key,
+        text: String(a.text),
+        role,
+        disabled: a.disabled === true,
+        close: a.close,
+      }
+    })
+})
+
+const rootClass = computed((): string => {
+  let themeClass = 'theme-light'
+  try {
+    themeClass = useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    /* pinia 未就绪 */
+  }
+  return [
+    themeClass,
+    phase.value ? `lingyun-action-sheet--${phase.value}` : '',
+    reduceMotion.value ? 'lingyun-action-sheet--reduce-motion' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const rootStyle = computed((): Record<string, number> => {
+  return {
+    zIndex: Number(props.zIndex) || 1100,
+  }
+})
+
+const stackPadStyle = computed((): Record<string, string> => {
+  const bottom = PAD_BOTTOM + (Number(safeBottom.value) || 0)
+  return {
+    paddingLeft: `${INSET_X}px`,
+    paddingRight: `${INSET_X}px`,
+    paddingBottom: `${bottom}px`,
+  }
+})
+
+function syncSafe(): void {
+  try {
+    const info =
+      typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
+    const inset = info && info.safeAreaInsets
+    safeBottom.value = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
+  } catch {
+    safeBottom.value = 0
+  }
+}
+
+function clearTimers(): void {
+  if (leaveTimer.value) {
+    clearTimeout(leaveTimer.value)
+    leaveTimer.value = null
+  }
+  if (enterTimer.value) {
+    clearTimeout(enterTimer.value)
+    enterTimer.value = null
+  }
+}
+
+function lockPageScroll(): void {
+  try {
+    const lockApi = appPageScrollLock as LingyunAppPageScrollLock | null
+    if (lockApi && typeof lockApi.lock === 'function' && !_appScrollLocked.value) {
+      lockApi.lock()
+      _appScrollLocked.value = true
+    }
+  } catch {
+    /* 不在 app-page 内 */
+  }
+  // #ifdef H5
+  if (typeof document === 'undefined') return
+  if (_scrollLocked.value) return
+  const body = document.body
+  const html = document.documentElement
+  _prevBodyOverflow.value = body.style.overflow
+  _prevBodyOverscroll.value = body.style.overscrollBehavior
+  _prevHtmlOverscroll.value = html.style.overscrollBehavior
+  body.style.overflow = 'hidden'
+  body.style.overscrollBehavior = 'none'
+  html.style.overscrollBehavior = 'none'
+  _scrollLocked.value = true
+  // #endif
+}
+
+function unlockPageScroll(): void {
+  try {
+    const lockApi = appPageScrollLock as LingyunAppPageScrollLock | null
+    if (_appScrollLocked.value && lockApi && typeof lockApi.unlock === 'function') {
+      lockApi.unlock()
+    }
+    _appScrollLocked.value = false
+  } catch {
+    _appScrollLocked.value = false
+  }
+  // #ifdef H5
+  if (typeof document === 'undefined') return
+  if (!_scrollLocked.value) return
+  const body = document.body
+  const html = document.documentElement
+  body.style.overflow = _prevBodyOverflow.value || ''
+  body.style.overscrollBehavior = _prevBodyOverscroll.value || ''
+  html.style.overscrollBehavior = _prevHtmlOverscroll.value || ''
+  _scrollLocked.value = false
+  // #endif
+}
+
+function openAnim(): void {
+  clearTimers()
+  mounted.value = true
+  phase.value = 'enter'
+  nextTick(() => {
+    const kick = () => {
+      enterTimer.value = setTimeout(
+        () => {
+          phase.value = 'open'
+          enterTimer.value = null
+        },
+        reduceMotion.value ? 16 : ENTER_KICK_MS,
+      )
+    }
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(kick)
+      })
+    } else {
+      kick()
+    }
+  })
+}
+
+function closeAnim(): void {
+  clearTimers()
+  if (!mounted.value) {
+    unlockPageScroll()
+    return
+  }
+  phase.value = 'leave'
+  leaveTimer.value = setTimeout(
+    () => {
+      mounted.value = false
+      phase.value = ''
+      leaveTimer.value = null
+      unlockPageScroll()
     },
-  },
-  props: {
-    show: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    modelValue: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    title: { type: String, default: '' },
-    message: { type: String, default: '' },
-    actions: { type: Array as PropType<ActionSheetAction[]>, default: () => [] as ActionSheetAction[] },
-    cancelText: { type: String, default: 'Cancel' },
-    showCancel: { type: Boolean, default: true },
-    maskClosable: { type: Boolean, default: true },
-    closeOnAction: { type: Boolean, default: true },
-    zIndex: { type: [Number, String] as PropType<number | string>, default: 1100 },
-  },
-  data() {
-    return {
-      mounted: false,
-      phase: '',
-      leaveTimer: null as ReturnType<typeof setTimeout> | null,
-      enterTimer: null as ReturnType<typeof setTimeout> | null,
-      safeBottom: 0,
-      _appScrollLocked: false,
-      _scrollLocked: false,
-      _prevBodyOverflow: '',
-      _prevBodyOverscroll: '',
-      _prevHtmlOverscroll: '',
+    reduceMotion.value ? 16 : LEAVE_MS,
+  )
+}
+
+function setVisible(next: unknown): void {
+  const val = !!next
+  emit('update:show', val)
+  emit('update:modelValue', val)
+  if (!val) emit('close')
+}
+
+function close(): void {
+  setVisible(false)
+}
+
+function onOverlayClick(): void {
+  if (!props.maskClosable) return
+  close()
+}
+
+function rowClass(action: ResolvedAction): Record<string, boolean> {
+  return {
+    'lingyun-action-sheet__row--destructive': action.role === 'destructive',
+    'lingyun-action-sheet__row--disabled': action.disabled,
+  }
+}
+
+function onAction(action: ResolvedAction, index: number): void {
+  if (!action || action.disabled) return
+  const payload = { action, index }
+  emit('action', payload)
+  const shouldClose =
+    action.close !== undefined && action.close !== null
+      ? !!action.close
+      : props.closeOnAction !== false
+  if (shouldClose) close()
+}
+
+function onCancel(): void {
+  emit('cancel')
+  close()
+}
+
+watch(
+  visible,
+  (val: boolean) => {
+    if (val) {
+      syncSafe()
+      lockPageScroll()
+      openAnim()
+    } else {
+      closeAnim()
     }
   },
-  computed: {
-    visible() {
-      if (this.show !== undefined && this.show !== null) return !!this.show
-      if (this.modelValue !== undefined && this.modelValue !== null) return !!this.modelValue
-      return false
-    },
-    reduceMotion() {
-      try {
-        if (typeof window !== 'undefined' && window.matchMedia) {
-          return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        }
-      } catch {
-        /* ignore */
-      }
-      return false
-    },
-    hasHeader() {
-      return !!(this.title || this.message)
-    },
-    resolvedActions(): ResolvedAction[] {
-      const list = Array.isArray(this.actions) ? this.actions : []
-      return list
-        .filter((a): a is ActionSheetAction & { text: string | number } => !!(a && a.text))
-        .map((a) => {
-          const role = a.role === 'destructive' ? 'destructive' : 'default'
-          return {
-            key: a.key,
-            text: String(a.text),
-            role,
-            disabled: a.disabled === true,
-            close: a.close,
-          }
-        })
-    },
-    rootClass() {
-      let themeClass = 'theme-light'
-      try {
-        themeClass = useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        /* pinia 未就绪 */
-      }
-      return [
-        themeClass,
-        this.phase ? `lingyun-action-sheet--${this.phase}` : '',
-        this.reduceMotion ? 'lingyun-action-sheet--reduce-motion' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    rootStyle() {
-      return {
-        zIndex: Number(this.zIndex) || 1100,
-      }
-    },
-    stackPadStyle() {
-      const bottom = PAD_BOTTOM + (Number(this.safeBottom) || 0)
-      return {
-        paddingLeft: `${INSET_X}px`,
-        paddingRight: `${INSET_X}px`,
-        paddingBottom: `${bottom}px`,
-      }
-    },
+  { immediate: true },
+)
+
+watch(
+  phase,
+  (value: string) => {
+    _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+      !!_lingyunMpOverlayHold.value,
+      !!value,
+    )
   },
-  watch: {
-    visible: {
-      immediate: true,
-      handler(val: boolean) {
-        if (val) {
-          this.syncSafe()
-          this.lockPageScroll()
-          this.openAnim()
-        } else {
-          this.closeAnim()
-        }
-      },
-    },
-  },
-  mounted() {
-    this.syncSafe()
-  },
-  beforeUnmount() {
-    this.clearTimers()
-    this.unlockPageScroll()
-  },
-  methods: {
-    syncSafe() {
-      try {
-        const info =
-          typeof uni.getWindowInfo === 'function' ? uni.getWindowInfo() : uni.getSystemInfoSync()
-        const inset = info && info.safeAreaInsets
-        this.safeBottom = inset && inset.bottom != null ? Number(inset.bottom) || 0 : 0
-      } catch {
-        this.safeBottom = 0
-      }
-    },
-    clearTimers() {
-      if (this.leaveTimer) {
-        clearTimeout(this.leaveTimer)
-        this.leaveTimer = null
-      }
-      if (this.enterTimer) {
-        clearTimeout(this.enterTimer)
-        this.enterTimer = null
-      }
-    },
-    openAnim() {
-      this.clearTimers()
-      this.mounted = true
-      this.phase = 'enter'
-      this.$nextTick(() => {
-        const kick = () => {
-          this.enterTimer = setTimeout(
-            () => {
-              this.phase = 'open'
-              this.enterTimer = null
-            },
-            this.reduceMotion ? 16 : ENTER_KICK_MS,
-          )
-        }
-        if (typeof requestAnimationFrame === 'function') {
-          requestAnimationFrame(() => {
-            requestAnimationFrame(kick)
-          })
-        } else {
-          kick()
-        }
-      })
-    },
-    closeAnim() {
-      this.clearTimers()
-      if (!this.mounted) {
-        this.unlockPageScroll()
-        return
-      }
-      this.phase = 'leave'
-      this.leaveTimer = setTimeout(
-        () => {
-          this.mounted = false
-          this.phase = ''
-          this.leaveTimer = null
-          this.unlockPageScroll()
-        },
-        this.reduceMotion ? 16 : LEAVE_MS,
-      )
-    },
-    setVisible(next: unknown) {
-      const val = !!next
-      this.$emit('update:show', val)
-      this.$emit('update:modelValue', val)
-      if (!val) this.$emit('close')
-    },
-    close() {
-      this.setVisible(false)
-    },
-    onOverlayClick() {
-      if (!this.maskClosable) return
-      this.close()
-    },
-    rowClass(action: ResolvedAction) {
-      return {
-        'lingyun-action-sheet__row--destructive': action.role === 'destructive',
-        'lingyun-action-sheet__row--disabled': action.disabled,
-      }
-    },
-    onAction(action: ResolvedAction, index: number) {
-      if (!action || action.disabled) return
-      const payload = { action, index }
-      this.$emit('action', payload)
-      const shouldClose =
-        action.close !== undefined && action.close !== null
-          ? !!action.close
-          : this.closeOnAction !== false
-      if (shouldClose) this.close()
-    },
-    onCancel() {
-      this.$emit('cancel')
-      this.close()
-    },
-    lockPageScroll() {
-      try {
-        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
-        if (lockApi && typeof lockApi.lock === 'function' && !this._appScrollLocked) {
-          lockApi.lock()
-          this._appScrollLocked = true
-        }
-      } catch {
-        /* 不在 app-page 内 */
-      }
-      // #ifdef H5
-      if (typeof document === 'undefined') return
-      if (this._scrollLocked) return
-      const body = document.body
-      const html = document.documentElement
-      this._prevBodyOverflow = body.style.overflow
-      this._prevBodyOverscroll = body.style.overscrollBehavior
-      this._prevHtmlOverscroll = html.style.overscrollBehavior
-      body.style.overflow = 'hidden'
-      body.style.overscrollBehavior = 'none'
-      html.style.overscrollBehavior = 'none'
-      this._scrollLocked = true
-      // #endif
-    },
-    unlockPageScroll() {
-      try {
-        const lockApi = this.appPageScrollLock as LingyunAppPageScrollLock | null
-        if (this._appScrollLocked && lockApi && typeof lockApi.unlock === 'function') {
-          lockApi.unlock()
-        }
-        this._appScrollLocked = false
-      } catch {
-        this._appScrollLocked = false
-      }
-      // #ifdef H5
-      if (typeof document === 'undefined') return
-      if (!this._scrollLocked) return
-      const body = document.body
-      const html = document.documentElement
-      body.style.overflow = this._prevBodyOverflow || ''
-      body.style.overscrollBehavior = this._prevBodyOverscroll || ''
-      html.style.overscrollBehavior = this._prevHtmlOverscroll || ''
-      this._scrollLocked = false
-      // #endif
-    },
-  },
+  { immediate: true },
+)
+
+onMounted(() => {
+  syncSafe()
+})
+
+onBeforeUnmount(() => {
+  _lingyunMpOverlayHold.value = syncLingyunMpOverlayHold(
+    !!_lingyunMpOverlayHold.value,
+    false,
+  )
+  clearTimers()
+  unlockPageScroll()
 })
 </script>
 

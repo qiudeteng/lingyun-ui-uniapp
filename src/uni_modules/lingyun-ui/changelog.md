@@ -1,7 +1,9 @@
-## 1.0.81 (2026-11-23)
-- 版本号递增到 1.0.81，已安装 1.0.80 的项目可以重新更新。
-## 1.0.80 (2026-11-22)
-- `lingyun-copy`：默认改为纯图标模式（不再是玻璃按钮）；内置复制 SVG，颜色默认主题色 `primary`；新增 `color`、`mode`（`icon` / `text`）；`variant` 默认 `plain`，需要胶囊时再设 `glass`。
+## 1.0.80 (2026-11-26)
+- 全部组件迁移 `<script setup>`（Options API → Composition API），行为与对外 API 不变；`lingyun-table` / `lingyun-toolbars` / `lingyun-split-toolbar` / `lingyun-grid` 的类型拆分到各自 `types.ts`。
+- 新增工具：`utils/svg`（跨端 UTF-8 → base64，小程序没有 `btoa`）、`utils/brightness`（小程序 / App 屏幕亮度读写）、`utils/uid`（作用域自增 id）；H5 细滚动条抽成独立样式文件。
+- `lingyun-copy`：新增 `icon="copy"` 纯 CSS「两层纸」复制图标，不依赖图标字体；组件迁移 `<script setup>`，`label` / `icon` / `size` / `variant` / `toast` 等 API 与 1.0.79 保持一致。
+- `lingyun-goods-nav` 新增 `showAmount`（默认 true）：隐藏合计金额、起送价与配送费提示，数量角标与结算按钮保留（配合 `lingyun-order-goods` 的 `showAmount` 使用）。
+- 修复 vue-tsc 类型检查 57 项报错：模板原生同名标签（view / switch / image / input / textarea）的回调参数收窄、条件编译 `return` 后不可达代码的类型收窄失效（条码 / 二维码兜底绘制提取为独立函数并补齐 null 守卫）、`SelectorQuery.fields` 旧版类型回调签名、renderjs 模块绑定标注、拆分类型后的引用更新等；`pnpm type-check` 归零，小程序编译通过。
 ## 1.0.79 (2026-11-17)
 - 顶栏搜索框的输入框改为透明底。新版 uni-h5 给 `uni-input` 加了白底，系统暗色再改成 `#3b3b3b`，会盖住玻璃栏。
 - 列表分组标题在小程序上按 `header` 显示。标题不再放进插槽兜底，避免微信把可选插槽当成已传入后不渲染默认文字。

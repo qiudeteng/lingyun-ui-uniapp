@@ -8,6 +8,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  /* uni-app x 编译到小程序会给 view 注入 overflow: hidden，角标等悬挂元素会被裁掉 */
+  overflow: visible;
 }
 
 .lingyun-section-row + .lingyun-section-row {

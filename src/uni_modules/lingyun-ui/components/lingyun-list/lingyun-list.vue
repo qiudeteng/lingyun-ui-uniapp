@@ -53,8 +53,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { computed, getCurrentInstance, onBeforeUnmount, ref, useSlots } from 'vue'
+import { inject } from 'vue'
 
 /**
  * lingyun-list
@@ -88,105 +89,142 @@ function findSectionHost(start: SectionHost | null): SectionHost | null {
   return null
 }
 
-export default defineComponent({
+defineOptions({
   name: 'LingyunList',
-  emits: ['action'],
-  /**
-   * firstChildAppend 不放进 data：非响应式。
-   * 行组件用 $parent 查找本实例并只写一次，对齐 uni-list（不用 provide/inject，避免长列表整表重绘）。
-   */
-  props: {
-    header: {
-      type: String,
-      default: '',
-    },
-    headerType: {
-      type: String,
-      default: 'nested',
-    },
-    headerAction: {
-      type: String,
-      default: '',
-    },
-    footer: {
-      type: String,
-      default: '',
-    },
-    inset: {
-      type: Boolean,
-      default: true,
-    },
-    /** Apple Plain 列表：全宽平铺，不要分组卡片（无底色 / 无圆角 / 无页边 inset） */
-    plain: {
-      type: Boolean,
-      default: false,
-    },
+})
+
+/**
+ * firstChildAppend 不放进 data：非响应式。
+ * 行组件用 $parent 查找本实例并只写一次，对齐 uni-list（不用 provide/inject，避免长列表整表重绘）。
+ */
+const props = defineProps({
+  header: {
+    type: String,
+    default: '',
   },
-  data() {
-    return {
-      inSection: false,
-      /** section 自己有色或玻璃时，列表不再叠第二张卡片 */
-      sectionPaintsCard: false,
-    }
+  headerType: {
+    type: String,
+    default: 'nested',
   },
-  created() {
-    ;(this as unknown as { firstChildAppend: boolean }).firstChildAppend = false
-    const section = findSectionHost(this.$parent as SectionHost | null)
-    if (!section) return
-    this.inSection = true
-    this.sectionPaintsCard = String(section.color || '').trim() !== ''
-    ;(this as unknown as { embeddedSection?: SectionHost }).embeddedSection = section
+  headerAction: {
+    type: String,
+    default: '',
+  },
+  footer: {
+    type: String,
+    default: '',
+  },
+  inset: {
+    type: Boolean,
+    default: true,
+  },
+  /** Apple Plain 列表：全宽平铺，不要分组卡片（无底色 / 无圆角 / 无页边 inset） */
+  plain: {
+    type: Boolean,
+    default: false,
+  },
+})
+
+const emit = defineEmits(['action'])
+
+const slots = useSlots()
+
+const inSection = ref(false)
+/** section 自己有色或玻璃时，列表不再叠第二张卡片 */
+const sectionPaintsCard = ref(false)
+
+const instance = getCurrentInstance()
+let embeddedSection: SectionHost | null = null
+
+/*
+ * vapor 下 $parent 链遇到普通 view 会中断，$options.name 也可能读不到，
+ * 因此优先用 section provide 的标记；$parent 遍历仅作兜底。
+ */
+const injectedSectionMark = inject<{
+  markEmbeddedList?: (active: boolean) => void
+  getColor?: () => string
+} | null>('lingyunSectionMark', null)
+let injectedMarkEmbeddedList: ((active: boolean) => void) | null = null
+
+if (instance && instance.proxy) {
+  // firstChildAppend 非响应式：行组件通过 $parent 只写一次
+  ;(instance.proxy as unknown as { firstChildAppend: boolean }).firstChildAppend = false
+}
+
+if (injectedSectionMark) {
+  inSection.value = true
+  const color = injectedSectionMark.getColor ? injectedSectionMark.getColor() : ''
+  sectionPaintsCard.value = String(color || '').trim() !== ''
+  const mark = injectedSectionMark.markEmbeddedList
+  if (mark) {
+    injectedMarkEmbeddedList = mark
+    mark(true)
+  }
+} else if (instance && instance.proxy) {
+  const section = findSectionHost(
+    (instance.proxy.$parent as unknown as SectionHost | null) ?? null,
+  )
+  if (section) {
+    inSection.value = true
+    sectionPaintsCard.value = String(section.color || '').trim() !== ''
+    embeddedSection = section
     section.markEmbeddedList?.(true)
-  },
-  beforeUnmount() {
-    const section = (this as unknown as { embeddedSection?: SectionHost }).embeddedSection
-    section?.markEmbeddedList?.(false)
-  },
-  computed: {
-    showHeader(): boolean {
-      return !!(this.header || this.headerSlot)
-    },
-    headerSlot(): boolean {
-      return !!this.$slots.header
-    },
-    headerActionSlot(): boolean {
-      return !!this.$slots['header-action']
-    },
-    showPlainHeader(): boolean {
-      return this.showHeader && !this.headerSlot && !this.headerActionSlot
-    },
-    showFooter(): boolean {
-      return !!(this.footer || this.$slots.footer)
-    },
-    resolvedHeaderType(): string {
-      const map: Record<string, string> = {
-        extraProminent: 'extra-prominent',
-        'extra-prominent': 'extra-prominent',
-        prominent: 'prominent',
-        nested: 'nested',
-      }
-      return map[this.headerType] || 'nested'
-    },
-    rootClass(): string {
-      return [
-        this.inset ? 'lingyun-list--inset' : '',
-        this.plain ? 'lingyun-list--plain' : '',
-        this.showHeader ? `lingyun-list--header-${this.resolvedHeaderType}` : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    inSectionClass(): string {
-      return [this.inSection ? 'lingyun-list--in-section' : '', this.sectionPaintsCard ? 'lingyun-list--flat-card' : '']
-        .filter(Boolean)
-        .join(' ')
-    },
-  },
-  methods: {
-    onAction() {
-      this.$emit('action')
-    },
-  },
+  }
+}
+
+const headerSlot = computed((): boolean => {
+  return !!slots.header
+})
+
+const headerActionSlot = computed((): boolean => {
+  return !!slots['header-action']
+})
+
+const showHeader = computed((): boolean => {
+  return !!(props.header || headerSlot.value)
+})
+
+const showPlainHeader = computed((): boolean => {
+  return showHeader.value && !headerSlot.value && !headerActionSlot.value
+})
+
+const showFooter = computed((): boolean => {
+  return !!(props.footer || slots.footer)
+})
+
+const resolvedHeaderType = computed((): string => {
+  const map: Record<string, string> = {
+    extraProminent: 'extra-prominent',
+    'extra-prominent': 'extra-prominent',
+    prominent: 'prominent',
+    nested: 'nested',
+  }
+  return map[props.headerType] || 'nested'
+})
+
+const rootClass = computed((): string => {
+  return [
+    props.inset ? 'lingyun-list--inset' : '',
+    props.plain ? 'lingyun-list--plain' : '',
+    showHeader.value ? `lingyun-list--header-${resolvedHeaderType.value}` : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+})
+
+const inSectionClass = computed((): string => {
+  return [inSection.value ? 'lingyun-list--in-section' : '', sectionPaintsCard.value ? 'lingyun-list--flat-card' : '']
+    .filter(Boolean)
+    .join(' ')
+})
+
+function onAction(): void {
+  emit('action')
+}
+
+onBeforeUnmount(() => {
+  injectedMarkEmbeddedList?.(false)
+  embeddedSection?.markEmbeddedList?.(false)
 })
 </script>
 

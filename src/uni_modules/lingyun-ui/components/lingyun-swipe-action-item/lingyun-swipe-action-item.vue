@@ -186,7 +186,9 @@
   <!-- #endif -->
 </template>
 
+<!-- #ifndef APP -->
 <script src="./wx.wxs" module="wxsswipe" lang="wxs"></script>
+<!-- #endif -->
 
 <script module="renderswipe" lang="renderjs">
 import render from './render.js'
@@ -215,11 +217,14 @@ export default {
 }
 </script>
 
-<script lang="ts">
-import { defineComponent, type PropType } from 'vue'
-import mpWxs from './mp-wxs.ts'
-import mpJs from './mp-js.ts'
+<script setup lang="ts">
+import { computed, getCurrentInstance, onBeforeUnmount, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { inject, provide, type PropType } from 'vue'
 import { useLingyunTheme } from '../../utils/theme'
+import {
+  LINGYUN_APP_PAGE_SCROLL_LOCK,
+  type LingyunAppPageScrollLock,
+} from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 
 const ROLE_COLORS: Record<string, string> = {
   destructive: '#ff383c',
@@ -265,11 +270,39 @@ type SwipeOption = {
   style?: SwipeOptionStyle | null
 }
 
-type ParentChain = {
-  $options?: { name?: string }
-  $parent?: ParentChain | null
-  children?: unknown[]
-  closeOther?: (vm: unknown) => void
+type SwipeSurface = {
+  hideDivider: boolean
+  hideDividerFromPrev: boolean
+}
+
+type DividerArg = boolean | { hide?: boolean } | null | undefined
+
+type SwipeClickItem = {
+  key?: string | number
+  text?: string
+}
+
+type SwipeSibling = {
+  setHideDividerFromPrev?: (hide: boolean) => void
+  swipeSurface?: { hideDividerFromPrev?: boolean }
+}
+
+type OpenArg = { open?: string } | null | undefined
+
+type SwipeItemApi = {
+  swipeSurface: SwipeSurface
+  close: () => void
+  init?: () => void
+  setHideDividerFromPrev?: (hide?: boolean) => void
+  setSwipeDividersHidden?: (e?: { hide?: boolean } | null) => void
+}
+
+type SwipeActionCtx = {
+  children: SwipeItemApi[]
+  openItem: SwipeItemApi | null
+  closeAll: () => void
+  resize: () => void
+  closeOther: (vm: SwipeItemApi) => void
 }
 
 /**
@@ -287,132 +320,626 @@ type ParentChain = {
  * @event click { content, index, position, key }
  * @event change none|left|right
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunSwipeActionItem',
-  mixins: [mpWxs, mpJs],
-  emits: ['click', 'change'],
-  /**
-   * lingyunSwipeHost：常量，关掉 list-item hover。
-   * lingyunSwipeSurface：可变对象，滑动中藏分割线（本行顶线 + 下一行顶线）。
-   */
-  provide() {
-    return {
-      lingyunSwipeHost: true,
-      lingyunSwipeSurface: this.swipeSurface,
-    }
-  },
-  props: {
-    show: { type: String, default: 'none' },
-    disabled: { type: Boolean, default: false },
-    autoClose: { type: Boolean, default: true },
-    closeOnClick: { type: Boolean, default: true },
-    threshold: { type: Number, default: 30 },
-    leftOptions: {
-      type: Array as PropType<Array<string | SwipeOptionInput>>,
-      default() {
-        return [] as Array<string | SwipeOptionInput>
-      },
-    },
-    rightOptions: {
-      type: Array as PropType<Array<string | SwipeOptionInput>>,
-      default() {
-        return [] as Array<string | SwipeOptionInput>
-      },
+})
+
+const props = defineProps({
+  show: { type: String, default: 'none' },
+  disabled: { type: Boolean, default: false },
+  autoClose: { type: Boolean, default: true },
+  closeOnClick: { type: Boolean, default: true },
+  threshold: { type: Number, default: 30 },
+  leftOptions: {
+    type: Array as PropType<Array<string | SwipeOptionInput>>,
+    default() {
+      return [] as Array<string | SwipeOptionInput>
     },
   },
-  computed: {
-    normalizedLeft() {
-      return this.normalizeOptions(this.leftOptions)
-    },
-    normalizedRight() {
-      return this.normalizeOptions(this.rightOptions)
-    },
-    themeClass() {
-      try {
-        return useLingyunTheme().rootClass || 'theme-light'
-      } catch {
-        return 'theme-light'
-      }
-    },
-  },
-  // #ifdef VUE3
-  unmounted() {
-    const vm = this as unknown as { __isUnmounted?: boolean }
-    vm.__isUnmounted = true
-    this.uninstall()
-  },
-  // #endif
-  // #ifndef VUE3
-  destroyed() {
-    const vm = this as unknown as { __isUnmounted?: boolean }
-    if (vm.__isUnmounted) return
-    this.uninstall()
-  },
-  // #endif
-  methods: {
-    normalizeOptions(list: unknown): SwipeOption[] {
-      if (!Array.isArray(list)) return []
-      return list.map((item: unknown, index: number) => {
-        if (typeof item === 'string') {
-          return { text: item, key: `opt-${index}`, role: 'default' }
-        }
-        const rec = item as SwipeOptionInput
-        return {
-          text: rec.text || '',
-          icon: rec.icon || '',
-          iconType: rec.iconType || '',
-          key: rec.key != null ? rec.key : `opt-${index}`,
-          role: rec.role || rec.color || 'default',
-          style: rec.style || null,
-        }
-      })
-    },
-    hasIcon(item: SwipeOption | null | undefined) {
-      return !!(item && (item.iconType || item.icon))
-    },
-    btnClass(item: SwipeOption | null | undefined) {
-      const role = (item && item.role) || 'default'
-      const known = ROLE_COLORS[role] ? role : 'default'
-      const onlyIcon = !!(this.hasIcon(item) && !(item && item.text))
-      return [
-        `lingyun-swipe-action-item__btn--${known}`,
-        onlyIcon ? 'lingyun-swipe-action-item__btn--icon-only' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-    },
-    btnInlineStyle(item: SwipeOption | null | undefined): Record<string, string | number> {
-      const style: Record<string, string | number> = {}
-      const custom = (item && item.style) || {}
-      const role = (item && item.role) || 'default'
-      const bg = custom.backgroundColor || ROLE_COLORS[role] || ROLE_COLORS.default
-      style.backgroundColor = bg
-      if (custom.color) style.color = custom.color
-      if (custom.fontSize) style.fontSize = custom.fontSize
-      if (custom.width) style.width = typeof custom.width === 'number' ? `${custom.width}px` : custom.width
-      if (custom.minWidth) {
-        style.minWidth = typeof custom.minWidth === 'number' ? `${custom.minWidth}px` : custom.minWidth
-      }
-      return style
-    },
-    uninstall() {
-      if (typeof this.setSwipeDividersHidden === 'function') {
-        this.setSwipeDividersHidden({ hide: false })
-      }
-      if (!this.swipeaction || !Array.isArray(this.swipeaction.children)) return
-      const i = this.swipeaction.children.indexOf(this)
-      if (i >= 0) this.swipeaction.children.splice(i, 1)
-    },
-    getSwipeAction(name: string = 'LingyunSwipeAction'): ParentChain | null {
-      let parent = this.$parent as ParentChain | null
-      while (parent) {
-        if (parent.$options && parent.$options.name === name) return parent
-        parent = parent.$parent || null
-      }
-      return null
+  rightOptions: {
+    type: Array as PropType<Array<string | SwipeOptionInput>>,
+    default() {
+      return [] as Array<string | SwipeOptionInput>
     },
   },
 })
+
+const emit = defineEmits(['click', 'change'])
+
+/** 父容器（lingyun-swipe-action）显式 provide 的上下文，替代原 $parent 链查找 */
+const swipeActionCtx = inject<SwipeActionCtx | null>('lingyunSwipeActionCtx', null)
+
+function getSwipeAction(_name: string = 'LingyunSwipeAction'): SwipeActionCtx | null {
+  return swipeActionCtx
+}
+
+function normalizeOptions(list: unknown): SwipeOption[] {
+  if (!Array.isArray(list)) return []
+  return list.map((item: unknown, index: number) => {
+    if (typeof item === 'string') {
+      return { text: item, key: `opt-${index}`, role: 'default' }
+    }
+    const rec = item as SwipeOptionInput
+    return {
+      text: rec.text || '',
+      icon: rec.icon || '',
+      iconType: rec.iconType || '',
+      key: rec.key != null ? rec.key : `opt-${index}`,
+      role: rec.role || rec.color || 'default',
+      style: rec.style || null,
+    }
+  })
+}
+
+function hasIcon(item: SwipeOption | null | undefined): boolean {
+  return !!(item && (item.iconType || item.icon))
+}
+
+function btnClass(item: SwipeOption | null | undefined): string {
+  const role = (item && item.role) || 'default'
+  const known = ROLE_COLORS[role] ? role : 'default'
+  const onlyIcon = !!(hasIcon(item) && !(item && item.text))
+  return [
+    `lingyun-swipe-action-item__btn--${known}`,
+    onlyIcon ? 'lingyun-swipe-action-item__btn--icon-only' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+function btnInlineStyle(item: SwipeOption | null | undefined): Record<string, string | number> {
+  const style: Record<string, string | number> = {}
+  const custom = (item && item.style) || {}
+  const role = (item && item.role) || 'default'
+  const bg = custom.backgroundColor || ROLE_COLORS[role] || ROLE_COLORS.default
+  style.backgroundColor = bg
+  if (custom.color) style.color = custom.color
+  if (custom.fontSize) style.fontSize = custom.fontSize
+  if (custom.width) style.width = typeof custom.width === 'number' ? `${custom.width}px` : custom.width
+  if (custom.minWidth) {
+    style.minWidth = typeof custom.minWidth === 'number' ? `${custom.minWidth}px` : custom.minWidth
+  }
+  return style
+}
+
+const normalizedLeft = computed((): SwipeOption[] => normalizeOptions(props.leftOptions))
+
+const normalizedRight = computed((): SwipeOption[] => normalizeOptions(props.rightOptions))
+
+const themeClass = computed((): string => {
+  try {
+    return useLingyunTheme().rootClass || 'theme-light'
+  } catch {
+    return 'theme-light'
+  }
+})
+
+/**
+ * 子项登记用的 API 对象：父容器 children 里存的就是它。
+ * 先声明、后在各平台分支内填充方法，避免前向引用。
+ */
+const swipeItemApi = {} as SwipeItemApi
+let _isUnmounted = false
+
+/* #ifdef APP-VUE || APP-HARMONY || MP-WEIXIN || H5 */
+let isPc: boolean | null = null
+// #ifdef H5
+function detectPc(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const ua = navigator.userAgent
+  const agents = ['Android', 'iPhone', 'SymbianOS', 'Windows Phone', 'iPad', 'iPod', 'Mobile', 'Harmony', 'HarmonyOS']
+  return !agents.some((a) => ua.indexOf(a) > 0)
+}
+isPc = detectPc()
+// #endif
+
+const is_show = ref<string>('none')
+/** 给内部 list-item inject：本行藏线 / 上一行借走本行顶线 */
+const swipeSurface = reactive({
+  hideDivider: false,
+  hideDividerFromPrev: false,
+} as SwipeSurface)
+/** 刻意不用 ref：容器上下文内部靠对象身份比对（openItem !== vm），
+ *  套一层响应式会把对象包成 proxy，导致同一行再次触摸被误判为“其它行”而自关。 */
+let swipeaction: SwipeActionCtx | null = null
+const clientX = ref(undefined as number | undefined)
+const timestamp = ref(0)
+const _pageScrollLocked = ref(false)
+const lingyunAppPageScrollLock = inject<LingyunAppPageScrollLock | null>(LINGYUN_APP_PAGE_SCROLL_LOCK, null)
+
+/** wxs 中调用 */
+function closeSwipe(): void {
+  if (props.autoClose && swipeaction) {
+    swipeaction.closeOther(swipeItemApi)
+  }
+}
+
+/**
+ * wxs / renderjs：横向确认后锁页面 scroll-view；松手解锁。
+ * 无 app-page 包裹时 inject 为空，静默跳过。
+ */
+function lockPageScroll(): void {
+  if (_pageScrollLocked.value) return
+  _pageScrollLocked.value = true
+  const api = lingyunAppPageScrollLock as LingyunAppPageScrollLock | null
+  if (api && typeof api.lock === 'function') api.lock()
+}
+
+function unlockPageScroll(): void {
+  if (!_pageScrollLocked.value) return
+  _pageScrollLocked.value = false
+  const api = lingyunAppPageScrollLock as LingyunAppPageScrollLock | null
+  if (api && typeof api.unlock === 'function') api.unlock()
+}
+
+/**
+ * wxs / renderjs：藏本行顶线，并借下一行顶线当「底边」。
+ * 下一行用 hideDividerFromPrev，避免和它自己的 hideDivider 互相覆盖（iOS 上下线错乱主因）。
+ */
+function setSwipeDividersHidden(e?: { hide?: boolean } | null): void {
+  const hide = !!(e && e.hide)
+  if (swipeSurface.hideDivider !== hide) {
+    swipeSurface.hideDivider = hide
+  }
+  const children = swipeaction && swipeaction.children
+  if (!Array.isArray(children)) return
+  const i = children.indexOf(swipeItemApi)
+  const next = (i >= 0 ? children[i + 1] : null) as SwipeSibling | null
+  if (next && typeof next.setHideDividerFromPrev === 'function') {
+    next.setHideDividerFromPrev(hide)
+  } else if (next && next.swipeSurface && next.swipeSurface.hideDividerFromPrev !== hide) {
+    next.swipeSurface.hideDividerFromPrev = hide
+  }
+}
+
+/** 上一行借/还本行顶部分割线 */
+function setHideDividerFromPrev(hide?: boolean): void {
+  const next = !!hide
+  if (swipeSurface.hideDividerFromPrev !== next) {
+    swipeSurface.hideDividerFromPrev = next
+  }
+}
+
+/** wxs 中调用：开合变化 */
+function change(e?: OpenArg): void {
+  const open = (e && e.open) || 'none'
+  emit('change', open)
+  if (is_show.value !== open) {
+    is_show.value = open
+  }
+}
+
+/** 容器互斥 / closeAll 调用 */
+function close(): void {
+  is_show.value = 'none'
+}
+
+function appTouchStart(e: TouchEvent): void {
+  if (isPc) return
+  const touch = e.changedTouches && e.changedTouches[0]
+  if (!touch) return
+  clientX.value = touch.clientX
+  timestamp.value = Date.now()
+}
+
+/**
+ * 按钮区的反向滑动 = 收起本行。
+ *
+ * 必须 catch 住 touchmove：按钮已 catch 掉 touchstart / touchend，若放 move 冒泡到
+ * `__box`，手势层会拿上一次手势的残留 startX 算 deltaX 把行推到乱位，且 touchend
+ * 被 catch 后永远不归位（表现为「停在滑到的位置 + 灰底铺满整行」）。
+ *
+ * 但滑开后可拖的内容区只剩几十 px，回拖时手指基本落在按钮上，只拦不处理等于没法取消。
+ * 这里改 `is_show` 交给 `showWatch` 带动画归位（不跟手，但方向明确、够果断）；
+ * 阈值与点击判定的 40 对齐，超过即不再算点击。
+ */
+function appTouchMove(e: TouchEvent): void {
+  if (isPc) return
+  if (is_show.value === 'none') return
+  const touch = e.changedTouches && e.changedTouches[0]
+  if (!touch || typeof clientX.value !== 'number') return
+  const delta = touch.clientX - clientX.value
+  const isBack = is_show.value === 'right' ? delta > 40 : delta < -40
+  if (isBack) close()
+}
+
+function appTouchEnd(e: TouchEvent, index: number, item: SwipeClickItem | null, position: string): void {
+  if (isPc) return
+  const touch = e.changedTouches && e.changedTouches[0]
+  if (!touch) return
+  /* 模拟点击，规避 iOS 13 touchend 早于 click 造成的错位 */
+  const diff = Math.abs((clientX.value as number) - touch.clientX)
+  const time = Date.now() - timestamp.value
+  if (diff < 40 && time < 300) {
+    emitClick(index, item, position)
+  }
+}
+
+function onClickForPc(index: number, item: SwipeClickItem | null, position: string): void {
+  if (!isPc) return
+  // #ifdef H5
+  emitClick(index, item, position)
+  // #endif
+}
+
+function emitClick(index: number, item: SwipeClickItem | null, position: string): void {
+  emit('click', {
+    content: item,
+    index,
+    position,
+    key: item && item.key,
+  })
+  if (props.closeOnClick) {
+    close()
+  }
+}
+
+watch(
+  (): string => props.show,
+  () => {
+    is_show.value = props.show
+  },
+)
+
+onMounted(() => {
+  is_show.value = props.show
+})
+
+onBeforeUnmount(() => {
+  unlockPageScroll()
+  /* 卸掉时还回下一行顶线，避免残留 hideDividerFromPrev */
+  setSwipeDividersHidden({ hide: false })
+})
+
+swipeItemApi.swipeSurface = swipeSurface
+swipeItemApi.close = close
+swipeItemApi.setHideDividerFromPrev = setHideDividerFromPrev
+swipeItemApi.setSwipeDividersHidden = setSwipeDividersHidden
+
+swipeaction = getSwipeAction()
+if (swipeaction && Array.isArray(swipeaction.children)) {
+  swipeaction.children.push(swipeItemApi)
+}
+_pageScrollLocked.value = false
+
+/**
+ * H5 / 小程序 / app-vue 端 wxs / renderjs 通过 `ownerInstance.callMethod(name)` 回调组件方法，
+ * 查的是组件公开实例代理；<script setup> 的顶层绑定不在该代理上，
+ * 这里显式挂到 ctx，保持与原选项式 methods 一致的可调用性（change / closeSwipe / setSwipeDividersHidden）。
+ */
+const wxsInstance = getCurrentInstance()
+if (wxsInstance) {
+  const wxsCtx = wxsInstance.ctx as Record<string, unknown>
+  wxsCtx.change = change
+  wxsCtx.closeSwipe = closeSwipe
+  wxsCtx.setSwipeDividersHidden = setSwipeDividersHidden
+}
+/* #endif */
+
+/* #ifndef APP-VUE || APP-HARMONY || MP-WEIXIN || H5 */
+const MIN_DISTANCE = 10
+const CAPSULE_FADE_PX = 32
+const LEAVE_ROW_Y = 40
+const CAPSULE_SETTLE_TRANSITION = 'opacity 0.3s cubic-bezier(0.165, 0.84, 0.44, 1)'
+
+const instance = getCurrentInstance()
+
+const ani = ref(false)
+const left = ref(0)
+const moveLeft = ref('translateX(0px)' as string)
+const leftWidth = ref(0)
+const rightWidth = ref(0)
+const direction = ref('' as string)
+const deltaX = ref(0)
+const deltaY = ref(0)
+const offsetX = ref(0)
+const offsetY = ref(0)
+const x = ref(0)
+const buttonShow = ref('none' as string)
+const contentOpen = ref(false)
+const capsuleProgress = ref(0)
+const capsuleTransition = ref('none' as string)
+const swipeSurface = reactive({
+  hideDivider: false,
+  hideDividerFromPrev: false,
+} as SwipeSurface)
+/** 同上：刻意不用 ref，保留对象身份 */
+let swipeaction: SwipeActionCtx | null = null
+const timer = ref(undefined as ReturnType<typeof setTimeout> | undefined)
+const touching = ref(false)
+const startX = ref(0)
+const startY = ref(0)
+const clientX = ref(undefined as number | undefined)
+const timestamp = ref(0)
+const _pageScrollLocked = ref(false)
+const lingyunAppPageScrollLock = inject<LingyunAppPageScrollLock | null>(LINGYUN_APP_PAGE_SCROLL_LOCK, null)
+
+const rowBgStyle = computed((): { opacity: number; transition: string } => {
+  return {
+    opacity: capsuleProgress.value,
+    transition: capsuleTransition.value,
+  }
+})
+
+function lockPageScroll(): void {
+  if (_pageScrollLocked.value) return
+  _pageScrollLocked.value = true
+  const api = lingyunAppPageScrollLock as LingyunAppPageScrollLock | null
+  if (api && typeof api.lock === 'function') api.lock()
+}
+
+function unlockPageScroll(): void {
+  if (!_pageScrollLocked.value) return
+  _pageScrollLocked.value = false
+  const api = lingyunAppPageScrollLock as LingyunAppPageScrollLock | null
+  if (api && typeof api.unlock === 'function') api.unlock()
+}
+
+function setHideDividerFromPrev(hide?: boolean): void {
+  const next = !!hide
+  if (swipeSurface.hideDividerFromPrev !== next) {
+    swipeSurface.hideDividerFromPrev = next
+  }
+}
+
+function setSwipeDividersHidden(e?: DividerArg): void {
+  const hide = typeof e === 'boolean' ? e : !!(e && e.hide)
+  if (swipeSurface.hideDivider !== hide) {
+    swipeSurface.hideDivider = hide
+  }
+  const children = swipeaction && swipeaction.children
+  if (!Array.isArray(children)) return
+  const i = children.indexOf(swipeItemApi)
+  const next = (i >= 0 ? children[i + 1] : null) as SwipeSibling | null
+  if (next && typeof next.setHideDividerFromPrev === 'function') {
+    next.setHideDividerFromPrev(hide)
+  } else if (next && next.swipeSurface && next.swipeSurface.hideDividerFromPrev !== hide) {
+    next.swipeSurface.hideDividerFromPrev = hide
+  }
+}
+
+function init(): void {
+  clearTimeout(timer.value)
+  timer.value = setTimeout(() => {
+    getSelectorQuery()
+  }, 80)
+  left.value = 0
+  x.value = 0
+  capsuleProgress.value = 0
+  capsuleTransition.value = 'none'
+  setSwipeDividersHidden(false)
+}
+
+function close(): void {
+  openState('none')
+}
+
+function closeSwipe(): void {
+  if (props.autoClose && swipeaction) {
+    swipeaction.closeOther(swipeItemApi)
+  }
+}
+
+function touchstart(e: TouchEvent): void {
+  if (props.disabled) return
+  touching.value = true
+  ani.value = false
+  x.value = left.value || 0
+  resetTouchStatus()
+  const touch = e.touches[0]!
+  startX.value = touch.clientX
+  startY.value = touch.clientY
+  closeSwipe()
+}
+
+function touchmove(e: TouchEvent): void {
+  if (props.disabled) return
+  if (!touching.value) return
+  const touch = e.touches[0]!
+  deltaX.value = touch.clientX - startX.value
+  deltaY.value = touch.clientY - startY.value
+  offsetX.value = Math.abs(deltaX.value)
+  offsetY.value = Math.abs(deltaY.value)
+  direction.value = direction.value || getDirection(offsetX.value, offsetY.value)
+  if (direction.value !== 'horizontal') return
+  if (offsetY.value >= LEAVE_ROW_Y) {
+    touching.value = false
+    unlockPageScroll()
+    moveDirection(left.value)
+    return
+  }
+  if (e.preventDefault) e.preventDefault()
+  move(x.value + deltaX.value, true)
+}
+
+function touchend(): void {
+  if (props.disabled) return
+  if (!touching.value) return
+  touching.value = false
+  unlockPageScroll()
+  moveDirection(left.value)
+}
+
+function touchcancel(): void {
+  touchend()
+}
+
+function move(value: number | null | undefined, followCapsule?: boolean): void {
+  left.value = Math.min(Math.max(value || 0, -rightWidth.value), leftWidth.value)
+  if (followCapsule) {
+    const abs = Math.abs(left.value)
+    capsuleProgress.value = abs >= CAPSULE_FADE_PX ? 1 : abs / CAPSULE_FADE_PX
+    capsuleTransition.value = 'none'
+    setSwipeDividersHidden(capsuleProgress.value > 0)
+  }
+}
+
+function moveDirection(leftValue: number): void {
+  const threshold = props.threshold
+  const isopen = buttonShow.value || 'none'
+  const lw = leftWidth.value
+  const rw = rightWidth.value
+  if (deltaX.value === 0) {
+    openState('none')
+    return
+  }
+  if (
+    (isopen === 'none' && rw > 0 && -leftValue > threshold) ||
+    (isopen !== 'none' && rw > 0 && rw + leftValue < threshold)
+  ) {
+    openState('right')
+  } else if (
+    (isopen === 'none' && lw > 0 && leftValue > threshold) ||
+    (isopen !== 'none' && lw > 0 && lw - leftValue < threshold)
+  ) {
+    openState('left')
+  } else {
+    openState('none')
+  }
+}
+
+function openState(type: string): void {
+  ani.value = true
+  let nextLeft = 0
+  if (type === 'left') nextLeft = leftWidth.value
+  if (type === 'right') nextLeft = -rightWidth.value
+  if (buttonShow.value !== type) {
+    buttonShow.value = type
+    emit('change', type)
+  }
+  left.value = nextLeft
+  contentOpen.value = type !== 'none'
+  capsuleProgress.value = type !== 'none' ? 1 : 0
+  capsuleTransition.value = CAPSULE_SETTLE_TRANSITION
+  setSwipeDividersHidden(type !== 'none')
+}
+
+function getDirection(xValue: number, yValue: number): string {
+  if (xValue > yValue && xValue > MIN_DISTANCE) return 'horizontal'
+  if (yValue > xValue && yValue > MIN_DISTANCE) return 'vertical'
+  return ''
+}
+
+function resetTouchStatus(): void {
+  direction.value = ''
+  deltaX.value = 0
+  deltaY.value = 0
+  offsetX.value = 0
+  offsetY.value = 0
+}
+
+function getSelectorQuery(): void {
+  const query = uni.createSelectorQuery().in(instance?.proxy as never)
+  query
+    .select('.button-group--left')
+    .boundingClientRect()
+    .select('.button-group--right')
+    .boundingClientRect()
+    .exec((ret) => {
+      leftWidth.value = (ret && ret[0] && ret[0].width) || 0
+      rightWidth.value = (ret && ret[1] && ret[1].width) || 0
+    })
+}
+
+function appTouchStart(e: TouchEvent): void {
+  const touch = e.changedTouches && e.changedTouches[0]
+  if (!touch) return
+  clientX.value = touch.clientX
+  timestamp.value = Date.now()
+}
+
+function appTouchMove(e: TouchEvent): void {
+  if (buttonShow.value === 'none') return
+  const touch = e.changedTouches && e.changedTouches[0]
+  if (!touch || typeof clientX.value !== 'number') return
+  const delta = touch.clientX - clientX.value
+  const isBack = buttonShow.value === 'right' ? delta > 40 : delta < -40
+  if (isBack) close()
+}
+
+function appTouchEnd(e: TouchEvent, index: number, item: SwipeClickItem | null, position: string): void {
+  const touch = e.changedTouches && e.changedTouches[0]
+  if (!touch) return
+  const diff = Math.abs((clientX.value as number) - touch.clientX)
+  const time = Date.now() - timestamp.value
+  if (diff < 40 && time < 300) {
+    emit('click', { content: item, index, position, key: item && item.key })
+    if (props.closeOnClick) close()
+  }
+}
+
+watch(
+  (): string => props.show,
+  (val: string) => {
+    if (props.autoClose) return
+    openState(val)
+  },
+)
+watch(left, (val: number) => {
+  moveLeft.value = `translateX(${val}px)`
+})
+watch(
+  (): Array<string | SwipeOptionInput> => props.leftOptions,
+  () => {
+    init()
+  },
+)
+watch(
+  (): Array<string | SwipeOptionInput> => props.rightOptions,
+  () => {
+    init()
+  },
+)
+
+onMounted(() => {
+  swipeaction = getSwipeAction()
+  if (swipeaction && Array.isArray(swipeaction.children)) {
+    swipeaction.children.push(swipeItemApi)
+  }
+  _pageScrollLocked.value = false
+  init()
+})
+
+onBeforeUnmount(() => {
+  unlockPageScroll()
+  setSwipeDividersHidden(false)
+})
+
+swipeItemApi.swipeSurface = swipeSurface
+swipeItemApi.close = close
+swipeItemApi.init = init
+swipeItemApi.setHideDividerFromPrev = setHideDividerFromPrev
+swipeItemApi.setSwipeDividersHidden = setSwipeDividersHidden
+/* #endif */
+
+/**
+ * lingyunSwipeHost：常量，关掉 list-item hover。
+ * lingyunSwipeSurface：可变对象，滑动中藏分割线（本行顶线 + 下一行顶线）。
+ */
+provide('lingyunSwipeHost', true)
+provide('lingyunSwipeSurface', swipeSurface)
+
+function uninstall(): void {
+  if (typeof setSwipeDividersHidden === 'function') {
+    setSwipeDividersHidden({ hide: false })
+  }
+  if (!swipeaction || !Array.isArray(swipeaction.children)) return
+  const i = swipeaction.children.indexOf(swipeItemApi)
+  if (i >= 0) swipeaction.children.splice(i, 1)
+}
+
+// #ifdef VUE3
+onUnmounted(() => {
+  _isUnmounted = true
+  uninstall()
+})
+// #endif
+// #ifndef VUE3
+onUnmounted(() => {
+  if (_isUnmounted) return
+  uninstall()
+})
+// #endif
 </script>
 
 <style lang="scss" scoped>

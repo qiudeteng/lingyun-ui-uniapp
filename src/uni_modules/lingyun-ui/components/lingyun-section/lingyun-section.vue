@@ -79,8 +79,9 @@
   </view>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { computed, ref, useSlots } from 'vue'
+import { provide } from 'vue'
 
 /** 标题左侧图标不接受自定义像素。默认 24，small 16，large 32。 */
 const ICON_SMALL = 16
@@ -186,248 +187,265 @@ const SECTION_COLOR_GLASS = 'glass'
  * @property {Boolean} isLast / isShadow / border
  * @event click 点击分区，payload 为 section|cover|title|extra|content|actions
  */
-export default defineComponent({
+defineOptions({
   name: 'LingyunSection',
-  emits: ['click'],
-  data() {
-    return {
-      /** 小程序插槽不是函数，列表 / 表格挂上后回写，用来去掉 body 与外壳 spacing */
-      embeddedListCount: 0,
-    }
-  },
-  props: {
-    title: {
-      type: String,
-      default: '',
-    },
-    /** 标题左侧的图片地址 */
-    icon: {
-      type: String,
-      default: '',
-    },
-    /**
-     * 图标大小。空为默认 24。small 为 16，large 为 32。
-     * 不接受像素。
-     */
-    iconSize: {
-      type: String,
-      default: '',
-      validator: (value: string) => value === '' || value === 'small' || value === 'large',
-    },
-    subtitle: {
-      type: String,
-      default: '',
-    },
-    /** 兼容 uni-card 的 subTitle */
-    subTitle: {
-      type: String,
-      default: '',
-    },
-    /** 标题下说明（如 Demo 提示） */
-    hint: {
-      type: String,
-      default: '',
-    },
-    extra: {
-      type: String,
-      default: '',
-    },
-    cover: {
-      type: String,
-      default: '',
-    },
-    thumbnail: {
-      type: String,
-      default: '',
-    },
-    /** 内容区（body）内边距；与 bodyPadding 二选一，后者优先 */
-    padding: {
-      type: String,
-      default: '0',
-    },
-    /** body 内边距（优先于 padding） */
-    bodyPadding: {
-      type: String,
-      default: '',
-    },
-    /** 标题区（header）内边距；空则只吃外壳 spacing */
-    headerPadding: {
-      type: String,
-      default: '',
-    },
-    /** 卡片外边距；默认与 Buttons Demo 一致 */
-    margin: {
-      type: String,
-      default: '12px 12px 0',
-    },
-    /** 卡片内边距（外壳），默认对齐 Buttons Demo */
-    spacing: {
-      type: String,
-      default: '14px 12px 16px',
-    },
-    /** 通栏：全宽、去圆角与左右边线；不改 title / spacing */
-    isFull: {
-      type: Boolean,
-      default: false,
-    },
-    /** 末块：加大底外边距 */
-    isLast: {
-      type: Boolean,
-      default: false,
-    },
-    isShadow: {
-      type: Boolean,
-      default: false,
-    },
-    border: {
-      type: Boolean,
-      default: false,
-    },
-    /**
-     * 卡片表面。空为不透明分组底，与 list 卡片同一档。
-     * glass 走玻璃。green、blue、orange、yellow、red 为系统色实底，标题改白字。
-     */
-    color: {
-      type: String,
-      default: '',
-      validator: (value: string) =>
-        value === '' ||
-        value === SECTION_COLOR_GLASS ||
-        (SECTION_COLORS as readonly string[]).indexOf(value) >= 0,
-    },
-    /**
-     * 卡片圆角。与 lingyun-image 的 radius 相同：none / sm / md / lg / xl / 2xl，或像素。
-     * 空则 2xl（26）。通栏仍是直角。
-     */
-    radius: { type: [String, Number], default: '' },
-    /** 为真时，在标题和内容之间画一条横线。没有标题时不画 */
-    headerLine: { type: Boolean, default: false },
-  },
-  computed: {
-    resolvedSubtitle() {
-      return this.subtitle || this.subTitle || ''
-    },
-    showHeader() {
-      return !!(
-        this.title ||
-        this.icon ||
-        this.$slots.icon ||
-        this.resolvedSubtitle ||
-        this.hint ||
-        this.extra ||
-        this.thumbnail ||
-        this.$slots.hint ||
-        this.$slots.extra
-      )
-    },
-    showHeaderLine(): boolean {
-      if (!this.headerLine) return false
-      return this.showHeader || !!(this.$slots && this.$slots.title)
-    },
-    iconPx(): number {
-      if (this.iconSize === 'small') return ICON_SMALL
-      if (this.iconSize === 'large') return ICON_LARGE
-      return ICON_DEFAULT
-    },
-    /**
-     * 只有主标题时，图标相对这一行垂直居中。
-     * 有副标题时，只有大图标相对主标题和副标题一起居中；小图标和默认图标仍只跟主标题。
-     */
-    iconClass(): Record<string, boolean> {
-      const large = this.iconSize === 'large'
-      return {
-        'lingyun-section__icon--small': this.iconSize === 'small',
-        'lingyun-section__icon--large': large,
-        'lingyun-section__icon--pair': large && !!this.resolvedSubtitle,
-      }
-    },
-    /** 图标盒写在真实 view 上。尺寸若只写在 lingyun-image 内部，微信宿主宽度会变成 0。 */
-    iconBoxStyle(): Record<string, string> {
-      const px = `${this.iconPx}px`
-      return { width: px, height: px }
-    },
-    resolvedColor(): string {
-      const value = String(this.color || '').trim()
-      return (SECTION_COLORS as readonly string[]).indexOf(value) >= 0 ? value : ''
-    },
-    isGlass(): boolean {
-      return String(this.color || '').trim() === SECTION_COLOR_GLASS
-    },
-    resolvedBodyPadding() {
-      return this.bodyPadding !== '' ? this.bodyPadding : this.padding
-    },
-    rootClass() {
-      return {
-        'lingyun-section--full': this.isFull,
-        'lingyun-section--last': this.isLast,
-        'lingyun-section--shadow': this.isShadow,
-        'lingyun-section--border': this.border,
-        'lingyun-section--glass': this.isGlass,
-        'lingyun-section--solid': !!this.resolvedColor,
-        'lingyun-section--header-line': this.showHeaderLine,
-        [`lingyun-section--color-${this.resolvedColor}`]: !!this.resolvedColor,
-      }
-    },
-    rootStyle() {
-      const borderRadius = resolveSectionRadius(this.radius, this.isFull)
-      const margin = this.isFull ? '12px 0 0' : this.margin
-      const style: Record<string, string> = { margin, borderRadius }
-      /* 微信里块级宽度不含 margin，白底会比页面宽出左右外边距 */
-      const width = insetWidth(margin)
-      if (width) style.width = width
-      return style
-    },
-  },
-  methods: {
-    /**
-     * 小程序里 $slots.default 是 true，不能当函数调用，否则整段渲染中断，白底宽度也会错。
-     * H5 仍在渲染时看 vnode；小程序由列表/表格挂载后回写 embeddedListCount。
-     */
-    markEmbeddedList(active: boolean) {
-      const next = this.embeddedListCount + (active ? 1 : -1)
-      this.embeddedListCount = next > 0 ? next : 0
-    },
-    withList(): boolean {
-      if (this.embeddedListCount > 0) return true
-      const slot = this.$slots.default as unknown
-      if (typeof slot !== 'function') return false
-      try {
-        return vnodesHaveList((slot as () => unknown)())
-      } catch {
-        return false
-      }
-    },
-    innerStyle() {
-      if (this.withList()) return {}
-      return { padding: this.spacing }
-    },
-    headerStyle() {
-      if (this.headerPadding) return { padding: this.headerPadding }
-      if (!this.withList()) return undefined
-      const box = parseBox(this.spacing)
-      return { padding: `${box.top} ${box.right} 0 ${box.left}` }
-    },
-    ruleStyle() {
-      if (!this.withList()) return undefined
-      const box = parseBox(this.spacing)
-      return { marginLeft: box.left, marginRight: box.right }
-    },
-    bodyStyle() {
-      if (this.withList() && this.bodyPadding === '' && this.padding === '0') {
-        return { padding: '0' }
-      }
-      return { padding: this.resolvedBodyPadding }
-    },
-    actionsStyle() {
-      if (!this.withList()) return undefined
-      const box = parseBox(this.spacing)
-      return { padding: `0 ${box.right} ${box.bottom} ${box.left}` }
-    },
-    onClick(type: string) {
-      this.$emit('click', type)
-    },
-  },
 })
+
+const props = defineProps({
+  title: {
+    type: String,
+    default: '',
+  },
+  /** 标题左侧的图片地址 */
+  icon: {
+    type: String,
+    default: '',
+  },
+  /**
+   * 图标大小。空为默认 24。small 为 16，large 为 32。
+   * 不接受像素。
+   */
+  iconSize: {
+    type: String,
+    default: '',
+    validator: (value: string) => value === '' || value === 'small' || value === 'large',
+  },
+  subtitle: {
+    type: String,
+    default: '',
+  },
+  /** 兼容 uni-card 的 subTitle */
+  subTitle: {
+    type: String,
+    default: '',
+  },
+  /** 标题下说明（如 Demo 提示） */
+  hint: {
+    type: String,
+    default: '',
+  },
+  extra: {
+    type: String,
+    default: '',
+  },
+  cover: {
+    type: String,
+    default: '',
+  },
+  thumbnail: {
+    type: String,
+    default: '',
+  },
+  /** 内容区（body）内边距；与 bodyPadding 二选一，后者优先 */
+  padding: {
+    type: String,
+    default: '0',
+  },
+  /** body 内边距（优先于 padding） */
+  bodyPadding: {
+    type: String,
+    default: '',
+  },
+  /** 标题区（header）内边距；空则只吃外壳 spacing */
+  headerPadding: {
+    type: String,
+    default: '',
+  },
+  /** 卡片外边距；默认与 Buttons Demo 一致 */
+  margin: {
+    type: String,
+    default: '12px 12px 0',
+  },
+  /** 卡片内边距（外壳），默认对齐 Buttons Demo */
+  spacing: {
+    type: String,
+    default: '14px 12px 16px',
+  },
+  /** 通栏：全宽、去圆角与左右边线；不改 title / spacing */
+  isFull: {
+    type: Boolean,
+    default: false,
+  },
+  /** 末块：加大底外边距 */
+  isLast: {
+    type: Boolean,
+    default: false,
+  },
+  isShadow: {
+    type: Boolean,
+    default: false,
+  },
+  border: {
+    type: Boolean,
+    default: false,
+  },
+  /**
+   * 卡片表面。空为不透明分组底，与 list 卡片同一档。
+   * glass 走玻璃。green、blue、orange、yellow、red 为系统色实底，标题改白字。
+   */
+  color: {
+    type: String,
+    default: '',
+    validator: (value: string) =>
+      value === '' ||
+      value === 'glass' ||
+      ['green', 'blue', 'orange', 'yellow', 'red'].indexOf(value) >= 0,
+  },
+  /**
+   * 卡片圆角。与 lingyun-image 的 radius 相同：none / sm / md / lg / xl / 2xl，或像素。
+   * 空则 2xl（26）。通栏仍是直角。
+   */
+  radius: { type: [String, Number], default: '' },
+  /** 为真时，在标题和内容之间画一条横线。没有标题时不画 */
+  headerLine: { type: Boolean, default: false },
+})
+
+const emit = defineEmits(['click'])
+
+const slots = useSlots()
+
+const embeddedListCount = ref(0)
+
+provide('lingyunSectionMark', {
+  markEmbeddedList: (active: boolean) => markEmbeddedList(active),
+  /* 供内嵌 list 判断分组卡片是否自绘底色（与 $parent 兜底逻辑保持一致） */
+  getColor: () => props.color,
+})
+
+const resolvedSubtitle = computed((): string => props.subtitle || props.subTitle || '')
+
+const showHeader = computed((): boolean => {
+  return !!(
+    props.title ||
+    props.icon ||
+    slots.icon ||
+    resolvedSubtitle.value ||
+    props.hint ||
+    props.extra ||
+    props.thumbnail ||
+    slots.hint ||
+    slots.extra
+  )
+})
+
+const showHeaderLine = computed((): boolean => {
+  if (!props.headerLine) return false
+  return showHeader.value || !!(slots && slots.title)
+})
+
+const iconPx = computed((): number => {
+  if (props.iconSize === 'small') return ICON_SMALL
+  if (props.iconSize === 'large') return ICON_LARGE
+  return ICON_DEFAULT
+})
+
+/**
+ * 只有主标题时，图标相对这一行垂直居中。
+ * 有副标题时，只有大图标相对主标题和副标题一起居中；小图标和默认图标仍只跟主标题。
+ */
+const iconClass = computed((): Record<string, boolean> => {
+  const large = props.iconSize === 'large'
+  return {
+    'lingyun-section__icon--small': props.iconSize === 'small',
+    'lingyun-section__icon--large': large,
+    'lingyun-section__icon--pair': large && !!resolvedSubtitle.value,
+  }
+})
+
+/** 图标盒写在真实 view 上。尺寸若只写在 lingyun-image 内部，微信宿主宽度会变成 0。 */
+const iconBoxStyle = computed((): Record<string, string> => {
+  const px = `${iconPx.value}px`
+  return { width: px, height: px }
+})
+
+const resolvedColor = computed((): string => {
+  const value = String(props.color || '').trim()
+  return (SECTION_COLORS as readonly string[]).indexOf(value) >= 0 ? value : ''
+})
+
+const isGlass = computed((): boolean => String(props.color || '').trim() === SECTION_COLOR_GLASS)
+
+const resolvedBodyPadding = computed((): string =>
+  props.bodyPadding !== '' ? props.bodyPadding : props.padding,
+)
+
+const rootClass = computed((): Record<string, boolean> => {
+  return {
+    'lingyun-section--full': props.isFull,
+    'lingyun-section--last': props.isLast,
+    'lingyun-section--shadow': props.isShadow,
+    'lingyun-section--border': props.border,
+    'lingyun-section--glass': isGlass.value,
+    'lingyun-section--solid': !!resolvedColor.value,
+    'lingyun-section--header-line': showHeaderLine.value,
+    [`lingyun-section--color-${resolvedColor.value}`]: !!resolvedColor.value,
+  }
+})
+
+const rootStyle = computed((): Record<string, string> => {
+  const borderRadius = resolveSectionRadius(props.radius, props.isFull)
+  const margin = props.isFull ? '12px 0 0' : props.margin
+  const style: Record<string, string> = { margin, borderRadius }
+  /* 微信里块级宽度不含 margin，白底会比页面宽出左右外边距 */
+  const width = insetWidth(margin)
+  if (width) style.width = width
+  return style
+})
+
+/**
+ * 小程序里 $slots.default 是 true，不能当函数调用，否则整段渲染中断，白底宽度也会错。
+ * H5 仍在渲染时看 vnode；小程序由列表/表格挂载后回写 embeddedListCount。
+ */
+function markEmbeddedList(active: boolean): void {
+  const next = embeddedListCount.value + (active ? 1 : -1)
+  embeddedListCount.value = next > 0 ? next : 0
+}
+
+function withList(): boolean {
+  if (embeddedListCount.value > 0) return true
+  const slot = slots.default as unknown
+  if (typeof slot !== 'function') return false
+  try {
+    return vnodesHaveList((slot as () => unknown)())
+  } catch {
+    return false
+  }
+}
+
+function innerStyle(): Record<string, string> {
+  if (withList()) return {}
+  return { padding: props.spacing }
+}
+
+function headerStyle(): Record<string, string> | undefined {
+  if (props.headerPadding) return { padding: props.headerPadding }
+  if (!withList()) return undefined
+  const box = parseBox(props.spacing)
+  return { padding: `${box.top} ${box.right} 0 ${box.left}` }
+}
+
+function ruleStyle(): Record<string, string> | undefined {
+  if (!withList()) return undefined
+  const box = parseBox(props.spacing)
+  return { marginLeft: box.left, marginRight: box.right }
+}
+
+function bodyStyle(): Record<string, string> {
+  if (withList() && props.bodyPadding === '' && props.padding === '0') {
+    return { padding: '0' }
+  }
+  return { padding: resolvedBodyPadding.value }
+}
+
+function actionsStyle(): Record<string, string> | undefined {
+  if (!withList()) return undefined
+  const box = parseBox(props.spacing)
+  return { padding: `0 ${box.right} ${box.bottom} ${box.left}` }
+}
+
+function onClick(type: string): void {
+  emit('click', type)
+}
 </script>
 
 <style lang="scss">

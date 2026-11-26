@@ -94,7 +94,9 @@ $lingyun-ui-color:(
 
 /* CSS 变量：系统 prefers-color-scheme + 手动 .theme-light / .theme-dark / data-theme */
 @mixin lingyun-theme-light-vars {
+	/* #ifndef APP */
 	color-scheme: light;
+	/* #endif */
 	--lingyun-system-red: #{$lingyun-system-red};
 	--lingyun-system-orange: #{$lingyun-system-orange};
 	--lingyun-system-yellow: #{$lingyun-system-yellow};
@@ -173,7 +175,9 @@ $lingyun-ui-color:(
 }
 
 @mixin lingyun-theme-dark-vars {
+	/* #ifndef APP */
 	color-scheme: dark;
+	/* #endif */
 	--lingyun-system-red: #{$lingyun-system-red-dark};
 	--lingyun-system-orange: #{$lingyun-system-orange-dark};
 	--lingyun-system-yellow: #{$lingyun-system-yellow-dark};
@@ -251,36 +255,51 @@ $lingyun-ui-color:(
 	--lingyun-glass-control-lens: #{$lingyun-glass-control-lens-dark};
 }
 
-page,
-:root {
+page {
 	@include lingyun-theme-light-vars;
 }
 
+/* #ifdef H5 || WEB */
+:root {
+	@include lingyun-theme-light-vars;
+}
+/* #endif */
+
 @media (prefers-color-scheme: dark) {
-	page,
+	page {
+		@include lingyun-theme-dark-vars;
+	}
+	/* #ifdef H5 || WEB */
 	:root {
 		@include lingyun-theme-dark-vars;
 	}
+	/* #endif */
 }
 
 /* 手动浅色：覆盖系统 Dark */
+/* #ifdef H5 || WEB */
 html.theme-light,
 html.theme-light page,
 html[data-theme='light'],
 html[data-theme='light'] page,
-page.theme-light,
-:root.theme-light,
+:root.theme-light {
+	@include lingyun-theme-light-vars;
+}
+/* #endif */
 .theme-light {
 	@include lingyun-theme-light-vars;
 }
 
 /* 手动暗黑：覆盖系统 Light */
+/* #ifdef H5 || WEB */
 html.theme-dark,
 html.theme-dark page,
 html[data-theme='dark'],
 html[data-theme='dark'] page,
-page.theme-dark,
-:root.theme-dark,
+:root.theme-dark {
+	@include lingyun-theme-dark-vars;
+}
+/* #endif */
 .theme-dark {
 	@include lingyun-theme-dark-vars;
 }
