@@ -127,6 +127,10 @@ type LingyunOrderCart = Record<string, number> // 行 key → 数量
 | `goodsDetail` | 点商品图 / 名称打开内置商品详情 Sheet；`false` 时只抛 `goods-click` | true |
 | `goodsDetailTitle` | 商品详情 Sheet 标题（宽屏显示；移动端头图模式隐藏） | 商品详情 |
 | `addToCartText` | 商品详情加购按钮文案 | 加入购物车 |
+| `showStore` | 显示顶部店铺卡片（logo / 名称 / 评分 / 公告）；`false` 隐藏，Banner 与返回钮不受影响 | true |
+| `showAmount` | 显示金额（商品价 / 详情价 / 规格价 / 购物车金额与合计）；`false` 时数量、步进器与结算按钮保留，适合报损等无金额业务 | true |
+| `variantSheetTitle` | 规格 / 属性选择弹窗标题；空则按模式自动（商品名 / 选择规格与属性 / 选择属性） | '' |
+| `specTitle` | 弹窗内规格分区标题；业务可传「批次」等自有叫法 | 规格 |
 
 ## 事件
 
