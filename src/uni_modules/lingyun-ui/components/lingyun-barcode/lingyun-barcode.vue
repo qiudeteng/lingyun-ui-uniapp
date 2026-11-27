@@ -390,9 +390,9 @@ function paint(): void {
 
   // #ifdef MP
   paintMp(width, height, barHeightValue, moduleWidth)
-  return
   // #endif
 
+  // #ifndef MP
   // #ifdef H5 || WEB
   /* uni-app x Web 的 CanvasContext.draw() 与手动设置的位图尺寸不兼容（会清空画面），
    * 这里直接用原生 2D context 绘制。 */
@@ -449,6 +449,7 @@ function paint(): void {
   }
   // #endif
   paintWithContext(width, height, barHeightValue, moduleWidth)
+  // #endif
 }
 
 /** 通用 CanvasContext 绘制（小程序旧版 canvas / 未命中 2D 节点时的兜底路径） */

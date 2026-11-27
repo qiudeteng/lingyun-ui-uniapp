@@ -1,3 +1,8 @@
+## 1.0.81 (2026-11-27)
+- 修复小程序宫格错版：当前 uni CLI 不再把组件级 `virtualHost` 写进组件 json，宿主变成真实节点后 flex 百分比失效、格子塌成 0 宽。`lingyun-grid` 容器改用 CSS Grid（列宽由容器决定），`lingyun-grid-item` 去掉 `virtualHost`、根节点填满宿主；工作台 / 组件目录与宫格 demo 在小程序恢复正方形格子。
+- 修复小程序顶栏双倍占位：全局首子顶栏占位规则在微信上同样生效，与 `__pad` 的内联占位叠加，内容被多推一个顶栏高度（纯列表 / 工作台顶部大片空白）。全局首子规则限定为非小程序端，微信只走内联占位。
+- 修复菜单在小程序无法滚动：普通 `view` 的 CSS overflow 在微信不生效，`lingyun-menu` 动作列表改包原生 `scroll-view`（`max-height: 70vh`），超出视口的菜单在小程序也能滚动；`lingyun-popover` 的 menu 面板补视口限高与定位收口，面板不再溢出屏幕底边。
+- 修复条码 / 二维码构建警告：条件编译分支里 `return` 后接调用语句触发 esbuild 自动分号警告，改为 `#ifdef MP` / `#ifndef MP` 各走各的调用路径，行为不变。
 ## 1.0.80 (2026-11-26)
 - 全部组件迁移 `<script setup>`（Options API → Composition API），行为与对外 API 不变；`lingyun-table` / `lingyun-toolbars` / `lingyun-split-toolbar` / `lingyun-grid` 的类型拆分到各自 `types.ts`。
 - 新增工具：`utils/svg`（跨端 UTF-8 → base64，小程序没有 `btoa`）、`utils/brightness`（小程序 / App 屏幕亮度读写）、`utils/uid`（作用域自增 id）；H5 细滚动条抽成独立样式文件。

@@ -20,7 +20,13 @@
       <slot name="trigger" :show="show" :toggle="toggle" />
     </template>
     <view class="lingyun-menu" :class="{ 'lingyun-menu--custom': !hasActions }">
-      <template v-if="hasActions">
+      <!-- 小程序普通 view 不支持 overflow 滚动，动作列表放在原生 scroll-view 里 -->
+      <scroll-view
+        v-if="hasActions"
+        class="lingyun-menu__scroll"
+        scroll-y
+        :show-scrollbar="false"
+      >
         <view
           v-for="(action, index) in normalizedActions"
           :key="action.key || index"
@@ -91,7 +97,7 @@
             />
           </template>
         </view>
-      </template>
+      </scroll-view>
       <slot v-else :close="closeMenu" :show="innerShow" />
     </view>
   </lingyun-popover>

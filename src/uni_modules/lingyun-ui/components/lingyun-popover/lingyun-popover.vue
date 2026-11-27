@@ -496,7 +496,10 @@ function applyAnchor(trigger: AnchorBox | null, panelH: number, viewport: Viewpo
   const vw = viewport.width
   const inset = Math.max(0, Number(props.bottomInset) || 0)
   const vh = Math.max(0, viewport.height - inset)
-  const height = panelH > 0 ? panelH : EST_PANEL_H
+  const rawHeight = panelH > 0 ? panelH : EST_PANEL_H
+  /* 菜单面板限高视口内（上下各留 12），超出部分由面板内部滚动承载 */
+  const height =
+    props.variant === 'menu' ? Math.min(rawHeight, Math.max(EST_PANEL_H, vh - 24)) : rawHeight
   const along = props.showArrow ? ARROW_H + TIP_GAP : GAP
 
   if (!trigger || typeof trigger.width !== 'number' || !(trigger.width > 0) || trigger.top == null) {
@@ -969,6 +972,9 @@ $popover-hairline-dark: rgba(166, 166, 166, 0.45);
   border-radius: 32px;
   padding: 10px;
   overflow: hidden;
+  /* 菜单项超出视口时面板封顶、内部滚动，不再溢出屏幕底边 */
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
 }
 
 .lingyun-popover__content {

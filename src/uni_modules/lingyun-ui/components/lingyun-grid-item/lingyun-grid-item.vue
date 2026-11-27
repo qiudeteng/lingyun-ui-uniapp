@@ -128,8 +128,6 @@ function asGrid(grid: unknown): LingyunGridLike | null {
  */
 defineOptions({
   name: 'LingyunGridItem',
-  // 去掉宿主后，宽度才能作用在 flex 子项上。否则小程序里格子宽度是 0
-  virtualHost: true,
 })
 
 const props = defineProps({
@@ -190,13 +188,12 @@ const count = computed((): number => {
   return list.length
 })
 
-const cellStyle = computed(() => {
-  const width = `${100 / column.value}%`
-  // 小程序 flex 子项认 flex-basis，只写 width 时主轴宽度会变成 0
-  return {
-    width,
-    flex: `0 0 ${width}`,
-  }
+/*
+ * 格子宽度不再写在这里：小程序上组件宿主是真实节点，百分比相对宿主会塌成 0。
+ * 列宽由 lingyun-grid 的 CSS Grid 容器决定，这里只负责填满宿主。
+ */
+const cellStyle = computed((): Record<string, string> => {
+  return { width: '100%' }
 })
 
 const iconPx = computed((): number => {

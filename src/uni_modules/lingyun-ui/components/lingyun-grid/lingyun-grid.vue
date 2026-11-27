@@ -1,21 +1,20 @@
 <template>
   <view class="lingyun-grid" :class="{ 'lingyun-grid--border': showBorder }" :style="gridStyle">
-    <block v-if="useItems">
-      <lingyun-grid-item
-        v-for="(item, index) in itemList"
-        :key="itemKey(item, index)"
-        :index="index"
-        :icon="item.icon || ''"
-        :icon-src="item.iconSrc || ''"
-        :icon-size="item.iconSize == null ? '' : item.iconSize"
-        :shape="item.shape == null ? '' : item.shape"
-        :radius="item.radius == null ? '' : item.radius"
-        :text="item.text || ''"
-        :color="item.color || ''"
-        :info="item.info == null ? '' : item.info"
-        :link="item.link || ''"
-      />
-    </block>
+    <lingyun-grid-item
+      v-if="useItems"
+      v-for="(item, index) in itemList"
+      :key="itemKey(item, index)"
+      :index="index"
+      :icon="item.icon || ''"
+      :icon-src="item.iconSrc || ''"
+      :icon-size="item.iconSize == null ? '' : item.iconSize"
+      :shape="item.shape == null ? '' : item.shape"
+      :radius="item.radius == null ? '' : item.radius"
+      :text="item.text || ''"
+      :color="item.color || ''"
+      :info="item.info == null ? '' : item.info"
+      :link="item.link || ''"
+    />
     <!-- 小程序上没传 items 也会变成 []，不能用 v-else 把插槽关掉 -->
     <slot v-if="!useItems" />
   </view>
@@ -128,9 +127,16 @@ const itemList = computed((): LingyunGridItemInput[] => {
 })
 
 const gridStyle = computed((): Record<string, string> => {
+  const style: Record<string, string> = {}
   const bg = String(props.background || '').trim()
-  if (!bg) return {}
-  return { backgroundColor: bg }
+  if (bg) style.backgroundColor = bg
+  /*
+   * 小程序上组件宿主是真实节点（编译器不再输出原生 virtualHost），
+   * flex 百分比作用不到宿主；改用 CSS Grid，列宽由容器决定，宿主天然是 grid 项。
+   */
+  const count = Math.max(1, Math.floor(props.column) || 3)
+  style.gridTemplateColumns = Array.from({ length: count }, () => `${100 / count}%`).join(' ')
+  return style
 })
 
 watch(
@@ -155,9 +161,7 @@ function itemKey(item: LingyunGridItemInput, index: number): string {
 @import '../../styles/variables.scss';
 
 .lingyun-grid {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+  display: grid;
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;

@@ -379,9 +379,10 @@ function savePngToTempFile(dataUrl: string, prefix: string): Promise<string> {
 function draw(): void {
   // #ifdef MP
   drawMp()
-  return
   // #endif
+  // #ifndef MP
   drawCommon()
+  // #endif
 }
 
 /** 非小程序路径的通用绘制：条件编译的 return 会把手写体变成不可达代码，单独成函数保持收窄 */

@@ -1,8 +1,11 @@
 // lingyun-app-page 顶栏占位（插槽首子）
 // 必须进全局样式：uni/Vite 会对组件样式加 data-v，插槽内页面节点带另一套 data-v，
-// 写在组件内的 `> uni-view:first-child` 会匹配失败 → H5/小程序 padding-top 变 0。
+// 写在组件内的 `> uni-view:first-child` 会匹配失败 → H5 padding-top 变 0。
 // 微信：view；H5：uni-view / div。禁止 `*`。
+// 注意：仅非小程序端走这里。小程序端 slot 内容吃不到 CSS 变量继承，占位由
+// app-page 的 padStyle 以内联 paddingTop 写入 __pad；两处同时生效会双份留白。
 
+/* #ifndef MP */
 .lingyun-app-page__pad > view:first-child,
 .lingyun-app-page__pad > uni-view:first-child {
   box-sizing: border-box;
@@ -16,6 +19,7 @@
   box-sizing: border-box;
   padding-top: var(--lingyun-app-page-inset-top, 60px) !important;
 }
+/* #endif */
 
 // H5 宿主页：外层 __pad 的「首子留顶栏」会落在内嵌 app-page 根节点上，
 // 内嵌页自己还会给首子留一次，顶部会出现一段黑带。

@@ -4,7 +4,13 @@
   display: flex;
   flex-direction: column;
   max-height: 70vh;
-  overflow-y: auto;
+  overflow: hidden;
+}
+
+/* 动作列表滚动容器：小程序普通 view 的 overflow 不生效，须用原生 scroll-view */
+.lingyun-menu__scroll {
+  max-height: 70vh;
+  min-height: 0;
 }
 
 /* 默认插槽：菜单只负责弹出，内容按表单自行排版 */
