@@ -910,7 +910,38 @@ function _updataUChart(chartId: any): void {
 }
 // #endif
 
+const INIT_RETRY_LIMIT = 8
+let _initGeneration = 0
+let _initTimer = 0
+
+function clearInitTimer(): void {
+  if (!_initTimer) return
+  clearTimeout(_initTimer)
+  _initTimer = 0
+}
+
+function cancelChartInit(): void {
+  _initGeneration += 1
+  clearInitTimer()
+}
+
+function scheduleChartInit(generation: number, run: () => void): void {
+  clearInitTimer()
+  _initTimer = setTimeout(() => {
+    _initTimer = 0
+    if (generation !== _initGeneration) return
+    run()
+  }, 120) as unknown as number
+}
+
 function init(): void {
+  const generation = ++_initGeneration
+  clearInitTimer()
+  measureChartBox(generation, 0)
+}
+
+function measureChartBox(generation: number, attempt: number): void {
+  if (generation !== _initGeneration) return
   let chartId = cid.value
   let chartdom = (uni.createSelectorQuery() as any)
     // #ifndef MP-ALIPAY
@@ -918,7 +949,8 @@ function init(): void {
     // #endif
     .select('#ChartBoxId'+chartId)
     .boundingClientRect((data: any) => {
-      if (data.width > 0 && data.height > 0) {
+      if (generation !== _initGeneration) return
+      if (data && data.width > 0 && data.height > 0) {
         chartLoading.value = false;
         showchart.value = true;
         lastDrawTime.value = Date.now();
@@ -971,34 +1003,42 @@ function init(): void {
           showchart.value = true;
           nextTick(()=>{
             if (useWeixinCanvas2d.value) {
-              const query = (uni.createSelectorQuery() as any).in(proxy)
-              query
-                .select('#' + chartId)
-                .fields({ node: true, size: true })
-                .exec((res: any) => {
-                  if (res[0]) {
-                    const canvas = res[0].node;
-                    const ctx = canvas.getContext('2d');
-                    cfu.option[chartId].context = ctx;
-                    cfu.option[chartId].rotateLock = cfu.option[chartId].rotate;
-                    if(cfu.instance[chartId] && cfu.option[chartId] && cfu.option[chartId].update === true){
-                      _updataUChart(chartId)
-                    }else{
-                      canvas.width = data.width * pixel.value;
-                      canvas.height = data.height * pixel.value;
-                      canvas._width = data.width * pixel.value;
-                      canvas._height = data.height * pixel.value;
-                      setTimeout(()=>{
-                        cfu.option[chartId].context.restore();
-                        cfu.option[chartId].context.save();
-                        _newChart(chartId)
-                      },100)
+              const drawCanvas2d = (canvasAttempt: number): void => {
+                if (generation !== _initGeneration) return
+                ;(uni.createSelectorQuery() as any).in(proxy)
+                  .select('#' + chartId)
+                  .fields({ node: true, size: true })
+                  .exec((res: any) => {
+                    if (generation !== _initGeneration) return
+                    if (res[0] && res[0].node) {
+                      const canvas = res[0].node;
+                      const ctx = canvas.getContext('2d');
+                      cfu.option[chartId].context = ctx;
+                      cfu.option[chartId].rotateLock = cfu.option[chartId].rotate;
+                      if(cfu.instance[chartId] && cfu.option[chartId] && cfu.option[chartId].update === true){
+                        _updataUChart(chartId)
+                      }else{
+                        canvas.width = data.width * pixel.value;
+                        canvas.height = data.height * pixel.value;
+                        canvas._width = data.width * pixel.value;
+                        canvas._height = data.height * pixel.value;
+                        setTimeout(()=>{
+                          if (generation !== _initGeneration) return
+                          cfu.option[chartId].context.restore();
+                          cfu.option[chartId].context.save();
+                          _newChart(chartId)
+                        },100)
+                      }
+                    } else if (canvasAttempt < INIT_RETRY_LIMIT) {
+                      // 2D canvas 节点插入后要等一帧原生层才取得到，稍后重试。
+                      scheduleChartInit(generation, () => { drawCanvas2d(canvasAttempt + 1) })
+                    } else {
+                      showchart.value = false;
+                      chartError.value = '初始化失败：未获取到微信 Canvas 2D 节点，canvas-id:' + chartId;
                     }
-                  } else {
-                    showchart.value = false;
-                    chartError.value = '初始化失败：未获取到微信 Canvas 2D 节点，canvas-id:' + chartId;
-                  }
-                });
+                  });
+              }
+              drawCanvas2d(0)
             } else {
               if(inAli.value){
                 cfu.option[chartId].rotateLock = cfu.option[chartId].rotate;
@@ -1008,6 +1048,7 @@ function init(): void {
                 _updataUChart(chartId)
               }else{
                 setTimeout(()=>{
+                  if (generation !== _initGeneration) return
                   cfu.option[chartId].context.restore();
                   cfu.option[chartId].context.save();
                   _newChart(chartId)
@@ -1017,6 +1058,9 @@ function init(): void {
           })
           // #endif
         }
+      } else if (attempt < INIT_RETRY_LIMIT) {
+        // 小程序刚插入节点时布局还没完成，boundingClientRect 可能拿到 0，稍后重试。
+        scheduleChartInit(generation, () => { measureChartBox(generation, attempt + 1) })
       } else {
         chartLoading.value = false;
         showchart.value = false;
@@ -1085,7 +1129,7 @@ function resizeHandler(): void {
     .select('#ChartBoxId'+cid.value)
     .boundingClientRect((data: any) => {
       showchart.value = true;
-      if (data.width > 0 && data.height > 0) {
+      if (data && data.width > 0 && data.height > 0) {
         if (data.width !== cWidth.value || data.height !== cHeight.value) {
           checkData(drawData.value)
         }
@@ -1217,6 +1261,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  cancelChartInit()
   // #ifdef MP-WEIXIN
   if (_unsubMpOverlay.value) {
     _unsubMpOverlay.value()
