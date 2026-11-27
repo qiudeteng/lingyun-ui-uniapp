@@ -83,7 +83,7 @@
       <view v-else class="lingyun-order-goods-variant__form">
         <view v-if="specs.length" class="lingyun-order-goods-variant__section">
           <view class="lingyun-order-goods-variant__section-head">
-            <text class="lingyun-order-goods-variant__section-title">规格</text>
+            <text class="lingyun-order-goods-variant__section-title">{{ specTitle }}</text>
             <text class="lingyun-order-goods-variant__section-hint">单选</text>
           </view>
           <view
@@ -453,6 +453,8 @@ type QuantityPayload = {
  * 只有规格时列出全部规格逐个加减；有属性时先单选规格（如有），再按分组选属性，
  * 底部对当前「规格 + 属性」组合加购 / 步进。数据只读，数量变化抛 quantity-change。
  * @property {Boolean} showAmount 显示规格 / 组合价格；默认 true。隐藏后库存与数量提示保留
+ * @property {String} title 弹窗标题；空则按模式自动（商品名 / 选择规格与属性 / 选择属性）
+ * @property {String} specTitle 规格分区标题；默认「规格」
  */
 
 defineOptions({
@@ -468,6 +470,10 @@ const props = defineProps({
   },
   currency: { type: String, default: '¥' },
   priceDecimals: { type: Number, default: -1 },
+  /** 弹窗标题；空则按模式自动 */
+  title: { type: String, default: '' },
+  /** 规格分区标题 */
+  specTitle: { type: String, default: '规格' },
   /** 隐藏规格 / 组合价格；库存与数量提示保留 */
   showAmount: { type: Boolean, default: true },
   maxCount: { type: Number, default: 99 },
@@ -514,6 +520,7 @@ const mode = computed((): 'specs' | 'combo' => {
 })
 
 const title = computed((): string => {
+  if (props.title) return props.title
   if (mode.value === 'specs') {
     return (props.item && props.item.name) || '选择规格'
   }

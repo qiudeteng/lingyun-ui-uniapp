@@ -703,6 +703,8 @@
         :currency="currency"
         :price-decimals="priceDecimals"
         :show-amount="showAmount"
+        :title="variantSheetTitle"
+        :spec-title="specTitle"
         :max-count="maxCount"
         :quantity-unit="quantityUnit"
         :accent-color="accentColor"
@@ -783,6 +785,8 @@ function sanitizeKey(value: unknown): string {
  * @property {Number} bannerHeight Banner 高度，0 时不显示
  * @property {Boolean} showStore 显示顶部店铺卡片（logo / 名称 / 评分 / 公告）；默认 true。隐藏后 Banner 与返回钮不受影响
  * @property {Boolean} showAmount 显示金额（商品价 / 详情价 / 规格价 / 购物车金额与合计）；默认 true。隐藏后数量、步进与结算按钮保留
+ * @property {String} variantSheetTitle 规格 / 属性选择弹窗标题；空则按模式自动（商品名 / 选择规格与属性 / 选择属性）
+ * @property {String} specTitle 规格分区标题；默认「规格」
  * @property {Boolean} showBack 显示 Banner 左上角返回钮（默认 true，点击抛 back）
  * @property {Boolean} showNav 透传给 lingyun-app-page；默认 true，宽屏保留应用导航列
  * @property {Boolean} showToolbar 透传给 lingyun-app-page；默认 false
@@ -856,6 +860,10 @@ const props = defineProps({
   showStore: { type: Boolean, default: true },
   /** 隐藏金额：商品价 / 详情价 / 规格价 / 购物车金额与合计；数量与结算按钮保留 */
   showAmount: { type: Boolean, default: true },
+  /** 规格 / 属性选择弹窗标题；空则按模式自动（商品名 / 选择规格与属性 / 选择属性） */
+  variantSheetTitle: { type: String, default: '' },
+  /** 规格分区标题；默认「规格」 */
+  specTitle: { type: String, default: '规格' },
   showBack: { type: [Boolean, String], default: 'auto' },
   /** 顶栏返回钮默认返回上一页；false 时只抛 back，由页面处理 */
   autoBack: { type: Boolean, default: true },
