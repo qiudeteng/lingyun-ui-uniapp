@@ -1,5 +1,8 @@
 @import './lingyun-tokens.scss';
 
+/* 页面级悬浮滚动条：隐藏原生条（不占布局），右侧 fixed 轨道 + 滑块（与演示应用一致） */
+@import '../../../src/uni_modules/lingyun-ui/styles/h5-scrollbar.css';
+
 /* 文档内嵌演示源码（<!-- demo-source: ... --> 展开） */
 details.demo-source {
   margin: 16px 0;
