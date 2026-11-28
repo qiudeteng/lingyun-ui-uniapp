@@ -1,6 +1,8 @@
 ## 1.0.84 (2026-11-28)
 - 底栏在 Tab 承载页上切换时原地换内容，不再 `reLaunch` 整页重开。选中项跟 `tabHostKey`，路由还停在承载页时指示器也能跟上。
 - 小程序底栏选中胶囊：量到空宽度时多试几次，量到宽度后直接显示，不再套一层可能不回来的 `nextTick`；页面再次显示时重新量一次。
+## 1.0.84 (2026-11-28)
+- 修复小程序图片加载扫光动画溢出：`lingyun-image` 骨架扫光原来在 `@keyframes` 里用 `transform: translateX(-120%) → 280%` 扫动，微信里百分比起算基准不稳（按容器宽算）且带动画的 transform 会逃逸 overflow 裁剪，扫光带飞到图片组件可视区域之外。改为 `left: -45% → 100%` 动画（百分比相对容器、行为稳定），扫动全程收在占位层 `overflow: hidden` 内，H5 视觉不变。
 ## 1.0.83 (2026-11-28)
 - 修复小程序布局组件错版：升级后的 uni CLI 不再把组件 `virtualHost` 写进组件 json，宿主变成真实节点后 `lingyun-row` / `lingyun-col` 的列宽百分比全部塌陷（间距在、列宽没，整行挤在左侧）。新增构建插件 `vite/mpVirtualHost` 在产物生成阶段给声明过 `virtualHost` 的 17 个组件恢复 `"virtualHost": true`，并配合 `manifest.json` mp-weixin 的 `mergeVirtualHostAttributes` 把外部 class/style/id/hidden 经 ahc/ahs 转发到组件内部根节点；组件侧 `virtualHost` 统一放进 `options`（新 CLI 运行时只从 `options` 读取并注册转发属性）。
 - 校验：微信开发者工具实测 24 分栏各档（24 / 12+12 / 8×3 / 6×4 / 4×6 / gutter / 16+8 / offset）全部恢复，grid / 工作台 / 按钮等页回归正常；H5 不受影响，`pnpm type-check` 与 `pnpm build:mp-weixin` 通过。

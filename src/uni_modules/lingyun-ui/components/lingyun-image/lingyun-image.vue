@@ -457,7 +457,9 @@ onBeforeUnmount(() => {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 0;
+  /* 起点终点都收在框外：left 百分比相对容器，小程序端行为稳定；
+     transform 百分比在微信 keyframes 里起算基准不稳，且带动画的 transform 会逃逸 overflow 裁剪 */
+  left: -45%;
   width: 45%;
   background: linear-gradient(
     90deg,
@@ -465,7 +467,6 @@ onBeforeUnmount(() => {
     rgba(255, 255, 255, 0.55) 50%,
     rgba(255, 255, 255, 0) 100%
   );
-  transform: translateX(-120%);
   animation: lingyun-image-shimmer 1.35s ease-in-out infinite;
 }
 
@@ -481,10 +482,10 @@ onBeforeUnmount(() => {
 
 @keyframes lingyun-image-shimmer {
   0% {
-    transform: translateX(-120%);
+    left: -45%;
   }
   100% {
-    transform: translateX(280%);
+    left: 100%;
   }
 }
 
