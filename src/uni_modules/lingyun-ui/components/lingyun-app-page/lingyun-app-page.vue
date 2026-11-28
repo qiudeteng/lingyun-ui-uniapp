@@ -384,9 +384,12 @@ import {
   buildLingyunPageTabWorkspaceUrl,
   getLingyunPageConfig,
   getLingyunPageOverride,
+  getLingyunTabHostKey,
   getLingyunWorkspaceTabKey,
+  isLingyunTabShellPath,
   isLingyunWorkspacePath,
   matchLingyunPageTab,
+  setLingyunTabHostKey,
   setLingyunWorkspaceTabKey,
   syncLingyunWorkspaceUrl,
 } from '../../utils/pageConfig'
@@ -589,6 +592,8 @@ const windowWidth = ref(readLingyunWindowWidth())
 const currentPagePath = ref('')
 /** 跨页切换时 Tab 指示器的起始 key */
 const tabbarFromKey = ref('')
+/** 页面再次显示时让底栏重新量选中胶囊（小程序首次量到空宽度会一直透明） */
+const tabbarRemeasure = ref(0)
 /** Tab / 左侧菜单换页后内容淡入 */
 const pageEntering = ref(false)
 /** 横向 swipe 确认后临时关 scroll-y，避免 iOS 斜滑带动页面上下晃 */
@@ -797,6 +802,16 @@ const tabbarVisible = computed(() => {
   )
 })
 const activeTabKey = computed(() => {
+  const real = normalizeLingyunPagePath(
+    currentPagePath.value || readLingyunCurrentPagePath(),
+  )
+  /* 承载页原地换内容时，选中项跟 host key，不跟还没变的路由 */
+  if (isLingyunTabShellPath(real)) {
+    const host = getLingyunTabHostKey()
+    if (host && (pageConfig.value.tabs || []).some((tab: LingyunPageTab) => tab.key === host)) {
+      return host
+    }
+  }
   if (isLingyunWorkspacePath(effectivePagePath.value)) {
     const workspaceKey = getLingyunWorkspaceTabKey()
     if (workspaceKey) return workspaceKey
@@ -1139,38 +1154,40 @@ function onTabbarChange(item: { key?: string | number }): void {
     (entry: LingyunPageTab) => entry.key === key,
   )
   if (!tab) return
+  if (activeTabKey.value === tab.key) return
   const workspaceUrl =
     Array.isArray(tab.children) && tab.children.length
       ? buildLingyunPageTabWorkspaceUrl(tab)
       : ''
   const targetUrl = workspaceUrl || tab.url
   const raw = normalizeLingyunPagePath(targetUrl)
-  const currentPath = normalizeLingyunPagePath(effectivePagePath.value)
+  const realPath = normalizeLingyunPagePath(
+    currentPagePath.value || readLingyunCurrentPagePath(),
+  )
   if (!raw) return
+  emit('tab-change', { key: tab.key, tab })
   /*
-   * 已在工作台时所有带 children 的 Tab 共用这一页：
-   * 只换全局 key，内容和 Tab 指示器原地更新，不再 reLaunch 造成白屏。
+   * 已经在工作台页上：店铺 / 企业只换 key。
+   * 首页和「我的」若当前路由也是 Tab 承载页，由 openTabPage 原地换内容。
+   * 只有承载页接不住的叶子页才 reLaunch，否则整页关掉重开，体感就是刷新。
    */
-  if (workspaceUrl && isLingyunWorkspacePath(currentPath)) {
-    if (getLingyunWorkspaceTabKey() === tab.key) return
-    emit('tab-change', { key: tab.key, tab })
+  if (workspaceUrl && isLingyunWorkspacePath(realPath)) {
     setLingyunWorkspaceTabKey(tab.key)
-    /* 宿主页内切换时同步宿主 URL；独立工作台由下面的 sync 处理 */
+    setLingyunTabHostKey(tab.key)
     openLingyunTabPage(workspaceUrl, raw)
     syncLingyunWorkspaceUrl(tab.key)
+    clearLingyunPageNavIntent()
     return
   }
-  if (workspaceUrl) {
-    if (raw === currentPath && getLingyunWorkspaceTabKey() === tab.key) return
-  } else if (raw === currentPath) {
+  if (workspaceUrl) setLingyunWorkspaceTabKey(tab.key)
+  if (openLingyunTabPage(targetUrl, raw)) {
+    setLingyunTabHostKey(tab.key)
+    clearLingyunPageNavIntent()
     return
   }
+  if (openLingyunHostedPage(targetUrl, raw)) return
   /* 必须在 setLingyunPageNavIntent 之前记录，否则意图会先把 activeTabKey 改成目标项 */
   const fromKey = activeTabKey.value
-  emit('tab-change', { key: tab.key, tab })
-  if (workspaceUrl) setLingyunWorkspaceTabKey(tab.key)
-  if (openLingyunTabPage(targetUrl, raw)) return
-  if (openLingyunHostedPage(targetUrl, raw)) return
   setLingyunPageNavIntent(raw)
   const next = resolveLingyunPageUrl(targetUrl)
   if (!next) return
@@ -1622,8 +1639,10 @@ onShow(() => {
   syncPageChrome()
   /* 上一页还在栈里，协议页曾把共用窄栏标记关掉时，这里按当前窗口写回去 */
   syncSharedNavChrome()
+  tabbarRemeasure.value += 1
 })
 
+provide('lingyun-tabbar-remeasure', tabbarRemeasure)
 provide(
   LINGYUN_APP_PAGE_REPORT_SCROLL,
   embedded && inheritedScrollReport

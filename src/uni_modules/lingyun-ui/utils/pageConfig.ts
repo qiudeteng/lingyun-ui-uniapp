@@ -4,6 +4,7 @@
  */
 import { reactive, ref } from 'vue'
 import {
+  getLingyunPageNavHome,
   normalizeLingyunPagePath,
   type LingyunPageNavChild,
   type LingyunPageNavSection,
@@ -29,6 +30,11 @@ function defaultConfig(): LingyunPageConfig {
 const state = reactive<LingyunPageConfig>(defaultConfig())
 /** 当前工作台对应的一级 Tab key；工作台路径被多个 Tab 共用 */
 const workspaceTabKey = ref('')
+/**
+ * 底栏留在当前页时正在看的一级 Tab。
+ * 首页 / 工作台 / 我的都挂了同一套内容壳，切换只改这个 key，不再 reLaunch。
+ */
+const tabHostKey = ref('')
 
 function normalizeTabChildren(
   children: LingyunPageTabChild[] | undefined,
@@ -85,6 +91,7 @@ export function resetLingyunPageConfig(): void {
   state.layout = defaults.layout
   state.tabbar = defaults.tabbar
   workspaceTabKey.value = ''
+  tabHostKey.value = ''
   const pages = state.pages || {}
   Object.keys(pages).forEach((key) => {
     delete pages[key]
@@ -231,6 +238,33 @@ export function getLingyunWorkspaceTabKey(): string {
 
 export function useLingyunWorkspaceTabKey() {
   return workspaceTabKey
+}
+
+export function setLingyunTabHostKey(key: string): void {
+  tabHostKey.value = String(key || '')
+}
+
+export function getLingyunTabHostKey(): string {
+  return tabHostKey.value
+}
+
+export function useLingyunTabHostKey() {
+  return tabHostKey
+}
+
+/**
+ * 当前路由是不是一级 Tab 的承载页（首页、工作台，或没有子菜单的 Tab 页）。
+ * 这些页可以原地换内容；子页面不是，避免底栏切页把详情页盖掉。
+ */
+export function isLingyunTabShellPath(path: string): boolean {
+  const real = normalizeLingyunPagePath(path)
+  if (!real) return false
+  if (isLingyunWorkspacePath(real)) return true
+  if (real === normalizeLingyunPagePath(getLingyunPageNavHome(true))) return true
+  const tab = matchLingyunPageTab(state.tabs || [], real)
+  if (!tab) return false
+  if (Array.isArray(tab.children) && tab.children.length) return false
+  return normalizeLingyunPagePath(tab.url) === real
 }
 
 function collectChildMatches(

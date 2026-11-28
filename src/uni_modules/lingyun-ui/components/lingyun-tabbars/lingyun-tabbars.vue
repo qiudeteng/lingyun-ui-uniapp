@@ -82,7 +82,7 @@
 
 <script setup lang="ts">
 import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { inject, type PropType } from 'vue'
+import { inject, type PropType, type Ref } from 'vue'
 import { LINGYUN_APP_PAGE_NAV_INSET } from '@/uni_modules/lingyun-ui/components/lingyun-app-page/useLingyunAppPageScroll'
 
 type TabBadgeObject = {
@@ -202,6 +202,7 @@ const emit = defineEmits(['change', 'update:modelValue', 'update:value'])
 const instance = getCurrentInstance()
 
 const pageNavInset = inject(LINGYUN_APP_PAGE_NAV_INSET, ref(0))
+const tabbarRemeasure = inject<Ref<number>>('lingyun-tabbar-remeasure', ref(0))
 
 const instanceId = ref(`lytb-${Math.random().toString(36).slice(2, 8)}`)
 const indicator = ref({
@@ -589,9 +590,9 @@ function syncIndicator(options?: { liquid?: boolean }, retry = 0) {
         const bar = res && res[0]
         const item = res && res[1]
         if (!bar || !item || !item.width) {
-          /* 页面刚切换 / 节点还没挂好时查询可能为空，重试几次 */
-          if (retry < 3 && stillCurrent()) {
-            setTimeout(() => syncIndicator(options, retry + 1), 40 * (retry + 1))
+          /* 小程序嵌在页面壳里时，前几帧经常量到空宽度；多等一会儿再放弃 */
+          if (retry < 8 && stillCurrent()) {
+            setTimeout(() => syncIndicator(options, retry + 1), 60 * (retry + 1))
           }
           return
         }
@@ -609,11 +610,8 @@ function syncIndicator(options?: { liquid?: boolean }, retry = 0) {
           return
         }
         snapLens(toRect)
-        if (!indicator.value.ready) {
-          nextTick(() => {
-            indicator.value.ready = true
-          })
-        }
+        /* 不要再套 nextTick：小程序上这次回调里的 nextTick 可能一直不回来，胶囊就停在透明 */
+        indicator.value.ready = true
       })
   })
 }
@@ -677,6 +675,10 @@ watch(current, (next) => {
 })
 
 watch(mainItems, () => {
+  syncIndicator({ liquid: false })
+})
+
+watch(tabbarRemeasure, () => {
   syncIndicator({ liquid: false })
 })
 
