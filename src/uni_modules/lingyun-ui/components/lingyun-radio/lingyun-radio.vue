@@ -37,7 +37,7 @@ type RadioGroupContext = {
  */
 defineOptions({
   name: 'LingyunRadio',
-  virtualHost: true,
+  options: { virtualHost: true },
   styleIsolation: 'shared',
 })
 

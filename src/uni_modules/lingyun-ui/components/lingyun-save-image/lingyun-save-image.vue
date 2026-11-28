@@ -63,7 +63,7 @@ type CanvasHolder = {
  */
 defineOptions({
   name: 'LingyunSaveImage',
-  virtualHost: true,
+  options: { virtualHost: true },
 })
 
 const emit = defineEmits(['success', 'error'])

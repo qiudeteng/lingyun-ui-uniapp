@@ -14,7 +14,7 @@ import { isLingyunWideScreen } from '../../utils/screen'
  */
 defineOptions({
   name: 'LingyunPc',
-  virtualHost: true,
+  options: { virtualHost: true },
 })
 
 const visible = computed((): boolean => isLingyunWideScreen())

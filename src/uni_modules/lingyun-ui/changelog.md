@@ -1,3 +1,6 @@
+## 1.0.83 (2026-11-28)
+- 修复小程序布局组件错版：升级后的 uni CLI 不再把组件 `virtualHost` 写进组件 json，宿主变成真实节点后 `lingyun-row` / `lingyun-col` 的列宽百分比全部塌陷（间距在、列宽没，整行挤在左侧）。新增构建插件 `vite/mpVirtualHost` 在产物生成阶段给声明过 `virtualHost` 的 17 个组件恢复 `"virtualHost": true`，并配合 `manifest.json` mp-weixin 的 `mergeVirtualHostAttributes` 把外部 class/style/id/hidden 经 ahc/ahs 转发到组件内部根节点；组件侧 `virtualHost` 统一放进 `options`（新 CLI 运行时只从 `options` 读取并注册转发属性）。
+- 校验：微信开发者工具实测 24 分栏各档（24 / 12+12 / 8×3 / 6×4 / 4×6 / gutter / 16+8 / offset）全部恢复，grid / 工作台 / 按钮等页回归正常；H5 不受影响，`pnpm type-check` 与 `pnpm build:mp-weixin` 通过。
 ## 1.0.82 (2026-11-27)
 - 修复小程序宫格错版：当前 uni CLI 不再把组件级 `virtualHost` 写进组件 json，宿主变成真实节点后 flex 百分比失效、格子塌成 0 宽。`lingyun-grid` 容器改用 CSS Grid（列宽由容器决定），`lingyun-grid-item` 去掉 `virtualHost`、根节点填满宿主；工作台 / 组件目录与宫格 demo 在小程序恢复正方形格子。
 - 修复小程序顶栏双倍占位：全局首子顶栏占位规则在微信上同样生效，与 `__pad` 的内联占位叠加，内容被多推一个顶栏高度（纯列表 / 工作台顶部大片空白）。全局首子规则限定为非小程序端，微信只走内联占位。

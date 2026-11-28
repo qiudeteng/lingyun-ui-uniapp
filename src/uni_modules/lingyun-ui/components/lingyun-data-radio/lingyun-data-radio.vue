@@ -37,7 +37,7 @@ type DataRadioItem = {
  */
 defineOptions({
   name: 'LingyunDataRadio',
-  virtualHost: true,
+  options: { virtualHost: true },
   styleIsolation: 'shared',
 })
 

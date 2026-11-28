@@ -33,7 +33,7 @@ type LingyunRowContext = { gutter?: number } | null
  */
 defineOptions({
   name: 'LingyunCol',
-  virtualHost: true,
+  options: { virtualHost: true },
 })
 
 const props = defineProps({

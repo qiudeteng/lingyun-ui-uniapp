@@ -20,7 +20,7 @@ import { type PropType } from 'vue'
 
 defineOptions({
   name: 'LingyunPickerCalDay',
-  virtualHost: true,
+  options: { virtualHost: true },
   styleIsolation: 'shared',
 })
 

@@ -981,7 +981,7 @@ function findSectionMarkHost(start: unknown): SectionMarkHost | null {
 
 defineOptions({
   name: 'LingyunTable',
-  virtualHost: true,
+  options: { virtualHost: true },
 })
 
 const props = defineProps({

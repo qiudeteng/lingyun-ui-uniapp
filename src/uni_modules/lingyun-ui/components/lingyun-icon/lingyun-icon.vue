@@ -25,7 +25,7 @@ import { fontData } from './icons'
 defineOptions({
   name: 'LingyunIcon',
   // 去掉组件宿主，圆钮 flex 直接居中字形盒子（小程序宿主会把符号挤偏）
-  virtualHost: true,
+  options: { virtualHost: true },
 })
 
 const props = defineProps({

@@ -36,7 +36,7 @@ type DataCheckboxItem = {
  */
 defineOptions({
   name: 'LingyunDataCheckbox',
-  virtualHost: true,
+  options: { virtualHost: true },
   styleIsolation: 'shared',
 })
 

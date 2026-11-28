@@ -32,7 +32,7 @@ import { type PropType } from 'vue'
  */
 defineOptions({
   name: 'LingyunCheckbox',
-  virtualHost: true,
+  options: { virtualHost: true },
   styleIsolation: 'shared',
 })
 

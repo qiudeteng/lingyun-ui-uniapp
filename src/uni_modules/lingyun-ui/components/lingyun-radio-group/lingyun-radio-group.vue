@@ -14,7 +14,7 @@ import { provide, type PropType } from 'vue'
  */
 defineOptions({
   name: 'LingyunRadioGroup',
-  virtualHost: true,
+  options: { virtualHost: true },
   styleIsolation: 'shared',
 })
 

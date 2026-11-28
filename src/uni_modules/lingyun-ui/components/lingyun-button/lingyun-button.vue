@@ -44,7 +44,7 @@ import { computed, useSlots } from 'vue'
 defineOptions({
   name: 'LingyunButton',
   // 去掉宿主，父级 flex 才能居中到按钮本身（否则小程序胶囊贴在宿主左侧）
-  virtualHost: true,
+  options: { virtualHost: true },
 })
 
 const props = defineProps({

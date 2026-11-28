@@ -33,7 +33,7 @@ const ALIGN: Record<string, string> = {
  */
 defineOptions({
   name: 'LingyunRow',
-  virtualHost: true,
+  options: { virtualHost: true },
 })
 
 const props = defineProps({

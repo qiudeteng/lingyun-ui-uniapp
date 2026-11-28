@@ -39,6 +39,7 @@
             "es6" : true,
             "minified" : true
         },
+        "mergeVirtualHostAttributes" : true,
         "usingComponents" : true,
         "lazyCodeLoading" : "requiredComponents",
         "permission" : {

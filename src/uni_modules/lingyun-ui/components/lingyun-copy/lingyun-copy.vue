@@ -53,7 +53,7 @@ import { computed } from 'vue'
  */
 defineOptions({
   name: 'LingyunCopy',
-  virtualHost: true,
+  options: { virtualHost: true },
 })
 
 const props = defineProps({

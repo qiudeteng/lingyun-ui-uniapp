@@ -46,8 +46,9 @@ import type { LingyunGridItemInput } from './types'
  */
 defineOptions({
   name: 'LingyunGrid',
-  // 去掉小程序宿主。否则宿主默认 inline，内部 width:100% 算出来是 0
-  virtualHost: true,
+  // 去掉小程序宿主。否则宿主默认 inline，内部 width:100% 算出来是 0。
+  // 新版 uni CLI 须放在 options 里（vite/mpVirtualHost 插件据此恢复组件 JSON 的 virtualHost）
+  options: { virtualHost: true },
 })
 
 const props = defineProps({
@@ -131,8 +132,8 @@ const gridStyle = computed((): Record<string, string> => {
   const bg = String(props.background || '').trim()
   if (bg) style.backgroundColor = bg
   /*
-   * 小程序上组件宿主是真实节点（编译器不再输出原生 virtualHost），
-   * flex 百分比作用不到宿主；改用 CSS Grid，列宽由容器决定，宿主天然是 grid 项。
+   * 双保险：即使宿主节点存在（如消费方编译链未恢复 virtualHost），
+   * CSS Grid 的列宽由容器决定，宿主天然是 grid 项，百分比仍能作用到 grid-item。
    */
   const count = Math.max(1, Math.floor(props.column) || 3)
   style.gridTemplateColumns = Array.from({ length: count }, () => `${100 / count}%`).join(' ')
